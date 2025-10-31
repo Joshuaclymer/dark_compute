@@ -62,9 +62,9 @@ v100_index = process_node.index(12)
 # H100 equivalents per month from fabs with different capacities
 # ============================================================================
 
-fab_capacities_wspm = [5000, 50000, 500000]  # wafers per month
+fab_capacities_wspm = [5000, 50000, 200000]  # wafers per month
 colors = ['green', 'blue', 'red']
-labels = ['5K wafers per month, hundreds of workers (minifab)', '50K wafers per month, thousands of workers (typical fab)', '500K wafers per month, tens of thousands of workers (megafab)']
+labels = ['5K wafers per month, hundreds of workers (minifab)', '50K wafers per month, thousands of workers (typical fab)', '200K wafers per month (total current advanced-node fab capacity)']
 
 # Create second scatter plot
 plt.figure(figsize=(12, 7))
@@ -127,8 +127,8 @@ ax_month.text(2.1, 87000 * 1.2, 'Divert 3% of new phones consumed by China',
 
 # Add horizontal line for projected compute produced in 2027
 ax_month.axhline(y=60000000, color='black', linestyle='--', linewidth=2, alpha=0.7, zorder=1)
-ax_month.text(2.1, 60000000 * 1.2, 'Projected 2027 production',
-             fontsize=14, color='black', ha='right', va='bottom')
+ax_month.text(180, 60000000 * 1.2, 'Projected 2027 production',
+             fontsize=14, color='black', ha='left', va='bottom')
 
 # Add annotation at 28nm on the mini fab line
 nm_28_index = process_node.index(28)
@@ -145,17 +145,24 @@ ax_month.annotate('Hypothetical covert PRC mini fab',
                  arrowprops=dict(arrowstyle='->', color='green', lw=1.5))
 
 # Add annotation at 90nm on the mini fab line
-nm_90_index = process_node.index(90)
-nm_90_y_value = h100_equiv_per_wafer[nm_90_index] * minifab_capacity * 12
-ax_month.annotate("China's current domestic lithography",
-                 xy=(90, nm_90_y_value),
-                 xytext=(90, nm_90_y_value / 3),
-                 fontsize=12,
-                 color='green',
-                 ha='center',
-                 va='center',
-                 bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='green', alpha=0.8),
-                 arrowprops=dict(arrowstyle='->', color='green', lw=1.5))
+nm_130_index = process_node.index(130)
+nm_130_y_value = h100_equiv_per_wafer[nm_130_index] * minifab_capacity * 12
+# Text box
+ax_month.text(80, nm_130_y_value * 3, "China's current domestic lithography",
+             fontsize=12,
+             color='green',
+             ha='center',
+             va='center',
+             bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='green', alpha=1.0),
+             zorder=100,
+             clip_on=False)
+# Separate arrow
+ax_month.annotate('',
+                 xy=(130, nm_130_y_value),
+                 xytext=(130, nm_130_y_value * 2.2),
+                 arrowprops=dict(arrowstyle='->', color='green', lw=1.5),
+                 zorder=100,
+                 clip_on=False)
 
 # Add secondary y-axis for transistor density
 ax_density = ax_month.twinx()

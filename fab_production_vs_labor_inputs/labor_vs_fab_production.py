@@ -45,18 +45,15 @@ plt.yticks(y_ticks, [f'{int(y/1000)}K' if y < 1000000 else f'{int(y/1000000)}M' 
 plt.grid(True, alpha=0.3, which='both', linestyle='-', linewidth=0.5)
 plt.grid(True, alpha=0.15, which='minor', linestyle=':', linewidth=0.3)
 
-# Add a trend line for operating employees (blue, in log space) - flipped axes
+# Add a trend line for operating employees (blue, in log space) - FORWARD FIT
 log_employees = np.log10(employees)
 log_wafers = np.log10(wafers_per_month)
-z_ops = np.polyfit(log_wafers, log_employees, 1)
-p_ops = np.poly1d(z_ops)
-# For flipped axes: x is now workers, y is now wafers
-# Original: log(workers) = z_ops[1] + z_ops[0]*log(wafers)
-# Inverted: log(wafers) = (log(workers) - z_ops[1]) / z_ops[0]
+coeffs = np.polyfit(log_employees, log_wafers, 1)
+# Forward fit: log(wafers) = coeffs[1] + coeffs[0] * log(employees)
 x_range_ops = np.logspace(np.log10(min(employees)), np.log10(max(employees)), 100)
-y_range_ops = 10**((np.log10(x_range_ops) - z_ops[1]) / z_ops[0])
+y_range_ops = 10**(coeffs[1] + coeffs[0] * np.log10(x_range_ops))
 plt.plot(x_range_ops, y_range_ops, "--", alpha=0.7, color='blue', linewidth=2,
-         label=f'Operating fit ({z_ops[1]:.2f} + {z_ops[0]:.2f}*log10(x))')
+         label=f'Operating fit (log(y) = {coeffs[1]:.2f} + {coeffs[0]:.2f}*log(x))')
 
 # Add an orange regression line for construction workers proportional to wafer production - flipped axes
 # Original model: workers = alpha * production

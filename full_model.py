@@ -45,9 +45,9 @@ COMPONENT MODELS:
    - Relationship: wafers ≈ employees^1.09 * 10^0.57
 
 3. CHIP_EFFICIENCY (year):
-   - Annual improvement multiplier: 1.35x per year
+   - Annual improvement multiplier: 1.063x per year
    - Baseline: H100 in 2023 with 63,328 TPP per die
-   - efficiency(year) = 63,328 * 1.35^(year - 2023)
+   - efficiency(year) = 63,328 * 1.063^(year - 2023)
    - Ratio used: efficiency(year) / efficiency(2022)
 
 4. MAX_SELFSUFFICIENT_NODE (year_of_agreement_start):
@@ -129,7 +129,7 @@ year_process_node_first_reached_high_volume_manufacturing = [
 # From architecture_efficiency/architecture_efficiency.py
 h100_tpp_per_die_size = 63328
 h100_release_year = 2023
-annual_efficiency_multiplier = 1.35
+annual_efficiency_multiplier = 1.063
 
 # From fab_construction_time/construction_time_cdf.py
 construction_months = [12, 42, 26, 36, 42, 36, 30, 24, 26]
@@ -144,11 +144,12 @@ gamma_shape, gamma_loc, gamma_scale = stats.gamma.fit(construction_years_adjuste
 employees = [80, 1500, 3950, 31000, 11300, 2200, 2750, 3000, 3000, 8500, 10000]
 wafers_per_month = [4000, 55000, 31500, 800000, 83000, 20000, 33000, 62500, 100000, 140000, 450000]
 
-# Log-linear relationship: log(wafers) = a + b * log(employees)
+# Fit FORWARD relationship: log(wafers) = a + b * log(employees)
 log_employees = np.log10(employees)
 log_wafers = np.log10(wafers_per_month)
 coeffs = np.polyfit(log_employees, log_wafers, 1)
-# wafers = 10^(coeffs[1]) * employees^(coeffs[0])
+# This gives: log(wafers) = coeffs[1] + coeffs[0] * log(employees)
+# Which means: wafers = 10^(coeffs[1]) * employees^(coeffs[0])
 
 # From china_domestic_fab_capability/forecasts.py
 p_selfsufficiency_28nm = [{"year": 2025, "probability": 0}, {"year": 2027, "probability": 0.07}, {"year": 2030, "probability": 0.25}]
@@ -174,6 +175,7 @@ def calculate_chip_efficiency(year):
     return h100_tpp_per_die_size * (annual_efficiency_multiplier ** years_since_2023)
 
 def sample_max_selfsufficient_node(year):
+    return 130 # (temporary, for testing)
     """
     Sample the maximum self-sufficient node that China can achieve by a given year.
     Returns the process node size in nm.
@@ -187,7 +189,7 @@ def sample_max_selfsufficient_node(year):
     - P(7nm) = p_7nm_raw
     - P(14nm) = p_14nm_raw - p_7nm_raw
     - P(28nm) = p_28nm_raw - p_14nm_raw
-    - P(120nm) = 1 - p_28nm_raw (fallback)
+    - P(130nm) = 1 - p_28nm_raw (fallback)
     """
     # Find the probabilities at the given year by interpolating
     def interpolate_probability(p_data, year):
@@ -212,7 +214,7 @@ def sample_max_selfsufficient_node(year):
     p_7nm = p_7nm_raw
     p_14nm = max(0, p_14nm_raw - p_7nm_raw)
     p_28nm = max(0, p_28nm_raw - p_14nm_raw)
-    p_120nm = max(0, 1 - p_28nm_raw)
+    p_130nm = max(0, 1 - p_28nm_raw)
 
     # Sample from categorical distribution
     rand = np.random.random()
@@ -223,7 +225,7 @@ def sample_max_selfsufficient_node(year):
     elif rand < p_7nm + p_14nm + p_28nm:
         return 28
     else:
-        return 120  # Fallback to 120nm if none achieve >90% localization
+        return 130  # Fallback to 130nm if none achieve >90% localization
 
 def get_H100s_per_wafer(process_node_nm):
     """
@@ -251,11 +253,11 @@ def sample_finished_construction_year(year_of_agreement_start):
 def sample_wafers_processed_per_month(num_people_involved):
     """
     Sample wafers processed per month given number of people involved.
-    Uses the log-linear relationship from labor vs fab production data.
+    Uses the forward log-linear relationship from labor vs fab production data.
 
     Adds uncertainty around the fitted relationship.
     """
-    # Calculate expected value from log-linear relationship
+    # Forward relationship: log(wafers) = coeffs[1] + coeffs[0] * log(employees)
     log_expected_wafers = coeffs[1] + coeffs[0] * np.log10(num_people_involved)
     expected_wafers = 10 ** log_expected_wafers
 
@@ -510,78 +512,148 @@ def compute_produced_before_detection(agreement_start_year, num_workers, num_sam
     """
     total_compute_samples = []
     detection_year_samples = []
+    operational_time_samples = []
 
     for _ in range(num_samples):
-        # Sample when detection occurs (years after start)
+        # Sample the "world" parameters once for this Monte Carlo sample
+        # 1. When does detection occur?
         detection_time_years = sample_detection_year(agreement_start_year, num_workers) - agreement_start_year
 
-        # Cap at max_years for practical purposes
+        # 2. When does construction finish?
+        construction_finish_year = sample_finished_construction_year(agreement_start_year)
+        construction_time_years = construction_finish_year - agreement_start_year
+
+        # 3. What process node is achieved?
+        max_node = sample_max_selfsufficient_node(agreement_start_year)
+
+        # 4. What is the wafer production capacity?
+        wafers_per_month = sample_wafers_processed_per_month(num_workers)
+
+        # Calculate operational time (lower bounded at 0)
+        operational_time = max(0, detection_time_years - construction_time_years)
+        operational_time_samples.append(operational_time)
+
+        # Cap detection time at max_years for practical purposes
         detection_time_years = min(detection_time_years, max_years)
 
-        # Sum compute production for each year until detection
+        # Sum compute production using weekly intervals (1/4 month) for smoother distribution
+        # Now we use the same world parameters throughout
         total_compute = 0
-        for year_offset in range(int(np.ceil(detection_time_years))):
-            current_year = agreement_start_year + year_offset
+        num_intervals = int(detection_time_years * 48)  # Convert years to quarter-months (weeks)
 
-            # Only count full years before detection
-            if year_offset < detection_time_years:
-                result = rollout(current_year, agreement_start_year, num_workers)
-                total_compute += result['h100_equivalents_per_year']
+        h100s_per_wafer = get_H100s_per_wafer(max_node)
+
+        for interval_offset in range(num_intervals):
+            current_year = agreement_start_year + interval_offset / 48.0
+
+            # Check if construction is finished at this time
+            is_operational = (current_year >= construction_finish_year)
+
+            if is_operational:
+                # Calculate chip efficiency ratio (relative to 2022)
+                chip_eff_year = calculate_chip_efficiency(current_year)
+                chip_eff_2022 = calculate_chip_efficiency(2022)
+                efficiency_ratio = chip_eff_year / chip_eff_2022
+
+                # Calculate compute for this time interval
+                h100_equiv_per_year = (
+                    wafers_per_month
+                    * 12  # months per year
+                    * efficiency_ratio
+                    * h100s_per_wafer
+                )
+
+                # Add 1/48 of the annual production for this quarter-month
+                total_compute += h100_equiv_per_year / 48.0
 
         total_compute_samples.append(total_compute)
         detection_year_samples.append(agreement_start_year + detection_time_years)
 
     total_compute_array = np.array(total_compute_samples)
+    operational_time_array = np.array(operational_time_samples)
 
     # Create visualization
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5))
 
     # Plot 1: Histogram of total compute produced (filter out zeros for log scale)
-    nonzero_compute = total_compute_array[total_compute_array > 0] / 1e3
+    nonzero_compute = total_compute_array[total_compute_array > 0]
     if len(nonzero_compute) > 0:
-        # Use log-spaced bins
+        # Use log-spaced bins (25 bins for smoother appearance, 2x larger than before)
         bins = np.logspace(np.log10(max(0.1, nonzero_compute.min())),
-                          np.log10(nonzero_compute.max()), 50)
+                          np.log10(nonzero_compute.max()), 25)
         ax1.hist(nonzero_compute, bins=bins, alpha=0.7, color='blue', edgecolor='black', density=True)
-    ax1.axvline(np.mean(total_compute_array) / 1e3, color='red', linestyle='--',
-                linewidth=2, label=f'Mean: {np.mean(total_compute_array)/1e3:.1f}K')
-    ax1.set_xlabel('Total H100 equivalents produced before detection (thousands)', fontsize=11)
+    ax1.set_xlabel('Total H100 equivalents produced before detection', fontsize=11)
     ax1.set_ylabel('Probability Density', fontsize=11)
-    ax1.set_title(f'Distribution of Compute Produced Before Detection\n({num_workers:,} workers)',
+    ax1.set_title(f'Distribution of Compute Produced Before Detection\n({num_workers:,} workers, non-zero values only)',
                   fontsize=12, fontweight='bold')
     ax1.set_xscale('log')
-    ax1.legend()
     ax1.grid(True, alpha=0.3)
 
-    # Plot 2: CDF of total compute produced (filter out zeros for log scale)
-    nonzero_mask = total_compute_array > 0
-    if np.any(nonzero_mask):
-        sorted_compute_nonzero = np.sort(total_compute_array[nonzero_mask])
-        # Adjust CDF to account for zeros
-        zero_prob = np.sum(~nonzero_mask) / len(total_compute_array)
-        cdf_nonzero = zero_prob + (1 - zero_prob) * np.arange(1, len(sorted_compute_nonzero) + 1) / len(sorted_compute_nonzero)
-        ax2.plot(sorted_compute_nonzero / 1e3, cdf_nonzero, linewidth=2, color='blue')
-    ax2.set_xlabel('Total H100 equivalents produced before detection (thousands)', fontsize=11)
-    ax2.set_ylabel('Cumulative Probability', fontsize=11)
-    ax2.set_title('CDF of Compute Produced Before Detection', fontsize=12, fontweight='bold')
+    # Plot 2: Complementary CDF (survival function) - P(compute > x)
+    # Plot complementary CDF for all values
+    sorted_compute = np.sort(total_compute_array)
+    # Complementary CDF: P(X > x) = 1 - P(X <= x)
+    ccdf = 1 - np.arange(1, len(sorted_compute) + 1) / len(sorted_compute)
+
+    # Only plot values >= 1000 (10^3)
+    mask = sorted_compute >= 1000
+    if np.any(mask):
+        # Draw horizontal line from y-axis to first point
+        first_x = sorted_compute[mask][0]
+        first_y = ccdf[mask][0]
+        ax2.plot([1000, first_x], [first_y, first_y], 'b-', linewidth=2)
+        # Plot the complementary CDF
+        ax2.plot(sorted_compute[mask], ccdf[mask], linewidth=2, color='blue')
+
+    ax2.set_xlabel('Total H100 equivalents produced before detection', fontsize=11)
+    ax2.set_ylabel('P(Compute Produced > x)', fontsize=11)
+    ax2.set_title('Complementary CDF of Compute Produced Before Detection', fontsize=12, fontweight='bold')
     ax2.set_xscale('log')
+    ax2.set_xlim(left=1000)  # Start x-axis at 10^3
+    ax2.set_ylim(0, 1)
     ax2.grid(True, alpha=0.3)
 
-    # Add percentile annotations (only for nonzero values)
+    # Add percentile annotations (only for nonzero values >= 1000)
     for percentile in [10, 25, 50, 75, 90]:
         value = np.percentile(total_compute_array, percentile)
-        if value > 0:  # Only annotate if value is nonzero
-            ax2.axhline(percentile/100, color='gray', linestyle=':', alpha=0.5)
-            ax2.axvline(value / 1e3, color='gray', linestyle=':', alpha=0.5)
-            ax2.text(value / 1e3, percentile/100 + 0.02, f'p{percentile}', fontsize=8)
+        if value >= 1000:  # Only annotate if value is >= 1000
+            # For complementary CDF, the probability is 1 - percentile/100
+            prob = 1 - percentile/100
+            ax2.axhline(prob, color='gray', linestyle=':', alpha=0.5)
+            ax2.axvline(value, color='gray', linestyle=':', alpha=0.5)
+            ax2.text(value, prob + 0.02, f'p{percentile}', fontsize=8)
+
+    # Plot 3: Complementary CDF of operational time before detection
+    sorted_op_time = np.sort(operational_time_array)
+    # Complementary CDF: P(X > x) = 1 - P(X <= x)
+    ccdf_op = 1 - np.arange(1, len(sorted_op_time) + 1) / len(sorted_op_time)
+
+    ax3.plot(sorted_op_time, ccdf_op, linewidth=2, color='green')
+
+    ax3.set_xlabel('Operational time before detection (years)', fontsize=11)
+    ax3.set_ylabel('P(Operational time > x)', fontsize=11)
+    ax3.set_title('Complementary CDF of Operational Time Before Detection', fontsize=12, fontweight='bold')
+    ax3.set_ylim(0, 1)
+    ax3.grid(True, alpha=0.3)
+
+    # Add percentile annotations
+    for percentile in [25, 50, 75, 90]:
+        value = np.percentile(operational_time_array, percentile)
+        prob = 1 - percentile/100
+        ax3.axhline(prob, color='gray', linestyle=':', alpha=0.5)
+        ax3.axvline(value, color='gray', linestyle=':', alpha=0.5)
+        ax3.text(value, prob + 0.02, f'p{percentile}', fontsize=8)
 
     plt.tight_layout()
-    plt.savefig(output_filename, dpi=300, bbox_inches='tight')
-    print(f"Visualization saved to: {output_filename}")
+    if output_filename:
+        plt.savefig(output_filename, dpi=300, bbox_inches='tight')
+        print(f"Visualization saved to: {output_filename}")
+    plt.close()
 
     return {
         'total_compute_before_detection': total_compute_array,
         'detection_years': np.array(detection_year_samples),
+        'operational_time_before_detection': operational_time_array,
         'percentiles': {
             'p10': np.percentile(total_compute_array, 10),
             'p25': np.percentile(total_compute_array, 25),
@@ -594,74 +666,96 @@ def compute_produced_before_detection(agreement_start_year, num_workers, num_sam
         'output_file': output_filename
     }
 
+def dark_compute_vs_workers(agreement_start_year=2028, num_samples=1000,
+                                output_filename='dark_compute_vs_workers.png',
+                                threshold=500000):
+    """
+    Calculate and plot expected (mean) H100 equivalents produced before detection vs number of workers.
+
+    This function evaluates the expected total compute produced across different workforce sizes,
+    helping to understand the trade-off between detection risk (more workers = faster detection)
+    and production capacity (more workers = higher production rate).
+
+    Args:
+        agreement_start_year: The year the covert agreement/construction begins (default: 2028)
+        num_samples: Number of Monte Carlo samples per worker count (default: 1000)
+        output_filename: Filename for the output plot (default: 'expected_compute_vs_workers.png')
+        threshold: Threshold for computing P(compute > threshold) (default: 500000)
+
+    Returns:
+        dict: Contains:
+            - num_workers_array: Array of worker counts evaluated
+            - expected_compute: Array of expected (mean) H100 equivalents produced
+            - prob_exceeds_threshold: Array of probabilities that compute exceeds threshold
+            - threshold: The threshold value used (default: 500000)
+            - output_file: Path to saved visualization
+    """
+    # Generate log-spaced worker counts from 50 to 10,000
+    num_workers_points = np.logspace(np.log10(50), np.log10(10000), 10).astype(int)
+
+    mean_values = []
+    prob_exceeds_values = []
+
+    print(f"Calculating expected compute for {len(num_workers_points)} worker counts (using {num_samples} samples each)...")
+
+    for i, num_workers in enumerate(num_workers_points):
+        print(f"  {i+1}/{len(num_workers_points)}: {num_workers:,} workers...", end='')
+
+        # Run compute_produced_before_detection for this worker count
+        results = compute_produced_before_detection(
+            agreement_start_year=agreement_start_year,
+            num_workers=num_workers,
+            num_samples=num_samples,
+            max_years=15,
+            output_filename=None  # Don't save individual plots
+        )
+
+        mean_values.append(results['mean'])
+
+        # Calculate probability of exceeding threshold
+        prob_exceeds = np.mean(results['total_compute_before_detection'] > threshold)
+        prob_exceeds_values.append(prob_exceeds)
+
+        print(f" Mean: {results['mean']/1e3:.1f}K, P(>{threshold/1e3:.0f}K): {prob_exceeds:.2%}")
+
+    # Convert to arrays
+    mean_array = np.array(mean_values)
+    prob_exceeds_array = np.array(prob_exceeds_values)
+
+    # Create visualization
+    fig, ax = plt.subplots(figsize=(7, 5))
+
+    # Plot probability of exceeding threshold
+    ax.plot(num_workers_points, prob_exceeds_array, 'k-', linewidth=2.5, marker='o')
+
+    ax.set_xlabel('Number of Workers', fontsize=11)
+    ax.set_ylabel(f'P(Compute produced before detection\n> {threshold/1e3:.0f}K H100 equivalents)', fontsize=11)
+    ax.set_xscale('log')
+    ax.set_ylim(0, 1)
+    ax.grid(True, alpha=0.3, which='both')
+
+    plt.title(f'Probability of Producing >{threshold/1e3:.0f}K H100 Equivalents Before Detection\n(Agreement starts in {agreement_start_year})',
+              fontsize=12, fontweight='bold')
+
+    plt.tight_layout()
+    plt.savefig(output_filename, dpi=300, bbox_inches='tight')
+    print(f"\nVisualization saved to: {output_filename}")
+
+    return {
+        'num_workers_array': num_workers_points,
+        'expected_compute': mean_array,
+        'prob_exceeds_threshold': prob_exceeds_array,
+        'threshold': threshold,
+        'output_file': output_filename
+    }
+
 # ============================================================================
 # Example Usage
 # ============================================================================
 
 if __name__ == "__main__":
-    # Example: Evaluate a project starting in 2025 for year 2030 with 5000 workers
-    agreement_start_year = 2025
-    year = 2030
-    num_workers = 5000
 
-    print("=" * 70)
-    print("COVERT COMPUTE PRODUCTION MODEL")
-    print("=" * 70)
-    print()
-    print("MODEL INPUTS:")
-    print(f"  1. agreement_start_year: {agreement_start_year}")
-    print(f"  2. year: {year}")
-    print(f"  3. num_workers: {num_workers:,}")
-    print()
-
-    # Run a single rollout example for illustration
-    print("Single rollout example (for illustration):")
-    print("-" * 70)
-    single_result = rollout(year, agreement_start_year, num_workers)
-    print(f"  H100 equivalents/year: {single_result['h100_equivalents_per_year']:,.0f}")
-    print(f"  Construction finishes: {single_result['construction_finish_year']:.2f}")
-    print(f"  Operational: {single_result['is_operational']}")
-    print()
-
-    # Run full Monte Carlo simulation using the main model function
-    print("Running model with 10,000 Monte Carlo samples...")
-    print("-" * 70)
-    results = model(agreement_start_year, year, num_workers, num_samples=10000)
-
-    print()
-    print("=" * 70)
-    print("MODEL OUTPUTS:")
-    print("=" * 70)
-    print()
-
-    # OUTPUT 1: Cumulative Detection Probability
-    print("1. CUMULATIVE DETECTION PROBABILITY:")
-    print(f"   P(detected by {year}): {results['cumulative_detection_probability']:.1%}")
-    print()
-
-    # OUTPUT 2: Annual Compute Production
-    print(f"2. ANNUAL COMPUTE PRODUCTION (H100 equivalents during {year}):")
-    prod = results['annual_compute_production']
-    print(f"   Mean: {prod['mean']:,.0f}")
-    print(f"   Std deviation: {prod['std']:,.0f}")
-    print(f"   Percentiles:")
-    print(f"     10th: {prod['percentiles']['p10']:,.0f}")
-    print(f"     25th: {prod['percentiles']['p25']:,.0f}")
-    print(f"     50th (median): {prod['percentiles']['p50']:,.0f}")
-    print(f"     75th: {prod['percentiles']['p75']:,.0f}")
-    print(f"     90th: {prod['percentiles']['p90']:,.0f}")
-    print()
-
-    # Diagnostic information
-    print("DIAGNOSTIC INFORMATION:")
-    print("-" * 70)
-    print(f"  Years into agreement: {results['years_into_agreement']}")
-    print(f"  Probability operational (not detected & complete): {results['operational_probability']:.1%}")
-    mean_detection_time = detection_mean_time(num_workers)
-    print(f"  Mean detection time for {num_workers:,} workers: {mean_detection_time:.2f} years")
-    print()
-    print("=" * 70)
-    print()
+    agreement_start_year = 2028
 
     # Example 2: Compute produced before detection
     print("\n" + "=" * 70)
@@ -675,7 +769,7 @@ if __name__ == "__main__":
 
     results_before_detection = compute_produced_before_detection(
         agreement_start_year=agreement_start_year,
-        num_workers=200,
+        num_workers=100,
         num_samples=10000,
         output_filename='compute_before_detection.png'
     )

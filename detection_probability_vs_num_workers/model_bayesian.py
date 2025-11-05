@@ -49,7 +49,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 import warnings
+import argparse
+import pickle
+import os
 warnings.filterwarnings('ignore')
+
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description='Bayesian model for nuclear detection')
+parser.add_argument('--regenerate', action='store_true',
+                    help='Regenerate data instead of using saved data')
+args = parser.parse_args()
+
+# File to store saved data
+SAVED_DATA_FILE = 'model_bayesian_data.pkl'
 
 # ============================================================================
 # 1. LOAD AND PREPARE DATA
@@ -173,72 +185,121 @@ def log_posterior(params, X, y):
     return lp + log_likelihood(params, X, y)
 
 # ============================================================================
-# 3. MCMC SAMPLING USING METROPOLIS-HASTINGS
+# 3. MCMC SAMPLING OR LOAD SAVED DATA
 # ============================================================================
 
-print("\n" + "="*60)
-print("BAYESIAN INFERENCE USING MCMC")
-print("="*60)
+# Check if saved data exists and --regenerate flag is not set
+if os.path.exists(SAVED_DATA_FILE) and not args.regenerate:
+    print("\n" + "="*60)
+    print("LOADING SAVED DATA")
+    print("="*60)
+    print(f"Loading from {SAVED_DATA_FILE}")
+    print("(Use --regenerate flag to regenerate data)")
 
-# Starting point (use reasonable initial guess)
-initial_params = np.array([10.0, 1.5, 6.0])
+    with open(SAVED_DATA_FILE, 'rb') as f:
+        saved_data = pickle.load(f)
 
-# Proposal covariance (tuned for good acceptance rate)
-proposal_cov = np.diag([0.5, 0.1, 0.5])**2
+    posterior_samples = saved_data['posterior_samples']
+    acceptance_rate = saved_data['acceptance_rate']
+    n_samples = saved_data['n_samples']
+    n_burnin = saved_data['n_burnin']
+    n_thin = saved_data['n_thin']
 
-# MCMC settings
-n_samples = 50000
-n_burnin = 10000
-n_thin = 10
+    print(f"\nLoaded {len(posterior_samples)} posterior samples")
+    print(f"Original MCMC settings:")
+    print(f"  Total samples: {n_samples}")
+    print(f"  Burn-in: {n_burnin}")
+    print(f"  Thinning: {n_thin}")
+    print(f"  Acceptance rate: {acceptance_rate:.3f}")
 
-print(f"\nMCMC Settings:")
-print(f"  Total samples: {n_samples}")
-print(f"  Burn-in: {n_burnin}")
-print(f"  Thinning: {n_thin}")
-print(f"  Kept samples: {(n_samples - n_burnin) // n_thin}")
+    print(f"\nPosterior Summary:")
+    print(f"  A: {np.mean(posterior_samples[:, 0]):.3f} ± {np.std(posterior_samples[:, 0]):.3f}")
+    print(f"  B: {np.mean(posterior_samples[:, 1]):.3f} ± {np.std(posterior_samples[:, 1]):.3f}")
+    print(f"  σ²: {np.mean(posterior_samples[:, 2]):.3f} ± {np.std(posterior_samples[:, 2]):.3f}")
 
-# Run MCMC
-samples = np.zeros((n_samples, 3))
-samples[0] = initial_params
-current_log_post = log_posterior(initial_params, X_workers, y)
+    print("="*60)
 
-accepted = 0
+else:
+    print("\n" + "="*60)
+    print("BAYESIAN INFERENCE USING MCMC")
+    print("="*60)
 
-print("\nRunning MCMC...")
-for i in range(1, n_samples):
-    if i % 10000 == 0:
-        print(f"  Sample {i}/{n_samples}, acceptance rate: {accepted/i:.3f}")
+    # Starting point (use reasonable initial guess)
+    initial_params = np.array([10.0, 1.5, 6.0])
 
-    # Propose new parameters
-    proposal = np.random.multivariate_normal(samples[i-1], proposal_cov)
-    proposal_log_post = log_posterior(proposal, X_workers, y)
+    # Proposal covariance (tuned for good acceptance rate)
+    proposal_cov = np.diag([0.5, 0.1, 0.5])**2
 
-    # Accept/reject
-    log_alpha = proposal_log_post - current_log_post
+    # MCMC settings
+    n_samples = 50000
+    n_burnin = 10000
+    n_thin = 10
 
-    if np.log(np.random.rand()) < log_alpha:
-        samples[i] = proposal
-        current_log_post = proposal_log_post
-        accepted += 1
-    else:
-        samples[i] = samples[i-1]
+    print(f"\nMCMC Settings:")
+    print(f"  Total samples: {n_samples}")
+    print(f"  Burn-in: {n_burnin}")
+    print(f"  Thinning: {n_thin}")
+    print(f"  Kept samples: {(n_samples - n_burnin) // n_thin}")
 
-acceptance_rate = accepted / n_samples
-print(f"\nFinal acceptance rate: {acceptance_rate:.3f}")
+    # Run MCMC
+    samples = np.zeros((n_samples, 3))
+    samples[0] = initial_params
+    current_log_post = log_posterior(initial_params, X_workers, y)
 
-# Remove burn-in and thin
-posterior_samples = samples[n_burnin::n_thin]
+    accepted = 0
 
-print(f"\nPosterior Summary:")
-print(f"  A: {np.mean(posterior_samples[:, 0]):.3f} ± {np.std(posterior_samples[:, 0]):.3f}")
-print(f"  B: {np.mean(posterior_samples[:, 1]):.3f} ± {np.std(posterior_samples[:, 1]):.3f}")
-print(f"  σ²: {np.mean(posterior_samples[:, 2]):.3f} ± {np.std(posterior_samples[:, 2]):.3f}")
+    print("\nRunning MCMC...")
+    for i in range(1, n_samples):
+        if i % 10000 == 0:
+            print(f"  Sample {i}/{n_samples}, acceptance rate: {accepted/i:.3f}")
 
-print("="*60)
+        # Propose new parameters
+        proposal = np.random.multivariate_normal(samples[i-1], proposal_cov)
+        proposal_log_post = log_posterior(proposal, X_workers, y)
+
+        # Accept/reject
+        log_alpha = proposal_log_post - current_log_post
+
+        if np.log(np.random.rand()) < log_alpha:
+            samples[i] = proposal
+            current_log_post = proposal_log_post
+            accepted += 1
+        else:
+            samples[i] = samples[i-1]
+
+    acceptance_rate = accepted / n_samples
+    print(f"\nFinal acceptance rate: {acceptance_rate:.3f}")
+
+    # Remove burn-in and thin
+    posterior_samples = samples[n_burnin::n_thin]
+
+    print(f"\nPosterior Summary:")
+    print(f"  A: {np.mean(posterior_samples[:, 0]):.3f} ± {np.std(posterior_samples[:, 0]):.3f}")
+    print(f"  B: {np.mean(posterior_samples[:, 1]):.3f} ± {np.std(posterior_samples[:, 1]):.3f}")
+    print(f"  σ²: {np.mean(posterior_samples[:, 2]):.3f} ± {np.std(posterior_samples[:, 2]):.3f}")
+
+    print("="*60)
+
+    # Save the data
+    print(f"\nSaving data to {SAVED_DATA_FILE}...")
+    saved_data = {
+        'posterior_samples': posterior_samples,
+        'acceptance_rate': acceptance_rate,
+        'n_samples': n_samples,
+        'n_burnin': n_burnin,
+        'n_thin': n_thin,
+    }
+
+    with open(SAVED_DATA_FILE, 'wb') as f:
+        pickle.dump(saved_data, f)
+
+    print(f"Data saved successfully (MCMC samples only, plot data will be calculated)!")
 
 # ============================================================================
-# 4. PLOT 1: DETECTION LATENCY VS. NUMBER OF WORKERS
+# 4. CALCULATE OR LOAD PLOT DATA
 # ============================================================================
+
+PLOT_DATA_FILE = 'model_bayesian_plot_data.pkl'
 
 # Use posterior mean for main curve
 A_mean = np.mean(posterior_samples[:, 0])
@@ -248,25 +309,98 @@ B_mean = np.mean(posterior_samples[:, 1])
 X_plot_workers = np.logspace(np.log10(X_workers.min() * 0.8), np.log10(10000), 200)
 y_plot = mean_model(X_plot_workers, A_mean, B_mean)
 
-# Calculate 90% credible interval by sampling from posterior predictive
-print("\nCalculating posterior predictive intervals...")
-y_pred_samples = np.zeros((len(X_plot_workers), len(posterior_samples)))
+# Check if plot data exists and we're not regenerating
+if os.path.exists(PLOT_DATA_FILE) and not args.regenerate:
+    print("\nLoading plot data from cache...")
+    with open(PLOT_DATA_FILE, 'rb') as f:
+        plot_data = pickle.load(f)
 
-for i, x_val in enumerate(X_plot_workers):
-    for j, (A, B, sigma_sq) in enumerate(posterior_samples):
-        mu = mean_model(x_val, A, B)
-        if mu > 0 and sigma_sq > 0:
-            # Variance proportional to mean: var = σ² × μ
-            theta = sigma_sq
-            k = mu / sigma_sq
-            # Sample from gamma
-            y_pred_samples[i, j] = np.random.gamma(k, theta)
-        else:
-            y_pred_samples[i, j] = 0
+    X_plot_workers = plot_data['X_plot_workers']
+    y_plot = plot_data['y_plot']
+    y_lower = plot_data['y_lower']
+    y_upper = plot_data['y_upper']
+    worker_counts = plot_data['worker_counts']
+    years = plot_data['years']
+    p_detected_dict = plot_data['p_detected_dict']
+    print("Plot data loaded successfully!")
+else:
+    print("\nCalculating plot data (this will be cached)...")
 
-# Calculate percentiles
-y_lower = np.percentile(y_pred_samples, 5, axis=1)
-y_upper = np.percentile(y_pred_samples, 95, axis=1)
+    # Calculate 90% credible interval by sampling from posterior predictive
+    print("Calculating posterior predictive intervals...")
+    y_pred_samples = np.zeros((len(X_plot_workers), len(posterior_samples)))
+
+    for i, x_val in enumerate(X_plot_workers):
+        for j, (A, B, sigma_sq) in enumerate(posterior_samples):
+            mu = mean_model(x_val, A, B)
+            if mu > 0 and sigma_sq > 0:
+                # Variance proportional to mean: var = σ² × μ
+                theta = sigma_sq
+                k = mu / sigma_sq
+                # Sample from gamma
+                y_pred_samples[i, j] = np.random.gamma(k, theta)
+            else:
+                y_pred_samples[i, j] = 0
+
+    # Calculate percentiles
+    y_lower = np.percentile(y_pred_samples, 5, axis=1)
+    y_upper = np.percentile(y_pred_samples, 95, axis=1)
+
+    # Time range for CDF plots
+    years = np.linspace(0, 12, 200)
+
+    # Worker counts to plot
+    worker_counts = [100, 1000, 10000]
+
+    # Calculate CDFs for each worker count
+    print("Calculating posterior predictive CDFs...")
+    p_detected_dict = {}
+
+    for workers in worker_counts:
+        print(f"  {workers} workers...")
+
+        # Sample predictions from posterior predictive
+        p_detected_samples = np.zeros((len(years), len(posterior_samples)))
+
+        for j, (A, B, sigma_sq) in enumerate(posterior_samples):
+            mu = mean_model(workers, A, B)
+
+            if mu > 0 and sigma_sq > 0:
+                # Variance proportional to mean: var = σ² × μ
+                theta = sigma_sq
+                k = mu / sigma_sq
+
+                # Calculate CDF at each time point
+                for i, t in enumerate(years):
+                    if t <= 0:
+                        p_detected_samples[i, j] = 0.0
+                    else:
+                        p_detected_samples[i, j] = stats.gamma.cdf(t, a=k, scale=theta)
+
+        # Average over posterior samples
+        p_detected = np.mean(p_detected_samples, axis=1)
+        p_detected_dict[workers] = p_detected
+
+    # Save plot data
+    print(f"\nSaving plot data to {PLOT_DATA_FILE}...")
+    plot_data = {
+        'X_plot_workers': X_plot_workers,
+        'y_plot': y_plot,
+        'y_lower': y_lower,
+        'y_upper': y_upper,
+        'worker_counts': worker_counts,
+        'years': years,
+        'p_detected_dict': p_detected_dict,
+    }
+
+    with open(PLOT_DATA_FILE, 'wb') as f:
+        pickle.dump(plot_data, f)
+
+    print("Plot data saved successfully!")
+
+# ============================================================================
+# 5. PLOT 1: DETECTION LATENCY VS. NUMBER OF WORKERS
+# ============================================================================
 
 plt.figure(figsize=(12, 8))
 plt.rcParams.update({'font.size': 14})
@@ -344,44 +478,19 @@ print(f"\nPlot 1 saved as 'detection_latency_vs_workers_bayesian.png'")
 plt.figure(figsize=(12, 8))
 plt.rcParams.update({'font.size': 14})
 
-# Time range
-years = np.linspace(0, 12, 200)
-
-# Worker counts to plot
-worker_counts = [100, 1000, 10000]
 colors = ['red', 'green', 'blue']
 labels = ['100 nuclear workers', '1,000 nuclear workers', '10,000 nuclear workers']
 linestyles = ['-', '-', '-']
 
-print("\nCalculating posterior predictive CDFs...")
+print("\nPlotting detection probabilities...")
 
 for workers, color, label, linestyle in zip(worker_counts, colors, labels, linestyles):
-    print(f"\n{label}:")
-
-    # Sample predictions from posterior predictive
-    p_detected_samples = np.zeros((len(years), len(posterior_samples)))
-
-    for j, (A, B, sigma_sq) in enumerate(posterior_samples):
-        mu = mean_model(workers, A, B)
-
-        if mu > 0 and sigma_sq > 0:
-            # Variance proportional to mean: var = σ² × μ
-            theta = sigma_sq
-            k = mu / sigma_sq
-
-            # Calculate CDF at each time point
-            for i, t in enumerate(years):
-                if t <= 0:
-                    p_detected_samples[i, j] = 0.0
-                else:
-                    p_detected_samples[i, j] = stats.gamma.cdf(t, a=k, scale=theta)
-
-    # Average over posterior samples
-    p_detected = np.mean(p_detected_samples, axis=1)
+    p_detected = p_detected_dict[workers]
 
     # Print some values
     idx_3 = np.argmin(np.abs(years - 3))
     idx_5 = np.argmin(np.abs(years - 5))
+    print(f"\n{label}:")
     print(f"  P(t=3) = {p_detected[idx_3]:.3f}")
     print(f"  P(t=5) = {p_detected[idx_5]:.3f}")
     print(f"  P(t=12) = {p_detected[-1]:.3f}")
@@ -412,4 +521,32 @@ plt.text(0.02, 0.98, param_text_2, transform=plt.gca().transAxes, fontsize=12,
 plt.tight_layout()
 plt.savefig('detection_probability_vs_time_bayesian.png', dpi=300, bbox_inches='tight')
 print(f"\nPlot 2 saved as 'detection_probability_vs_time_bayesian.png'")
+
+# ============================================================================
+# 6. PLOT 3: MINIMAL VERSION OF P(DETECTED) VS. TIME (5x5, no labels/legends)
+# ============================================================================
+
+plt.figure(figsize=(5, 5))
+plt.rcParams.update({'font.size': 12})
+
+# Labels for minimal plot (shorter version)
+labels_minimal = ['100 workers', '1,000 workers', '10,000 workers']
+
+# Reuse the cached data from Plot 2
+for workers, color, label_minimal, linestyle in zip(worker_counts, colors, labels_minimal, linestyles):
+    p_detected = p_detected_dict[workers]
+
+    # Plot
+    plt.plot(years, p_detected, color=color, linewidth=3.0, linestyle=linestyle, label=label_minimal)
+
+# Minimal formatting - only worker count labels
+plt.xlim(0, 12)
+plt.ylim(0, 1)
+plt.xlabel('Years after breaking ground', fontsize=12)
+plt.ylabel('P(detection | other strategies)', fontsize=12)
+plt.legend(fontsize=10, loc='lower right', frameon=False)
+
+plt.tight_layout()
+plt.savefig('detection_probability_vs_time_bayesian_minimal.png', dpi=300, bbox_inches='tight')
+print(f"Plot 3 saved as 'detection_probability_vs_time_bayesian_minimal.png'")
 print("\n" + "="*60)

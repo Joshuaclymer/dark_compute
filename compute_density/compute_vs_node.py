@@ -68,6 +68,40 @@ fab_capacity_wspm = 1000  # wafers per month
 h100_equiv_per_month = [equiv * fab_capacity_wspm for equiv in h100_equiv_per_wafer]
 h100_equiv_per_year = [equiv * 12 for equiv in h100_equiv_per_month]
 
+# ============================================================================
+# Regression analysis: Process Node vs Transistor Density
+# ============================================================================
+
+# Fit a power law regression in log-log space
+# log(density) = a * log(node) + b, which gives: density = exp(b) * node^a
+process_node_array = np.array(process_node)
+density_array = np.array(transistor_density)
+log_process_node = np.log(process_node_array)
+log_density = np.log(density_array)
+
+# Linear fit in log-log space
+coefficients = np.polyfit(log_process_node, log_density, 1)
+a, b = coefficients  # a is the power, b is log of the coefficient
+
+# Calculate R-squared
+log_density_fit = a * log_process_node + b
+residuals = log_density - log_density_fit
+ss_res = np.sum(residuals**2)
+ss_tot = np.sum((log_density - np.mean(log_density))**2)
+r_squared = 1 - (ss_res / ss_tot)
+
+# Print regression results
+print("\n" + "="*70)
+print("REGRESSION ANALYSIS: Process Node vs Transistor Density")
+print("="*70)
+print(f"\nPower law fit: density = {np.exp(b):.4f} × node^{a:.4f}")
+print(f"R² = {r_squared:.6f}")
+print(f"\nInterpretation:")
+print(f"  - When process node halves (e.g., 10nm → 5nm), transistor density")
+print(f"    changes by a factor of: 2^{a:.4f} = {2**a:.4f}×")
+print(f"  - The exponent {a:.4f} indicates the power law relationship")
+print("="*70 + "\n")
+
 # Create second scatter plot
 plt.figure(figsize=(12, 7))
 
@@ -132,6 +166,13 @@ ax_density.set_yscale('log')
 ax_density.set_ylabel('Transistor Density (MTr/mm²)', fontsize=16, color='green')
 ax_density.tick_params(axis='y', labelcolor='green', labelsize=14)
 ax_density.set_ylim(min(transistor_density) * 0.8, max(transistor_density) * 1.2)
+
+# Add regression line for transistor density
+process_node_fit = np.logspace(np.log10(min(process_node)), np.log10(max(process_node)), 100)
+density_fit = np.exp(b) * process_node_fit**a
+ax_density.plot(process_node_fit, density_fit, '--', color='red', linewidth=2, alpha=0.7,
+                label=f'Power law fit (R²={r_squared:.4f})', zorder=1)
+ax_density.legend(loc='lower left', fontsize=12)
 
 plt.tight_layout()
 plt.savefig('h100_equiv_per_year_vs_process_node.png', dpi=300, bbox_inches='tight')

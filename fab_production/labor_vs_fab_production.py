@@ -15,8 +15,8 @@ plt.figure(figsize=(10, 6))
 # Plot operating employees vs wafers per month (blue) - flipped axes
 plt.scatter(employees, wafers_per_month, alpha=0.6, s=100, color='blue', label='Operating Employees')
 
-# Plot construction workers vs capacity (orange) - flipped axes
-plt.scatter(construction_workers, capacity_wspm, alpha=0.6, s=100, color='orange', label='Construction Workers')
+# Plot construction workers vs capacity (orange) - flipped axes - HIDDEN
+# plt.scatter(construction_workers, capacity_wspm, alpha=0.6, s=100, color='orange', label='Construction Workers')
 
 # Add labels and title
 plt.xlabel('Number of Workers', fontsize=12)
@@ -45,25 +45,23 @@ plt.yticks(y_ticks, [f'{int(y/1000)}K' if y < 1000000 else f'{int(y/1000000)}M' 
 plt.grid(True, alpha=0.3, which='both', linestyle='-', linewidth=0.5)
 plt.grid(True, alpha=0.15, which='minor', linestyle=':', linewidth=0.3)
 
-# Add a trend line for operating employees (blue, in log space) - FORWARD FIT
-log_employees = np.log10(employees)
-log_wafers = np.log10(wafers_per_month)
-coeffs = np.polyfit(log_employees, log_wafers, 1)
-# Forward fit: log(wafers) = coeffs[1] + coeffs[0] * log(employees)
-x_range_ops = np.logspace(np.log10(min(employees)), np.log10(max(employees)), 100)
-y_range_ops = 10**(coeffs[1] + coeffs[0] * np.log10(x_range_ops))
+# Add a linear trend line through origin for operating employees (blue)
+# Linear fit: wafers = slope * employees (no intercept)
+slope = np.sum(np.array(employees) * np.array(wafers_per_month)) / np.sum(np.array(employees)**2)
+x_range_ops = np.linspace(min(employees), max(employees), 100)
+y_range_ops = slope * x_range_ops
 plt.plot(x_range_ops, y_range_ops, "--", alpha=0.7, color='blue', linewidth=2,
-         label=f'Operating fit (log(y) = {coeffs[1]:.2f} + {coeffs[0]:.2f}*log(x))')
+         label=f'Operating fit (y = {slope:.1f}*x)')
 
-# Add an orange regression line for construction workers proportional to wafer production - flipped axes
-# Original model: workers = alpha * production
-# Inverted: production = workers / alpha
-# Should pass through origin, so extend from a small value
-alpha = np.sum(np.array(construction_workers) * np.array(capacity_wspm)) / np.sum(np.array(capacity_wspm)**2)
-x_range_orange = np.logspace(np.log10(300), np.log10(max(construction_workers)), 100)
-y_orange = x_range_orange / alpha
-plt.plot(x_range_orange, y_orange, "--", alpha=0.7, color='orange', linewidth=2,
-         label=f'Construction proportional (y = {alpha:.4f}*x)')
+# Add an orange regression line for construction workers proportional to wafer production - HIDDEN
+# # Original model: workers = alpha * production
+# # Inverted: production = workers / alpha
+# # Should pass through origin, so extend from a small value
+# alpha = np.sum(np.array(construction_workers) * np.array(capacity_wspm)) / np.sum(np.array(capacity_wspm)**2)
+# x_range_orange = np.logspace(np.log10(300), np.log10(max(construction_workers)), 100)
+# y_orange = x_range_orange / alpha
+# plt.plot(x_range_orange, y_orange, "--", alpha=0.7, color='orange', linewidth=2,
+#          label=f'Construction proportional (y = {alpha:.4f}*x)')
 
 plt.legend(loc='best', fontsize=10)
 plt.tight_layout()

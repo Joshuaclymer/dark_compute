@@ -270,8 +270,12 @@ from typing import List
 import random
 
 # ============================================================================
-# SHARED TYPES
+# SHARED TYPES AND CONSTANTS
 # ============================================================================
+
+# H100 reference constants
+H100_PROCESS_NODE_NM = 4  # H100 was fabricated on 4nm node
+H100_RELEASE_YEAR = 2022  # H100 was released in 2022
 
 class ProcessNode(Enum):
     nm130 = "130nm"
@@ -348,13 +352,11 @@ class FabModelParameters:
     # When process node halves, transistor density increases by 2^transistor_density_scaling_exponent
     # With exponent = 1.49, halving node size increases density by 2^1.49 ≈ 2.81×
     transistor_density_scaling_exponent = 1.49
-    h100_process_node_nm = 4  # H100 was fabricated on 4nm node
 
     # Chip architecture efficiency improvement over time
     # Architectures improve at a pace of 1.23× per year
     # H100 serves as the reference point (released in 2022)
     architecture_efficiency_improvement_per_year = 1.23
-    h100_release_year = 2022
 
     # PRC lithography scanner production ramp-up (from china_domestic_fab_capability/lithography_sales_plot.py)
     # Linear trend: production_per_year = additional_per_year * years_since_localization + first_year_production
@@ -515,7 +517,7 @@ def estimate_transistor_density_relative_to_h100(process_node_nm: float) -> floa
     """
     # Estimate density ratio using Moore's Law scaling
     density_relative_to_h100 = (
-        FabModelParameters.h100_process_node_nm / process_node_nm
+        H100_PROCESS_NODE_NM / process_node_nm
     ) ** FabModelParameters.transistor_density_scaling_exponent
 
     return density_relative_to_h100
@@ -533,7 +535,7 @@ def estimate_architecture_efficiency_relative_to_h100(year: float) -> float:
     Returns:
         float: Architecture efficiency relative to H100 (1.0 = H100 in 2022, >1 = better, <1 = worse)
     """
-    years_since_h100 = year - FabModelParameters.h100_release_year
+    years_since_h100 = year - H100_RELEASE_YEAR
     efficiency_relative_to_h100 = FabModelParameters.architecture_efficiency_improvement_per_year ** years_since_h100
 
     return efficiency_relative_to_h100

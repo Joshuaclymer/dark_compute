@@ -361,6 +361,7 @@ class Model:
                     detection_year = year
                     break
 
+            # Include all simulations with covert fabs (detected or not)
             if detection_year is not None:
                 # Get compute produced at detection
                 h100e_at_detection = h100e_over_time.get(detection_year, 0.0)
@@ -379,10 +380,32 @@ class Model:
                     operational_time = 0.0  # Detected during construction
 
                 operational_time_at_detection.append(operational_time)
+            else:
+                # If never detected, use final H100e value at end of simulation
+                final_year = max(h100e_over_time.keys()) if h100e_over_time else None
+                if final_year:
+                    h100e_at_detection = h100e_over_time[final_year]
+                    compute_at_detection.append(h100e_at_detection)
 
-        # Check if we have any detections
+                    # Calculate operational time at end of simulation
+                    construction_start = covert_fab.construction_start_year
+                    construction_duration = covert_fab.construction_duration
+                    operational_start = construction_start + construction_duration
+
+                    if final_year >= operational_start:
+                        operational_time = final_year - operational_start
+                    else:
+                        operational_time = 0.0  # Still in construction
+
+                    operational_time_at_detection.append(operational_time)
+                else:
+                    # No H100e produced at all
+                    compute_at_detection.append(0.0)
+                    operational_time_at_detection.append(0.0)
+
+        # Check if we have any data
         if not compute_at_detection:
-            print("No detections occurred in simulations. Try running more simulations or adjusting parameters.")
+            print("No covert fabs created in simulations. Try running more simulations or adjusting parameters.")
             return
 
         # Create figure with 2 subplots
@@ -400,9 +423,9 @@ class Model:
             if range_ratio > 10:  # Use log scale only if range spans more than 1 order of magnitude
                 ax1.set_xscale('log')
 
-        ax1.set_xlabel('Total H100 equivalents produced before detection', fontsize=11)
+        ax1.set_xlabel('Total H100 equivalents produced (at detection or end)', fontsize=11)
         ax1.set_ylabel('P(Compute Produced ≥ x)', fontsize=11)
-        ax1.set_title('CCDF of covert compute produced before detection', fontsize=10)
+        ax1.set_title('CCDF of covert compute produced', fontsize=10)
         ax1.grid(True, alpha=0.3, linestyle='--')
         ax1.set_ylim([0, 1])
 
@@ -413,8 +436,8 @@ class Model:
             else:
                 ax1.set_xlim([0, None])
 
-        # Add markers at 100K and 500K H100e
-        target_computes = [100000, 500000]  # 100K and 500K H100e
+        # Add markers at 100K and 1M H100e
+        target_computes = [100000, 1000000]  # 100K and 1M H100e
         for target_compute in target_computes:
             if len(compute_sorted) > 0 and compute_sorted[-1] > target_compute:
                 # Find the CCDF value at target H100e
@@ -423,7 +446,7 @@ class Model:
 
                 # Add a marker point with label
                 ax1.plot(target_compute, ccdf_at_target, 'o', color='black', markersize=8, zorder=10)
-                label = f'100K' if target_compute == 100000 else f'500K'
+                label = f'100K' if target_compute == 100000 else f'1M'
                 ax1.text(target_compute, ccdf_at_target, f'  ({label}, {ccdf_at_target*100:.1f}%)',
                         fontsize=10, verticalalignment='center', horizontalalignment='left')
 
@@ -455,7 +478,7 @@ class Model:
         plt.close()
 
     def plot_fab_characteristics(self, save_path: str = 'fab_characteristics.png'):
-        """Plot process node distribution and percentage achieving >500K H100e before detection."""
+        """Plot process node distribution and percentage achieving >500K H100e (at detection or simulation end)."""
         if not self.simulation_results:
             print("No simulation results available. Run simulations first.")
             return
@@ -485,11 +508,17 @@ class Model:
                         detection_year = year
                         break
 
-                # Determine if this simulation achieved >500K H100e before detection
+                # Determine if this simulation achieved >500K H100e (at detection or end)
                 achieved_500k = False
                 if detection_year is not None:
                     h100e_at_detection = h100e_over_time.get(detection_year, 0.0)
                     achieved_500k = (h100e_at_detection >= target_compute)
+                else:
+                    # If never detected, check final H100e value
+                    final_year = max(h100e_over_time.keys()) if h100e_over_time else None
+                    if final_year:
+                        h100e_at_end = h100e_over_time[final_year]
+                        achieved_500k = (h100e_at_end >= target_compute)
 
                 process_nodes.append(node)
                 if node not in achieved_500k_by_node:
@@ -537,7 +566,7 @@ class Model:
         ax1.set_title('Distribution of Fab Process Nodes', fontsize=10)
         ax1.grid(True, alpha=0.3, linestyle='--', axis='y')
 
-        # Panel 2: Percentage achieving >500K H100e before detection by process node
+        # Panel 2: Percentage achieving >500K H100e by process node
         percent_500k_by_node = []
         for node in nodes:
             if node in achieved_500k_by_node and len(achieved_500k_by_node[node]) > 0:
@@ -552,7 +581,7 @@ class Model:
         ax2.bar(node_labels, percent_500k_by_node, color='steelblue', edgecolor='black', linewidth=0.5)
         ax2.set_xlabel('Process Node', fontsize=11)
         ax2.set_ylabel('% achieving >500K H100e', fontsize=11)
-        ax2.set_title('% of times fab produces >500K H100e before detection', fontsize=10)
+        ax2.set_title('% of times fab produces >500K H100e', fontsize=10)
         ax2.grid(True, alpha=0.3, linestyle='--', axis='y')
         ax2.set_ylim([0, 100])
 
@@ -568,7 +597,7 @@ class Model:
     def plot_process_node_success_proportion(self, save_path: str = 'process_node_success.png'):
         """Plot proportion of successful simulations (>500K H100e) by process node.
 
-        Among all simulations that achieved >500K H100e before detection,
+        Among all simulations that achieved >500K H100e (at detection or simulation end),
         what percentage came from each process node? These percentages sum to 100%.
         """
         if not self.simulation_results:
@@ -599,17 +628,26 @@ class Model:
                         detection_year = year
                         break
 
-                # Check if this simulation achieved >500K H100e before detection
+                # Check if this simulation achieved >500K H100e (at detection or end)
+                achieved_target = False
                 if detection_year is not None:
                     h100e_at_detection = h100e_over_time.get(detection_year, 0.0)
-                    if h100e_at_detection >= target_compute:
-                        # This simulation succeeded
-                        if node not in success_count_by_node:
-                            success_count_by_node[node] = 0
-                        success_count_by_node[node] += 1
+                    achieved_target = (h100e_at_detection >= target_compute)
+                else:
+                    # If never detected, check final H100e value
+                    final_year = max(h100e_over_time.keys()) if h100e_over_time else None
+                    if final_year:
+                        h100e_at_end = h100e_over_time[final_year]
+                        achieved_target = (h100e_at_end >= target_compute)
+
+                if achieved_target:
+                    # This simulation succeeded
+                    if node not in success_count_by_node:
+                        success_count_by_node[node] = 0
+                    success_count_by_node[node] += 1
 
         if not success_count_by_node:
-            print("No simulations achieved >500K H100e before detection.")
+            print("No simulations achieved >500K H100e.")
             return
 
         # Calculate total successful simulations
@@ -647,7 +685,7 @@ class Model:
         ax.bar(node_labels, proportions, color='steelblue', edgecolor='black', linewidth=0.5)
         ax.set_xlabel('Process Node', fontsize=11)
         ax.set_ylabel('% of successful simulations', fontsize=11)
-        ax.set_title('% of simulations where process node procuces >500K H100e before detection', fontsize=10)
+        ax.set_title('% of simulations where process node produces >500K H100e', fontsize=10)
         ax.grid(True, alpha=0.3, linestyle='--', axis='y')
         ax.set_ylim([0, 100])  # Set y-axis limit to 100% since they sum to 100%
 

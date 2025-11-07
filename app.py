@@ -74,6 +74,28 @@ def run_simulation():
     if 'prc_scanner_production_relative_sigma' in data:
         FabModelParameters.prc_scanner_production_relative_sigma = float(data['prc_scanner_production_relative_sigma'])
 
+    # Update localization probabilities (only two points: 2025 and 2031)
+    if 'localization_130nm_2025' in data:
+        FabModelParameters.Probability_of_90p_PRC_localization_at_node[ProcessNode.nm130] = [
+            (2025, float(data['localization_130nm_2025'])),
+            (2031, float(data['localization_130nm_2031']))
+        ]
+    if 'localization_28nm_2025' in data:
+        FabModelParameters.Probability_of_90p_PRC_localization_at_node[ProcessNode.nm28] = [
+            (2025, float(data['localization_28nm_2025'])),
+            (2031, float(data['localization_28nm_2031']))
+        ]
+    if 'localization_14nm_2025' in data:
+        FabModelParameters.Probability_of_90p_PRC_localization_at_node[ProcessNode.nm14] = [
+            (2025, float(data['localization_14nm_2025'])),
+            (2031, float(data['localization_14nm_2031']))
+        ]
+    if 'localization_7nm_2025' in data:
+        FabModelParameters.Probability_of_90p_PRC_localization_at_node[ProcessNode.nm7] = [
+            (2025, float(data['localization_7nm_2025'])),
+            (2031, float(data['localization_7nm_2031']))
+        ]
+
     # Create and run model
     model = Model(
         year_us_prc_agreement_goes_into_force=agreement_year,

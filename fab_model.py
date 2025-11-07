@@ -371,11 +371,12 @@ class FabModelParameters:
     # Self-sufficiency probability data (from china_domestic_fab_capability/forecasts.py)
     # Represents probability of >90% localization for each node
     # Data structure: {process_node: [(year, p_selfsufficiency), ...]}
+    # Uses linear interpolation between the two endpoints (2025 and 2031)
     Probability_of_90p_PRC_localization_at_node = {
-        ProcessNode.nm130: [(2026, 0.80), (2028, 0.80), (2031, 0.80)],
-        ProcessNode.nm28: [(2026, 0.0), (2028, 0.07), (2031, 0.25)],
-        ProcessNode.nm14: [(2026, 0.0), (2028, 0.03), (2031, 0.10)],
-        ProcessNode.nm7: [(2026, 0.0), (2028, 0.01), (2031, 0.06)]
+        ProcessNode.nm130: [(2025, 0.80), (2031, 0.80)],
+        ProcessNode.nm28: [(2025, 0.0), (2031, 0.25)],
+        ProcessNode.nm14: [(2025, 0.0), (2031, 0.10)],
+        ProcessNode.nm7: [(2025, 0.0), (2031, 0.06)]
     }
 
 # ============================================================================

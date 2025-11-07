@@ -67,6 +67,25 @@
             margin-right: 5px;
         }
 
+        .localization-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .localization-row .param-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .localization-row label {
+            font-size: 11px;
+        }
+
+        .localization-row input {
+            padding: 6px;
+        }
+
         button {
             width: 100%;
             padding: 12px;
@@ -299,22 +318,59 @@
             <input type="number" id="scanner_proportion" value="0.102" step="0.001">
         </div>
 
-        <h2>US Prior Probabilities</h2>
-        <div class="param-group">
-            <label for="p_project_exists">P(Project Exists)</label>
-            <input type="number" id="p_project_exists" value="0.2" step="0.01" min="0" max="1">
-        </div>
-        <div class="param-group">
-            <label for="p_fab_exists">P(Fab Exists)</label>
-            <input type="number" id="p_fab_exists" value="0.1" step="0.01" min="0" max="1">
-        </div>
-
         <h2>Fab Model Parameters</h2>
 
-        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Detection Parameters</h3>
+        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Odds of Covert Project</h3>
         <div class="param-group">
-            <label for="proportion_diverted_sme">Us intelligence estimates 50% chance of covert fab at what proportion of sme diverted</label>
+            <label for="p_fab_exists">US prior probability that covert fab exists</label>
+            <input type="number" id="p_fab_exists" value="0.1" step="0.01" min="0" max="1">
+        </div>
+        <div class="param-group">
+            <label for="proportion_diverted_sme">US intelligence estimates 50% chance of covert fab at what proportion of sme diverted</label>
             <input type="number" id="proportion_diverted_sme" value="0.14" step="0.01">
+        </div>
+        <div style="margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: #666;">
+            Probability PRC achieves >90% indiginization at node
+        </div>
+        <div class="localization-row">
+            <div class="param-group">
+                <label for="localization_130nm_2025">130nm 2025</label>
+                <input type="number" id="localization_130nm_2025" value="0.80" step="0.01" min="0" max="1">
+            </div>
+            <div class="param-group">
+                <label for="localization_130nm_2031">130nm 2031</label>
+                <input type="number" id="localization_130nm_2031" value="0.80" step="0.01" min="0" max="1">
+            </div>
+        </div>
+        <div class="localization-row">
+            <div class="param-group">
+                <label for="localization_28nm_2025">28nm 2025</label>
+                <input type="number" id="localization_28nm_2025" value="0.0" step="0.01" min="0" max="1">
+            </div>
+            <div class="param-group">
+                <label for="localization_28nm_2031">28nm 2031</label>
+                <input type="number" id="localization_28nm_2031" value="0.25" step="0.01" min="0" max="1">
+            </div>
+        </div>
+        <div class="localization-row">
+            <div class="param-group">
+                <label for="localization_14nm_2025">14nm 2025</label>
+                <input type="number" id="localization_14nm_2025" value="0.0" step="0.01" min="0" max="1">
+            </div>
+            <div class="param-group">
+                <label for="localization_14nm_2031">14nm 2031</label>
+                <input type="number" id="localization_14nm_2031" value="0.10" step="0.01" min="0" max="1">
+            </div>
+        </div>
+        <div class="localization-row">
+            <div class="param-group">
+                <label for="localization_7nm_2025">7nm 2025</label>
+                <input type="number" id="localization_7nm_2025" value="0.0" step="0.01" min="0" max="1">
+            </div>
+            <div class="param-group">
+                <label for="localization_7nm_2031">7nm 2031</label>
+                <input type="number" id="localization_7nm_2031" value="0.06" step="0.01" min="0" max="1">
+            </div>
         </div>
         <div class="param-group">
             <label for="mean_detection_time_100">Expected time to detect covert project involving 100 people (years)</label>
@@ -329,7 +385,9 @@
             <input type="number" id="variance_detection_time" value="3.88" step="0.01">
         </div>
 
-        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Production Capacity</h3>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+
+        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Compute Production Rate</h3>
         <div class="param-group">
             <label for="wafers_per_month_per_worker">Wafers/month per operating worker</label>
             <input type="number" id="wafers_per_month_per_worker" value="24.64" step="0.01">
@@ -346,8 +404,18 @@
             <label for="scanner_productivity_sigma">Wafers per month per photolithography scanner sigma (log scale, wafers/month)</label>
             <input type="number" id="scanner_productivity_sigma" value="0.20" step="0.01">
         </div>
-
-        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Construction Time</h3>
+        <div class="param-group">
+            <label for="prc_scanners_first_year">Prc scanners produced in first year after high volume production is achieved</label>
+            <input type="number" id="prc_scanners_first_year" value="20.0" step="1">
+        </div>
+        <div class="param-group">
+            <label for="prc_scanners_per_year">Annual increase of scanner production</label>
+            <input type="number" id="prc_scanners_per_year" value="16.0" step="1">
+        </div>
+        <div class="param-group">
+            <label for="prc_scanner_production_sigma">Prc scanner production sigma (log scale, scanners/year)</label>
+            <input type="number" id="prc_scanner_production_sigma" value="0.30" step="0.01">
+        </div>
         <div class="param-group">
             <label for="construction_time_5k">Construction time of 5k wafers/month fab (years)</label>
             <input type="number" id="construction_time_5k" value="1.40" step="0.01">
@@ -357,15 +425,13 @@
             <input type="number" id="construction_time_100k" value="2.41" step="0.01">
         </div>
         <div class="param-group">
-            <label for="construction_time_sigma">Construction time sigma (log scale)</label>
+            <label for="construction_time_sigma">Construction time sigma (log scale, years)</label>
             <input type="number" id="construction_time_sigma" value="0.35" step="0.01">
         </div>
         <div class="param-group">
             <label for="construction_workers_per_1000">Construction workers per 1000 wafers/month</label>
             <input type="number" id="construction_workers_per_1000" value="14.1" step="0.1">
         </div>
-
-        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Chip Production</h3>
         <div class="param-group">
             <label for="chips_per_wafer">H100-sized chips per wafer (yield)</label>
             <input type="number" id="chips_per_wafer" value="28" step="1">
@@ -377,20 +443,6 @@
         <div class="param-group">
             <label for="architecture_efficiency">Rate of architecture efficiency improvement per year</label>
             <input type="number" id="architecture_efficiency" value="1.23" step="0.01">
-        </div>
-
-        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">PRC Scanner Production</h3>
-        <div class="param-group">
-            <label for="prc_scanners_first_year">Prc scanners produced in first year after high volume production is achieved</label>
-            <input type="number" id="prc_scanners_first_year" value="20.0" step="1">
-        </div>
-        <div class="param-group">
-            <label for="prc_scanners_per_year">Annual increase of scanner production</label>
-            <input type="number" id="prc_scanners_per_year" value="16.0" step="1">
-        </div>
-        <div class="param-group">
-            <label for="prc_scanner_production_sigma">Prc scanner production sigma (log scale)</label>
-            <input type="number" id="prc_scanner_production_sigma" value="0.30" step="0.01">
         </div>
     </div>
 
@@ -408,7 +460,7 @@
                 </div>
 
                 <div class="plot-container">
-                    <div class="plot-title">Simulation Runs Over Time</div>
+                    <div class="plot-title">Simulation Runs</div>
                     <div id="timeSeriesPlot" class="plot"></div>
                 </div>
             </div>
@@ -512,7 +564,6 @@
                 construction_labor: parseInt(document.getElementById('construction_labor').value),
                 process_node: document.getElementById('process_node').value,
                 scanner_proportion: parseFloat(document.getElementById('scanner_proportion').value),
-                p_project_exists: parseFloat(document.getElementById('p_project_exists').value),
                 p_fab_exists: parseFloat(document.getElementById('p_fab_exists').value),
                 // Detection parameters
                 proportion_of_diverted_sme_with_50p_chance_of_detection: parseFloat(document.getElementById('proportion_diverted_sme').value),
@@ -536,7 +587,16 @@
                 // PRC scanner production
                 prc_lithography_scanners_produced_in_first_year: parseFloat(document.getElementById('prc_scanners_first_year').value),
                 prc_additional_lithography_scanners_produced_per_year: parseFloat(document.getElementById('prc_scanners_per_year').value),
-                prc_scanner_production_relative_sigma: parseFloat(document.getElementById('prc_scanner_production_sigma').value)
+                prc_scanner_production_relative_sigma: parseFloat(document.getElementById('prc_scanner_production_sigma').value),
+                // Localization probabilities
+                localization_130nm_2025: parseFloat(document.getElementById('localization_130nm_2025').value),
+                localization_130nm_2031: parseFloat(document.getElementById('localization_130nm_2031').value),
+                localization_28nm_2025: parseFloat(document.getElementById('localization_28nm_2025').value),
+                localization_28nm_2031: parseFloat(document.getElementById('localization_28nm_2031').value),
+                localization_14nm_2025: parseFloat(document.getElementById('localization_14nm_2025').value),
+                localization_14nm_2031: parseFloat(document.getElementById('localization_14nm_2031').value),
+                localization_7nm_2025: parseFloat(document.getElementById('localization_7nm_2025').value),
+                localization_7nm_2031: parseFloat(document.getElementById('localization_7nm_2031').value)
             };
         }
 
@@ -1058,7 +1118,9 @@
                     const lrInventoryFinal = data.lr_components.inventory_individual.map(sim => sim[sim.length - 1]);
                     console.log('LR Inventory values:', lrInventoryFinal);
                     console.log('LR Inventory min:', Math.min(...lrInventoryFinal), 'max:', Math.max(...lrInventoryFinal));
-                    plotPDF('lrInventoryPlot', lrInventoryFinal, '#D97676', 'LR', 10, true);
+                    // Convert to log10 scale to show values both above and below 1
+                    const lrInventoryLog = lrInventoryFinal.map(lr => Math.log10(lr));
+                    plotPDF('lrInventoryPlot', lrInventoryLog, '#D97676', 'log₁₀(LR)', 10, false);
 
                     // LR Procurement - Categorical bar plot (1 or 10)
                     const lrProcurementFinal = data.lr_components.procurement_individual.map(sim => sim[sim.length - 1]);

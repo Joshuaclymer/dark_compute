@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_file
 from model import Model, CovertProjectStrategy
 from fab_model import ProcessNode, FabModelParameters
 import numpy as np
@@ -216,6 +216,11 @@ def extract_plot_data(model):
     compute_ccdfs = {}
     op_time_ccdfs = {}
 
+    # Store individual values for 0.5 threshold (for dashboard)
+    individual_h100e_before_detection = []
+    individual_time_before_detection = []
+    individual_process_nodes = []
+
     for threshold in detection_thresholds:
         compute_at_detection = []
         operational_time_at_detection = []
@@ -249,6 +254,12 @@ def extract_plot_data(model):
                     operational_time = 0.0
 
                 operational_time_at_detection.append(operational_time)
+
+                # Store individual values for 0.5 threshold (for dashboard)
+                if threshold == 0.5:
+                    individual_h100e_before_detection.append(h100e_at_detection)
+                    individual_time_before_detection.append(operational_time)
+                    individual_process_nodes.append(covert_fab.process_node.value)
 
         # Calculate CCDFs for this threshold
         if compute_at_detection:
@@ -322,8 +333,60 @@ def extract_plot_data(model):
         "op_time_ccdfs": op_time_ccdfs,
         "lr_components": lr_components,
         "compute_factors": compute_factors,
-        "num_simulations": len(model.simulation_results)
+        "num_simulations": len(model.simulation_results),
+        "individual_h100e_before_detection": individual_h100e_before_detection,
+        "individual_time_before_detection": individual_time_before_detection,
+        "individual_process_node": individual_process_nodes
     }
+
+@app.route('/download/nuclear_case_studies')
+def download_nuclear_case_studies():
+    """Download the nuclear case studies CSV file."""
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), 'data', 'nuclear_case_studies.csv')
+    return send_file(file_path, as_attachment=True, download_name='nuclear_case_studies.csv')
+
+@app.route('/download/prc_indigenous_sme_capabilities')
+def download_prc_indigenous_sme_capabilities():
+    """Download the PRC indigenous SME capabilities CSV file."""
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), 'data', 'prc_indigenous_sme_capabilities.csv')
+    return send_file(file_path, as_attachment=True, download_name='prc_indigenous_sme_capabilities.csv')
+
+@app.route('/download/us_intelligence_estimates')
+def download_us_intelligence_estimates():
+    """Download the US intelligence estimates CSV file."""
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), 'data', 'us_intelligence_estimates.csv')
+    return send_file(file_path, as_attachment=True, download_name='us_intelligence_estimates.csv')
+
+@app.route('/download/compute_production_vs_operating_labor')
+def download_compute_production_vs_operating_labor():
+    """Download the compute production vs operating labor CSV file."""
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), 'data', 'compute_production_vs_operating_labor.csv')
+    return send_file(file_path, as_attachment=True, download_name='compute_production_vs_operating_labor.csv')
+
+@app.route('/download/asml_sales_history')
+def download_asml_sales_history():
+    """Download the ASML sales history CSV file."""
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), 'data', 'asml_sales_history.csv')
+    return send_file(file_path, as_attachment=True, download_name='asml_sales_history.csv')
+
+@app.route('/download/transistor_density_vs_node')
+def download_transistor_density_vs_node():
+    """Download the transistor density vs node CSV file."""
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), 'data', 'transistor_density_vs_node.csv')
+    return send_file(file_path, as_attachment=True, download_name='transistor_density_vs_node.csv')
+
+@app.route('/download/construction_time_vs_fab_capacity')
+def download_construction_time_vs_fab_capacity():
+    """Download the construction time vs fab capacity CSV file."""
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), 'data', 'construction_time_vs_fab_capacity.csv')
+    return send_file(file_path, as_attachment=True, download_name='construction_time_vs_fab_capacity.csv')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

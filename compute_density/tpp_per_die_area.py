@@ -49,7 +49,7 @@ def get_lowest_bitlength_tpp(row):
     return None, None, None
 
 # Create single figure
-fig, ax = plt.subplots(1, 1, figsize=(7, 5))
+fig, ax = plt.subplots(1, 1, figsize=(6, 4))
 
 # Single color for all chips
 chip_color = '#1f77b4'  # Blue
@@ -121,14 +121,14 @@ sota_df = results_df.loc[sota_chips]
 for idx, row in results_df.iterrows():
     ax.scatter(row['year'], row['tpp_per_area'],
               c=chip_color, marker='o',
-              s=100, alpha=0.7, edgecolors='black', linewidth=0.5, zorder=2)
+              s=50, alpha=0.7, edgecolors='black', linewidth=0.5, zorder=2)
 
 # Highlight state-of-the-art chips in green
 sota_color = '#2ca02c'  # Green
 for idx, row in sota_df.iterrows():
     ax.scatter(row['year'], row['tpp_per_area'],
               c=sota_color, marker='o',
-              s=120, alpha=0.9, edgecolors='black', linewidth=0.8, zorder=3)
+              s=50, alpha=0.9, edgecolors='black', linewidth=0.8, zorder=3)
 
     # Add labels for state-of-the-art chips
     ax.annotate(row['name'], (row['year'], row['tpp_per_area']),

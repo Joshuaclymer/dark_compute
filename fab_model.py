@@ -541,6 +541,37 @@ def estimate_architecture_efficiency_relative_to_h100(year: float) -> float:
 
     return efficiency_relative_to_h100
 
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def _get_localization_cdf(process_node: ProcessNode) -> tuple:
+    """
+    Cached helper to compute the CDF for localization years.
+    Returns the CDF years and probabilities as tuples (immutable for caching).
+    """
+    data = FabModelParameters.Probability_of_90p_PRC_localization_at_node[process_node]
+    data_years = np.array([point[0] for point in data])
+    data_probabilities = np.array([point[1] for point in data])
+
+    # Suppress polyfit warnings
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        coeffs = np.polyfit(data_years, data_probabilities, deg=2)
+
+    prob_curve = np.poly1d(coeffs)
+
+    year_min = data_years.min()
+    year_max = data_years.max() + 50
+    dense_years = np.linspace(year_min, year_max, 1000)
+    dense_probabilities = prob_curve(dense_years)
+    dense_probabilities = np.clip(dense_probabilities, 0, 1)
+
+    cdf_probabilities = np.linspace(0, 1, 100)
+    cdf_years = np.interp(cdf_probabilities, dense_probabilities, dense_years)
+
+    return tuple(cdf_years), tuple(cdf_probabilities)
+
 def sample_year_prc_achieved_node_localization(process_node: ProcessNode) -> float:
     """
     Randomly samples the year when PRC first achieved >90% localization for a given process node.
@@ -558,29 +589,10 @@ def sample_year_prc_achieved_node_localization(process_node: ProcessNode) -> flo
     if process_node not in FabModelParameters.Probability_of_90p_PRC_localization_at_node:
         raise ValueError(f"Process node {process_node} not found in Probability_of_90p_PRC_localization_at_node parameters")
 
-    # Define the CDF for probability that PRC achieves localization over time
-    data = FabModelParameters.Probability_of_90p_PRC_localization_at_node[process_node]
-    data_years = np.array([point[0] for point in data])
-    data_probabilities = np.array([point[1] for point in data])
-
-    # Fit a quadratic curve: p = a * year^2 + b * year + c
-    # Then numerically invert to get year as a function of probability
-    coeffs = np.polyfit(data_years, data_probabilities, deg=2)
-    prob_curve = np.poly1d(coeffs)
-
-    # Generate dense year range and evaluate probabilities
-    # Extend beyond data range to ensure we cover p=1.0
-    year_min = data_years.min()
-    year_max = data_years.max() + 50  # Extend 50 years beyond last data point
-    dense_years = np.linspace(year_min, year_max, 1000)
-    dense_probabilities = prob_curve(dense_years)
-
-    # Clip probabilities to [0, 1] range
-    dense_probabilities = np.clip(dense_probabilities, 0, 1)
-
-    # Create CDF by finding years for 100 evenly spaced probabilities
-    cdf_probabilities = np.linspace(0, 1, 100)
-    cdf_years = np.interp(cdf_probabilities, dense_probabilities, dense_years)
+    # Get cached CDF
+    cdf_years_tuple, cdf_probabilities_tuple = _get_localization_cdf(process_node)
+    cdf_years = np.array(cdf_years_tuple)
+    cdf_probabilities = np.array(cdf_probabilities_tuple)
 
     def _sample_from_cdf(years: np.ndarray, probabilities: np.ndarray) -> float:
         """

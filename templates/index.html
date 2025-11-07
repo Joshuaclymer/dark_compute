@@ -86,6 +86,70 @@
             padding: 6px;
         }
 
+        .param-group.has-tooltip {
+            position: relative;
+        }
+
+        #globalTooltip {
+            position: fixed;
+            width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            padding: 15px;
+            border-radius: 6px;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            line-height: 1.6;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        #globalTooltip.visible {
+            pointer-events: auto;
+        }
+
+        #globalTooltip * {
+            color: #fff !important;
+        }
+
+        /* Force Plotly hover labels to use white text */
+        .hoverlayer .hovertext path {
+            fill: #333 !important;
+        }
+
+        .hoverlayer .hovertext text {
+            fill: #fff !important;
+        }
+
+        g.hovertext path {
+            fill: #333 !important;
+        }
+
+        g.hovertext text {
+            fill: #fff !important;
+        }
+
+        #globalTooltip::before {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: -8px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: transparent #333 transparent transparent;
+        }
+
+        #globalTooltip.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+
         button {
             width: 100%;
             padding: 12px;
@@ -117,10 +181,45 @@
 
         .top-plots {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 250px 1fr 1fr;
             gap: 20px;
             margin-bottom: 10px;
             width: 100%;
+        }
+
+        .dashboard {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .dashboard-item {
+            text-align: center;
+        }
+
+        .dashboard-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+
+        .dashboard-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+            line-height: 1.3;
+        }
+
+        .dashboard-sublabel {
+            font-size: 10px;
+            color: #777;
+            line-height: 1.3;
         }
 
         .plot-container {
@@ -192,6 +291,17 @@
             border-radius: 4px;
             overflow: hidden;
             position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .breakdown-plot.clickable {
+            cursor: pointer;
+        }
+
+        .breakdown-plot.clickable:hover {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+            transform: scale(1.02);
         }
 
         .breakdown-plot > div {
@@ -257,6 +367,9 @@
     </style>
 </head>
 <body>
+    <!-- Global tooltip (outside sidebar to avoid clipping) -->
+    <div id="globalTooltip"></div>
+
     <div class="sidebar">
         <h1>Model Parameters</h1>
 
@@ -315,7 +428,7 @@
         </div>
         <div class="param-group">
             <label for="scanner_proportion">Proportion of prc sme diverted to covert fab at start of the agreement</label>
-            <input type="number" id="scanner_proportion" value="0.102" step="0.001">
+            <input type="number" id="scanner_proportion" value="0.1" step="0.001">
         </div>
 
         <h2>Fab Model Parameters</h2>
@@ -325,11 +438,11 @@
             <label for="p_fab_exists">US prior probability that covert fab exists</label>
             <input type="number" id="p_fab_exists" value="0.1" step="0.01" min="0" max="1">
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip" data-tooltip="<strong>SME Inventory Accounting Detection</strong><br><br><strong>Detection Method:</strong><br>Even if the PRC manufactures SME domestically, US intelligence could detect a covert fab by noticing that equipment is missing from China's domestic semiconductor industry. The SME supply chain is complex (e.g., ASML has 5000+ suppliers), making it difficult to hide equipment diversions.<br><br><strong>Diversion Strategy:</strong><br>The PRC might divert SME in advance—during the 6-12 months when an agreement is being negotiated—before the domestic industry is closely monitored. They could move equipment to a secret location and cover up evidence it existed.<br><br><strong>Key Factors:</strong><br>• <strong>Amount diverted:</strong> Diverting 80% of scanners would be obvious; diverting a few might go unnoticed<br>• <strong>US intelligence uncertainty:</strong> How wide are US error bars on how much SME Chinese companies had before they could have diverted it to a covert fab?<br><br><strong>Historical Calibration:</strong><br>Historical intelligence estimates of weapon counts (tanks, nuclear warheads, etc.) provide an analogy for tracking SME. See attached data file and plot showing error bars from declassified intelligence documents (1960-2025)." data-download="/download/us_intelligence_estimates" data-image-before-text="Data suggests:<br>• Median error in weapon count estimates: ~15%<br>• At 14% diverted SME: 50% chance of detection via inventory accounting<br>• At higher diversion rates, detection becomes increasingly likely<br><br>This parameter represents the proportion of indigenous SME that must be diverted to trigger a 50% probability that US intelligence becomes suspicious due to inventory discrepancies." data-image="/static/intelligence_error_bars/error_bars_plot.png">
             <label for="proportion_diverted_sme">US intelligence estimates 50% chance of covert fab at what proportion of sme diverted</label>
             <input type="number" id="proportion_diverted_sme" value="0.14" step="0.01">
         </div>
-        <div style="margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: #666;">
+        <div class="has-tooltip" style="margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: #666; cursor: help;" data-tooltip="<strong>PRC Semiconductor Manufacturing Equipment (SME) Indigenization</strong><br><br><strong>Why Indigenization Matters for Covert Fabs:</strong><br>The SME market involves very few buyers and sellers globally. If equipment goes missing or can't be accounted for in international supply chains, there are only a handful of actors that could be hiding it—and the PRC would be a highly salient suspect. Therefore, a covert PRC fab would likely need to rely primarily on domestically-produced equipment to avoid detection through procurement accounting.<br><br>These parameters represent the probability that the PRC achieves >90% domestic sourcing of SME at each process node by the specified year. See the attached data file for detailed capabilities by equipment category and process node." data-image-after-text="<strong>Current Status (2025):</strong><br>The PRC can manufacture 130nm chips with mostly domestic tools (~80% localized). More advanced nodes require imported equipment, particularly photolithography scanners.<br><br><strong>Near-Term Progress (by 2031):</strong><br>• <strong>28nm:</strong> SMEE and Huawei-linked Yuliangsheng are developing DUV immersion scanners for 28nm. SMIC plans production integration by 2027. Given typical delays between prototype and production-ready equipment, there's ~25% chance of >90% localization by 2031.<br>• <strong>14nm & 7nm:</strong> Multi-patterning techniques could enable 28nm scanners to reach these nodes, but this requires years of additional development. Lower probability of high localization by 2031 (10% for 14nm, 6% for 7nm).<br><br><strong>Key Accelerants:</strong><br>• U.S. export controls driving indigenization urgency<br>• $47.5B Chinese government SME fund<br>• Aggressive talent recruitment (Huawei recruiting from ASML at 3x salary)<br>• Huawei's ¥12B R&D park with 35,000+ employees<br><br>The main bottleneck is talent (experienced engineers), not funding. Recent investments may start paying off by 2031, but the probability decreases significantly for more advanced nodes." data-image="/static/china_domestic_fab_capability/china_capabilities_table.png" data-download="/download/prc_indigenous_sme_capabilities">
             Probability PRC achieves >90% indiginization at node
         </div>
         <div class="localization-row">
@@ -372,15 +485,15 @@
                 <input type="number" id="localization_7nm_2031" value="0.06" step="0.01" min="0" max="1">
             </div>
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters calibrate the relationship between workforce size and detection time using historical covert nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (μ₁₀₀) represents the expected detection time for a covert project with 100 high-context workers." data-download="/download/nuclear_case_studies">
             <label for="mean_detection_time_100">Expected time to detect covert project involving 100 people (years)</label>
             <input type="number" id="mean_detection_time_100" value="6.95" step="0.01">
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters calibrate the relationship between workforce size and detection time using historical covert nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (μ₁₀₀₀) represents the expected detection time for a covert project with 1000 high-context workers." data-download="/download/nuclear_case_studies">
             <label for="mean_detection_time_1000">Expected time to detect covert project involving 1000 people (years)</label>
             <input type="number" id="mean_detection_time_1000" value="3.42" step="0.01">
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters calibrate the relationship between workforce size and detection time using historical covert nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (σ) represents the standard deviation of the log-normal distribution." data-download="/download/nuclear_case_studies">
             <label for="variance_detection_time">Detection time sigma (years)</label>
             <input type="number" id="variance_detection_time" value="3.88" step="0.01">
         </div>
@@ -388,35 +501,9 @@
         <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
 
         <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Compute Production Rate</h3>
-        <div class="param-group">
-            <label for="wafers_per_month_per_worker">Wafers/month per operating worker</label>
-            <input type="number" id="wafers_per_month_per_worker" value="24.64" step="0.01">
-        </div>
-        <div class="param-group">
-            <label for="labor_productivity_sigma">Wafers per month per operating worker sigma (log scale, wafers/month)</label>
-            <input type="number" id="labor_productivity_sigma" value="0.62" step="0.01">
-        </div>
-        <div class="param-group">
-            <label for="wafers_per_month_per_scanner">Wafers/month per photolithography scanner</label>
-            <input type="number" id="wafers_per_month_per_scanner" value="1000" step="1">
-        </div>
-        <div class="param-group">
-            <label for="scanner_productivity_sigma">Wafers per month per photolithography scanner sigma (log scale, wafers/month)</label>
-            <input type="number" id="scanner_productivity_sigma" value="0.20" step="0.01">
-        </div>
-        <div class="param-group">
-            <label for="prc_scanners_first_year">Prc scanners produced in first year after high volume production is achieved</label>
-            <input type="number" id="prc_scanners_first_year" value="20.0" step="1">
-        </div>
-        <div class="param-group">
-            <label for="prc_scanners_per_year">Annual increase of scanner production</label>
-            <input type="number" id="prc_scanners_per_year" value="16.0" step="1">
-        </div>
-        <div class="param-group">
-            <label for="prc_scanner_production_sigma">Prc scanner production sigma (log scale, scanners/year)</label>
-            <input type="number" id="prc_scanner_production_sigma" value="0.30" step="0.01">
-        </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/fab_construction_time/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br><img src='/static/fab_construction_time/construction_time_cdf.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Nuclear facility construction comparison'><br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/fab_construction_time/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>McKinsey estimates ~100 workers per $1B construction cost. If labor is undersupplied by factor X, construction takes X times longer. If oversupplied, no speedup (fixed-ratios production function).<br><br><img src='/static/fab_construction_time/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'><br><br><img src='/static/fab_construction_time/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'>"
+             data-download="/download/construction_time_vs_fab_capacity">
             <label for="construction_time_5k">Construction time of 5k wafers/month fab (years)</label>
             <input type="number" id="construction_time_5k" value="1.40" step="0.01">
         </div>
@@ -432,15 +519,48 @@
             <label for="construction_workers_per_1000">Construction workers per 1000 wafers/month</label>
             <input type="number" id="construction_workers_per_1000" value="14.1" step="0.1">
         </div>
+        <div class="param-group has-tooltip" data-tooltip="<strong>Operating Labor and Fab Production Capacity</strong><br><br>Fab production capacity depends on two main factors:<br>• Operating labor<br>• Quantity of SME<br><br>The relationship between the number of workers involved in operating a fab and its production capacity is shown in the attached plot, which displays wafers per month vs operating labor.<br><br>This regression trend is used in the model to estimate production capacity based on the allocated operating workforce.<br><br><strong>Production Function:</strong><br>The model uses a fixed-proportions production function where fab output is the minimum of labor and scanner constraints:<br><br>Production = min(24.6 × operating labor, 1000 × num scanners)" data-image="/static/fab_production/labor_vs_production.png" data-download="/download/compute_production_vs_operating_labor">
+            <label for="wafers_per_month_per_worker">Wafers/month per operating worker</label>
+            <input type="number" id="wafers_per_month_per_worker" value="24.64" step="0.01">
+        </div>
+        <div class="param-group has-tooltip" data-tooltip="<strong>Operating Labor and Fab Production Capacity</strong><br><br>Fab production capacity depends on two main factors:<br>• Operating labor<br>• Quantity of SME<br><br>The relationship between the number of workers involved in operating a fab and its production capacity is shown in the attached plot, which displays wafers per month vs operating labor.<br><br>This regression trend is used in the model to estimate production capacity based on the allocated operating workforce.<br><br><strong>Production Function:</strong><br>The model uses a fixed-proportions production function where fab output is the minimum of labor and scanner constraints:<br><br>Production = min(24.6 × operating labor, 1000 × num scanners)" data-image="/static/fab_production/labor_vs_production.png" data-download="/download/compute_production_vs_operating_labor">
+            <label for="labor_productivity_sigma">Wafers per month per operating worker sigma (log scale, wafers/month)</label>
+            <input type="number" id="labor_productivity_sigma" value="0.62" step="0.01">
+        </div>
+        <div class="param-group has-tooltip" data-tooltip="<strong>Photolithography Scanner Production Capacity</strong><br><br>Advanced photolithography scanners are often the main bottleneck to chip production. ASML claims that its DUV lithography machines can pattern around 250 wafers per hour, or 180,000 wafers per month.<br><br>However, each chip typically requires around 80 patterning steps and scanners operate at roughly 50% utilization. Therefore, each machine processes approximately:<br><br>0.5 × 180,000 / 80 = 1,000 completed wafers per month<br><br><strong>Production Function:</strong><br>The model uses a fixed-proportions production function where fab output is the minimum of labor and scanner constraints:<br><br>Production = min(24.6 × operating labor, 1000 × num scanners)">
+            <label for="wafers_per_month_per_scanner">Wafers/month per photolithography scanner</label>
+            <input type="number" id="wafers_per_month_per_scanner" value="1000" step="1">
+        </div>
         <div class="param-group">
+            <label for="scanner_productivity_sigma">Wafers per month per photolithography scanner sigma (log scale, wafers/month)</label>
+            <input type="number" id="scanner_productivity_sigma" value="0.20" step="0.01">
+        </div>
+        <div class="param-group has-tooltip" data-tooltip="<strong>PRC Lithography Scanner Production Ramp-Up</strong><br><br>To estimate the total number of indigenous lithography scanners the PRC has at a given time, we model their production ramp-up based on historical ASML scaling patterns.<br><br>The attached plot shows how quickly ASML scaled production of a given lithography machine after it was first used in high volume production. The model assumes that PRC photolithography scanner production follows a similar trend (shown as the orange trendline) starting from the date when the PRC achieves high volume production at a given node.<br><br>This parameter represents the number of scanners produced in the first year after achieving high volume production capability." data-image="/static/fab_production/lithography_sales_plot.png" data-download="/download/asml_sales_history">
+            <label for="prc_scanners_first_year">Prc scanners produced in first year after high volume production is achieved</label>
+            <input type="number" id="prc_scanners_first_year" value="20.0" step="1">
+        </div>
+        <div class="param-group has-tooltip" data-tooltip="<strong>PRC Lithography Scanner Production Ramp-Up</strong><br><br>To estimate the total number of indigenous lithography scanners the PRC has at a given time, we model their production ramp-up based on historical ASML scaling patterns.<br><br>The attached plot shows how quickly ASML scaled production of a given lithography machine after it was first used in high volume production. The model assumes that PRC photolithography scanner production follows a similar trend (shown as the orange trendline) starting from the date when the PRC achieves high volume production at a given node.<br><br>This parameter represents the annual increase in scanner production after the first year." data-image="/static/fab_production/lithography_sales_plot.png" data-download="/download/asml_sales_history">
+            <label for="prc_scanners_per_year">Annual increase of scanner production</label>
+            <input type="number" id="prc_scanners_per_year" value="16.0" step="1">
+        </div>
+        <div class="param-group">
+            <label for="prc_scanner_production_sigma">Prc scanner production sigma (log scale, scanners/year)</label>
+            <input type="number" id="prc_scanner_production_sigma" value="0.30" step="0.01">
+        </div>
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>H100-sized Chips per Wafer (Yield)</strong><br><br>The value of 28 H100-sized chips per wafer represents the yield that TSMC achieved when manufacturing H100s for NVIDIA.<br><br>Source: <a href='https://www.trendforce.com/news/2024/03/18/news-tsmc-boosts-investment-in-advanced-packaging-with-ntd-500-billion-plan-to-build-six-plants-in-chiayi-science-park/' style='color: #6db4ff;' target='_blank'>TrendForce (March 2024)</a>">
             <label for="chips_per_wafer">H100-sized chips per wafer (yield)</label>
             <input type="number" id="chips_per_wafer" value="28" step="1">
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>Transistor Density</strong><br><br>Transistor density depends on the process node - the resolution at which circuits can be patterned onto the wafer. Historical data shows how transistor density (in millions of transistors per mm²) varies across different process nodes.<br><br>The figure below shows the relationship between process node (bottom axis) and H100 equivalents per wafer with 2022 architectures (left axis). This assumes a yield of 28 H100-sized chips per wafer."
+             data-image="/static/compute_density/h100_equiv_per_year_vs_process_node.png"
+             data-download="/download/transistor_density_vs_node">
             <label for="transistor_density_exponent">Transistor density increase for every halving of process node</label>
             <input type="number" id="transistor_density_exponent" value="1.49" step="0.01">
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>Architecture Efficiency</strong><br><br>Over time, chip architectures improve and chips deliver more performance. To predict these improvements, we infer architecture efficiency by comparing how total chip performance has improved versus transistor density improvements.<br><br>According to <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;'>Epoch's data</a>, total performance (TPP/Die Area) has improved at roughly 1.55x per year:<br><br><img src='/static/compute_density/tpp_per_die_area.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='TPP per die area over time'><br><br>However, transistor density has only increased at 1.26x per year:<br><br><img src='/static/compute_density/transistor_density_over_time.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Transistor density over time'><br><br>Therefore, architecture improvements have increased TPP/Die Area by around 1.55 / 1.26 = <strong>1.23x per year</strong>.">
             <label for="architecture_efficiency">Rate of architecture efficiency improvement per year</label>
             <input type="number" id="architecture_efficiency" value="1.23" step="0.01">
         </div>
@@ -453,7 +573,24 @@
         </div>
 
         <div id="plots" style="display: none;">
+            <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 0; color: #333;">Covert PRC Fab</h1>
             <div class="top-plots">
+                <div class="dashboard">
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboard80thH100e">--</div>
+                        <div class="dashboard-label">80th %ile H100e Before Detection</div>
+                        <div class="dashboard-sublabel">Detection = US estimates 50% probability of covert fab</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboard80thTime">--</div>
+                        <div class="dashboard-label">80th %ile Years Operational Before Detection</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboard80thNode">--</div>
+                        <div class="dashboard-label">80th %ile Process Node</div>
+                    </div>
+                </div>
+
                 <div class="plot-container">
                     <div class="plot-title">Covert Compute Produced Before Detection</div>
                     <div id="computeCcdfPlot" class="plot"></div>
@@ -776,7 +913,7 @@
                     automargin: true
                 },
                 yaxis: {
-                    title: 'P(Compute ≥ x)',
+                    title: 'P(Covert compute produced before detection > x)',
                     titlefont: { size: 11 },
                     tickfont: { size: 10 },
                     range: [0, 1],
@@ -1066,6 +1203,46 @@
             setTimeout(() => Plotly.Plots.resize(divId), 50);
         }
 
+        function updateDashboard(data) {
+            // Calculate 80th percentile H100e before detection
+            const h100eValues = data.individual_h100e_before_detection || [];
+            if (h100eValues.length > 0) {
+                const sorted = [...h100eValues].sort((a, b) => a - b);
+                const idx80 = Math.floor(sorted.length * 0.8);
+                const h100e80th = sorted[idx80];
+                // Round to nearest 10,000
+                const rounded = Math.round(h100e80th / 10000) * 10000;
+                document.getElementById('dashboard80thH100e').textContent =
+                    rounded >= 1000 ? `${(rounded / 1000).toFixed(0)}K` : rounded.toFixed(0);
+            }
+
+            // Calculate 80th percentile time before detection
+            const timeValues = data.individual_time_before_detection || [];
+            if (timeValues.length > 0) {
+                const sorted = [...timeValues].sort((a, b) => a - b);
+                const idx80 = Math.floor(sorted.length * 0.8);
+                const time80th = sorted[idx80];
+                document.getElementById('dashboard80thTime').textContent = time80th.toFixed(1);
+            }
+
+            // Calculate 80th percentile process node (treating as ordinal: smaller nm = better)
+            const nodeValues = data.individual_process_node || [];
+            if (nodeValues.length > 0) {
+                // Extract numeric values from nodes (e.g., "28nm" -> 28)
+                const numericNodes = nodeValues.map(node => {
+                    const match = node.toString().match(/(\d+)/);
+                    return match ? parseInt(match[1]) : 0;
+                });
+
+                // Sort numerically (smaller is better/more advanced)
+                const sorted = [...numericNodes].sort((a, b) => a - b);
+                const idx80 = Math.floor(sorted.length * 0.8);
+                const node80th = sorted[idx80];
+
+                document.getElementById('dashboard80thNode').textContent = `${node80th}nm`;
+            }
+        }
+
         async function runSimulation() {
             runButton.disabled = true;
             loadingDiv.classList.add('active');
@@ -1091,6 +1268,9 @@
                 if (data.error) {
                     throw new Error(data.error);
                 }
+
+                // Update dashboard
+                updateDashboard(data);
 
                 // Plot main charts
                 plotTimeSeries(data);
@@ -1227,6 +1407,164 @@
         // Run simulation automatically on page load
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(runSimulation, 500); // Small delay to ensure page is fully loaded
+        });
+
+        // Setup tooltip handlers
+        const globalTooltip = document.getElementById('globalTooltip');
+        const tooltipElements = document.querySelectorAll('.has-tooltip');
+
+        let hideTooltipTimeout;
+        let currentTooltipElement = null;
+
+        function hideTooltip() {
+            globalTooltip.classList.remove('visible');
+            globalTooltip.style.opacity = '0';
+            currentTooltipElement = null;
+        }
+
+        function isMouseOverElementOrTooltip(mouseEvent) {
+            // Check if mouse is over the current tooltip element
+            if (currentTooltipElement && currentTooltipElement.matches(':hover')) {
+                return true;
+            }
+            // Check if mouse is over the tooltip itself
+            if (globalTooltip.matches(':hover')) {
+                return true;
+            }
+            return false;
+        }
+
+        tooltipElements.forEach(element => {
+            element.addEventListener('mouseenter', (e) => {
+                clearTimeout(hideTooltipTimeout);
+                currentTooltipElement = element;
+                const tooltipText = element.getAttribute('data-tooltip');
+                const downloadUrl = element.getAttribute('data-download');
+                const imageUrl = element.getAttribute('data-image');
+                const imageBeforeText = element.getAttribute('data-image-before-text');
+                const imageAfterText = element.getAttribute('data-image-after-text');
+
+                if (tooltipText) {
+                    // Add the tooltip text
+                    let content = tooltipText;
+
+                    // Add image if data-image attribute exists
+                    if (imageUrl) {
+                        if (imageBeforeText) {
+                            // Insert image before the specified text
+                            content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;" alt="Capabilities table"><br>${imageBeforeText}`;
+                        } else if (imageAfterText) {
+                            // Insert image after the tooltip text, then add the after text
+                            content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;" alt="Capabilities table"><br>${imageAfterText}`;
+                        } else {
+                            // Default: add image after tooltip text
+                            content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px;" alt="Capabilities table">`;
+                        }
+                    }
+
+                    // Add download button only if data-download attribute exists
+                    if (downloadUrl) {
+                        const fileName = downloadUrl.split('/').pop() + '.csv';
+                        content += `<br><br><button onclick='window.location.href="${downloadUrl}"' style='margin-top: 8px; padding: 6px 12px; background-color: #555; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; pointer-events: auto;'>Download ${fileName}</button>`;
+                    }
+
+                    globalTooltip.innerHTML = content;
+
+                    // Get the position of the element
+                    const rect = element.getBoundingClientRect();
+
+                    // Position tooltip to the right of the element
+                    globalTooltip.style.left = (rect.right + 10) + 'px';
+
+                    // Calculate vertical position to keep tooltip within viewport
+                    let topPosition = rect.top;
+
+                    // Show tooltip temporarily to measure its height
+                    globalTooltip.style.visibility = 'hidden';
+                    globalTooltip.style.opacity = '1';
+                    globalTooltip.classList.add('visible');
+
+                    const tooltipHeight = globalTooltip.offsetHeight;
+                    const viewportHeight = window.innerHeight;
+
+                    // If tooltip would go off bottom of screen, adjust position
+                    if (topPosition + tooltipHeight > viewportHeight) {
+                        topPosition = Math.max(10, viewportHeight - tooltipHeight - 10);
+                    }
+
+                    // If tooltip would go off top of screen, adjust position
+                    if (topPosition < 10) {
+                        topPosition = 10;
+                    }
+
+                    globalTooltip.style.top = topPosition + 'px';
+
+                    // Now show tooltip properly
+                    globalTooltip.style.visibility = 'visible';
+                }
+            });
+
+            element.addEventListener('mouseleave', (e) => {
+                // Give a short delay to allow mouse to move to tooltip
+                hideTooltipTimeout = setTimeout(() => {
+                    // Only hide if mouse is not over the element or tooltip
+                    if (!isMouseOverElementOrTooltip(e)) {
+                        hideTooltip();
+                    }
+                }, 100);
+            });
+        });
+
+        // Keep tooltip visible when hovering over it
+        globalTooltip.addEventListener('mouseenter', () => {
+            clearTimeout(hideTooltipTimeout);
+        });
+
+        globalTooltip.addEventListener('mouseleave', () => {
+            // Check if we're moving back to the original element
+            hideTooltipTimeout = setTimeout(() => {
+                if (!isMouseOverElementOrTooltip(event)) {
+                    hideTooltip();
+                }
+            }, 100);
+        });
+
+        // Make breakdown plots clickable and link to sidebar inputs
+        const plotToInputMapping = {
+            // Section 2: US Bayesian Inference plots
+            'priorOddsDisplay': 'p_fab_exists',
+            'lrInventoryPlot': 'proportion_diverted_sme', // US intelligence estimates
+            'lrProcurementPlot': 'localization_130nm_2025', // Probability PRC achieves >90% indigenization
+            'lrOtherPlot': 'mean_detection_time_100', // Detection time
+            'posteriorOddsPlot': null, // Output, not an input
+
+            // Section 3: Compute Production Rate plots
+            'isOperationalPlot': 'construction_time_5k', // First construction time param
+            'waferStartsPlot': 'wafers_per_month_per_worker', // Operating labor productivity
+            'chipsPerWaferPlot': 'chips_per_wafer',
+            'computePerChipPlot': 'transistor_density_exponent',
+            'architectureEfficiencyPlot': 'architecture_efficiency',
+            'totalComputePlot': null // Output, not an input
+        };
+
+        // Add clickable class and click handlers to plots with associated inputs
+        Object.entries(plotToInputMapping).forEach(([plotId, inputId]) => {
+            const plotElement = document.getElementById(plotId);
+            if (plotElement && inputId) {
+                plotElement.classList.add('clickable');
+                plotElement.addEventListener('click', () => {
+                    const inputElement = document.getElementById(inputId);
+                    if (inputElement) {
+                        // Scroll input into view
+                        inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Focus and select the input
+                        setTimeout(() => {
+                            inputElement.focus();
+                            inputElement.select();
+                        }, 300);
+                    }
+                });
+            }
         });
     </script>
 </body>

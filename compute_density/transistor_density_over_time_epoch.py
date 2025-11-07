@@ -34,7 +34,7 @@ print(f"Year range: {df_filtered['year'].min()} to {df_filtered['year'].max()}")
 slope, intercept, r_value, p_value, std_err = stats.linregress(df_filtered['year'], df_filtered['log_density'])
 
 # Create the plot
-plt.figure(figsize=(7, 5))
+plt.figure(figsize=(6, 4))
 
 # Define color for points and regression line
 point_color = '#1f77b4'  # Blue

@@ -1210,10 +1210,10 @@
                 const sorted = [...h100eValues].sort((a, b) => a - b);
                 const idx80 = Math.floor(sorted.length * 0.8);
                 const h100e80th = sorted[idx80];
-                // Round to nearest 10,000
-                const rounded = Math.round(h100e80th / 10000) * 10000;
+                // Round to nearest 100,000
+                const rounded = Math.round(h100e80th / 100000) * 100000;
                 document.getElementById('dashboard80thH100e').textContent =
-                    rounded >= 1000 ? `${(rounded / 1000).toFixed(0)}K` : rounded.toFixed(0);
+                    rounded >= 1000 ? `~${(rounded / 1000).toFixed(0)}K` : `~${rounded.toFixed(0)}`;
             }
 
             // Calculate 80th percentile time before detection

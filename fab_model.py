@@ -431,7 +431,9 @@ def estimate_wafer_starts_per_month(
     scanner_productivity_multiplier = np.random.lognormal(mean=mu_log_scanner, sigma=sigma_log_scanner)
     wafers_per_month_achievable_given_lithography_scanners = base_scanner_capacity * scanner_productivity_multiplier
 
-    return min(wafers_per_month_achievable_given_operation_labor, wafers_per_month_achievable_given_lithography_scanners)
+    # Return minimum of labor and scanner capacity, with a floor of 1 wafer/month to prevent log(0) errors
+    result = min(wafers_per_month_achievable_given_operation_labor, wafers_per_month_achievable_given_lithography_scanners)
+    return max(result, 1.0)
 
 def estimate_construction_duration(
     wafer_starts_per_month: float,
@@ -1049,7 +1051,7 @@ class PRCCovertFab(CovertFab):
 
     def is_operational(self, year):
         if self.construction_start_year != None: # Construction start year can be none if the PRC never builds a covert fab
-            return year > self.construction_start_year + self.construction_duration
+            return year >= self.construction_start_year + self.construction_duration
         else:
             return False
 

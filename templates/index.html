@@ -249,6 +249,18 @@
             max-width: 100% !important;
         }
 
+        #computeCcdfPlot, #timeSeriesPlot {
+            border: none !important;
+        }
+
+        #computeCcdfPlot > div, #timeSeriesPlot > div {
+            border: none !important;
+        }
+
+        .breakdown-plot > div {
+            border: none !important;
+        }
+
         .breakdown-section {
             margin-top: 30px;
             padding: 15px 10px;
@@ -512,15 +524,15 @@
                 <input type="number" id="localization_7nm_2031" value="0.06" step="0.01" min="0" max="1">
             </div>
         </div>
-        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters calibrate the relationship between workforce size and detection time using historical covert nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (μ₁₀₀) represents the expected detection time for a covert project with 100 high-context workers." data-download="/download/nuclear_case_studies">
+        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters determine the relationship between workforce size and the probability a covert project is detected over time. We estimated these parameters using online information about historical nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (μ₁₀₀) represents the expected detection time for a covert project with 100 high-context workers." data-download="/download/nuclear_case_studies">
             <label for="mean_detection_time_100">Expected time to detect covert project involving 100 people (years)</label>
             <input type="number" id="mean_detection_time_100" value="6.95" step="0.01">
         </div>
-        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters calibrate the relationship between workforce size and detection time using historical covert nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (μ₁₀₀₀) represents the expected detection time for a covert project with 1000 high-context workers." data-download="/download/nuclear_case_studies">
+        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters determine the relationship between workforce size and the probability a covert project is detected over time. We estimated these parameters using online information about historical nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (μ₁₀₀₀) represents the expected detection time for a covert project with 1000 high-context workers." data-download="/download/nuclear_case_studies">
             <label for="mean_detection_time_1000">Expected time to detect covert project involving 1000 people (years)</label>
             <input type="number" id="mean_detection_time_1000" value="3.42" step="0.01">
         </div>
-        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters calibrate the relationship between workforce size and detection time using historical covert nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (σ) represents the standard deviation of the log-normal distribution." data-download="/download/nuclear_case_studies">
+        <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters determine the relationship between workforce size and the probability a covert project is detected over time. We estimated these parameters using online information about historical nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (σ) represents the standard deviation of the log-normal distribution." data-download="/download/nuclear_case_studies">
             <label for="variance_detection_time">Detection time sigma (years)</label>
             <input type="number" id="variance_detection_time" value="3.88" step="0.01">
         </div>
@@ -529,17 +541,21 @@
 
         <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Compute Production Rate</h3>
         <div class="param-group has-tooltip"
-             data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/fab_construction_time/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br><img src='/static/fab_construction_time/construction_time_cdf.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Nuclear facility construction comparison'><br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/fab_construction_time/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>McKinsey estimates ~100 workers per $1B construction cost. If labor is undersupplied by factor X, construction takes X times longer. If oversupplied, no speedup (fixed-ratios production function).<br><br><img src='/static/fab_construction_time/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'><br><br><img src='/static/fab_construction_time/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'>"
+             data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/fab_construction_time/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/fab_construction_time/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>How does fab construction time depend on construction labor? McKinsey claims that 'about 100 workers are dedicated to the construction phase' for approximately every $1 billion spent on fab construction. Looking at a couple of examples, this claim appears to be roughly accurate.<br><br>Now, here's the cost of constructing a fab given its production capacity:<br><br><img src='/static/fab_construction_time/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'><br><br>Our model predicts the production capacity based on operating labor and SME inputs. So we can predict the construction labor that would typically be required by first estimating the cost of the project, and then using the heuristic that 100 concurrent workers are needed for every $1 billion USD.<br><br>But what if the provided construction labor falls short of this standard requirement? Then, we assume that if X times less construction labor is provided, construction will move X times slower. Conversely, if construction labor is oversupplied, then we assume that there's no speedup (which corresponds to the simple 'fixed-ratios' production function).<br><br><img src='/static/fab_construction_time/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'>"
              data-download="/download/construction_time_vs_fab_capacity">
             <label for="construction_time_5k">Construction time of 5k wafers/month fab (years)</label>
             <input type="number" id="construction_time_5k" value="1.40" step="0.01">
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/fab_construction_time/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/fab_construction_time/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>How does fab construction time depend on construction labor? McKinsey claims that 'about 100 workers are dedicated to the construction phase' for approximately every $1 billion spent on fab construction. Looking at a couple of examples, this claim appears to be roughly accurate.<br><br>Now, here's the cost of constructing a fab given its production capacity:<br><br><img src='/static/fab_construction_time/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'><br><br>Our model predicts the production capacity based on operating labor and SME inputs. So we can predict the construction labor that would typically be required by first estimating the cost of the project, and then using the heuristic that 100 concurrent workers are needed for every $1 billion USD.<br><br>But what if the provided construction labor falls short of this standard requirement? Then, we assume that if X times less construction labor is provided, construction will move X times slower. Conversely, if construction labor is oversupplied, then we assume that there's no speedup (which corresponds to the simple 'fixed-ratios' production function).<br><br><img src='/static/fab_construction_time/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'>"
+             data-download="/download/construction_time_vs_fab_capacity">
             <label for="construction_time_100k">Construction time of 100k wafers/month fab (years)</label>
             <input type="number" id="construction_time_100k" value="2.41" step="0.01">
         </div>
-        <div class="param-group">
-            <label for="construction_time_sigma">Construction time sigma (log scale, years)</label>
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/fab_construction_time/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/fab_construction_time/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>How does fab construction time depend on construction labor? McKinsey claims that 'about 100 workers are dedicated to the construction phase' for approximately every $1 billion spent on fab construction. Looking at a couple of examples, this claim appears to be roughly accurate.<br><br>Now, here's the cost of constructing a fab given its production capacity:<br><br><img src='/static/fab_construction_time/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'><br><br>Our model predicts the production capacity based on operating labor and SME inputs. So we can predict the construction labor that would typically be required by first estimating the cost of the project, and then using the heuristic that 100 concurrent workers are needed for every $1 billion USD.<br><br>But what if the provided construction labor falls short of this standard requirement? Then, we assume that if X times less construction labor is provided, construction will move X times slower. Conversely, if construction labor is oversupplied, then we assume that there's no speedup (which corresponds to the simple 'fixed-ratios' production function).<br><br><img src='/static/fab_construction_time/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'>"
+             data-download="/download/construction_time_vs_fab_capacity">
+            <label for="construction_time_sigma">Construction time vs wafers per month sigma (relative, log scale)</label>
             <input type="number" id="construction_time_sigma" value="0.35" step="0.01">
         </div>
         <div class="param-group">
@@ -601,6 +617,12 @@
 
         <div id="plots" style="display: none;">
             <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 0; color: #333;">Covert PRC Fab</h1>
+
+            <div id="projectNotRun" style="display: none; padding: 40px; text-align: center;">
+                <p style="font-size: 18px; color: #666;">Project not run</p>
+            </div>
+
+            <div id="plotsContent">
             <div class="top-plots">
                 <div class="dashboard">
                     <div class="dashboard-item">
@@ -668,18 +690,18 @@
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Likelihood Ratio from<br>Inventory Accounting</div>
-                        <div class="breakdown-description">How much USG can update based on noticing that the PRC reported less indigenously produced SME than USG estimated it possessed prior to the agreement.</div>
+                        <div class="breakdown-label">Evidence from accounting for prior PRC SME stock</div>
+                        <div class="breakdown-description">If the PRC reports less SME than U.S. intelligence believes that it possesses, then this is evidence for a covert fab. Conversely, if the PRC reports the same or more equipment than the U.S. thinks it possesses, this is evidence against a covert fab.</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Likelihood Ratio from<br>Procurement Accounting</div>
-                        <div class="breakdown-description">Assumes USG quickly detects a covert fab if <90% of the SME its built with is domestically sourced (and otherwise procurement intelligence doesn't provide evidence).</div>
+                        <div class="breakdown-label">Evidence from tracing SME procurements</div>
+                        <div class="breakdown-description">We assume that if most of the SME used to build a covert fab is from Chinese sources (aka localization is > 90%), then U.S. intelligence doesn't obtain any evidence from procurement intelligence that the covert fab exists. Otherwise, U.S. intelligence obtains strong evidence that the fab exists (a 10x update).</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Likelihood Ratio from Other Intelligence Sources</div>
-                        <div class="breakdown-description">How much USG can update based on detecting the fab through human intelligence, signals intelligence, or imagery intelligence.</div>
+                        <div class="breakdown-label">Evidence from other intelligence sources</div>
+                        <div class="breakdown-description">Over time, U.S. intelligence is increasingly likely to identify information through human intelligence, signal intelligence, etc. that provides strong evidence of a covert fab. For every year they don't observe this information, the likelihood of a covert fab decreases.</div>
                     </div>
                     <div class="operator arrow-operator" style="visibility: hidden;">→</div>
                     <div class="breakdown-item">
@@ -691,7 +713,7 @@
             <div class="breakdown-section">
                 <div class="breakdown-title">Fab Compute Production Rate Breakdown</div>
                 <div class="section-description">
-                    H100e per month = Probability Operational × Wafer Starts per Month × H100-sized Chips per Wafer × H100e per Chip × Architecture Efficiency<br>
+                    H100e per month = Probability construction has finished × Wafer Starts per Month × H100-sized Chips per Wafer × H100e per Chip × Architecture Efficiency<br>
                     Architecture efficiency improves until the agreement year, then remains constant.
                 </div>
                 <div class="breakdown-plots-row">
@@ -727,27 +749,28 @@
                 </div>
                 <div class="breakdown-labels-row">
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Probability Operational</div>
+                        <div class="breakdown-label">Probability construction has finished</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Wafer Starts per Month</div>
+                        <div class="breakdown-label">Production capacity (wafer starts per month)</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">H100e per Chip (H100 architecture)</div>
+                        <div class="breakdown-label">H100 equivalents per chip (assuming H100 architecture)</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
                     </div>
                     <div class="operator" style="visibility: hidden;">=</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">H100e per Month</div>
+                        <div class="breakdown-label">Compute produced per month (H100e / month)</div>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     </div>
@@ -913,12 +936,12 @@
             const layout = {
                 xaxis: {
                     title: 'Year',
-                    titlefont: { size: 11 },
+                    titlefont: { size: 13 },
                     automargin: true
                 },
                 yaxis: {
                     title: 'US Probability of Covert Fab',
-                    titlefont: { size: 11, color: probColor },
+                    titlefont: { size: 13, color: '#000' },
                     tickfont: { size: 10, color: probColor },
                     range: [0, 1],
                     side: 'left',
@@ -926,7 +949,7 @@
                 },
                 yaxis2: {
                     title: 'H100e Produced by Fab (thousands)',
-                    titlefont: { size: 11, color: computeColor },
+                    titlefont: { size: 13, color: '#000' },
                     tickfont: { size: 10, color: computeColor },
                     overlaying: 'y',
                     side: 'right',
@@ -943,7 +966,9 @@
                     font: { size: 10 }
                 },
                 hovermode: 'x unified',
-                margin: { l: 50, r: 50, t: 10, b: 70, pad: 10 }
+                margin: { l: 50, r: 50, t: 10, b: 85, pad: 10 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
             };
 
             Plotly.newPlot('timeSeriesPlot', traces, layout, {displayModeBar: false, responsive: true});
@@ -981,14 +1006,14 @@
             const layout = {
                 xaxis: {
                     title: "H100e Produced by Covert Fab Before 'Detection'",
-                    titlefont: { size: 11 },
+                    titlefont: { size: 13 },
                     tickfont: { size: 10 },
                     type: 'log',
                     automargin: true
                 },
                 yaxis: {
-                    title: 'P(Covert compute produced before detection > x)',
-                    titlefont: { size: 11 },
+                    title: 'P(covert compute > x)',
+                    titlefont: { size: 13 },
                     tickfont: { size: 10 },
                     range: [0, 1],
                     automargin: true
@@ -1004,7 +1029,9 @@
                     borderwidth: 1
                 },
                 hovermode: 'closest',
-                margin: { l: 50, r: 50, t: 10, b: 50, pad: 10 }
+                margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
             };
 
             Plotly.newPlot('computeCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
@@ -1058,23 +1085,21 @@
                     binCenters.push((binEdges[i] + binEdges[i + 1]) / 2);
                 }
 
-                // Calculate probability density (count / total / bin_width)
-                const densities = binCounts.map((count, i) => {
-                    const binWidth = binEdges[i + 1] - binEdges[i];
-                    return count / values.length / binWidth;
-                });
+                // Calculate probability mass (count / total) for better visualization with open-ended bins
+                // Using probability instead of density makes the bar height proportional to the actual probability mass
+                const probabilities = binCounts.map(count => count / values.length);
 
                 console.log(`Bin edges: ${binEdges}`);
                 console.log(`Bin counts: ${binCounts}`);
-                console.log(`Densities: ${densities}`);
+                console.log(`Probabilities: ${probabilities}`);
 
                 // Create bar trace instead of histogram
                 trace.type = 'bar';
                 trace.x = binCenters;
-                trace.y = densities;
+                trace.y = probabilities;
                 delete trace.histnorm;
                 trace.width = binEdges.map((edge, i) => i < binEdges.length - 1 ? binEdges[i + 1] - binEdges[i] : 0).slice(0, -1);
-                trace.hovertemplate = 'LR: %{x:.2f}<br>Density: %{y:.3f}<extra></extra>';
+                trace.hovertemplate = 'LR: %{x:.2f}<br>Probability: %{y:.3f}<extra></extra>';
             } else {
                 trace.nbinsx = nbins;
             }
@@ -1086,11 +1111,17 @@
                 tickfont: { size: 9 }
             };
 
+            const yaxisConfig = {
+                title: logScale ? 'Probability' : 'Density',
+                titlefont: { size: 10 },
+                tickfont: { size: 9 }
+            };
+
             if (logScale) {
                 xaxisConfig.type = 'log';
                 // Manually specify tick values for better visibility
                 xaxisConfig.tickvals = [0.1, 0.2, 0.5, 1, 2, 5, 10];
-                xaxisConfig.ticktext = ['0.1', '0.2', '0.5', '1', '2', '5', '10'];
+                xaxisConfig.ticktext = ['0.1', '0.2', '0.5', '1', '2', '5', '10+'];
                 // Don't force range - let it adjust based on data
                 xaxisConfig.autorange = true;
             }
@@ -1098,13 +1129,11 @@
             const layout = {
                 xaxis: xaxisConfig,
                 yaxis: {
-                    title: 'Density',
-                    titlefont: { size: 10 },
-                    automargin: true,
-                    tickfont: { size: 9 }
+                    ...yaxisConfig,
+                    automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 40, pad: 10 },
+                margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                 hovermode: 'closest'
             };
 
@@ -1112,7 +1141,7 @@
             setTimeout(() => Plotly.Plots.resize(divId), 50);
         }
 
-        function plotMedianWithPercentiles(divId, data, years, color, yAxisLabel = '', yAxisRange = null, logScale = false) {
+        function plotMedianWithPercentiles(divId, data, years, color, yAxisLabel = '', yAxisRange = null, logScale = false, showLegend = false) {
             // Plot median with 25th-75th percentile bands
             const traces = [];
 
@@ -1155,9 +1184,9 @@
                     fillcolor: color + '60',
                     line: { color: color, width: 1.5, dash: 'dot' },
                     opacity: 0.7,
-                    showlegend: false,
+                    showlegend: showLegend,
                     hoverinfo: 'skip',
-                    name: '75th percentile'
+                    name: '25th-75th %ile'
                 },
                 {
                     x: years,
@@ -1165,7 +1194,7 @@
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: color, width: 3 },
-                    showlegend: false,
+                    showlegend: showLegend,
                     hovertemplate: 'Year: %{x:.1f}<br>Value: %{y:.2f}<extra></extra>',
                     name: 'Median'
                 }
@@ -1199,8 +1228,18 @@
                     fixedrange: true
                 },
                 yaxis: yaxisConfig,
-                showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 40, pad: 10 },
+                showlegend: showLegend,
+                legend: {
+                    x: 0.02,
+                    y: 0.98,
+                    xanchor: 'left',
+                    yanchor: 'top',
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#ccc',
+                    borderwidth: 1,
+                    font: { size: 10 }
+                },
+                margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                 hovermode: 'x'
             };
 
@@ -1258,7 +1297,7 @@
                     automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 50, pad: 10 },
+                margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
                 hovermode: 'closest',
                 bargap: 0.2
             };
@@ -1300,7 +1339,7 @@
                     automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 40, pad: 10 },
+                margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                 hovermode: 'x'
             };
 
@@ -1346,7 +1385,7 @@
                     automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 50, pad: 10 },
+                margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
                 hovermode: 'closest',
                 bargap: 0.2
             };
@@ -1398,8 +1437,9 @@
 
                 // Sort numerically (smaller is better/more advanced)
                 const sorted = [...numericNodes].sort((a, b) => a - b);
-                const idx80 = Math.floor(sorted.length * 0.8);
-                const node80th = sorted[idx80];
+                // Since smaller nm is better, 80th percentile quality = 20th percentile of the values
+                const idx20 = Math.floor(sorted.length * 0.2);
+                const node80th = sorted[idx20];
 
                 document.getElementById('dashboard80thNode').textContent = `${node80th}nm`;
             }
@@ -1464,13 +1504,13 @@
                     console.log('Values below 1:', lrInventoryFinal.filter(v => v < 1));
                     console.log('Values at or above 1:', lrInventoryFinal.filter(v => v >= 1));
                     // Use log scale x-axis but show actual LR values (not log values)
-                    plotPDF('lrInventoryPlot', lrInventoryFinal, '#D97676', 'LR', 10, true);
+                    plotPDF('lrInventoryPlot', lrInventoryFinal, '#D97676', 'Likelihood Ratio', 10, true);
 
                     // LR Procurement - Categorical bar plot (1 or 10)
                     const lrProcurementFinal = data.lr_components.procurement_individual.map(sim => sim[sim.length - 1]);
                     plotCategoricalFrequency('lrProcurementPlot', lrProcurementFinal, [
-                        { value: 1, label: 'LR = 1 (>90% localization)' },
-                        { value: 10, label: 'LR = 10 (≤90% localization)' }
+                        { value: 1, label: 'Likelihood Ratio = 1<br>(>90% localization)' },
+                        { value: 10, label: 'Likelihood Ratio = 10<br>(≤90% localization)' }
                     ], '#6B9BD1');
 
                     // LR Other - Median over time with percentiles
@@ -1488,7 +1528,7 @@
                         p25: lrOtherP25,
                         p75: lrOtherP75,
                         individual: data.lr_components.other_individual
-                    }, years, '#7CAE7A', 'Likelihood Ratio (log scale)', null, true);
+                    }, years, '#7CAE7A', 'Likelihood Ratio', null, true);
 
                     // Use the same US probability data as Simulation Runs plot
                     // This includes ALL simulations (with and without fabs)
@@ -1549,12 +1589,32 @@
                         return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
                     });
 
+                    // Calculate y-axis maximum as 1.2 times the maximum 75th percentile value
+                    const maxP75 = Math.max(...totalComputeP75);
+                    const yMax = maxP75 * 1.2;
+
                     plotMedianWithPercentiles('totalComputePlot', {
                         median: totalComputeMedian,
                         p25: totalComputeP25,
                         p75: totalComputeP75,
                         individual: totalComputeArray
-                    }, years, '#B56C6C', 'H100e/Month', [0, 200000]);
+                    }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
+                }
+
+                // Check if project is running
+                const runCovertProject = document.getElementById('run_covert_project').checked;
+                const buildCovertFab = document.getElementById('build_covert_fab').checked;
+                const projectNotRunDiv = document.getElementById('projectNotRun');
+                const plotsContentDiv = document.getElementById('plotsContent');
+
+                if (runCovertProject && buildCovertFab) {
+                    // Show normal plots
+                    projectNotRunDiv.style.display = 'none';
+                    plotsContentDiv.style.display = 'block';
+                } else {
+                    // Show "project not run" message
+                    projectNotRunDiv.style.display = 'block';
+                    plotsContentDiv.style.display = 'none';
                 }
 
                 plotsDiv.style.display = 'block';

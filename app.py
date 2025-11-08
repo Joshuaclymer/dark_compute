@@ -16,7 +16,11 @@ def index():
 
 @app.route('/run_simulation', methods=['POST'])
 def run_simulation():
-    data = request.json
+    try:
+        data = request.json
+    except Exception as e:
+        print(f"ERROR parsing request: {e}", flush=True)
+        return jsonify({"error": str(e)}), 400
 
     # Extract parameters
     agreement_year = float(data.get('agreement_year', 2030))
@@ -31,6 +35,9 @@ def run_simulation():
     construction_labor = int(data.get('construction_labor', 448))
     process_node_str = data.get('process_node', 'best_available_indigenously')
     scanner_proportion = float(data.get('scanner_proportion', 0.102))
+
+    print(f"DEBUG: Received scanner_proportion = {scanner_proportion}", flush=True)
+    print(f"DEBUG: operating_labor = {operating_labor}, construction_labor = {construction_labor}", flush=True)
 
     # US prior probabilities
     p_project_exists = float(data.get('p_project_exists', 0.2))
@@ -96,24 +103,77 @@ def run_simulation():
             (2031, float(data['localization_7nm_2031']))
         ]
 
+    try:
+        # Create custom covert project strategy with user parameters
+        # Map process node string to enum (or keep as string for "best_available_indigenously")
+        process_node_map = {
+            'best_available_indigenously': 'best_available_indigenously',  # Keep as string
+            'nm130': ProcessNode.nm130,
+            'nm28': ProcessNode.nm28,
+            'nm14': ProcessNode.nm14,
+            'nm7': ProcessNode.nm7
+        }
+        process_node = process_node_map.get(process_node_str, process_node_str)
+
+        print(f"DEBUG: About to create strategy...", flush=True)
+        custom_strategy = CovertProjectStrategy(
+            run_a_covert_project=run_covert_project,
+            build_a_covert_fab=build_covert_fab,
+            covert_fab_operating_labor=operating_labor,
+            covert_fab_construction_labor=construction_labor,
+            covert_fab_process_node=process_node,
+            covert_fab_proportion_of_prc_lithography_scanners_devoted=scanner_proportion
+        )
+
+        print(f"DEBUG: Created strategy with scanner_proportion = {custom_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted}", flush=True)
+    except Exception as e:
+        print(f"ERROR creating strategy: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
     # Create and run model
     model = Model(
         year_us_prc_agreement_goes_into_force=agreement_year,
         end_year=end_year,
-        increment=increment
+        increment=increment,
+        prc_strategy=custom_strategy  # PRC's actual strategy from user input
     )
 
-    # Update initial detector beliefs
+    # Update initial detector beliefs (US's prior probabilities)
+    # Note: US beliefs about PRC strategy are always best_prc_covert_project_strategy
     model.initial_detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"][agreement_year].p_project_exists = p_project_exists
     model.initial_detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"][agreement_year].p_covert_fab_exists = p_fab_exists
 
-    # Run simulations
-    model.run_simulations(num_simulations=num_simulations)
+    try:
+        # Run simulations
+        print(f"DEBUG: Running simulations...", flush=True)
+        model.run_simulations(num_simulations=num_simulations)
 
-    # Extract data for plots
-    results = extract_plot_data(model)
+        # Debug: Check a sample fab's production capacity
+        if model.simulation_results:
+            covert_projects, _ = model.simulation_results[0]
+            if 'prc_covert_project' in covert_projects:
+                fab = covert_projects['prc_covert_project'].covert_fab
+                if fab:
+                    print(f"DEBUG: Sample fab construction_start_year = {fab.construction_start_year}", flush=True)
+                    print(f"DEBUG: Sample fab construction_duration = {fab.construction_duration}", flush=True)
+                    print(f"DEBUG: Sample fab total_prc_lithography_scanners_for_node = {fab.total_prc_lithography_scanners_for_node}", flush=True)
+                    print(f"DEBUG: Sample fab process_node = {fab.process_node}", flush=True)
+                    print(f"DEBUG: Sample fab wafer_starts_per_month = {fab.wafer_starts_per_month}", flush=True)
+                    print(f"DEBUG: Sample fab production_capacity = {fab.production_capacity}", flush=True)
 
-    return jsonify(results)
+        # Extract data for plots
+        print(f"DEBUG: Extracting plot data...", flush=True)
+        results = extract_plot_data(model)
+
+        print(f"DEBUG: Returning results...", flush=True)
+        return jsonify(results)
+    except Exception as e:
+        print(f"ERROR running simulation: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 def extract_plot_data(model):
     """Extract plot data from model simulation results"""
@@ -227,6 +287,48 @@ def extract_plot_data(model):
     total_simulations_with_fab = sum(1 for cp, _ in model.simulation_results
                                      if cp["prc_covert_project"].covert_fab is not None)
 
+    # Direct counters for the user's specific questions - calculate these FIRST, outside the detection loop
+    # These should match what the plot shows
+    fabs_never_finished_construction = 0
+    fabs_finished_construction = 0
+    fabs_finished_and_detected_before_finish = 0
+
+    for covert_projects, detectors in model.simulation_results:
+        covert_fab = covert_projects["prc_covert_project"].covert_fab
+        if covert_fab is None:
+            continue
+
+        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
+        years = sorted(us_beliefs.keys())
+        final_year = all_years[-1]  # Use all_years to match the plot
+
+        construction_start = covert_fab.construction_start_year
+        construction_duration = covert_fab.construction_duration
+        operational_start = construction_start + construction_duration
+
+        # Check if fab is operational at the last simulation timestep
+        # This matches the is_operational() logic used in the plot
+        if final_year >= operational_start:
+            fabs_finished_construction += 1
+
+            # Check if detected before finishing construction
+            detection_year = None
+            for year in years:
+                if us_beliefs[year].p_covert_fab_exists >= 0.5:
+                    detection_year = year
+                    break
+
+            if detection_year is not None and detection_year < operational_start:
+                fabs_finished_and_detected_before_finish += 1
+        else:
+            fabs_never_finished_construction += 1
+
+    # Track fabs detected during construction (for 0.5 threshold only)
+    detected_during_construction_count = 0
+    detected_after_operational_count = 0
+    never_detected_count = 0
+    never_operational_count = 0
+
     for threshold in detection_thresholds:
         compute_at_detection = []
         operational_time_at_detection = []
@@ -247,7 +349,13 @@ def extract_plot_data(model):
                     break
 
             if detection_year is not None:
-                h100e_at_detection = h100e_over_time.get(detection_year, 0.0)
+                # Find the most recent year <= detection_year in h100e_over_time
+                available_years = [y for y in h100e_over_time.keys() if y <= detection_year]
+                if available_years:
+                    most_recent_year = max(available_years)
+                    h100e_at_detection = h100e_over_time[most_recent_year]
+                else:
+                    h100e_at_detection = 0.0
                 compute_at_detection.append(h100e_at_detection)
 
                 construction_start = covert_fab.construction_start_year
@@ -261,29 +369,70 @@ def extract_plot_data(model):
 
                 operational_time_at_detection.append(operational_time)
 
+                # Track detection timing (for 0.5 threshold only)
+                if threshold == 0.5:
+                    if detection_year <= operational_start:
+                        detected_during_construction_count += 1
+                        # Check if construction hasn't even finished yet
+                        if detection_year < operational_start:
+                            never_operational_count += 1
+                    else:
+                        detected_after_operational_count += 1
+
+                    # Debug: Check fabs detected after operational but with 0 compute
+                    if detection_year >= operational_start and h100e_at_detection <= 0.0:
+                        available_years = sorted(h100e_over_time.keys())
+                        print(f"DEBUG: Fab detected after operational with 0 compute - detection_year={detection_year}, operational_start={operational_start}, h100e={h100e_at_detection}, available_years={available_years}", flush=True)
+
                 # Store individual values for 0.5 threshold (for dashboard)
                 if threshold == 0.5:
                     individual_h100e_before_detection.append(h100e_at_detection)
                     individual_time_before_detection.append(operational_time)
                     individual_process_nodes.append(covert_fab.process_node.value)
+
+                    # Debug: Check fabs that finished construction but have 0 compute
+                    if detection_year >= operational_start and h100e_at_detection <= 0.0:
+                        print(f"DEBUG: Fab finished construction but has 0 compute - detection_year={detection_year}, operational_start={operational_start}, time_since_operational={detection_year - operational_start:.4f}, available_years_count={len(h100e_over_time)}", flush=True)
             else:
-                # Detection never happened - use final values for dashboard (0.5 threshold only)
+                # Detection never happened - include final values in CCDF
+                # Use all_years (from first simulation) to match what the plot uses
+                final_year = all_years[-1]
+                # Find the most recent year <= final_year in h100e_over_time
+                available_years = [y for y in h100e_over_time.keys() if y <= final_year]
+                if available_years:
+                    most_recent_year = max(available_years)
+                    h100e_at_end = h100e_over_time[most_recent_year]
+                else:
+                    h100e_at_end = 0.0
+                compute_at_detection.append(h100e_at_end)
+
+                construction_start = covert_fab.construction_start_year
+                construction_duration = covert_fab.construction_duration
+                operational_start = construction_start + construction_duration
+
+                if final_year >= operational_start:
+                    operational_time = final_year - operational_start
+                else:
+                    operational_time = 0.0
+
+                operational_time_at_detection.append(operational_time)
+
+                # Track never detected (for 0.5 threshold only)
                 if threshold == 0.5:
-                    # Use H100e at end of simulation
-                    final_year = years[-1]
-                    h100e_at_end = h100e_over_time.get(final_year, 0.0)
+                    never_detected_count += 1
+
+                    # Check if never became operational
+                    if final_year < operational_start:
+                        never_operational_count += 1
+
+                    # Debug: Check never-detected fabs with 0 compute
+                    if h100e_at_end <= 0.0:
+                        available_years = sorted(h100e_over_time.keys())
+                        print(f"DEBUG: Never-detected fab with 0 compute - final_year={final_year}, operational_start={operational_start}, construction_start={construction_start}, duration={construction_duration}, h100e={h100e_at_end}, available_years={available_years}", flush=True)
+
+                # Also store for dashboard (0.5 threshold only)
+                if threshold == 0.5:
                     individual_h100e_before_detection.append(h100e_at_end)
-
-                    # Use operational time at end of simulation
-                    construction_start = covert_fab.construction_start_year
-                    construction_duration = covert_fab.construction_duration
-                    operational_start = construction_start + construction_duration
-
-                    if final_year >= operational_start:
-                        operational_time = final_year - operational_start
-                    else:
-                        operational_time = 0.0
-
                     individual_time_before_detection.append(operational_time)
                     individual_process_nodes.append(covert_fab.process_node.value)
 
@@ -291,17 +440,97 @@ def extract_plot_data(model):
         # Use total_simulations_with_fab as denominator to account for runs where detection never happened
         if compute_at_detection:
             compute_sorted = np.sort(compute_at_detection)
-            ccdf_compute = 1.0 - np.arange(1, len(compute_sorted) + 1) / total_simulations_with_fab
-            compute_ccdfs[threshold] = [{"x": float(x), "y": float(y)} for x, y in zip(compute_sorted, ccdf_compute)]
+
+            # Handle ties correctly: CCDF should be fraction of values STRICTLY GREATER than x
+            # For each unique x value, find how many values are > x
+            unique_x = []
+            ccdf_y = []
+            seen_values = set()
+
+            for i, x in enumerate(compute_sorted):
+                if x not in seen_values:
+                    seen_values.add(x)
+                    # Count how many values are strictly greater than x
+                    num_greater = total_simulations_with_fab - (i + 1)
+                    # Find last occurrence of this x value
+                    last_idx = i
+                    while last_idx + 1 < len(compute_sorted) and compute_sorted[last_idx + 1] == x:
+                        last_idx += 1
+                    # CCDF at x = (number of values > x) / total
+                    num_greater = total_simulations_with_fab - (last_idx + 1)
+                    ccdf = num_greater / total_simulations_with_fab
+                    unique_x.append(float(x))
+                    ccdf_y.append(float(ccdf))
+
+            compute_ccdfs[threshold] = [{"x": x, "y": y} for x, y in zip(unique_x, ccdf_y)]
 
         if operational_time_at_detection:
             op_time_sorted = np.sort(operational_time_at_detection)
-            ccdf_op_time = 1.0 - np.arange(1, len(op_time_sorted) + 1) / total_simulations_with_fab
-            op_time_ccdfs[threshold] = [{"x": float(x), "y": float(y)} for x, y in zip(op_time_sorted, ccdf_op_time)]
+
+            # Handle ties correctly for operational time CCDF too
+            unique_x_time = []
+            ccdf_y_time = []
+            seen_values_time = set()
+
+            for i, x in enumerate(op_time_sorted):
+                if x not in seen_values_time:
+                    seen_values_time.add(x)
+                    # Find last occurrence of this x value
+                    last_idx = i
+                    while last_idx + 1 < len(op_time_sorted) and op_time_sorted[last_idx + 1] == x:
+                        last_idx += 1
+                    # CCDF at x = (number of values > x) / total
+                    num_greater = total_simulations_with_fab - (last_idx + 1)
+                    ccdf = num_greater / total_simulations_with_fab
+                    unique_x_time.append(float(x))
+                    ccdf_y_time.append(float(ccdf))
+
+            op_time_ccdfs[threshold] = [{"x": x, "y": y} for x, y in zip(unique_x_time, ccdf_y_time)]
 
     # Keep backward compatibility with single threshold
     compute_ccdf = compute_ccdfs.get(0.5, [])
     op_time_ccdf = op_time_ccdfs.get(0.5, [])
+
+    # Print USER'S DIRECT QUESTIONS FIRST
+    print(f"\n=== DIRECT ANSWERS TO USER'S QUESTIONS ===", flush=True)
+    print(f"1. Fabs that NEVER finished construction before simulation end: {fabs_never_finished_construction} ({100*fabs_never_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
+    print(f"2. Fabs that DID finish construction before simulation end: {fabs_finished_construction} ({100*fabs_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
+    print(f"3. Of those that finished, detected BEFORE finishing construction: {fabs_finished_and_detected_before_finish} ({100*fabs_finished_and_detected_before_finish/fabs_finished_construction:.1f}% of finished fabs)" if fabs_finished_construction > 0 else "3. Of those that finished, detected BEFORE finishing construction: 0", flush=True)
+    print(f"==========================================\n", flush=True)
+
+    # Print detection timing analysis
+    print(f"\nDETECTION TIMING ANALYSIS (P(fab) >= 50%):", flush=True)
+    print(f"  Total simulations with fab: {total_simulations_with_fab}", flush=True)
+    print(f"  Detected during construction: {detected_during_construction_count} ({100*detected_during_construction_count/total_simulations_with_fab:.1f}%)", flush=True)
+    print(f"  Detected after finished construction: {detected_after_operational_count} ({100*detected_after_operational_count/total_simulations_with_fab:.1f}%)", flush=True)
+    print(f"  Never detected: {never_detected_count} ({100*never_detected_count/total_simulations_with_fab:.1f}%)", flush=True)
+    print(f"  Fabs that never finished construction (should equal fabs never finished above): {fabs_never_finished_construction} ({100*fabs_never_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
+
+    # Debug: Compare CCDF data with dashboard data
+    if individual_h100e_before_detection:
+        sorted_individual = sorted(individual_h100e_before_detection)
+        idx80_dash = int(len(sorted_individual) * 0.8)
+        print(f"\nDEBUG H100e COMPARISON:", flush=True)
+        print(f"  Total sims with fab: {total_simulations_with_fab}", flush=True)
+        print(f"  Dashboard individual values (includes non-detected): {len(individual_h100e_before_detection)}", flush=True)
+        print(f"  Dashboard 80th percentile: {sorted_individual[idx80_dash]:.0f}", flush=True)
+
+        # Analyze H100e values for compute > 0
+        if individual_h100e_before_detection:
+            num_zero_compute = sum(1 for h in individual_h100e_before_detection if h <= 0.0)
+            num_positive_compute = sum(1 for h in individual_h100e_before_detection if h > 0.0)
+            total = len(individual_h100e_before_detection)
+            p_compute_gt_0 = num_positive_compute / total if total > 0 else 0
+
+            print(f"\nCOMPUTE BEFORE DETECTION ANALYSIS:", flush=True)
+            print(f"  Fabs with 0 compute at detection: {num_zero_compute} ({100*num_zero_compute/total:.1f}%)", flush=True)
+            print(f"  Fabs with >0 compute at detection: {num_positive_compute} ({100*num_positive_compute/total:.1f}%)", flush=True)
+            print(f"  P(covert compute > 0) = {p_compute_gt_0:.4f} ({100*p_compute_gt_0:.1f}%)", flush=True)
+
+            # Also check CCDF first point
+            if compute_ccdf and len(compute_ccdf) > 0:
+                print(f"  CCDF smallest x value: {compute_ccdf[0]['x']:.2f} H100e", flush=True)
+                print(f"  CCDF at smallest x: P(compute > {compute_ccdf[0]['x']:.2f}) = {compute_ccdf[0]['y']:.4f}", flush=True)
 
     # Calculate statistics for LR components
     lr_components = {}
@@ -309,6 +538,17 @@ def extract_plot_data(model):
         lr_inventory_array = np.array(lr_inventory_by_sim)
         lr_procurement_array = np.array(lr_procurement_by_sim)
         lr_other_array = np.array(lr_other_by_sim)
+
+        # Analyze final timestep inventory LR distribution
+        lr_inventory_final = [sim[-1] for sim in lr_inventory_by_sim]
+        num_lr_equals_1 = sum(1 for lr in lr_inventory_final if abs(lr - 1.0) < 0.01)
+        num_lr_gte_10 = sum(1 for lr in lr_inventory_final if lr >= 10.0)
+        total_sims = len(lr_inventory_final)
+        print(f"INVENTORY LR ANALYSIS (final timestep):", flush=True)
+        print(f"  Total simulations: {total_sims}", flush=True)
+        print(f"  LR ≈ 1.0: {num_lr_equals_1} ({100*num_lr_equals_1/total_sims:.1f}%)", flush=True)
+        print(f"  LR ≥ 10.0: {num_lr_gte_10} ({100*num_lr_gte_10/total_sims:.1f}%)", flush=True)
+        print(f"  Other values: {total_sims - num_lr_equals_1 - num_lr_gte_10} ({100*(total_sims - num_lr_equals_1 - num_lr_gte_10)/total_sims:.1f}%)", flush=True)
 
         lr_components = {
             "inventory_median": np.median(lr_inventory_array, axis=0).tolist(),
@@ -327,6 +567,51 @@ def extract_plot_data(model):
         chips_per_wafer_array = np.array(chips_per_wafer_by_sim)
         architecture_efficiency_array = np.array(architecture_efficiency_by_sim)
         compute_per_wafer_2022_arch_array = np.array(compute_per_wafer_2022_arch_by_sim)
+
+        # Debug: Check construction completion
+        print(f"\n=== DEBUG CONSTRUCTION COMPLETION ===", flush=True)
+        print(f"Total simulations in model.simulation_results: {len(model.simulation_results)}", flush=True)
+        print(f"Number of entries in is_operational_by_sim: {len(is_operational_by_sim)}", flush=True)
+
+        # Count simulations with and without fabs
+        num_with_fab = sum(1 for cp, _ in model.simulation_results if cp["prc_covert_project"].covert_fab is not None)
+        num_without_fab = len(model.simulation_results) - num_with_fab
+        print(f"Simulations WITH fab: {num_with_fab}", flush=True)
+        print(f"Simulations WITHOUT fab: {num_without_fab}", flush=True)
+
+        print(f"\nYears array length: {len(all_years)}", flush=True)
+        print(f"First years: {all_years[:5]}", flush=True)
+        print(f"Last years: {all_years[-5:]}", flush=True)
+        print(f"Last year: {all_years[-1]}", flush=True)
+        print(f"\nis_operational_array shape: {is_operational_array.shape}", flush=True)
+        print(f"is_operational at last timestep - mean across sims WITH FABS: {np.mean(is_operational_array[:, -1]):.4f}", flush=True)
+        print(f"is_operational at last timestep - sum: {np.sum(is_operational_array[:, -1])}", flush=True)
+        print(f"is_operational at last timestep - count of 1s: {np.sum(is_operational_array[:, -1] == 1.0)}", flush=True)
+        print(f"is_operational at last timestep - count of 0s: {np.sum(is_operational_array[:, -1] == 0.0)}", flush=True)
+
+        # Check construction end times
+        construction_end_times = []
+        for covert_projects, _ in model.simulation_results:
+            fab = covert_projects["prc_covert_project"].covert_fab
+            if fab:
+                construction_end_times.append(fab.construction_start_year + fab.construction_duration)
+        print(f"\nConstruction end times - min: {min(construction_end_times):.4f}, max: {max(construction_end_times):.4f}, mean: {np.mean(construction_end_times):.4f}", flush=True)
+        print(f"Number of fabs finishing AFTER last simulation year ({all_years[-1]}): {sum(1 for t in construction_end_times if t > all_years[-1])}", flush=True)
+
+        # Check which fabs are not operational at the last timestep
+        print(f"\nChecking fabs NOT operational at last timestep:", flush=True)
+        non_operational_count = 0
+        for i, (covert_projects, _) in enumerate(model.simulation_results):
+            fab = covert_projects["prc_covert_project"].covert_fab
+            if fab is not None:
+                construction_end = fab.construction_start_year + fab.construction_duration
+                is_op = fab.is_operational(all_years[-1])
+                if not is_op:
+                    non_operational_count += 1
+                    if non_operational_count <= 5:  # Only print first 5
+                        print(f"  Sim {i}: construction_end={construction_end:.6f}, last_year={all_years[-1]:.6f}, diff={construction_end - all_years[-1]:.6f}, is_operational={is_op}", flush=True)
+        print(f"Total non-operational at last timestep: {non_operational_count}", flush=True)
+        print(f"=====================================\n", flush=True)
 
         compute_factors = {
             "is_operational_median": np.mean(is_operational_array, axis=0).tolist(),

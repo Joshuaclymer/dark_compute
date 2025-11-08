@@ -1,0 +1,792 @@
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 710-833-261
+127.0.0.1 - - [08/Nov/2025 13:41:16] "[36mGET /static/fab_construction_time/construction_time_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:41:16] "[36mGET /static/fab_construction_time/construction_time_plot_adjusted.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:41:16] "[36mGET /static/fab_construction_time/cost_of_fab_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:41:16] "[36mGET /static/fab_construction_time/construction_time_vs_labor.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:41:19] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 13:41:21] "GET / HTTP/1.1" 200 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+/Users/joshuaclymer/github/covert_compute_production_model/fab_model.py:483: RuntimeWarning: invalid value encountered in log
+  mu_log = np.log(base_duration) - 0.5 * sigma_log**2
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = 1.7728157728234808
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 137.27284728830676
+DEBUG: Sample fab process_node = ProcessNode.nm7
+DEBUG: Sample fab wafer_starts_per_month = 10713.204085892628
+DEBUG: Sample fab production_capacity = 130301.89059143777
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 48 (16.0%)
+2. Fabs that DID finish construction before simulation end: 252 (84.0%)
+3. Of those that finished, detected BEFORE finishing construction: 107 (42.5% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 107 (35.7%)
+  Detected after finished construction: 158 (52.7%)
+  Never detected: 35 (11.7%)
+  Fabs that never finished construction (should equal fabs never finished above): 48 (16.0%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 764223
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 155 (51.7%)
+  Fabs with >0 compute at detection: 145 (48.3%)
+  P(covert compute > 0) = 0.4833 (48.3%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.4833
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 48 (16.0%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 252 (84.0%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8400
+is_operational at last timestep - sum: 252.0
+is_operational at last timestep - count of 1s: 252
+is_operational at last timestep - count of 0s: 48
+
+Construction end times - min: 2030.4962, max: 2035.0396, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 1: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 14: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 29: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 40: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 49: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 48
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 13:41:22] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 13:41:23] "[36mGET /static/fab_construction_time/cost_of_fab_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:41:23] "[36mGET /static/fab_construction_time/construction_time_vs_labor.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:41:23] "[36mGET /static/fab_construction_time/construction_time_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:41:23] "[36mGET /static/fab_construction_time/construction_time_plot_adjusted.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:46:54] "[36mGET /static/china_domestic_fab_capability/china_capabilities_table.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:46:54] "[36mGET /static/intelligence_error_bars/error_bars_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:46:55] "GET / HTTP/1.1" 200 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = 1.1696936755612415
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 219.46896674988105
+DEBUG: Sample fab process_node = ProcessNode.nm130
+DEBUG: Sample fab wafer_starts_per_month = 12896.799872716725
+DEBUG: Sample fab production_capacity = 2018.0586516892854
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 43 (14.3%)
+2. Fabs that DID finish construction before simulation end: 257 (85.7%)
+3. Of those that finished, detected BEFORE finishing construction: 102 (39.7% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 102 (34.0%)
+  Detected after finished construction: 164 (54.7%)
+  Never detected: 34 (11.3%)
+  Fabs that never finished construction (should equal fabs never finished above): 43 (14.3%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 837374
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 145 (48.3%)
+  Fabs with >0 compute at detection: 155 (51.7%)
+  P(covert compute > 0) = 0.5167 (51.7%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.5167
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 45 (15.0%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 255 (85.0%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8567
+is_operational at last timestep - sum: 257.0
+is_operational at last timestep - count of 1s: 257
+is_operational at last timestep - count of 0s: 43
+
+Construction end times - min: 2030.5944, max: 2034.5485, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 10: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 17: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 27: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 29: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 32: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 43
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 13:46:57] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 13:47:08] "GET / HTTP/1.1" 200 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = 1.0264312449396544
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 28.81920887999033
+DEBUG: Sample fab process_node = ProcessNode.nm28
+DEBUG: Sample fab wafer_starts_per_month = 2934.084131142733
+DEBUG: Sample fab production_capacity = 4523.082552067149
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 51 (17.0%)
+2. Fabs that DID finish construction before simulation end: 249 (83.0%)
+3. Of those that finished, detected BEFORE finishing construction: 91 (36.5% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 91 (30.3%)
+  Detected after finished construction: 183 (61.0%)
+  Never detected: 26 (8.7%)
+  Fabs that never finished construction (should equal fabs never finished above): 51 (17.0%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 769471
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 142 (47.3%)
+  Fabs with >0 compute at detection: 158 (52.7%)
+  P(covert compute > 0) = 0.5267 (52.7%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.5267
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 59 (19.7%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 241 (80.3%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8300
+is_operational at last timestep - sum: 249.0
+is_operational at last timestep - count of 1s: 249
+is_operational at last timestep - count of 0s: 51
+
+Construction end times - min: 2030.5577, max: 2035.6510, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 13: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 20: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 22: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 25: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 26: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 51
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 13:47:10] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 13:50:02] "[36mGET /static/fab_production/labor_vs_production.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:50:47] "[36mGET /static/fab_production/lithography_sales_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:51:02] "[36mGET /static/compute_density/h100_equiv_per_year_vs_process_node.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:56:40] "[36mGET /static/fab_construction_time/construction_time_vs_labor.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:56:40] "[36mGET /static/fab_construction_time/construction_time_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:56:40] "[36mGET /static/fab_construction_time/construction_time_plot_adjusted.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:56:40] "[36mGET /static/fab_construction_time/cost_of_fab_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:57:59] "[36mGET /static/fab_production/lithography_sales_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:58:03] "[36mGET /static/china_domestic_fab_capability/china_capabilities_table.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:58:03] "[36mGET /static/intelligence_error_bars/error_bars_plot.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 13:58:12] "GET / HTTP/1.1" 200 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = 1.3909363602204756
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 261.3820694499084
+DEBUG: Sample fab process_node = ProcessNode.nm130
+DEBUG: Sample fab wafer_starts_per_month = 24075.04965988432
+DEBUG: Sample fab production_capacity = 3767.202929058423
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 44 (14.7%)
+2. Fabs that DID finish construction before simulation end: 256 (85.3%)
+3. Of those that finished, detected BEFORE finishing construction: 116 (45.3% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 116 (38.7%)
+  Detected after finished construction: 152 (50.7%)
+  Never detected: 32 (10.7%)
+  Fabs that never finished construction (should equal fabs never finished above): 44 (14.7%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 842994
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 160 (53.3%)
+  Fabs with >0 compute at detection: 140 (46.7%)
+  P(covert compute > 0) = 0.4667 (46.7%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.4667
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 44 (14.7%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 256 (85.3%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8533
+is_operational at last timestep - sum: 256.0
+is_operational at last timestep - count of 1s: 256
+is_operational at last timestep - count of 0s: 44
+
+Construction end times - min: 2030.5693, max: 2034.2020, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 7: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 10: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 15: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 19: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 21: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 44
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 13:58:13] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 13:58:15] "GET / HTTP/1.1" 200 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = nan
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 0.0
+DEBUG: Sample fab process_node = ProcessNode.nm130
+DEBUG: Sample fab wafer_starts_per_month = 1.0
+DEBUG: Sample fab production_capacity = 0.15647747283095426
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 48 (16.0%)
+2. Fabs that DID finish construction before simulation end: 252 (84.0%)
+3. Of those that finished, detected BEFORE finishing construction: 108 (42.9% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 108 (36.0%)
+  Detected after finished construction: 167 (55.7%)
+  Never detected: 25 (8.3%)
+  Fabs that never finished construction (should equal fabs never finished above): 48 (16.0%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 729926
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 156 (52.0%)
+  Fabs with >0 compute at detection: 144 (48.0%)
+  P(covert compute > 0) = 0.4800 (48.0%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.4800
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 50 (16.7%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 250 (83.3%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8400
+is_operational at last timestep - sum: 252.0
+is_operational at last timestep - count of 1s: 252
+is_operational at last timestep - count of 0s: 48
+
+Construction end times - min: nan, max: nan, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 0: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 6: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 8: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 30: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 33: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 48
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 13:58:16] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 13:58:18] "GET / HTTP/1.1" 200 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = nan
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 0.0
+DEBUG: Sample fab process_node = ProcessNode.nm130
+DEBUG: Sample fab wafer_starts_per_month = 1.0
+DEBUG: Sample fab production_capacity = 0.15647747283095426
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 49 (16.3%)
+2. Fabs that DID finish construction before simulation end: 251 (83.7%)
+3. Of those that finished, detected BEFORE finishing construction: 100 (39.8% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 100 (33.3%)
+  Detected after finished construction: 165 (55.0%)
+  Never detected: 35 (11.7%)
+  Fabs that never finished construction (should equal fabs never finished above): 49 (16.3%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 802503
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 149 (49.7%)
+  Fabs with >0 compute at detection: 151 (50.3%)
+  P(covert compute > 0) = 0.5033 (50.3%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.5033
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 53 (17.7%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 247 (82.3%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8367
+is_operational at last timestep - sum: 251.0
+is_operational at last timestep - count of 1s: 251
+is_operational at last timestep - count of 0s: 49
+
+Construction end times - min: nan, max: nan, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 0: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 3: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 7: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 10: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 13: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 49
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 13:58:20] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 13:58:26] "GET / HTTP/1.1" 200 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = 2.6973025302323954
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 177.52592175032473
+DEBUG: Sample fab process_node = ProcessNode.nm130
+DEBUG: Sample fab wafer_starts_per_month = 14809.233535023486
+DEBUG: Sample fab production_capacity = 2317.311438123894
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 45 (15.0%)
+2. Fabs that DID finish construction before simulation end: 255 (85.0%)
+3. Of those that finished, detected BEFORE finishing construction: 103 (40.4% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 103 (34.3%)
+  Detected after finished construction: 167 (55.7%)
+  Never detected: 30 (10.0%)
+  Fabs that never finished construction (should equal fabs never finished above): 45 (15.0%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 722157
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 148 (49.3%)
+  Fabs with >0 compute at detection: 152 (50.7%)
+  P(covert compute > 0) = 0.5067 (50.7%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.5067
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 48 (16.0%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 252 (84.0%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8500
+is_operational at last timestep - sum: 255.0
+is_operational at last timestep - count of 1s: 255
+is_operational at last timestep - count of 0s: 45
+
+Construction end times - min: 2030.5639, max: 2033.9709, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 4: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 6: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 13: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 24: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 28: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 45
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 13:58:27] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 14:01:32] "GET / HTTP/1.1" 200 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = 2.878534535012432
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 104.06593461375809
+DEBUG: Sample fab process_node = ProcessNode.nm28
+DEBUG: Sample fab wafer_starts_per_month = 12311.656930040845
+DEBUG: Sample fab production_capacity = 18979.224234315378
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 41 (13.7%)
+2. Fabs that DID finish construction before simulation end: 259 (86.3%)
+3. Of those that finished, detected BEFORE finishing construction: 96 (37.1% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 96 (32.0%)
+  Detected after finished construction: 172 (57.3%)
+  Never detected: 32 (10.7%)
+  Fabs that never finished construction (should equal fabs never finished above): 41 (13.7%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 835883
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 137 (45.7%)
+  Fabs with >0 compute at detection: 163 (54.3%)
+  P(covert compute > 0) = 0.5433 (54.3%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.5433
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 43 (14.3%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 257 (85.7%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8633
+is_operational at last timestep - sum: 259.0
+is_operational at last timestep - count of 1s: 259
+is_operational at last timestep - count of 0s: 41
+
+Construction end times - min: 2030.5105, max: 2034.8023, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 9: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 27: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 30: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 37: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 38: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 41
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 14:01:33] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 14:01:53] "[36mGET /static/intelligence_error_bars/error_bars_plot.png HTTP/1.1[0m" 304 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = 1.7878733716353383
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 419.5828844357812
+DEBUG: Sample fab process_node = ProcessNode.nm130
+DEBUG: Sample fab wafer_starts_per_month = 5856.526959205629
+DEBUG: Sample fab production_capacity = 916.4145381428499
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 36 (12.0%)
+2. Fabs that DID finish construction before simulation end: 264 (88.0%)
+3. Of those that finished, detected BEFORE finishing construction: 116 (43.9% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 116 (38.7%)
+  Detected after finished construction: 149 (49.7%)
+  Never detected: 35 (11.7%)
+  Fabs that never finished construction (should equal fabs never finished above): 36 (12.0%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 703937
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 152 (50.7%)
+  Fabs with >0 compute at detection: 148 (49.3%)
+  P(covert compute > 0) = 0.4933 (49.3%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.4933
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 36 (12.0%)
+  LR ≥ 10.0: 2 (0.7%)
+  Other values: 262 (87.3%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8800
+is_operational at last timestep - sum: 264.0
+is_operational at last timestep - count of 1s: 264
+is_operational at last timestep - count of 0s: 36
+
+Construction end times - min: 2030.6671, max: 2034.4128, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 7: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 10: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 14: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 39: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 42: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 36
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 14:02:08] "POST /run_simulation HTTP/1.1" 200 -
+127.0.0.1 - - [08/Nov/2025 14:02:21] "[36mGET /static/china_domestic_fab_capability/china_capabilities_table.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [08/Nov/2025 14:05:39] "[36mGET /static/china_domestic_fab_capability/china_capabilities_table.png HTTP/1.1[0m" 304 -
+DEBUG: Received scanner_proportion = 0.1
+DEBUG: operating_labor = 728, construction_labor = 448
+DEBUG: About to create strategy...
+DEBUG: Created strategy with scanner_proportion = 0.1
+DEBUG: Running simulations...
+DEBUG: Sample fab construction_start_year = 2030.0
+DEBUG: Sample fab construction_duration = nan
+DEBUG: Sample fab total_prc_lithography_scanners_for_node = 0.0
+DEBUG: Sample fab process_node = ProcessNode.nm130
+DEBUG: Sample fab wafer_starts_per_month = 1.0
+DEBUG: Sample fab production_capacity = 0.15647747283095426
+DEBUG: Extracting plot data...
+
+=== DIRECT ANSWERS TO USER'S QUESTIONS ===
+1. Fabs that NEVER finished construction before simulation end: 45 (15.0%)
+2. Fabs that DID finish construction before simulation end: 255 (85.0%)
+3. Of those that finished, detected BEFORE finishing construction: 112 (43.9% of finished fabs)
+==========================================
+
+
+DETECTION TIMING ANALYSIS (P(fab) >= 50%):
+  Total simulations with fab: 300
+  Detected during construction: 112 (37.3%)
+  Detected after finished construction: 155 (51.7%)
+  Never detected: 33 (11.0%)
+  Fabs that never finished construction (should equal fabs never finished above): 45 (15.0%)
+
+DEBUG H100e COMPARISON:
+  Total sims with fab: 300
+  Dashboard individual values (includes non-detected): 300
+  Dashboard 80th percentile: 669765
+
+COMPUTE BEFORE DETECTION ANALYSIS:
+  Fabs with 0 compute at detection: 157 (52.3%)
+  Fabs with >0 compute at detection: 143 (47.7%)
+  P(covert compute > 0) = 0.4767 (47.7%)
+  CCDF smallest x value: 0.00 H100e
+  CCDF at smallest x: P(compute > 0.00) = 0.4767
+INVENTORY LR ANALYSIS (final timestep):
+  Total simulations: 300
+  LR ≈ 1.0: 45 (15.0%)
+  LR ≥ 10.0: 0 (0.0%)
+  Other values: 255 (85.0%)
+
+=== DEBUG CONSTRUCTION COMPLETION ===
+Total simulations in model.simulation_results: 300
+Number of entries in is_operational_by_sim: 300
+Simulations WITH fab: 300
+Simulations WITHOUT fab: 0
+
+Years array length: 71
+First years: [2030.0, 2030.1, 2030.1999999999998, 2030.2999999999997, 2030.3999999999996]
+Last years: [2036.599999999994, 2036.699999999994, 2036.7999999999938, 2036.8999999999937, 2036.9999999999936]
+Last year: 2036.9999999999936
+
+is_operational_array shape: (300, 71)
+is_operational at last timestep - mean across sims WITH FABS: 0.8500
+is_operational at last timestep - sum: 255.0
+is_operational at last timestep - count of 1s: 255
+is_operational at last timestep - count of 0s: 45
+
+Construction end times - min: nan, max: nan, mean: nan
+Number of fabs finishing AFTER last simulation year (2036.9999999999936): 0
+
+Checking fabs NOT operational at last timestep:
+  Sim 0: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 6: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 10: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 11: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+  Sim 19: construction_end=nan, last_year=2037.000000, diff=nan, is_operational=False
+Total non-operational at last timestep: 45
+=====================================
+
+DEBUG: Returning results...
+127.0.0.1 - - [08/Nov/2025 14:05:45] "POST /run_simulation HTTP/1.1" 200 -

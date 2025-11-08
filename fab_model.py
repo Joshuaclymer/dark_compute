@@ -252,7 +252,8 @@ Instantiate PRCCovertFab with construction parameters:
         construction_labor=500,
         process_node=ProcessNode.nm28,
         proportion_of_prc_lithography_scanners_devoted_to_fab=0.10,
-        operation_labor=2000
+        operation_labor=2000,
+        agreement_year=2030
     )
 
 Then query compute production and likelihood ratio:
@@ -523,19 +524,27 @@ def estimate_transistor_density_relative_to_h100(process_node_nm: float) -> floa
 
     return density_relative_to_h100
 
-def estimate_architecture_efficiency_relative_to_h100(year: float) -> float:
+def estimate_architecture_efficiency_relative_to_h100(year: float, agreement_year: float = None) -> float:
     """
     Estimates chip architecture efficiency relative to H100 based on year.
 
     Architecture improvements compound at 1.23× per year. The H100 (released in 2022)
     serves as the reference point with efficiency = 1.0.
 
+    If agreement_year is provided, architecture efficiency stops improving after that year
+    and remains constant at the agreement year level.
+
     Args:
         year: The year to calculate architecture efficiency for
+        agreement_year: Optional year after which architecture efficiency stops improving
 
     Returns:
         float: Architecture efficiency relative to H100 (1.0 = H100 in 2022, >1 = better, <1 = worse)
     """
+    # If agreement year is specified and we're past it, cap at agreement year efficiency
+    if agreement_year is not None and year > agreement_year:
+        year = agreement_year
+
     years_since_h100 = year - H100_RELEASE_YEAR
     efficiency_relative_to_h100 = FabModelParameters.architecture_efficiency_improvement_per_year ** years_since_h100
 
@@ -957,6 +966,7 @@ class PRCCovertFab(CovertFab):
     wafer_starts_per_month : float
     h100_sized_chips_per_wafer : float
     transistor_density_relative_to_h100 : float
+    agreement_year : float
 
     # Properties that are used to determine detection probability
     process_node : ProcessNode
@@ -973,6 +983,7 @@ class PRCCovertFab(CovertFab):
             process_node,  # Can be ProcessNode enum or "best_available_indigenously" string
             proportion_of_prc_lithography_scanners_devoted_to_fab : float,
             operation_labor : float,
+            agreement_year : float,
     ):
         # Handle "best_available_indigenously" special case
         if process_node == "best_available_indigenously":
@@ -1000,6 +1011,7 @@ class PRCCovertFab(CovertFab):
 
         # Properties that are used to determine compute production
         self.construction_start_year = construction_start_year
+        self.agreement_year = agreement_year
 
         # Estimate number of scanners devoted to fab from proportion
         number_of_prc_lithography_scanners_devoted_to_fab = proportion_of_prc_lithography_scanners_devoted_to_fab * self.total_prc_lithography_scanners_for_node
@@ -1042,7 +1054,7 @@ class PRCCovertFab(CovertFab):
             return False
 
     def h100e_produced_per_month(self, year):
-        chip_architecture_efficiency_relative_to_h100 = estimate_architecture_efficiency_relative_to_h100(year)
+        chip_architecture_efficiency_relative_to_h100 = estimate_architecture_efficiency_relative_to_h100(year, self.agreement_year)
         compute_per_wafer = self.h100_sized_chips_per_wafer * self.transistor_density_relative_to_h100 * chip_architecture_efficiency_relative_to_h100
         return self.is_operational(year) \
             * self.wafer_starts_per_month * compute_per_wafer

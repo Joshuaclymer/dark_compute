@@ -264,11 +264,18 @@
             text-align: center;
         }
 
-        .breakdown-grid {
+        .breakdown-plots-row {
             display: flex;
             align-items: center;
             gap: 5px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .breakdown-labels-row {
+            display: flex;
+            gap: 5px;
             max-width: 100%;
             width: 100%;
         }
@@ -277,8 +284,6 @@
             text-align: center;
             min-width: 0;
             flex: 1;
-            display: flex;
-            flex-direction: column;
         }
 
         .breakdown-plot {
@@ -317,12 +322,34 @@
             line-height: 1.2;
         }
 
+        .breakdown-description {
+            font-size: 9px;
+            color: #777;
+            margin-top: 5px;
+            line-height: 1.3;
+            font-style: italic;
+        }
+
         .operator {
             font-size: 24px;
             font-weight: bold;
             color: #666;
             padding: 0 3px;
             flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .operator.arrow-operator {
+            padding-top: 28px;
+            padding-bottom: 0;
+            padding-left: 20px;
+            padding-right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .status {
@@ -603,75 +630,122 @@
             </div>
 
             <div class="breakdown-section">
-                <div class="breakdown-title">Odds of Covert Project Breakdown</div>
+                <div class="breakdown-title">Odds of Covert Fab Breakdown</div>
                 <div class="section-description">
                     Posterior Odds = Prior Odds × LR<sub>inventory</sub> × LR<sub>procurement</sub> × LR<sub>other</sub><br>
                     Combine prior belief with evidence from three independent intelligence sources to estimate detection likelihood.
                 </div>
-                <div class="breakdown-grid">
+                <div class="breakdown-plots-row">
                     <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
-                        <div id="priorOddsDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 20px;">
+                        <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Prior Odds of<br>Covert Project</div>
+                        <div id="priorOddsDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
                             --
                         </div>
-                        <div class="breakdown-label">Prior Odds of<br>Covert Project</div>
+                        <div class="breakdown-label" style="margin-top: 5px;">Prior Odds of<br>Covert Project</div>
                     </div>
                     <div class="operator">×</div>
                     <div class="breakdown-item">
                         <div id="lrInventoryPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Likelihood Ratio from<br>Inventory Accounting</div>
                     </div>
                     <div class="operator">×</div>
                     <div class="breakdown-item">
                         <div id="lrProcurementPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Likelihood Ratio from<br>Procurement Accounting</div>
                     </div>
                     <div class="operator">×</div>
                     <div class="breakdown-item">
                         <div id="lrOtherPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Likelihood Ratio from Other Intelligence Sources<br>(e.g. HUMINT, SIGINT, IMINT)</div>
                     </div>
-                    <div class="operator">=</div>
+                    <div class="operator arrow-operator" style="position: relative;">
+                        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 9px; text-align: center; color: #888; line-height: 1.3; width: 70px;">Convert to<br>probability</div>
+                        <div style="font-size: 20px;">→</div>
+                    </div>
                     <div class="breakdown-item">
-                        <div id="posteriorOddsPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Posterior Odds of<br>Covert Project</div>
+                        <div id="posteriorProbPlot" class="breakdown-plot"></div>
+                    </div>
+                </div>
+                <div class="breakdown-labels-row">
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Likelihood Ratio from<br>Inventory Accounting</div>
+                        <div class="breakdown-description">How much USG can update based on noticing that the PRC reported less indigenously produced SME than USG estimated it possessed prior to the agreement.</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Likelihood Ratio from<br>Procurement Accounting</div>
+                        <div class="breakdown-description">Assumes USG quickly detects a covert fab if <90% of the SME its built with is domestically sourced (and otherwise procurement intelligence doesn't provide evidence).</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Likelihood Ratio from Other Intelligence Sources</div>
+                        <div class="breakdown-description">How much USG can update based on detecting the fab through human intelligence, signals intelligence, or imagery intelligence.</div>
+                    </div>
+                    <div class="operator arrow-operator" style="visibility: hidden;">→</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Posterior Probability of<br>Covert Project</div>
                     </div>
                 </div>
             </div>
 
             <div class="breakdown-section">
-                <div class="breakdown-title">Compute Production Rate Breakdown</div>
+                <div class="breakdown-title">Fab Compute Production Rate Breakdown</div>
                 <div class="section-description">
-                    H100e per month = Probability Operational × Wafer Starts per Month × H100-sized Chips per Wafer × H100e per Chip × Architecture Efficiency
+                    H100e per month = Probability Operational × Wafer Starts per Month × H100-sized Chips per Wafer × H100e per Chip × Architecture Efficiency<br>
+                    Architecture efficiency improves until the agreement year, then remains constant.
                 </div>
-                <div class="breakdown-grid">
+                <div class="breakdown-plots-row">
                     <div class="breakdown-item">
                         <div id="isOperationalPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Probability Operational</div>
                     </div>
                     <div class="operator">×</div>
                     <div class="breakdown-item">
                         <div id="waferStartsPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Wafer Starts per Month</div>
                     </div>
                     <div class="operator">×</div>
                     <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
-                        <div id="chipsPerWaferPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">H100-sized Chips per Wafer</div>
+                        <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">H100-sized Chips per Wafer</div>
+                        <div id="chipsPerWaferPlot" class="breakdown-plot" style="padding: 0; height: 70px;"></div>
+                        <div class="breakdown-label" style="margin-top: 5px;">H100-sized Chips per Wafer</div>
                     </div>
                     <div class="operator">×</div>
                     <div class="breakdown-item">
                         <div id="computePerChipPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">H100e per Chip (H100 architecture)</div>
                     </div>
                     <div class="operator">×</div>
-                    <div class="breakdown-item">
-                        <div id="architectureEfficiencyPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Architecture Efficiency (relative to H100)</div>
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                        <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Architecture Efficiency (relative to H100)</div>
+                        <div id="architectureEfficiencyDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
+                            --
+                        </div>
+                        <div class="breakdown-label" style="margin-top: 5px;">Architecture Efficiency (relative to H100)</div>
                     </div>
                     <div class="operator">=</div>
                     <div class="breakdown-item">
                         <div id="totalComputePlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Total H100e per Month</div>
+                    </div>
+                </div>
+                <div class="breakdown-labels-row">
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Probability Operational</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Wafer Starts per Month</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">H100e per Chip (H100 architecture)</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    </div>
+                    <div class="operator" style="visibility: hidden;">=</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">H100e per Month</div>
                     </div>
                 </div>
             </div>
@@ -856,7 +930,7 @@
                     tickfont: { size: 10, color: computeColor },
                     overlaying: 'y',
                     side: 'right',
-                    range: [0, 1000],
+                    range: [0, 5000],
                     automargin: true
                 },
                 showlegend: true,
@@ -939,24 +1013,90 @@
 
         function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false) {
             // Create histogram/PDF from values
+            console.log(`plotPDF called for ${divId}:`, values);
+            console.log(`plotPDF ${divId} - min: ${Math.min(...values)}, max: ${Math.max(...values)}, count: ${values.length}`);
+
             const trace = {
                 x: values,
                 type: 'histogram',
                 histnorm: 'probability density',
                 marker: { color: color, line: { width: 0.5, color: 'white' } },
-                hovertemplate: '%{x:.2f}<br>Density: %{y:.3f}<extra></extra>',
-                nbinsx: nbins
+                hovertemplate: '%{x:.2f}<br>Density: %{y:.3f}<extra></extra>'
             };
 
+            // For log scale, manually specify bin edges
+            if (logScale) {
+                // Create 12 bins evenly spaced in log space from 0.1 to 10
+                const minVal = 0.1;
+                const maxVal = 10;
+                const numBins = 12;
+                const logMin = Math.log10(minVal);
+                const logMax = Math.log10(maxVal);
+                const binEdges = [];
+                for (let i = 0; i <= numBins; i++) {
+                    binEdges.push(Math.pow(10, logMin + i * (logMax - logMin) / numBins));
+                }
+
+                // Manually bin the data
+                const binCounts = new Array(binEdges.length - 1).fill(0);
+                values.forEach(v => {
+                    for (let i = 0; i < binEdges.length - 1; i++) {
+                        if (v >= binEdges[i] && v < binEdges[i + 1]) {
+                            binCounts[i]++;
+                            break;
+                        }
+                    }
+                    // Handle values >= last edge
+                    if (v >= binEdges[binEdges.length - 1]) {
+                        binCounts[binCounts.length - 1]++;
+                    }
+                });
+
+                // Calculate bin centers for plotting
+                const binCenters = [];
+                for (let i = 0; i < binEdges.length - 1; i++) {
+                    binCenters.push((binEdges[i] + binEdges[i + 1]) / 2);
+                }
+
+                // Calculate probability density (count / total / bin_width)
+                const densities = binCounts.map((count, i) => {
+                    const binWidth = binEdges[i + 1] - binEdges[i];
+                    return count / values.length / binWidth;
+                });
+
+                console.log(`Bin edges: ${binEdges}`);
+                console.log(`Bin counts: ${binCounts}`);
+                console.log(`Densities: ${densities}`);
+
+                // Create bar trace instead of histogram
+                trace.type = 'bar';
+                trace.x = binCenters;
+                trace.y = densities;
+                delete trace.histnorm;
+                trace.width = binEdges.map((edge, i) => i < binEdges.length - 1 ? binEdges[i + 1] - binEdges[i] : 0).slice(0, -1);
+                trace.hovertemplate = 'LR: %{x:.2f}<br>Density: %{y:.3f}<extra></extra>';
+            } else {
+                trace.nbinsx = nbins;
+            }
+
+            const xaxisConfig = {
+                title: xAxisLabel,
+                titlefont: { size: 10 },
+                automargin: true,
+                tickfont: { size: 9 }
+            };
+
+            if (logScale) {
+                xaxisConfig.type = 'log';
+                // Manually specify tick values for better visibility
+                xaxisConfig.tickvals = [0.1, 0.2, 0.5, 1, 2, 5, 10];
+                xaxisConfig.ticktext = ['0.1', '0.2', '0.5', '1', '2', '5', '10'];
+                // Don't force range - let it adjust based on data
+                xaxisConfig.autorange = true;
+            }
+
             const layout = {
-                xaxis: {
-                    title: xAxisLabel,
-                    titlefont: { size: 10 },
-                    automargin: true,
-                    tickfont: { size: 9 },
-                    type: logScale ? 'log' : 'linear',
-                    autorange: true
-                },
+                xaxis: xaxisConfig,
                 yaxis: {
                     title: 'Density',
                     titlefont: { size: 10 },
@@ -972,7 +1112,7 @@
             setTimeout(() => Plotly.Plots.resize(divId), 50);
         }
 
-        function plotMedianWithPercentiles(divId, data, years, color, yAxisLabel = '') {
+        function plotMedianWithPercentiles(divId, data, years, color, yAxisLabel = '', yAxisRange = null, logScale = false) {
             // Plot median with 25th-75th percentile bands
             const traces = [];
 
@@ -986,7 +1126,7 @@
                         type: 'scatter',
                         mode: 'lines',
                         line: { color: color, width: 0.5 },
-                        opacity: 0.08,
+                        opacity: 0.15,
                         showlegend: false,
                         hoverinfo: 'skip'
                     });
@@ -1000,8 +1140,8 @@
                     y: data.p25,
                     type: 'scatter',
                     mode: 'lines',
-                    line: { color: color, width: 1, dash: 'dot' },
-                    opacity: 0.4,
+                    line: { color: color, width: 1.5, dash: 'dot' },
+                    opacity: 0.6,
                     showlegend: false,
                     hoverinfo: 'skip',
                     name: '25th percentile'
@@ -1013,8 +1153,8 @@
                     mode: 'lines',
                     fill: 'tonexty',
                     fillcolor: color + '60',
-                    line: { color: color, width: 1, dash: 'dot' },
-                    opacity: 0.5,
+                    line: { color: color, width: 1.5, dash: 'dot' },
+                    opacity: 0.7,
                     showlegend: false,
                     hoverinfo: 'skip',
                     name: '75th percentile'
@@ -1024,12 +1164,29 @@
                     y: data.median,
                     type: 'scatter',
                     mode: 'lines',
-                    line: { color: color, width: 2.5 },
+                    line: { color: color, width: 3 },
                     showlegend: false,
                     hovertemplate: 'Year: %{x:.1f}<br>Value: %{y:.2f}<extra></extra>',
                     name: 'Median'
                 }
             );
+
+            const yaxisConfig = {
+                title: yAxisLabel,
+                titlefont: { size: 10 },
+                tickfont: { size: 9 },
+                automargin: true
+            };
+
+            // Add log scale if specified
+            if (logScale) {
+                yaxisConfig.type = 'log';
+            }
+
+            // Add range if specified
+            if (yAxisRange !== null) {
+                yaxisConfig.range = yAxisRange;
+            }
 
             const layout = {
                 xaxis: {
@@ -1041,12 +1198,7 @@
                     autorange: false,
                     fixedrange: true
                 },
-                yaxis: {
-                    title: yAxisLabel,
-                    titlefont: { size: 10 },
-                    tickfont: { size: 9 },
-                    automargin: true
-                },
+                yaxis: yaxisConfig,
                 showlegend: false,
                 margin: { l: 50, r: 50, t: 10, b: 40, pad: 10 },
                 hovermode: 'x'
@@ -1212,8 +1364,18 @@
                 const h100e80th = sorted[idx80];
                 // Round to nearest 100,000
                 const rounded = Math.round(h100e80th / 100000) * 100000;
-                document.getElementById('dashboard80thH100e').textContent =
-                    rounded >= 1000 ? `~${(rounded / 1000).toFixed(0)}K` : `~${rounded.toFixed(0)}`;
+
+                // Use M for millions, K for thousands
+                if (rounded >= 1000000) {
+                    document.getElementById('dashboard80thH100e').textContent =
+                        `~${(rounded / 1000000).toFixed(1)}M`;
+                } else if (rounded >= 1000) {
+                    document.getElementById('dashboard80thH100e').textContent =
+                        `~${(rounded / 1000).toFixed(0)}K`;
+                } else {
+                    document.getElementById('dashboard80thH100e').textContent =
+                        `~${rounded.toFixed(0)}`;
+                }
             }
 
             // Calculate 80th percentile time before detection
@@ -1297,10 +1459,12 @@
                     // LR Inventory - PDF of values across simulations at final timestep
                     const lrInventoryFinal = data.lr_components.inventory_individual.map(sim => sim[sim.length - 1]);
                     console.log('LR Inventory values:', lrInventoryFinal);
+                    console.log('LR Inventory length:', lrInventoryFinal.length);
                     console.log('LR Inventory min:', Math.min(...lrInventoryFinal), 'max:', Math.max(...lrInventoryFinal));
-                    // Convert to log10 scale to show values both above and below 1
-                    const lrInventoryLog = lrInventoryFinal.map(lr => Math.log10(lr));
-                    plotPDF('lrInventoryPlot', lrInventoryLog, '#D97676', 'log₁₀(LR)', 10, false);
+                    console.log('Values below 1:', lrInventoryFinal.filter(v => v < 1));
+                    console.log('Values at or above 1:', lrInventoryFinal.filter(v => v >= 1));
+                    // Use log scale x-axis but show actual LR values (not log values)
+                    plotPDF('lrInventoryPlot', lrInventoryFinal, '#D97676', 'LR', 10, true);
 
                     // LR Procurement - Categorical bar plot (1 or 10)
                     const lrProcurementFinal = data.lr_components.procurement_individual.map(sim => sim[sim.length - 1]);
@@ -1324,15 +1488,16 @@
                         p25: lrOtherP25,
                         p75: lrOtherP75,
                         individual: data.lr_components.other_individual
-                    }, years, '#7CAE7A', 'Likelihood Ratio');
+                    }, years, '#7CAE7A', 'Likelihood Ratio (log scale)', null, true);
 
-                    // Calculate posterior odds (prior odds * total LR) - PDF
-                    const posteriorOddsFinal = data.lr_components.inventory_individual.map((invSim, simIdx) => {
-                        const i = invSim.length - 1;
-                        const totalLR = invSim[i] * data.lr_components.procurement_individual[simIdx][i] * data.lr_components.other_individual[simIdx][i];
-                        return priorOdds * totalLR;
-                    });
-                    plotPDF('posteriorOddsPlot', posteriorOddsFinal, '#9B7BB3', 'Odds');
+                    // Use the same US probability data as Simulation Runs plot
+                    // This includes ALL simulations (with and without fabs)
+                    plotMedianWithPercentiles('posteriorProbPlot', {
+                        median: data.time_series.us_prob_median,
+                        p25: data.time_series.us_prob_p25,
+                        p75: data.time_series.us_prob_p75,
+                        individual: data.time_series.individual_us_probs
+                    }, data.time_series.years, '#5B8DBE', 'Posterior Probability');
                 }
 
                 // Plot compute breakdown
@@ -1350,45 +1515,46 @@
 
                     // H100-sized Chips per Wafer - Display as a box (constant value)
                     const chipsPerWaferValue = data.compute_factors.chips_per_wafer_individual[0][0]; // Same for all sims
-                    document.getElementById('chipsPerWaferPlot').innerHTML = `<div style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 20px;">${chipsPerWaferValue.toFixed(0)}</div>`;
+                    document.getElementById('chipsPerWaferPlot').innerHTML = `<div style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; height: 100%; width: 100%;">${chipsPerWaferValue.toFixed(0)}</div>`;
 
                     // H100e per Chip (H100 architecture) - Bar plot at final timestep
                     const computePerChip2022Final = data.compute_factors.compute_per_wafer_2022_arch_individual.map(sim => sim[sim.length - 1]);
                     const processNodes = data.compute_factors.process_node_by_sim;
                     plotBarByProcessNode('computePerChipPlot', computePerChip2022Final, processNodes, '#E8A863');
 
-                    // Architecture Efficiency - median over time with percentiles (smooth curve)
-                    if (data.compute_factors.architecture_efficiency_individual && data.compute_factors.architecture_efficiency_individual.length > 0) {
-                        const archEffArray = data.compute_factors.architecture_efficiency_individual.map(sim => sim.map(v => v));
-                        const archEffP25 = years.map((_, i) => {
-                            const values = archEffArray.map(sim => sim[i]).filter(v => v !== undefined && v !== null);
-                            if (values.length === 0) return 0;
-                            const sorted = values.sort((a, b) => a - b);
-                            return sorted[Math.floor(sorted.length * 0.25)];
-                        });
-                        const archEffP75 = years.map((_, i) => {
-                            const values = archEffArray.map(sim => sim[i]).filter(v => v !== undefined && v !== null);
-                            if (values.length === 0) return 0;
-                            const sorted = values.sort((a, b) => a - b);
-                            return sorted[Math.floor(sorted.length * 0.75)];
-                        });
-                        plotMedianWithPercentiles('architectureEfficiencyPlot', {
-                            median: data.compute_factors.architecture_efficiency_median,
-                            p25: archEffP25,
-                            p75: archEffP75,
-                            individual: data.compute_factors.architecture_efficiency_individual
-                        }, years, '#A87DC4', 'Efficiency Multiplier');
-                    }
+                    // Architecture Efficiency - Display as a box (constant value at agreement year)
+                    const archEffValue = data.architecture_efficiency_at_agreement;
+                    document.getElementById('architectureEfficiencyDisplay').innerHTML = `<div style="font-size: 28px; font-weight: bold; color: #555;">${archEffValue.toFixed(2)}</div>`;
 
-                    // Total compute - PDF (at final timestep)
-                    const totalComputeFinal = data.compute_factors.is_operational_individual.map((opSim, simIdx) => {
-                        const i = opSim.length - 1;
-                        return (opSim[i] * data.compute_factors.wafer_starts_individual[simIdx][i] *
-                                data.compute_factors.chips_per_wafer_individual[simIdx][i] *
-                                data.compute_factors.architecture_efficiency_individual[simIdx][i] *
-                                data.compute_factors.compute_per_wafer_2022_arch_individual[simIdx][i]) / 1000;
+                    // Total compute - time series over all timesteps
+                    const totalComputeArray = data.compute_factors.is_operational_individual.map((opSim, simIdx) => {
+                        return opSim.map((isOp, timeIdx) => {
+                            return (isOp * data.compute_factors.wafer_starts_individual[simIdx][timeIdx] *
+                                    data.compute_factors.architecture_efficiency_individual[simIdx][timeIdx] *
+                                    data.compute_factors.compute_per_wafer_2022_arch_individual[simIdx][timeIdx]);
+                        });
                     });
-                    plotPDF('totalComputePlot', totalComputeFinal, '#B56C6C', 'H100e/Month (K)');
+
+                    // Calculate median and percentiles for total compute
+                    const totalComputeMedian = years.map((_, i) => {
+                        const values = totalComputeArray.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.5)];
+                    });
+                    const totalComputeP25 = years.map((_, i) => {
+                        const values = totalComputeArray.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
+                    });
+                    const totalComputeP75 = years.map((_, i) => {
+                        const values = totalComputeArray.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
+                    });
+
+                    plotMedianWithPercentiles('totalComputePlot', {
+                        median: totalComputeMedian,
+                        p25: totalComputeP25,
+                        p75: totalComputeP75,
+                        individual: totalComputeArray
+                    }, years, '#B56C6C', 'H100e/Month', [0, 200000]);
                 }
 
                 plotsDiv.style.display = 'block';
@@ -1536,14 +1702,14 @@
             'lrInventoryPlot': 'proportion_diverted_sme', // US intelligence estimates
             'lrProcurementPlot': 'localization_130nm_2025', // Probability PRC achieves >90% indigenization
             'lrOtherPlot': 'mean_detection_time_100', // Detection time
-            'posteriorOddsPlot': null, // Output, not an input
+            'posteriorProbPlot': null, // Output, not an input
 
             // Section 3: Compute Production Rate plots
             'isOperationalPlot': 'construction_time_5k', // First construction time param
             'waferStartsPlot': 'wafers_per_month_per_worker', // Operating labor productivity
             'chipsPerWaferPlot': 'chips_per_wafer',
             'computePerChipPlot': 'transistor_density_exponent',
-            'architectureEfficiencyPlot': 'architecture_efficiency',
+            'architectureEfficiencyDisplay': 'architecture_efficiency',
             'totalComputePlot': null // Output, not an input
         };
 

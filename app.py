@@ -120,6 +120,8 @@ def extract_plot_data(model):
     if not model.simulation_results:
         return {"error": "No simulation results"}
 
+    agreement_year = model.year_us_prc_agreement_goes_into_force
+
     # Extract time series data (like simulation_runs.png)
     all_years = []
     us_probs_by_sim = []
@@ -179,7 +181,7 @@ def extract_plot_data(model):
 
                 # Architecture efficiency and compute per wafer (2022 architectures)
                 from fab_model import estimate_architecture_efficiency_relative_to_h100
-                arch_efficiency = estimate_architecture_efficiency_relative_to_h100(year)
+                arch_efficiency = estimate_architecture_efficiency_relative_to_h100(year, agreement_year)
                 architecture_efficiency.append(arch_efficiency)
 
                 # Compute per wafer with 2022 architectures (without year-specific architecture improvements)
@@ -221,6 +223,10 @@ def extract_plot_data(model):
     individual_time_before_detection = []
     individual_process_nodes = []
 
+    # Count total simulations with covert fab for correct CCDF calculation
+    total_simulations_with_fab = sum(1 for cp, _ in model.simulation_results
+                                     if cp["prc_covert_project"].covert_fab is not None)
+
     for threshold in detection_thresholds:
         compute_at_detection = []
         operational_time_at_detection = []
@@ -260,16 +266,37 @@ def extract_plot_data(model):
                     individual_h100e_before_detection.append(h100e_at_detection)
                     individual_time_before_detection.append(operational_time)
                     individual_process_nodes.append(covert_fab.process_node.value)
+            else:
+                # Detection never happened - use final values for dashboard (0.5 threshold only)
+                if threshold == 0.5:
+                    # Use H100e at end of simulation
+                    final_year = years[-1]
+                    h100e_at_end = h100e_over_time.get(final_year, 0.0)
+                    individual_h100e_before_detection.append(h100e_at_end)
+
+                    # Use operational time at end of simulation
+                    construction_start = covert_fab.construction_start_year
+                    construction_duration = covert_fab.construction_duration
+                    operational_start = construction_start + construction_duration
+
+                    if final_year >= operational_start:
+                        operational_time = final_year - operational_start
+                    else:
+                        operational_time = 0.0
+
+                    individual_time_before_detection.append(operational_time)
+                    individual_process_nodes.append(covert_fab.process_node.value)
 
         # Calculate CCDFs for this threshold
+        # Use total_simulations_with_fab as denominator to account for runs where detection never happened
         if compute_at_detection:
             compute_sorted = np.sort(compute_at_detection)
-            ccdf_compute = 1.0 - np.arange(1, len(compute_sorted) + 1) / len(compute_sorted)
+            ccdf_compute = 1.0 - np.arange(1, len(compute_sorted) + 1) / total_simulations_with_fab
             compute_ccdfs[threshold] = [{"x": float(x), "y": float(y)} for x, y in zip(compute_sorted, ccdf_compute)]
 
         if operational_time_at_detection:
             op_time_sorted = np.sort(operational_time_at_detection)
-            ccdf_op_time = 1.0 - np.arange(1, len(op_time_sorted) + 1) / len(op_time_sorted)
+            ccdf_op_time = 1.0 - np.arange(1, len(op_time_sorted) + 1) / total_simulations_with_fab
             op_time_ccdfs[threshold] = [{"x": float(x), "y": float(y)} for x, y in zip(op_time_sorted, ccdf_op_time)]
 
     # Keep backward compatibility with single threshold
@@ -315,6 +342,10 @@ def extract_plot_data(model):
             "process_node_by_sim": process_node_by_sim
         }
 
+    # Calculate architecture efficiency at agreement year
+    from fab_model import estimate_architecture_efficiency_relative_to_h100
+    architecture_efficiency_at_agreement = estimate_architecture_efficiency_relative_to_h100(agreement_year, agreement_year)
+
     return {
         "time_series": {
             "years": years_array.tolist(),
@@ -333,6 +364,7 @@ def extract_plot_data(model):
         "op_time_ccdfs": op_time_ccdfs,
         "lr_components": lr_components,
         "compute_factors": compute_factors,
+        "architecture_efficiency_at_agreement": architecture_efficiency_at_agreement,
         "num_simulations": len(model.simulation_results),
         "individual_h100e_before_detection": individual_h100e_before_detection,
         "individual_time_before_detection": individual_time_before_detection,

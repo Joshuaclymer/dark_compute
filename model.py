@@ -27,6 +27,7 @@ class CovertProject:
     name : str
     h100e_over_time : dict[List[float], List[float]]  # year -> cumulative H100e produced
     covert_project_strategy : CovertProjectStrategy
+    agreement_year : float
     construction_start_year : Optional[float] = None
     covert_fab : Optional[CovertFab] = None
 
@@ -39,7 +40,8 @@ class CovertProject:
                 construction_labor = self.covert_project_strategy.covert_fab_construction_labor,
                 process_node = self.covert_project_strategy.covert_fab_process_node,
                 proportion_of_prc_lithography_scanners_devoted_to_fab = self.covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
-                operation_labor = self.covert_project_strategy.covert_fab_operating_labor
+                operation_labor = self.covert_project_strategy.covert_fab_operating_labor,
+                agreement_year = self.agreement_year
             )
 
 
@@ -96,6 +98,18 @@ class Simulation:
 
     def run_simulation(self, end_year : float, increment: float = 0.01):
 
+        # Store initial priors to prevent them from being overwritten
+        # The LRs are cumulative, so we always multiply by the initial prior
+        initial_priors = {}
+        for detector_name, detector in self.detectors.items():
+            initial_priors[detector_name] = {}
+            for project_name, beliefs_by_year in detector.beliefs_about_projects.items():
+                if self.year_us_prc_agreement_goes_into_force in beliefs_by_year:
+                    initial_priors[detector_name][project_name] = {
+                        'p_covert_fab_exists': beliefs_by_year[self.year_us_prc_agreement_goes_into_force].p_covert_fab_exists,
+                        'p_project_exists': beliefs_by_year[self.year_us_prc_agreement_goes_into_force].p_project_exists
+                    }
+
         # Run the simulation from the agreement year to the end year
         current_year = self.year_us_prc_agreement_goes_into_force
         while current_year <= end_year:
@@ -109,9 +123,10 @@ class Simulation:
                     project.h100e_over_time[current_year] = current_h100e + updated_h100e
                     # Update detector beliefs
                     likelihood_ratio = project.covert_fab.detection_likelihood_ratio(year=current_year)
-                    for detector in self.detectors.values():
-                        prior_p_covert_fab_exists = detector.beliefs_about_projects[project.name][self.year_us_prc_agreement_goes_into_force].p_covert_fab_exists
-                        prior_p_covert_project_exists = detector.beliefs_about_projects[project.name][self.year_us_prc_agreement_goes_into_force].p_project_exists
+                    for detector_name, detector in self.detectors.items():
+                        # Use stored initial priors (LRs are cumulative, so always multiply by initial prior)
+                        prior_p_covert_fab_exists = initial_priors[detector_name][project.name]['p_covert_fab_exists']
+                        prior_p_covert_project_exists = initial_priors[detector_name][project.name]['p_project_exists']
                         updated_odds_of_covert_fab = prior_p_covert_fab_exists / (1 - prior_p_covert_fab_exists) * likelihood_ratio
                         updated_p_covert_fab_exists = updated_odds_of_covert_fab / (1 + updated_odds_of_covert_fab)
                         updated_odds_of_covert_project = prior_p_covert_project_exists / (1 - prior_p_covert_project_exists) * likelihood_ratio
@@ -175,6 +190,7 @@ class Model:
                 name = "prc_covert_project",
                 h100e_over_time = {self.year_us_prc_agreement_goes_into_force: 0.0},
                 covert_project_strategy = default_prc_covert_project_strategy,
+                agreement_year = self.year_us_prc_agreement_goes_into_force,
                 construction_start_year = self.year_us_prc_agreement_goes_into_force
             )
         }

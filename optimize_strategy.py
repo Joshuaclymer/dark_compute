@@ -18,8 +18,8 @@ import os
 
 def evaluate_strategy(params, num_simulations=500, verbose=False):
     """
-    Evaluate a strategy configuration and return negative probability
-    (negative because we're minimizing, but want to maximize probability).
+    Evaluate a strategy configuration and return negative 80th percentile
+    (negative because we're minimizing, but want to maximize the percentile).
 
     Args:
         params: [operational_workers, construction_workers, sme_proportion]
@@ -27,7 +27,7 @@ def evaluate_strategy(params, num_simulations=500, verbose=False):
         verbose: Whether to print results
 
     Returns:
-        Negative probability of achieving >500K H100e before detection
+        Negative 80th percentile of compute produced before detection
     """
     operational_workers = int(params[0])
     construction_workers = int(params[1])
@@ -59,7 +59,7 @@ def evaluate_strategy(params, num_simulations=500, verbose=False):
 
     model.default_prc_covert_project_strategy = original_strategy
 
-    # Calculate probability
+    # Calculate 80th percentile
     compute_at_detection = []
     for covert_projects, detectors in sim_model.simulation_results:
         us_beliefs = detectors['us_intelligence'].beliefs_about_projects['prc_covert_project']
@@ -82,15 +82,15 @@ def evaluate_strategy(params, num_simulations=500, verbose=False):
             compute_at_detection.append(h100e_at_detection)
 
     if compute_at_detection:
-        p_above_500k = sum(1 for c in compute_at_detection if c > 500e3) / num_simulations
+        percentile_80 = np.percentile(compute_at_detection, 80)
     else:
-        p_above_500k = 0.0
+        percentile_80 = 0.0
 
     if verbose:
-        print(f"  P(compute > 500K): {p_above_500k:.3f}")
+        print(f"  80th percentile compute: {percentile_80:.0f} H100e")
 
     # Return negative (since we're minimizing)
-    return -p_above_500k
+    return -percentile_80
 
 
 def optimize_with_differential_evolution(initial_guess=None, num_simulations=500):
@@ -102,7 +102,7 @@ def optimize_with_differential_evolution(initial_guess=None, num_simulations=500
     print("=" * 70)
     print("OPTIMIZING STRATEGY USING DIFFERENTIAL EVOLUTION")
     print("=" * 70)
-    print(f"Objective: Maximize P(compute > 500K H100e before detection)")
+    print(f"Objective: Maximize 80th percentile of compute produced before detection")
     print(f"Simulations per evaluation: {num_simulations}")
     print()
 
@@ -140,7 +140,7 @@ def optimize_with_differential_evolution(initial_guess=None, num_simulations=500
             best_result[0] = current_result
             print(f"Iteration {iteration[0]}: New best found!")
             print(f"  Operational: {int(xk[0])}, Construction: {int(xk[1])}, SME: {xk[2]:.3f}")
-            print(f"  P(compute > 500K): {-current_result:.3f}")
+            print(f"  80th percentile compute: {-current_result:.0f} H100e")
             print()
 
     # Run optimization
@@ -175,15 +175,15 @@ def optimize_with_differential_evolution(initial_guess=None, num_simulations=500
     print(f"  Construction workers: {int(result.x[1])}")
     print(f"  SME proportion: {result.x[2]:.3f} ({result.x[2]*100:.1f}%)")
     print()
-    print(f"Objective value: {-result.fun:.3f}")
-    print(f"  P(compute > 500K H100e): {-result.fun:.3f}")
+    print(f"Objective value: {-result.fun:.0f} H100e")
+    print(f"  80th percentile compute: {-result.fun:.0f} H100e")
     print()
 
     # Evaluate optimal solution with more simulations for final estimate
     print("Running final evaluation with 1000 simulations...")
-    final_prob = -evaluate_strategy(result.x, num_simulations=1000, verbose=True)
+    final_percentile = -evaluate_strategy(result.x, num_simulations=1000, verbose=True)
     print()
-    print(f"Final estimate with 1000 simulations: P(compute > 500K) = {final_prob:.3f}")
+    print(f"Final estimate with 1000 simulations: 80th percentile = {final_percentile:.0f} H100e")
 
     return result
 
@@ -197,7 +197,7 @@ def optimize_with_nelder_mead(initial_guess=None, num_simulations=500):
     print("=" * 70)
     print("OPTIMIZING STRATEGY USING NELDER-MEAD")
     print("=" * 70)
-    print(f"Objective: Maximize P(compute > 500K H100e before detection)")
+    print(f"Objective: Maximize 80th percentile of compute produced before detection")
     print(f"Simulations per evaluation: {num_simulations}")
     print()
 
@@ -226,7 +226,7 @@ def optimize_with_nelder_mead(initial_guess=None, num_simulations=500):
             result = evaluate_strategy(xk, num_simulations=num_simulations, verbose=False)
             print(f"Iteration {iteration[0]}:")
             print(f"  Operational: {int(xk[0])}, Construction: {int(xk[1])}, SME: {xk[2]:.3f}")
-            print(f"  P(compute > 500K): {-result:.3f}")
+            print(f"  80th percentile compute: {-result:.0f} H100e")
             print()
 
     result = minimize(
@@ -253,8 +253,8 @@ def optimize_with_nelder_mead(initial_guess=None, num_simulations=500):
     print(f"  Construction workers: {int(result.x[1])}")
     print(f"  SME proportion: {result.x[2]:.3f} ({result.x[2]*100:.1f}%)")
     print()
-    print(f"Objective value: {-result.fun:.3f}")
-    print(f"  P(compute > 500K H100e): {-result.fun:.3f}")
+    print(f"Objective value: {-result.fun:.0f} H100e")
+    print(f"  80th percentile compute: {-result.fun:.0f} H100e")
     print()
 
     return result
@@ -278,14 +278,14 @@ if __name__ == "__main__":
     print("\n" + "=" * 70)
     print("FINAL VALIDATION WITH 1500 SIMULATIONS")
     print("=" * 70)
-    final_prob = -evaluate_strategy(result.x, num_simulations=1500, verbose=True)
-    print(f"\nFinal validated estimate: P(compute > 500K) = {final_prob:.4f}")
+    final_percentile = -evaluate_strategy(result.x, num_simulations=1500, verbose=True)
+    print(f"\nFinal validated estimate: 80th percentile = {final_percentile:.0f} H100e")
 
     # Save results
     results = {
         'optimal_params': result.x,
         'optimal_value': -result.fun,
-        'final_validated_value': final_prob,
+        'final_validated_value': final_percentile,
         'initial_guess': initial_guess,
     }
 

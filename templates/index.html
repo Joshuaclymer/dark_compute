@@ -449,11 +449,11 @@
         </div>
         <div class="param-group">
             <label for="operating_labor">Number of workers to operate fab</label>
-            <input type="number" id="operating_labor" value="728">
+            <input type="number" id="operating_labor" value="{{ defaults.operating_labor }}">
         </div>
         <div class="param-group">
             <label for="construction_labor">Number of workers to construct fab</label>
-            <input type="number" id="construction_labor" value="448">
+            <input type="number" id="construction_labor" value="{{ defaults.construction_labor }}">
         </div>
         <div class="param-group">
             <label for="process_node">Process node</label>
@@ -467,7 +467,7 @@
         </div>
         <div class="param-group">
             <label for="scanner_proportion">Proportion of prc sme diverted to covert fab at start of the agreement</label>
-            <input type="number" id="scanner_proportion" value="0.1" step="0.001">
+            <input type="number" id="scanner_proportion" value="{{ defaults.scanner_proportion }}" step="0.001">
         </div>
 
         <h2>Fab Model Parameters</h2>
@@ -477,9 +477,9 @@
             <label for="p_fab_exists">US prior probability that covert fab exists</label>
             <input type="number" id="p_fab_exists" value="0.1" step="0.01" min="0" max="1">
         </div>
-        <div class="param-group has-tooltip" data-tooltip="<strong>SME Inventory Accounting Detection</strong><br><br><strong>Detection Method:</strong><br>Even if the PRC manufactures SME domestically, US intelligence could detect a covert fab by noticing that equipment is missing from China's domestic semiconductor industry. The SME supply chain is complex (e.g., ASML has 5000+ suppliers), making it difficult to hide equipment diversions.<br><br><strong>Diversion Strategy:</strong><br>The PRC might divert SME in advance—during the 6-12 months when an agreement is being negotiated—before the domestic industry is closely monitored. They could move equipment to a secret location and cover up evidence it existed.<br><br><strong>Key Factors:</strong><br>• <strong>Amount diverted:</strong> Diverting 80% of scanners would be obvious; diverting a few might go unnoticed<br>• <strong>US intelligence uncertainty:</strong> How wide are US error bars on how much SME Chinese companies had before they could have diverted it to a covert fab?<br><br><strong>Historical Calibration:</strong><br>Historical intelligence estimates of weapon counts (tanks, nuclear warheads, etc.) provide an analogy for tracking SME. See attached data file and plot showing error bars from declassified intelligence documents (1960-2025)." data-download="/download/us_intelligence_estimates" data-image-before-text="Data suggests:<br>• Median error in weapon count estimates: ~15%<br>• At 14% diverted SME: 50% chance of detection via inventory accounting<br>• At higher diversion rates, detection becomes increasingly likely<br><br>This parameter represents the proportion of indigenous SME that must be diverted to trigger a 50% probability that US intelligence becomes suspicious due to inventory discrepancies." data-image="/static/intelligence_error_bars/error_bars_plot.png">
-            <label for="proportion_diverted_sme">US intelligence estimates 50% chance of covert fab at what proportion of sme diverted</label>
-            <input type="number" id="proportion_diverted_sme" value="0.14" step="0.01">
+        <div class="param-group has-tooltip" data-tooltip="<strong>SME Inventory Accounting Detection</strong><br><br><strong>Detection Method:</strong><br>US intelligence could detect a covert fab by noticing that equipment is missing from China's domestic semiconductor industry.<br><br><strong>Two Key Factors:</strong><br>1. Amount diverted: Diverting 80 of 100 stockpiled DUV scanners would be obvious; diverting a handful would not.<br>2. Width of USG's error bars: If USG estimates Chinese companies built 50-150 DUV scanners, a dozen missing wouldn't raise suspicion. If USG knows the exact count, it would notice.<br><br><strong>Historical Calibration:</strong><br>Historical intelligence estimates of weapon counts (tanks, nuclear warheads, etc.) from declassified documents (1960-2025) show median errors of ~15%." data-download="/download/us_intelligence_estimates" data-image="/static/intelligence_error_bars/error_bars_plot.png" data-image-after-text="<strong>Adjustment for SME Context:</strong><br>15% would be reasonable if the PRC treats SME with nuclear-weapons-level secrecy. However, it's plausible that China's semiconductor industry remains quasi-private with details shared among investors, or that the expansive SME industry is difficult to lock down. Therefore, I estimate that the US intelligence error margin will be ~7% (2x smaller than weapons programs).">
+            <label for="proportion_diverted_sme">Median absolute relative error of US intelligence estimate of PRC SME stock</label>
+            <input type="number" id="proportion_diverted_sme" value="0.07" step="0.01">
         </div>
         <div class="has-tooltip" style="margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: #666; cursor: help;" data-tooltip="<strong>PRC Semiconductor Manufacturing Equipment (SME) Indigenization</strong><br><br><strong>Why Indigenization Matters for Covert Fabs:</strong><br>The SME market involves very few buyers and sellers globally. If equipment goes missing or can't be accounted for in international supply chains, there are only a handful of actors that could be hiding it—and the PRC would be a highly salient suspect. Therefore, a covert PRC fab would likely need to rely primarily on domestically-produced equipment to avoid detection through procurement accounting.<br><br>These parameters represent the probability that the PRC achieves >90% domestic sourcing of SME at each process node by the specified year. See the attached data file for detailed capabilities by equipment category and process node." data-image-after-text="<strong>Current Status (2025):</strong><br>The PRC can manufacture 130nm chips with mostly domestic tools (~80% localized). More advanced nodes require imported equipment, particularly photolithography scanners.<br><br><strong>Near-Term Progress (by 2031):</strong><br>• <strong>28nm:</strong> SMEE and Huawei-linked Yuliangsheng are developing DUV immersion scanners for 28nm. SMIC plans production integration by 2027. Given typical delays between prototype and production-ready equipment, there's ~25% chance of >90% localization by 2031.<br>• <strong>14nm & 7nm:</strong> Multi-patterning techniques could enable 28nm scanners to reach these nodes, but this requires years of additional development. Lower probability of high localization by 2031 (10% for 14nm, 6% for 7nm).<br><br><strong>Key Accelerants:</strong><br>• U.S. export controls driving indigenization urgency<br>• $47.5B Chinese government SME fund<br>• Aggressive talent recruitment (Huawei recruiting from ASML at 3x salary)<br>• Huawei's ¥12B R&D park with 35,000+ employees<br><br>The main bottleneck is talent (experienced engineers), not funding. Recent investments may start paying off by 2031, but the probability decreases significantly for more advanced nodes." data-image="/static/china_domestic_fab_capability/china_capabilities_table.png" data-download="/download/prc_indigenous_sme_capabilities">
             Probability PRC achieves >90% indiginization at node
@@ -800,7 +800,7 @@
                 scanner_proportion: parseFloat(document.getElementById('scanner_proportion').value),
                 p_fab_exists: parseFloat(document.getElementById('p_fab_exists').value),
                 // Detection parameters
-                proportion_of_diverted_sme_with_50p_chance_of_detection: parseFloat(document.getElementById('proportion_diverted_sme').value),
+                median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock: parseFloat(document.getElementById('proportion_diverted_sme').value),
                 mean_detection_time_for_100_workers: parseFloat(document.getElementById('mean_detection_time_100').value),
                 mean_detection_time_for_1000_workers: parseFloat(document.getElementById('mean_detection_time_1000').value),
                 variance_of_detection_time_given_num_workers: parseFloat(document.getElementById('variance_detection_time').value),
@@ -1759,7 +1759,7 @@
         const plotToInputMapping = {
             // Section 2: US Bayesian Inference plots
             'priorOddsDisplay': 'p_fab_exists',
-            'lrInventoryPlot': 'proportion_diverted_sme', // US intelligence estimates
+            'lrInventoryPlot': 'proportion_diverted_sme', // Median absolute relative error of US intelligence estimate of PRC SME stock
             'lrProcurementPlot': 'localization_130nm_2025', // Probability PRC achieves >90% indigenization
             'lrOtherPlot': 'mean_detection_time_100', // Detection time
             'posteriorProbPlot': null, // Output, not an input

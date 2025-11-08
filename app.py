@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, request, send_file
-from model import Model, CovertProjectStrategy
+from model import Model, CovertProjectStrategy, default_prc_covert_project_strategy
 from fab_model import ProcessNode, FabModelParameters
 import numpy as np
 import base64
@@ -12,7 +12,13 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Pass default strategy values to template
+    defaults = {
+        'operating_labor': default_prc_covert_project_strategy.covert_fab_operating_labor,
+        'construction_labor': default_prc_covert_project_strategy.covert_fab_construction_labor,
+        'scanner_proportion': default_prc_covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
+    }
+    return render_template('index.html', defaults=defaults)
 
 @app.route('/run_simulation', methods=['POST'])
 def run_simulation():
@@ -44,8 +50,8 @@ def run_simulation():
     p_fab_exists = float(data.get('p_fab_exists', 0.1))
 
     # Fab model parameters - update all parameters from data
-    if 'proportion_of_diverted_sme_with_50p_chance_of_detection' in data:
-        FabModelParameters.proportion_of_diverted_sme_with_50p_chance_of_detection = float(data['proportion_of_diverted_sme_with_50p_chance_of_detection'])
+    if 'median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock' in data:
+        FabModelParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock = float(data['median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock'])
     if 'mean_detection_time_for_100_workers' in data:
         FabModelParameters.mean_detection_time_for_100_workers = float(data['mean_detection_time_for_100_workers'])
     if 'mean_detection_time_for_1000_workers' in data:
@@ -543,10 +549,12 @@ def extract_plot_data(model):
         lr_inventory_final = [sim[-1] for sim in lr_inventory_by_sim]
         num_lr_equals_1 = sum(1 for lr in lr_inventory_final if abs(lr - 1.0) < 0.01)
         num_lr_gte_10 = sum(1 for lr in lr_inventory_final if lr >= 10.0)
+        num_lr_gt_2_5 = sum(1 for lr in lr_inventory_final if lr > 2.5)
         total_sims = len(lr_inventory_final)
         print(f"INVENTORY LR ANALYSIS (final timestep):", flush=True)
         print(f"  Total simulations: {total_sims}", flush=True)
         print(f"  LR ≈ 1.0: {num_lr_equals_1} ({100*num_lr_equals_1/total_sims:.1f}%)", flush=True)
+        print(f"  LR > 2.5: {num_lr_gt_2_5} ({100*num_lr_gt_2_5/total_sims:.1f}%)", flush=True)
         print(f"  LR ≥ 10.0: {num_lr_gte_10} ({100*num_lr_gte_10/total_sims:.1f}%)", flush=True)
         print(f"  Other values: {total_sims - num_lr_equals_1 - num_lr_gte_10} ({100*(total_sims - num_lr_equals_1 - num_lr_gte_10)/total_sims:.1f}%)", flush=True)
 

@@ -71,10 +71,10 @@ default_us_detection_strategy = DetectorStrategy(
 default_prc_covert_project_strategy = CovertProjectStrategy(
     run_a_covert_project = True,
     build_a_covert_fab = True,
-    covert_fab_operating_labor = 728,
-    covert_fab_construction_labor = 448,
+    covert_fab_operating_labor = 550,
+    covert_fab_construction_labor = 250,
     covert_fab_process_node = "best_available_indigenously",
-    covert_fab_proportion_of_prc_lithography_scanners_devoted = 0.102,
+    covert_fab_proportion_of_prc_lithography_scanners_devoted = 0.1,
 )
 
 best_prc_covert_project_strategy = default_prc_covert_project_strategy

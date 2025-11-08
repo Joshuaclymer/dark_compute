@@ -790,3 +790,11 @@ Total non-operational at last timestep: 45
 
 DEBUG: Returning results...
 127.0.0.1 - - [08/Nov/2025 14:05:45] "POST /run_simulation HTTP/1.1" 200 -
+ * Detected change in '/Users/joshuaclymer/github/covert_compute_production_model/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 710-833-261
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

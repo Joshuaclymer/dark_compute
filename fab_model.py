@@ -289,7 +289,7 @@ class ProcessNode(Enum):
         return int(self.value.replace("nm", ""))
 
 class FabModelParameters:
-    proportion_of_diverted_sme_with_50p_chance_of_detection = 0.14
+    median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock = 0.07
 
     # Detection via other strategies - anchor points (from detection_probability_vs_num_workers/model_bayesian.py)
     # These define the relationship between number of workers and mean detection time
@@ -736,7 +736,7 @@ def sample_us_estimate_of_prc_scanners(actual_prc_scanners: float) -> float:
     Returns:
         float: US intelligence estimate of PRC scanner count
     """
-    k = -np.log(0.5) / FabModelParameters.proportion_of_diverted_sme_with_50p_chance_of_detection
+    k = -np.log(0.5) / FabModelParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock
 
     # Sample a uniform random value to invert the CDF
     u = random.random()
@@ -798,7 +798,7 @@ def lr_from_inventory_accounting(
     us_estimate_absolute_error_if_fab_exists = abs(us_estimate_of_prc_scanners - true_number_of_prc_scanners_if_fab_exists) / true_number_of_prc_scanners_if_fab_exists
 
     # PDF of absolute error
-    k = -np.log(0.5) / FabModelParameters.proportion_of_diverted_sme_with_50p_chance_of_detection
+    k = -np.log(0.5) / FabModelParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock
     p_observe_us_estimate_error_if_fab_exists = k * np.exp(-k * us_estimate_absolute_error_if_fab_exists)
 
     # Case 2: Fab does not exist
@@ -967,7 +967,7 @@ class PRCCovertFab(CovertFab):
     construction_duration : float
     wafer_starts_per_month : float
     h100_sized_chips_per_wafer : float
-    transistor_density_relative_to_h100 : float
+    h100_equival : float
     agreement_year : float
 
     # Properties that are used to determine detection probability

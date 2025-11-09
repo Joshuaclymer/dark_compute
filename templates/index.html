@@ -628,7 +628,7 @@
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboard80thH100e">--</div>
                         <div class="dashboard-label">Covert H100e Production Before Detection (80th %ile Outcome)</div>
-                        <div class="dashboard-sublabel">Detection = US estimates 50% probability of covert fab</div>
+                        <div class="dashboard-sublabel" id="dashboardDetectionLabel">Detection = US estimates covert fab has ≥5x higher odds than previously thought</div>
                     </div>
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboard80thTime">--</div>
@@ -981,14 +981,29 @@
                 return;
             }
 
-            const traces = [];
-            const thresholds = [
-                { value: 0.5, label: 'P(fab) ≥ 50%', color: '#9B7BB3' },  // Purple
-                { value: 0.25, label: 'P(fab) ≥ 25%', color: '#5B8DBE' },  // Blue
-                { value: 0.125, label: 'P(fab) ≥ 12.5%', color: '#5AA89B' }  // Blue-green
-            ];
+            // Get prior probability from the input
+            const priorProb = parseFloat(document.getElementById('p_fab_exists').value) || 0.1;
+            const priorOdds = priorProb / (1 - priorProb);
 
-            for (const threshold of thresholds) {
+            // Use likelihood ratios from backend
+            const likelihoodRatios = data.likelihood_ratios || [1, 2, 5];
+            const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
+
+            const traces = [];
+            const thresholds = likelihoodRatios.map((lr, index) => {
+                const posteriorOdds = priorOdds * lr;
+                const posteriorProb = posteriorOdds / (1 + posteriorOdds);
+                return {
+                    value: posteriorProb,
+                    label: `>${lr}x update`,
+                    color: colors[index % colors.length]
+                };
+            });
+
+            // Reverse thresholds for legend order (highest to lowest)
+            const thresholdsReversed = [...thresholds].reverse();
+
+            for (const threshold of thresholdsReversed) {
                 const ccdf = data.compute_ccdfs[threshold.value];
                 if (ccdf && ccdf.length > 0) {
                     traces.push({
@@ -997,7 +1012,7 @@
                         type: 'scatter',
                         mode: 'lines',
                         line: { color: threshold.color, width: 2 },
-                        name: `"Detection" means ${threshold.label}`,
+                        name: `"Detection" = ${threshold.label}`,
                         hovertemplate: 'H100e: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>'
                     });
                 }
@@ -1430,6 +1445,12 @@
 
                 // Display process node
                 document.getElementById('dashboard80thNode').textContent = node80th;
+
+                // Update detection label with highest LR value
+                const likelihoodRatios = data.likelihood_ratios || [1, 3, 5];
+                const highestLR = likelihoodRatios[likelihoodRatios.length - 1];
+                document.getElementById('dashboardDetectionLabel').textContent =
+                    `Detection = US estimates covert fab has ≥${highestLR}x higher odds than previously thought`;
             }
         }
 

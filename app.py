@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
+# Configure likelihood ratio thresholds for detection plots
+# Update this list to change all plots automatically
+LIKELIHOOD_RATIOS = [1, 3, 5]
+
 @app.route('/')
 def index():
     # Pass default strategy values to template
@@ -171,7 +175,7 @@ def run_simulation():
 
         # Extract data for plots
         print(f"DEBUG: Extracting plot data...", flush=True)
-        results = extract_plot_data(model)
+        results = extract_plot_data(model, p_fab_exists)
 
         print(f"DEBUG: Returning results...", flush=True)
         return jsonify(results)
@@ -181,7 +185,7 @@ def run_simulation():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-def extract_plot_data(model):
+def extract_plot_data(model, p_fab_exists):
     """Extract plot data from model simulation results"""
     if not model.simulation_results:
         return {"error": "No simulation results"}
@@ -282,14 +286,21 @@ def extract_plot_data(model):
     h100e_p75 = np.percentile(h100e_array, 75, axis=0) / 1e3
 
     # Extract compute before detection data for multiple thresholds
-    detection_thresholds = [0.5, 0.25, 0.125]
+    # Calculate thresholds based on prior and likelihood ratios
+    prior_odds = p_fab_exists / (1 - p_fab_exists)
+    detection_thresholds = []
+    for lr in LIKELIHOOD_RATIOS:
+        posterior_odds = prior_odds * lr
+        threshold = posterior_odds / (1 + posterior_odds)
+        detection_thresholds.append(threshold)
     compute_ccdfs = {}
     op_time_ccdfs = {}
 
-    # Store individual values for 0.5 threshold (for dashboard)
+    # Store individual values for highest LR threshold (e.g., 5x update) (for dashboard)
     individual_h100e_before_detection = []
     individual_time_before_detection = []
     individual_process_nodes = []
+    dashboard_threshold = detection_thresholds[-1]  # Use highest LR update threshold
 
     # Count total simulations with covert fab for correct CCDF calculation
     total_simulations_with_fab = sum(1 for cp, _ in model.simulation_results
@@ -331,7 +342,7 @@ def extract_plot_data(model):
         else:
             fabs_never_finished_construction += 1
 
-    # Track fabs detected during construction (for 0.5 threshold only)
+    # Track fabs detected during construction (for dashboard threshold only)
     detected_during_construction_count = 0
     detected_after_operational_count = 0
     never_detected_count = 0
@@ -377,8 +388,8 @@ def extract_plot_data(model):
 
                 operational_time_at_detection.append(operational_time)
 
-                # Track detection timing (for 0.5 threshold only)
-                if threshold == 0.5:
+                # Track detection timing (for dashboard threshold only)
+                if threshold == dashboard_threshold:
                     if detection_year <= operational_start:
                         detected_during_construction_count += 1
                         # Check if construction hasn't even finished yet
@@ -392,8 +403,8 @@ def extract_plot_data(model):
                         available_years = sorted(h100e_over_time.keys())
                         print(f"DEBUG: Fab detected after operational with 0 compute - detection_year={detection_year}, operational_start={operational_start}, h100e={h100e_at_detection}, available_years={available_years}", flush=True)
 
-                # Store individual values for 0.5 threshold (for dashboard)
-                if threshold == 0.5:
+                # Store individual values for dashboard threshold (for dashboard)
+                if threshold == dashboard_threshold:
                     individual_h100e_before_detection.append(h100e_at_detection)
                     individual_time_before_detection.append(operational_time)
                     individual_process_nodes.append(covert_fab.process_node.value)
@@ -425,8 +436,8 @@ def extract_plot_data(model):
 
                 operational_time_at_detection.append(operational_time)
 
-                # Track never detected (for 0.5 threshold only)
-                if threshold == 0.5:
+                # Track never detected (for dashboard threshold only)
+                if threshold == dashboard_threshold:
                     never_detected_count += 1
 
                     # Check if never became operational
@@ -438,8 +449,8 @@ def extract_plot_data(model):
                         available_years = sorted(h100e_over_time.keys())
                         print(f"DEBUG: Never-detected fab with 0 compute - final_year={final_year}, operational_start={operational_start}, construction_start={construction_start}, duration={construction_duration}, h100e={h100e_at_end}, available_years={available_years}", flush=True)
 
-                # Also store for dashboard (0.5 threshold only)
-                if threshold == 0.5:
+                # Also store for dashboard (dashboard threshold only)
+                if threshold == dashboard_threshold:
                     individual_h100e_before_detection.append(h100e_at_end)
                     individual_time_before_detection.append(operational_time)
                     individual_process_nodes.append(covert_fab.process_node.value)
@@ -496,8 +507,8 @@ def extract_plot_data(model):
             op_time_ccdfs[threshold] = [{"x": x, "y": y} for x, y in zip(unique_x_time, ccdf_y_time)]
 
     # Keep backward compatibility with single threshold
-    compute_ccdf = compute_ccdfs.get(0.5, [])
-    op_time_ccdf = op_time_ccdfs.get(0.5, [])
+    compute_ccdf = compute_ccdfs.get(dashboard_threshold, [])
+    op_time_ccdf = op_time_ccdfs.get(dashboard_threshold, [])
 
     # Print USER'S DIRECT QUESTIONS FIRST
     print(f"\n=== DIRECT ANSWERS TO USER'S QUESTIONS ===", flush=True)
@@ -660,6 +671,7 @@ def extract_plot_data(model):
         "compute_ccdfs": compute_ccdfs,
         "op_time_ccdf": op_time_ccdf,
         "op_time_ccdfs": op_time_ccdfs,
+        "likelihood_ratios": LIKELIHOOD_RATIOS,
         "lr_components": lr_components,
         "compute_factors": compute_factors,
         "architecture_efficiency_at_agreement": architecture_efficiency_at_agreement,

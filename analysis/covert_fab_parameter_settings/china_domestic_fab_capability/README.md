@@ -1,0 +1,115 @@
+# About this data
+
+This data shows the technological progress of China's indigenous semiconductor equipment manufacturing industry relative to the rest of the world.
+
+<figure>
+<img src="./world_and_china_semiconductor_capabilities.png" width="100%">
+  <figcaption>Figure 1. ASML TWINSCAN DUV Scanner used in 7 nm process lithography.</figcaption>
+<figure>
+
+### How to use this code
+
+To generate the plot above, run the following:
+`plot_capabilities.py 'both'`
+
+The data is split between four files:
+- `china_pilot.csv`: when equipment domestically produced in China first passed validation.
+- `china_hvm.csv`: when equipment domestically produced in China was first suitable for high volume manufacturing (HVM)
+- `world_pilot.csv`: when equipment produced globally first passed validation.
+- `world_hvm.csv`: when equipment produced globally was first suitable for high volume manufacturing (HVM).
+
+For an explanation of this data and sources, refer to:
+- `china.csv`
+- `world.csv`
+
+Each cell in `china.csv` and `world.csv` is in the following format:
+
+```[pilot year range, or N/A if there was never a pilot]; [HVM ready year range, or N/A if the tools was never HVM ready];[real and correct url of source for pilot year, ideally a primary source];[direct quote from source justifying pilot year range in the original language];[date of source publication];[explanation of why the quote justifies the pilot year and any additional context, such as the name of the first tool that exceeded the milestone, and uncertainties];[confidence in the provided date, either 'guess,' 'reliable inference,' 'direct quote from secondary source,' or 'direct quote from primary source'];[real and correct url of source for HVM ready year, ideally a primary source];[direct quote from source justifying HVM ready year in the original language];[date of source publication];[explanation of why the quote justifies the pilot year and any additional context, such as the name of the first tool that exceeded the milestone, or uncertainties];[confidence in the provided date, either 'guess,' 'reliable inference,' 'direct quote from secondary source,' or 'direct quote from primary source']```
+
+
+### Data collection procedure
+
+I used Claude Sonnet 4.5 to collect this data from online sources. I asked Claude to collect quotes from specific websites (ideally primary sources such as investor reports released by Chinese companies). These quotes and source urls are located at `china.csv` and `world.csv`.
+
+The following is the prompt that I provided to Claude Sonnet 4.5:
+
+
+```
+I want you to help me document how the capabilities of China's domestic semiconductor supply chain have improved over time.
+
+I'm specifically interested in the timeline of China's indigenously produced [tool]. I am only interested in [tools] that are produced almost entirely indigenously, with little imported parts or outsourcing.
+
+I'm going to ask you to consider each of the following transistor node processes: 180 nm, 90 nm, 45 nm, 28 nm, 14 nm, and 7 nm.
+
+For each of these processes, I want you to indicate when the following two milestones were achieved, or if they were never achieved: 
+1. Pilot. The tool passed validation, or was described as fully functional.
+2. HVM ready. The tool could be used to process thousands of wafers per month if all other tools were adequate.
+
+You may assume that quadruple multi-patterning is economically viable. For example, in some cases, 28 nm immersion DUV can be used to effectively achieve 7 nm with quadruple multi-patterning. Also, please provide your assessment assuming *all other tools* in the supply chain are sufficient for achieving the provided node. So you are essentially aswering the question: "suppose a state of the art fab that can achieve N nm process was forced to use Chinese domestically produced [tool] from X year," could they still achieve an N nm process?
+
+Please format your answer as a markdown table like so:
+
+| 180 nm | 90 nm | 45 nm | 28 nm | 14 nm | 7 nm |
+|--------|-------|-------|-------|-------|------|
+| [dates] | [dates] | [dates] | [dates] | [dates] | [dates |
+
+Each cell should be ('[dates]') above should be formatted likes so:
+"[pilot year range, or N/A if there was never a pilot]; [HVM ready year range, or N/A if the tools was never HVM ready];[real and correct url of source for pilot year, ideally a primary source];[direct quote from source justifying pilot year range in the original language];[date of source publication];[explanation of why the quote justifies the pilot year and any additional context, such as the name of the first tool that exceeded the milestone, and uncertainties];[your confidence in the provided date, either 'guess,' 'reliable inference,' 'direct quote from secondary source,' or 'direct quote from primary source'];[real and correct url of source for HVM ready year, ideally a primary source];[direct quote from source justifying HVM ready year in the original language];[date of source publication];[explanation of why the quote justifies the pilot year and any additional context, such as the name of the first tool that exceeded the milestone, or uncertainties];[your confidence in the provided date, either 'guess,' 'reliable inference,' 'direct quote from secondary source,' or 'direct quote from primary source']"
+
+In cases where the tool never reached the provided milestone, provide a source that justifies this claim as well. Please avoid guessing. If you do not have a source that indicates the *specific year* a milestone was achieved, please search harder. You may need to look at investor documents written in mandarin and use internet archives.
+
+Here's an example for the tool "DUV scanner":
+
+| 180 nm | 90 nm | 45 nm | 28 nm | 14 nm | 7 nm |
+|--------|-------|-------|-------|-------|------|
+| 2009 (pilot); 2012 (HVM); https://baike.baidu.com/item/上海微电子装备（集团）股份有限公司/51151397; "2009年，首台先进封装光刻机产品SSB500/10A交付。2012年，SSB500系列先进封装光刻机实现海外销售。" (In 2009, the first advanced packaging lithography machine product SSB500/10A was delivered. In 2012, the SSB500 series advanced packaging lithography machines achieved overseas sales.); Date unknown (Baidu Baike entry); The first SSB500/10A packaging lithography machine was delivered in 2009. This is an i-line stepper for packaging, which with double patterning can reach 180nm capability, meeting the pilot definition; direct quote from secondary source; https://baike.baidu.com/item/上海微电子装备（集团）股份有限公司/51151397; "2012年，SSB500系列先进封装光刻机实现海外销售" (In 2012, the SSB500 series advanced packaging lithography machines achieved overseas sales); Date unknown (Baidu Baike entry); By 2012, SMEE was selling the SSB500 series to overseas customers, indicating the tool had matured beyond pilot stage to volume production capability suitable for HVM. The achievement of overseas sales suggests the product had proven reliability and throughput for high-volume manufacturing; direct quote from secondary source | 2013 (pilot); N/A (HVM); https://www.sinodefenceforum.com/t/chinese-semiconductor-industry.8479/page-1719; "the SSA600/20 dates back to 2013, two years from that paper, single stage, 20 watt Arf laser, uses the old 0.75NA lens system from UP optotech"; January 8, 2024; A forum member with apparent industry knowledge states the SSA600/20 dates to 2013. This ArF tool with 90nm single-patterning capability could reach 45nm with double patterning. Multiple sources confirm it exists and was offered for sale, meeting the pilot definition; direct quote from secondary source; https://asiatimes.com/2023/02/chinas-chip-sector-enters-a-dark-forest-era/; "the delivered machine actually could only make 130nm chips with a KrF excimer laser and was never used for mass production"; March 2, 2023; A Taiwanese engineer disputed that the SSA600 could make 90nm chips or achieve mass production. While SMEE marketed the SSA600 as 90nm-capable, there's no evidence it achieved HVM-level throughput (thousands of wafers per month) for any node including 45nm with multipatterning; direct quote from secondary source | 2013 (pilot); N/A (HVM); https://www.sinodefenceforum.com/t/chinese-semiconductor-industry.8479/page-1719; "the SSA600/20 dates back to 2013"; January 8, 2024; With quad multipatterning, the SSA600/20 (90nm single-patterning capability) could theoretically reach 28nm = 90nm/3.2. The tool existed by 2013 and was functional, meeting the pilot definition. However, there's no evidence it was ever used with multipatterning for 28nm production; direct quote from secondary source; N/A; N/A; N/A; No evidence exists that the SSA600 was ever used with quad multipatterning for 28nm production, let alone achieved HVM at this node; guess | 2023 (pilot); N/A (HVM); https://en.wikipedia.org/wiki/Shanghai_Micro_Electronics_Equipment; "In December 2023, western media reported that SMEE has completed the initial development of its new SSA800-10W immersion lithography machine which has a scanning resolution capable of fabricating 28 nm-process class chips. Instances of the new machine may have been delivered to manufacturers such as SMIC and to research institutes."; October 12, 2025; The SSA800-10W was reported as developed in December 2023 with possible deliveries to SMIC. Despite controversy and the original announcement being deleted, the tool apparently exists and has been delivered for testing, meeting the pilot definition; direct quote from secondary source; https://www.tomshardware.com/tech-industry/semiconductors/chinas-largest-foundry-testing-first-domestic-immersion-duv-lithography-tool-smic-takes-significant-step-on-road-to-wafer-fab-equipment-self-sufficiency; "after the existing tool matures and gets inserted into SMIC's 28nm flow in 2027, it will take Yuliangsheng years to jump to 16nm"; September 17, 2025; This article discusses the timeline for the domestic 28nm immersion tool to reach production readiness, suggesting 2027 for insertion into production flows. As of October 2025, there's no evidence the tool has achieved HVM-level throughput and yield; direct quote from secondary source | 2023 (pilot); N/A (HVM); https://en.wikipedia.org/wiki/Shanghai_Micro_Electronics_Equipment; "In December 2023, western media reported that SMEE has completed the initial development of its new SSA800-10W immersion lithography machine which has a scanning resolution capable of fabricating 28 nm-process class chips."; October 12, 2025; With double patterning, the SSA800-10W (28nm single-patterning) could theoretically reach 14nm. The tool was reported as developed and delivered to SMIC for testing in December 2023, meeting the pilot definition; direct quote from secondary source; N/A; N/A; N/A; No evidence exists that the SSA800 has been used with double patterning for 14nm production, let alone achieved HVM at this node; guess | 2023 (pilot); N/A (HVM); https://en.wikipedia.org/wiki/Shanghai_Micro_Electronics_Equipment; "In December 2023, western media reported that SMEE has completed the initial development of its new SSA800-10W immersion lithography machine which has a scanning resolution capable of fabricating 28 nm-process class chips. Instances of the new machine may have been delivered to manufacturers such as SMIC and to research institutes."; October 12, 2025; With quad patterning, the SSA800-10W (28nm single-patterning) could theoretically reach 7nm = 28nm/4. The tool was reported as developed and delivered in December 2023, meeting the pilot definition; direct quote from secondary source; https://www.tomshardware.com/tech-industry/semiconductors/chinas-largest-foundry-testing-first-domestic-immersion-duv-lithography-tool-smic-takes-significant-step-on-road-to-wafer-fab-equipment-self-sufficiency; "do not expect SMIC's sub-10nm fabrication processes on domestic lithography systems earlier than in 2030"; September 17, 2025; Experts project that even with multi-patterning, sub-10nm processes on domestic tools won't occur before 2030, indicating no current or near-term HVM capability at 7nm; direct quote from secondary source |
+
+Now please do extensive reasoning and research, and then provide an analysis of the timeline of the development of [tool], completing your response with a markdown table like the one above.
+```
+
+During the data generation process, I read each entry and explanation written by Claude Sonnet 4.5, often asking clarifying questions and suggesting corrections or changes.
+
+Then, I performed a spot check of several entries to verify that the provided url was valid, and included the provided quote.
+
+Next, to acquire data on global semiconductor capabilities, I applied a similar process with a modified prompt:
+
+```
+I want you to help me document how the semiconductor manufacturing industry has advanced over time—specifically, how [tools] have advanced.
+
+Please consider each of the following transistor-node processes: 180 nm, 90 nm, 45 nm, 28 nm, 14 nm, and 7 nm.
+
+For each of these processes, indicate when the following two milestones were achieved (or state that they were never achieved):
+1. **Pilot**: The tool passed validation or was described as fully functional.
+2. **HVM-ready**: The tool could be used to process thousands of wafers per month if all other tools were adequate.
+
+You may assume that quadruple multi-patterning is economically viable. For example, in some cases, 28 nm immersion DUV can be used to effectively achieve 7 nm with quadruple multi-patterning. Also provide your assessment assuming *all other tools* in the supply chain are sufficient for achieving the given node. In other words, answer the question: “Suppose a state-of-the-art fab that can achieve an N nm process was forced to use [tool] from year X—could it still achieve an N nm process?”
+
+Format your answer as a Markdown table like this:
+
+| 180 nm | 90 nm | 45 nm | 28 nm | 14 nm | 7 nm |
+|--------|-------|-------|-------|-------|------|
+| [dates] | [dates] | [dates] | [dates] | [dates] | [dates] |
+
+Each cell (the “[dates]” above) must be formatted exactly like this (single line, semicolon-separated):
+“[pilot year range, or N/A if there was never a pilot]; [HVM-ready year range, or N/A if the tool was never HVM-ready]; [real and correct URL of the source for the pilot year, ideally a primary source]; [direct quote from the source justifying the pilot year range in the original language]; [date of source publication]; [explanation of why the quote justifies the pilot year and any additional context, such as the name of the first tool that exceeded the milestone, and uncertainties]; [your confidence in the provided date, either ‘guess,’ ‘reliable inference,’ ‘direct quote from secondary source,’ or ‘direct quote from primary source’]; [real and correct URL of the source for the HVM-ready year, ideally a primary source]; [direct quote from the source justifying the HVM-ready year in the original language]; [date of source publication]; [explanation of why the quote justifies the HVM-ready year and any additional context, such as the name of the first tool that exceeded the milestone, or uncertainties]; [your confidence in the provided date, either ‘guess,’ ‘reliable inference,’ ‘direct quote from secondary source,’ or ‘direct quote from primary source’]”
+
+Please avoid guessing. If you do not have a source that indicates the *specific year* a milestone was achieved, search more thoroughly. You may need to consult investor documents and use the Internet Archive.
+
+Here’s an example for DUV scanners:
+
+| 180 nm | 90 nm | 45 nm | 28 nm | 14 nm | 7 nm |
+|--------|-------|-------|-------|-------|------|
+| 1995–1996; 1995–1997; https://www.lithoguru.com/scientist/litho_history/Kato_Litho_History.pdf; "1995 - Nikon's first step-and-scan tool shipped, NSR-S201A World's first fully diffraction -based scanner (since SVGL is catadioptric) with 0.25µm resolution. And this was actually the first production worthy KrF scanner in the industry"; May 2007; The Nikon NSR-S201A was the first production-worthy KrF scanner achieving 0.25 µm (250 nm) resolution, suitable for 180 nm production. The 1995 date represents pilot/validation; by 1996–1997 these tools were being used for HVM of 180 nm devices; direct quote from primary source; https://www.sciencedirect.com/science/article/abs/pii/S0167931799000052; "initial production of 180nm generation devices is now forecast for 1999, a full two years before the 1994 roadmap predicted"; August 11, 1999; This confirms 180 nm initial production in 1999, with tools validated 2–3 years earlier (1996–1997). HVM readiness therefore occurred around 1995–1997 when KrF scanners like the NSR-S201A achieved throughput suitable for thousands of wafers per month; reliable inference | 2000–2001; 2003–2004; https://www.eetimes.com/asmls-newest-193-nm-scanner-handles-90-wafers-per-hour/; "ASM Lithography in the Netherlands today introduced an upgraded 193-nm wavelength step-and-scan system with a 0.75-numerical aperture (NA) lens and throughput of more than 90 eight-inch (200-mm) wafers an hour... The PAS 5500/1100 system will start shipping in March 2001"; November 7, 2000; The ASML PAS 5500/1100 with 90 wph throughput represents the pilot/validation phase for 90 nm dry ArF scanners in 2000–2001. This throughput (90 wph × 24 h × 30 d ≈ 65,000 wafers/month) demonstrates HVM capability; direct quote from secondary source; https://pr.tsmc.com/english/news/1319; "TSMC would complete 45nm technology qualification and enter production as early as September 2007... TSMC began 90nm volume production in the third quarter of 2004 following the successful delivery of numerous customer chips in first-pass silicon. The company states that it has reached several thousand 300mm wafers per month production level using Nexsys 90nm technology in the fourth quarter of 2004"; December 29, 2004; TSMC achieved "several thousand 300 mm wafers per month" in Q4 2004, confirming HVM readiness. Tools were validated in 2000–2001 and reached HVM by 2003–2004; direct quote from primary source | 2004–2006; 2007–2008; https://www.asml.com/articles/en/s12952?rid=11949; "ASML introduced the industry's first 'wet' lithography system 18 months ago... In the first quarter of 2006, ASML will begin shipping a tool that will change the landscape of lithography. The new tool, the TWINSCAN™ XT:1700i, enables chip makers to produce, in volume quantities, chips with the smallest, most sophisticated features ever. It is the first lithography tool · ever for volume production at the 45 nanometer (nm) node"; 2006; The XT:1700i (1.2 NA) was announced for Q1 2006 shipment as the first immersion tool for 45 nm volume production—pilot validation. Earlier immersion tools (XT:1250i in Oct 2004) demonstrated the tech; direct quote from primary source; https://pr.tsmc.com/english/news/1428; "Taiwan Semiconductor Manufacturing Company, Ltd. (TSE: 2330, NYSE: TSM) today announced that it would complete 45nm technology qualification and enter production as early as September 2007"; April 9, 2007; TSMC entered production in September 2007, indicating HVM readiness. Intel also started 45 nm HVM in Q4 2007. The 1.2 NA immersion scanners (XT:1700i) with throughput >120 wph represented HVM capability; direct quote from primary source | 2009–2010; 2011; https://pr.tsmc.com/english/news/1689; "TSMC (TWSE: 2330, NYSE: TSM) today announced that its 28nm process is in volume production and production wafers have been shipped to customers. TSMC leads the foundry segment to achieve volume production at 28nm node"; October 24, 2011; TSMC announced volume production in October 2011. Immersion scanners with double patterning were validated 1–2 years prior (2009–2010) as the tech matured from 40/45 nm; direct quote from primary source; https://pr.tsmc.com/english/news/1689; "TSMC (TWSE: 2330, NYSE: TSM) today announced that its 28nm process is in volume production and production wafers have been shipped to customers"; October 24, 2011; The same release confirms HVM readiness in 2011; direct quote from primary source | 2012–2013; 2014; https://en.wikipedia.org/wiki/14_nm_process; "Samsung Electronics taped out a '14 nm' chip in 2014, before manufacturing '10 nm class' NAND flash chips in 2013. The same year, SK Hynix began mass-production of '16 nm' NAND flash, and TSMC began '16 nm' FinFET production. The following year, Intel began shipping '14 nm' scale devices to consumers"; August 6, 2025; Multiple manufacturers achieved 14/16 nm pilot production in 2013–2014 using immersion with triple patterning. Scanners were qualified 1–2 years earlier; direct quote from secondary source; https://en.wikipedia.org/wiki/14_nm_process; "On September 5, 2014, Intel launched the first three Broadwell-based processors... In February 2015, Samsung announced that their flagship smartphones, the Galaxy S6 and S6 Edge, would feature '14 nm' Exynos systems on chip (SoCs)"; August 6, 2025; Intel shipped 14 nm processors in Sept 2014, Samsung in Feb 2015, and TSMC 16 nm entered production in 2014—confirming HVM readiness; direct quote from secondary source | 2016–2017; 2018; https://en.wikipedia.org/wiki/7_nm_process; "In April 2016, TSMC announced that '7nm' trial production would begin in the first half of 2017. In April 2017, TSMC began risk production of 256Mbit SRAM memory chips using a '7nm' (N7FF+) process"; (accessed recently); TSMC announced trial production in 2016 and began risk production in April 2017 (pilot validation). Quadruple patterning (SAQP) was validated in this period; direct quote from secondary source; https://www.tsmc.com/english/dedicatedFoundry/technology/logic/l_7nm; "In 2018, TSMC became the first foundry to start 7nm FinFET (N7) volume production"; July 28, 2025; TSMC started volume production in 2018, confirming HVM readiness. Immersion scanners using SAQP achieved the throughput needed for thousands of wafers per month; direct quote from primary source |
+
+Now conduct extensive reasoning and research, and provide an analysis of the timeline of the development of [tool], completing your response with a Markdown table like the one above.
+```
+
+### Limitations
+
+I am not an expert in semiconductor manufacturing equipment. My knowledge extends not far beyond high level descriptions of how the components documented in this data function. I investigated the nature of the semiconductor supply chain, and it's history, for approximately one week before creating this dataset.
+
+Also, I do not speak Chinese languages, and largely deferred the translation of Chinese sources (which were a substantial fraction of the source websites) to Claude Sonnet 4.5.
+
+Therefore, I expect there to be numerous mistakes in this data; however, I expect that the overall trend that it reflects is accurate.
+
+I sanity checked some of the claims by reading the analysis of well regarded experts, and they seem to line up fairly well.

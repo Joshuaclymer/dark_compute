@@ -1,1 +1,20 @@
 analysis/covert_fab_parameter_settings/semiconductor_supply_chain_concentration/eto-chip-explorer
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.log
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

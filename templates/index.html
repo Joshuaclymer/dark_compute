@@ -627,16 +627,16 @@
                 <div class="dashboard">
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboard80thH100e">--</div>
-                        <div class="dashboard-label">80th %ile H100e Before Detection</div>
+                        <div class="dashboard-label">Covert H100e Production Before Detection (80th %ile Outcome)</div>
                         <div class="dashboard-sublabel">Detection = US estimates 50% probability of covert fab</div>
                     </div>
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboard80thTime">--</div>
-                        <div class="dashboard-label">80th %ile Years Operational Before Detection</div>
+                        <div class="dashboard-label">Years Operational Before Detection (80th %ile Outcome)</div>
                     </div>
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboard80thNode">--</div>
-                        <div class="dashboard-label">80th %ile Process Node</div>
+                        <div class="dashboard-label">Process Node (80th %ile Outcome)</div>
                     </div>
                 </div>
 
@@ -760,7 +760,7 @@
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">H100 equivalents per chip (assuming H100 architecture)</div>
+                        <div class="breakdown-label">Transistor density relative to H100</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
@@ -1267,7 +1267,7 @@
 
             // Convert counts to proportions
             const totalCount = values.length;
-            const labels = entries.map(e => `${e.value.toFixed(2)} H100e (${e.node})`);
+            const labels = entries.map(e => `${e.value.toFixed(2)}x (${e.node})`);
             const proportions = entries.map(e => e.count / totalCount);
 
             const trace = {
@@ -1395,16 +1395,25 @@
         }
 
         function updateDashboard(data) {
-            // Calculate 80th percentile H100e before detection
+            // Find the 80th percentile simulation by H100e production
             const h100eValues = data.individual_h100e_before_detection || [];
-            if (h100eValues.length > 0) {
-                const sorted = [...h100eValues].sort((a, b) => a - b);
-                const idx80 = Math.floor(sorted.length * 0.8);
-                const h100e80th = sorted[idx80];
-                // Round to nearest 100,000
-                const rounded = Math.round(h100e80th / 100000) * 100000;
+            const timeValues = data.individual_time_before_detection || [];
+            const nodeValues = data.individual_process_node || [];
 
-                // Use M for millions, K for thousands
+            if (h100eValues.length > 0) {
+                // Sort by H100e and find 80th percentile simulation
+                const indexed = h100eValues.map((h100e, idx) => ({ h100e, idx }));
+                indexed.sort((a, b) => a.h100e - b.h100e);
+                const idx80 = Math.floor(indexed.length * 0.8);
+                const sim80th = indexed[idx80];
+
+                // Get all values from this same simulation
+                const h100e80th = sim80th.h100e;
+                const time80th = timeValues[sim80th.idx];
+                const node80th = nodeValues[sim80th.idx];
+
+                // Display H100e
+                const rounded = Math.round(h100e80th / 100000) * 100000;
                 if (rounded >= 1000000) {
                     document.getElementById('dashboard80thH100e').textContent =
                         `~${(rounded / 1000000).toFixed(1)}M`;
@@ -1415,33 +1424,12 @@
                     document.getElementById('dashboard80thH100e').textContent =
                         `~${rounded.toFixed(0)}`;
                 }
-            }
 
-            // Calculate 80th percentile time before detection
-            const timeValues = data.individual_time_before_detection || [];
-            if (timeValues.length > 0) {
-                const sorted = [...timeValues].sort((a, b) => a - b);
-                const idx80 = Math.floor(sorted.length * 0.8);
-                const time80th = sorted[idx80];
+                // Display time
                 document.getElementById('dashboard80thTime').textContent = time80th.toFixed(1);
-            }
 
-            // Calculate 80th percentile process node (treating as ordinal: smaller nm = better)
-            const nodeValues = data.individual_process_node || [];
-            if (nodeValues.length > 0) {
-                // Extract numeric values from nodes (e.g., "28nm" -> 28)
-                const numericNodes = nodeValues.map(node => {
-                    const match = node.toString().match(/(\d+)/);
-                    return match ? parseInt(match[1]) : 0;
-                });
-
-                // Sort numerically (smaller is better/more advanced)
-                const sorted = [...numericNodes].sort((a, b) => a - b);
-                // Since smaller nm is better, 80th percentile quality = 20th percentile of the values
-                const idx20 = Math.floor(sorted.length * 0.2);
-                const node80th = sorted[idx20];
-
-                document.getElementById('dashboard80thNode').textContent = `${node80th}nm`;
+                // Display process node
+                document.getElementById('dashboard80thNode').textContent = node80th;
             }
         }
 
@@ -1557,10 +1545,10 @@
                     const chipsPerWaferValue = data.compute_factors.chips_per_wafer_individual[0][0]; // Same for all sims
                     document.getElementById('chipsPerWaferPlot').innerHTML = `<div style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; height: 100%; width: 100%;">${chipsPerWaferValue.toFixed(0)}</div>`;
 
-                    // H100e per Chip (H100 architecture) - Bar plot at final timestep
-                    const computePerChip2022Final = data.compute_factors.compute_per_wafer_2022_arch_individual.map(sim => sim[sim.length - 1]);
+                    // Transistor density relative to H100 - Bar plot at final timestep
+                    const transistorDensityFinal = data.compute_factors.transistor_density_individual.map(sim => sim[sim.length - 1]);
                     const processNodes = data.compute_factors.process_node_by_sim;
-                    plotBarByProcessNode('computePerChipPlot', computePerChip2022Final, processNodes, '#E8A863');
+                    plotBarByProcessNode('computePerChipPlot', transistorDensityFinal, processNodes, '#E8A863');
 
                     // Architecture Efficiency - Display as a box (constant value at agreement year)
                     const archEffValue = data.architecture_efficiency_at_agreement;

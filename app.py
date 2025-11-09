@@ -204,6 +204,7 @@ def extract_plot_data(model):
     chips_per_wafer_by_sim = []
     architecture_efficiency_by_sim = []
     compute_per_wafer_2022_arch_by_sim = []
+    transistor_density_by_sim = []
     process_node_by_sim = []
 
     # Use all simulations for visualization
@@ -264,6 +265,7 @@ def extract_plot_data(model):
             chips_per_wafer_by_sim.append([covert_fab.h100_sized_chips_per_wafer] * len(years))
             architecture_efficiency_by_sim.append(architecture_efficiency)
             compute_per_wafer_2022_arch_by_sim.append(compute_per_wafer_2022_arch)
+            transistor_density_by_sim.append([covert_fab.transistor_density_relative_to_h100] * len(years))
             process_node_by_sim.append(covert_fab.process_node.value)  # Store the process node label (e.g., "130nm")
 
     # Calculate statistics
@@ -575,6 +577,7 @@ def extract_plot_data(model):
         chips_per_wafer_array = np.array(chips_per_wafer_by_sim)
         architecture_efficiency_array = np.array(architecture_efficiency_by_sim)
         compute_per_wafer_2022_arch_array = np.array(compute_per_wafer_2022_arch_by_sim)
+        transistor_density_array = np.array(transistor_density_by_sim)
 
         # Debug: Check construction completion
         print(f"\n=== DEBUG CONSTRUCTION COMPLETION ===", flush=True)
@@ -632,6 +635,8 @@ def extract_plot_data(model):
             "architecture_efficiency_individual": [list(sim) for sim in architecture_efficiency_by_sim],
             "compute_per_wafer_2022_arch_median": np.median(compute_per_wafer_2022_arch_array, axis=0).tolist(),
             "compute_per_wafer_2022_arch_individual": [list(sim) for sim in compute_per_wafer_2022_arch_by_sim],
+            "transistor_density_median": np.median(transistor_density_array, axis=0).tolist(),
+            "transistor_density_individual": [list(sim) for sim in transistor_density_by_sim],
             "process_node_by_sim": process_node_by_sim
         }
 

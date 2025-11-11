@@ -442,6 +442,12 @@
             </label>
         </div>
         <div class="param-group">
+            <label for="proportion_of_initial_chip_stock_to_divert">Proportion of initial chip stock to divert</label>
+            <input type="number" id="proportion_of_initial_chip_stock_to_divert" value="{{ defaults.proportion_of_initial_chip_stock_to_divert }}" step="0.01" min="0" max="1">
+        </div>
+
+        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Covert fab</h3>
+        <div class="param-group">
             <label>
                 <input type="checkbox" id="build_covert_fab" checked>
                 Build covert fab
@@ -470,7 +476,45 @@
             <input type="number" id="scanner_proportion" value="{{ defaults.scanner_proportion }}" step="0.001">
         </div>
 
-        <h2>Fab Model Parameters</h2>
+        <h2>Initial PRC Dark Compute Parameters</h2>
+        <div class="param-group">
+            <label for="total_prc_compute_stock_in_2025">Total PRC compute stock in 2025 (millions of H100e)</label>
+            <input type="number" id="total_prc_compute_stock_in_2025" value="{{ defaults.total_prc_compute_stock_in_2025 / 1e6 }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="annual_growth_rate_of_prc_compute_stock">Annual growth rate of PRC compute stock (multiplicative)</label>
+            <input type="number" id="annual_growth_rate_of_prc_compute_stock" value="{{ defaults.annual_growth_rate_of_prc_compute_stock }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="relative_sigma_of_prc_compute_stock">Relative sigma of PRC compute stock (log scale)</label>
+            <input type="number" id="relative_sigma_of_prc_compute_stock" value="{{ defaults.relative_sigma_of_prc_compute_stock }}" step="0.01">
+        </div>
+        <div class="param-group">
+            <label for="us_intelligence_median_error_in_estimate_of_prc_compute_stock">US intelligence median error in estimate of PRC compute stock</label>
+            <input type="number" id="us_intelligence_median_error_in_estimate_of_prc_compute_stock" value="{{ defaults.us_intelligence_median_error_in_estimate_of_prc_compute_stock }}" step="0.01">
+        </div>
+        <div class="param-group">
+            <label for="total_global_compute_in_2025">Total global compute in 2025 (millions of H100e)</label>
+            <input type="number" id="total_global_compute_in_2025" value="{{ defaults.total_global_compute_in_2025 / 1e6 }}" step="1">
+        </div>
+        <div class="param-group">
+            <label for="annual_growth_rate_of_global_compute">Annual growth rate of global compute (multiplicative)</label>
+            <input type="number" id="annual_growth_rate_of_global_compute" value="{{ defaults.annual_growth_rate_of_global_compute }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="relative_sigma_of_global_compute">Relative sigma of global compute (log scale)</label>
+            <input type="number" id="relative_sigma_of_global_compute" value="{{ defaults.relative_sigma_of_global_compute }}" step="0.01">
+        </div>
+        <div class="param-group">
+            <label for="median_unreported_compute_owned_by_non_prc_actors">Median unreported compute owned by non-PRC actors (millions of H100e)</label>
+            <input type="number" id="median_unreported_compute_owned_by_non_prc_actors" value="{{ defaults.median_unreported_compute_owned_by_non_prc_actors / 1e6 }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="relative_sigma_unreported_compute_owned_by_non_prc_actors">Relative sigma of unreported compute owned by non-PRC actors (log scale)</label>
+            <input type="number" id="relative_sigma_unreported_compute_owned_by_non_prc_actors" value="{{ defaults.relative_sigma_unreported_compute_owned_by_non_prc_actors }}" step="0.1">
+        </div>
+
+        <h2>Covert fab parameters</h2>
 
         <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Odds of Covert Project</h3>
         <div class="param-group">
@@ -616,7 +660,128 @@
         </div>
 
         <div id="plots" style="display: none;">
-            <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 0; color: #333;">Covert PRC Fab</h1>
+            <!-- Dark Compute Equation Section -->
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
+                <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">(</div>
+                <div style="flex: 1; min-width: 200px;">
+                    <div id="initialDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                </div>
+                <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">+</div>
+                <div style="flex: 1; min-width: 200px;">
+                    <div id="covertFabFlowPlot" style="width: 100%; height: 250px;"></div>
+                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Compute Flow</div>
+                </div>
+                <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">)</div>
+                <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">×</div>
+                <div style="flex: 1; min-width: 200px;">
+                    <div id="chipSurvivalPlot" style="width: 100%; height: 250px;"></div>
+                </div>
+                <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
+                <div style="flex: 1; min-width: 200px;">
+                    <div id="totalDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                </div>
+            </div>
+
+            <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 0; color: #333;">Initial stock</h1>
+
+            <!-- Dashboard and Detection Probability -->
+            <div style="display: flex; gap: 20px; margin-bottom: 30px; align-items: stretch;">
+                <div style="flex: 0 0 250px; min-width: 250px;">
+                    <div class="dashboard" style="height: 300px;">
+                        <div class="dashboard-item">
+                            <div class="dashboard-value" id="dashboardMedianDarkCompute">--</div>
+                            <div class="dashboard-label">Median Initial PRC Dark Compute Stock</div>
+                        </div>
+                        <div class="dashboard-item">
+                            <div class="dashboard-value" id="dashboardMedianLR">--</div>
+                            <div class="dashboard-label">Probability of detection</div>
+                            <div class="dashboard-sublabel">Detection means a ≥5x likelihood ratio</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="flex: 0 0 25%; min-width: 200px;">
+                    <div id="initialDarkComputeDetectionPlot" style="width: 100%; height: 300px;"></div>
+                </div>
+                <div style="flex: 1; min-width: 400px;">
+                    <div id="initialComputeStockPlot" style="width: 100%; height: 300px;"></div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Evidence Breakdown</div>
+                <div class="section-description">
+                    Combined LR = LR<sub>PRC accounting</sub> × LR<sub>global accounting</sub><br>
+                    Multiply likelihood ratios from PRC compute stock reporting and global compute production accounting to assess detection risk from initial stock discrepancies.
+                </div>
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item">
+                        <div id="lrPrcAccountingPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator">×</div>
+                    <div class="breakdown-item">
+                        <div id="lrGlobalAccountingPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator" style="font-size: 20px;">=</div>
+                    <div class="breakdown-item">
+                        <div id="lrCombinedPlot" class="breakdown-plot"></div>
+                    </div>
+                </div>
+                <div class="breakdown-labels-row">
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Evidence from PRC compute stock accounting</div>
+                        <div class="breakdown-description">If the PRC reports less compute stock than U.S. intelligence estimates they possess, this is evidence for a covert project. Conversely, if the PRC reports the same or more compute than the U.S. estimates, this is evidence against a covert project.</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Evidence from global compute production accounting</div>
+                        <div class="breakdown-description">If the total amount of reported global compute is lower than U.S. intelligence estimates of total compute produced to date, this suggests unreported compute exists. Given that the PRC is the most likely actor to hold large quantities of unreported compute, a substantial discrepancy between reported and estimated production provides evidence of a PRC covert project.</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">=</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Combined likelihood ratio</div>
+                        <div class="breakdown-description">The product of the two independent evidence sources gives the overall likelihood ratio update from initial compute reporting. Higher values indicate stronger evidence for a covert project.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Compute Breakdown</div>
+                <div class="section-description">
+                    Dark Compute Stock = Initial PRC Compute Stock × Proportion Diverted<br>
+                    The dark compute stock is determined by the total PRC compute stock at time of agreement and the proportion diverted to the covert project.
+                </div>
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item">
+                        <div id="initialPrcStockPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator">×</div>
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                        <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Proportion<br>Diverted</div>
+                        <div id="diversionProportionDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
+                            --
+                        </div>
+                        <div class="breakdown-label" style="margin-top: 5px;">Proportion diverted<br>to covert project</div>
+                    </div>
+                    <div class="operator" style="font-size: 20px;">=</div>
+                    <div class="breakdown-item">
+                        <div id="darkComputeResultPlot" class="breakdown-plot"></div>
+                    </div>
+                </div>
+                <div class="breakdown-labels-row">
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Initial PRC compute stock</div>
+                        <div class="breakdown-description">The total compute stock owned by the PRC at the time the agreement goes into force, before any diversion to a covert project.</div>
+                    </div>
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Initial PRC dark compute</div>
+                        <div class="breakdown-description">The resulting compute stock diverted to the covert project, which is hidden from international monitoring and accounting systems.</div>
+                    </div>
+                </div>
+            </div>
+
+            <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 40px; color: #333;">Covert fab</h1>
 
             <div id="projectNotRun" style="display: none; padding: 40px; text-align: center;">
                 <p style="font-size: 18px; color: #666;">Project not run</p>
@@ -627,7 +792,7 @@
                 <div class="dashboard">
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboard80thH100e">--</div>
-                        <div class="dashboard-label">Covert H100e Production Before Detection (80th %ile Outcome)</div>
+                        <div class="dashboard-label">Covert Compute Production Before Detection (80th %ile Outcome)</div>
                         <div class="dashboard-sublabel" id="dashboardDetectionLabel">Detection = US estimates covert fab has ≥5x higher odds than previously thought</div>
                     </div>
                     <div class="dashboard-item">
@@ -652,18 +817,18 @@
             </div>
 
             <div class="breakdown-section">
-                <div class="breakdown-title">Odds of Covert Fab Breakdown</div>
+                <div class="breakdown-title">Evidence Breakdown</div>
                 <div class="section-description">
                     Posterior Odds = Prior Odds × LR<sub>inventory</sub> × LR<sub>procurement</sub> × LR<sub>other</sub><br>
                     Combine prior belief with evidence from three independent intelligence sources to estimate detection likelihood.
                 </div>
                 <div class="breakdown-plots-row">
                     <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
-                        <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Prior Odds of<br>Covert Project</div>
+                        <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Prior Odds of<br>Covert Fab</div>
                         <div id="priorOddsDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
                             --
                         </div>
-                        <div class="breakdown-label" style="margin-top: 5px;">Prior Odds of<br>Covert Project</div>
+                        <div class="breakdown-label" style="margin-top: 5px;">Prior Odds of<br>Covert Fab</div>
                     </div>
                     <div class="operator">×</div>
                     <div class="breakdown-item">
@@ -705,13 +870,13 @@
                     </div>
                     <div class="operator arrow-operator" style="visibility: hidden;">→</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Posterior Probability of<br>Covert Project</div>
+                        <div class="breakdown-label">Posterior Probability of<br>Covert Fab</div>
                     </div>
                 </div>
             </div>
 
             <div class="breakdown-section">
-                <div class="breakdown-title">Fab Compute Production Rate Breakdown</div>
+                <div class="breakdown-title">Compute Production Breakdown</div>
                 <div class="section-description">
                     H100e per month = Construction has finished? × Wafers processed per Month × Working H100-sized chips per wafer × Transistor density relative to an H100 × Architecture efficiency<br>
                     Architecture efficiency improves until the agreement year, then remains constant.
@@ -792,7 +957,13 @@
                 end_year: parseFloat(document.getElementById('end_year').value),
                 increment: parseFloat(document.getElementById('increment').value),
                 num_simulations: parseInt(document.getElementById('num_simulations').value),
+                // Initial PRC compute stock parameters
+                total_prc_compute_stock_in_2025: parseFloat(document.getElementById('total_prc_compute_stock_in_2025').value) * 1e6,
+                annual_growth_rate_of_prc_compute_stock: parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock').value),
+                relative_sigma_of_prc_compute_stock: parseFloat(document.getElementById('relative_sigma_of_prc_compute_stock').value),
+                us_intelligence_median_error_in_estimate_of_prc_compute_stock: parseFloat(document.getElementById('us_intelligence_median_error_in_estimate_of_prc_compute_stock').value),
                 run_covert_project: document.getElementById('run_covert_project').checked,
+                proportion_of_initial_chip_stock_to_divert: parseFloat(document.getElementById('proportion_of_initial_chip_stock_to_divert').value),
                 build_covert_fab: document.getElementById('build_covert_fab').checked,
                 operating_labor: parseInt(document.getElementById('operating_labor').value),
                 construction_labor: parseInt(document.getElementById('construction_labor').value),
@@ -1053,7 +1224,7 @@
             setTimeout(() => Plotly.Plots.resize('computeCcdfPlot'), 50);
         }
 
-        function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false) {
+        function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null) {
             // Create histogram/PDF from values
             console.log(`plotPDF called for ${divId}:`, values);
             console.log(`plotPDF ${divId} - min: ${Math.min(...values)}, max: ${Math.max(...values)}, count: ${values.length}`);
@@ -1068,28 +1239,31 @@
 
             // For log scale, manually specify bin edges
             if (logScale) {
-                // Create 12 bins evenly spaced in log space from 0.1 to 10
-                const minVal = 0.1;
-                const maxVal = 10;
+                // Use custom range if provided, otherwise default to 0.1 to 10
+                const minVal = logMin !== null ? logMin : 0.1;
+                const maxVal = logMax !== null ? logMax : 10;
                 const numBins = 12;
-                const logMin = Math.log10(minVal);
-                const logMax = Math.log10(maxVal);
+                const logMinVal = Math.log10(minVal);
+                const logMaxVal = Math.log10(maxVal);
                 const binEdges = [];
                 for (let i = 0; i <= numBins; i++) {
-                    binEdges.push(Math.pow(10, logMin + i * (logMax - logMin) / numBins));
+                    binEdges.push(Math.pow(10, logMinVal + i * (logMaxVal - logMinVal) / numBins));
                 }
 
                 // Manually bin the data
                 const binCounts = new Array(binEdges.length - 1).fill(0);
                 values.forEach(v => {
-                    for (let i = 0; i < binEdges.length - 1; i++) {
+                    // Find which bin this value belongs to
+                    let binned = false;
+                    for (let i = 0; i < binEdges.length - 2; i++) {
                         if (v >= binEdges[i] && v < binEdges[i + 1]) {
                             binCounts[i]++;
+                            binned = true;
                             break;
                         }
                     }
-                    // Handle values >= last edge
-                    if (v >= binEdges[binEdges.length - 1]) {
+                    // Last bin captures all values >= second-to-last edge (making it a "+" bin)
+                    if (!binned) {
                         binCounts[binCounts.length - 1]++;
                     }
                 });
@@ -1135,8 +1309,11 @@
             if (logScale) {
                 xaxisConfig.type = 'log';
                 // Manually specify tick values for better visibility
-                xaxisConfig.tickvals = [0.1, 0.2, 0.5, 1, 2, 5, 10];
-                xaxisConfig.ticktext = ['0.1', '0.2', '0.5', '1', '2', '5', '10+'];
+                // Use the actual max value from logMax parameter
+                const maxTickVal = logMax !== null ? logMax : 10;
+                const maxTickText = maxTickVal.toString() + '+';
+                xaxisConfig.tickvals = [0.1, 0.2, 0.5, 1, 2, maxTickVal];
+                xaxisConfig.ticktext = ['0.1', '0.2', '0.5', '1', '2', maxTickText];
                 // Don't force range - let it adjust based on data
                 xaxisConfig.autorange = true;
             }
@@ -1431,13 +1608,13 @@
                 const rounded = Math.round(h100e80th / 100000) * 100000;
                 if (rounded >= 1000000) {
                     document.getElementById('dashboard80thH100e').textContent =
-                        `~${(rounded / 1000000).toFixed(1)}M`;
+                        `~${(rounded / 1000000).toFixed(1)}M H100e`;
                 } else if (rounded >= 1000) {
                     document.getElementById('dashboard80thH100e').textContent =
-                        `~${(rounded / 1000).toFixed(0)}K`;
+                        `~${(rounded / 1000).toFixed(0)}K H100e`;
                 } else {
                     document.getElementById('dashboard80thH100e').textContent =
-                        `~${rounded.toFixed(0)}`;
+                        `~${rounded.toFixed(0)} H100e`;
                 }
 
                 // Display time
@@ -1483,12 +1660,314 @@
                 // Update dashboard
                 updateDashboard(data);
 
+                // Plot dark compute equation section
+                console.log('Plotting dark compute equation section...');
+
+                // Plot 1: Initial dark compute (histogram)
+                if (data.initial_compute_stock_samples) {
+                    plotPDF('initialDarkComputePlot', data.initial_compute_stock_samples, '#9B72B0', 'Initial Dark Compute (H100e)', 30, false);
+                }
+
+                // Plot 2: Flow from covert fab (line plot - cumulative production over time)
+                if (data.time_series) {
+                    const years = data.time_series.years;
+                    const h100e_median = data.time_series.h100e_median;
+                    const h100e_p25 = data.time_series.h100e_p25;
+                    const h100e_p75 = data.time_series.h100e_p75;
+
+                    // Create traces for the shaded region and median line
+                    const traces = [
+                        // Upper bound of shaded region (invisible line)
+                        {
+                            x: years,
+                            y: h100e_p75,
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: 'transparent' },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
+                        // Lower bound with fill to previous trace
+                        {
+                            x: years,
+                            y: h100e_p25,
+                            type: 'scatter',
+                            mode: 'lines',
+                            fill: 'tonexty',
+                            fillcolor: 'rgba(155, 114, 176, 0.2)',
+                            line: { color: 'transparent' },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
+                        // Median line
+                        {
+                            x: years,
+                            y: h100e_median,
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: '#9B72B0', width: 2 },
+                            name: 'covert fab production',
+                            showlegend: true
+                        }
+                    ];
+
+                    const layout = {
+                        xaxis: {
+                            title: 'Year',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 }
+                        },
+                        yaxis: {
+                            title: 'K H100e',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 }
+                        },
+                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        height: 250,
+                        hovermode: 'x unified',
+                        legend: {
+                            x: 0.5,
+                            y: 1.0,
+                            xanchor: 'center',
+                            yanchor: 'bottom',
+                            orientation: 'h',
+                            font: { size: 10 }
+                        },
+                        showlegend: true
+                    };
+
+                    Plotly.newPlot('covertFabFlowPlot', traces, layout, {responsive: true});
+                }
+
+                // Plot 3: Average compute survival rate
+                if (data.time_series) {
+                    const years = data.time_series.years;
+                    const survival_rate_median = data.time_series.survival_rate_median;
+                    const survival_rate_p25 = data.time_series.survival_rate_p25;
+                    const survival_rate_p75 = data.time_series.survival_rate_p75;
+
+                    const traces = [
+                        // Upper bound of shaded region (invisible line)
+                        {
+                            x: years,
+                            y: survival_rate_p75,
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: 'transparent' },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
+                        // Lower bound with fill to previous trace
+                        {
+                            x: years,
+                            y: survival_rate_p25,
+                            type: 'scatter',
+                            mode: 'lines',
+                            fill: 'tonexty',
+                            fillcolor: 'rgba(76, 175, 80, 0.2)',
+                            line: { color: 'transparent' },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
+                        // Median line
+                        {
+                            x: years,
+                            y: survival_rate_median,
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: '#4CAF50', width: 2 },
+                            name: 'Median',
+                            showlegend: false
+                        }
+                    ];
+
+                    const layout = {
+                        xaxis: {
+                            title: 'Year',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 }
+                        },
+                        yaxis: {
+                            title: 'Survival Rate',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 }
+                        },
+                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        height: 250,
+                        hovermode: 'x unified'
+                    };
+
+                    Plotly.newPlot('chipSurvivalPlot', traces, layout, {responsive: true});
+                }
+
+                // Plot 4: Total dark compute (operational)
+                if (data.time_series) {
+                    const years = data.time_series.years;
+                    const operational_median = data.time_series.operational_dark_compute_median;
+                    const operational_p25 = data.time_series.operational_dark_compute_p25;
+                    const operational_p75 = data.time_series.operational_dark_compute_p75;
+
+                    const traces = [
+                        // Upper bound of shaded region (invisible line)
+                        {
+                            x: years,
+                            y: operational_p75,
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: 'transparent' },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
+                        // Lower bound with fill to previous trace
+                        {
+                            x: years,
+                            y: operational_p25,
+                            type: 'scatter',
+                            mode: 'lines',
+                            fill: 'tonexty',
+                            fillcolor: 'rgba(33, 150, 243, 0.2)',
+                            line: { color: 'transparent' },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
+                        // Median line
+                        {
+                            x: years,
+                            y: operational_median,
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: '#2196F3', width: 2 },
+                            name: 'Median',
+                            showlegend: false
+                        }
+                    ];
+
+                    const layout = {
+                        xaxis: {
+                            title: 'Year',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 }
+                        },
+                        yaxis: {
+                            title: 'K H100e',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 }
+                        },
+                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        height: 250,
+                        hovermode: 'x unified'
+                    };
+
+                    Plotly.newPlot('totalDarkComputePlot', traces, layout, {responsive: true});
+                }
+
+                // Plot detection probability bar chart and initial compute stock histogram
+                if (data.initial_dark_compute_detection_probs && data.initial_compute_stock_samples) {
+                    console.log('Plotting detection probability bar chart and initial compute stock...');
+
+                    // Update dashboard with median values
+                    const sortedDarkCompute = [...data.initial_compute_stock_samples].sort((a, b) => a - b);
+                    const medianDarkCompute = sortedDarkCompute[Math.floor(sortedDarkCompute.length / 2)];
+                    const medianInMillions = (medianDarkCompute / 1e6).toFixed(2);
+                    document.getElementById('dashboardMedianDarkCompute').textContent = medianInMillions + ' M H100e';
+
+                    // Display probability of detection (P(LR ≥ 5x))
+                    if (data.initial_dark_compute_detection_probs && data.initial_dark_compute_detection_probs['5x'] !== undefined) {
+                        const probDetection = data.initial_dark_compute_detection_probs['5x'];
+                        document.getElementById('dashboardMedianLR').textContent = (probDetection * 100).toFixed(1) + '%';
+                    }
+
+                    // Bar chart for detection probabilities
+                    const likelihoodRatios = data.likelihood_ratios || [1, 3, 5];
+                    const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
+                    const detectionProbs = likelihoodRatios.map((lr, idx) => ({
+                        lr: lr,
+                        prob: data.initial_dark_compute_detection_probs[`${lr}x`] || 0,
+                        color: colors[idx]
+                    }));
+
+                    const barTrace = {
+                        x: detectionProbs.map(d => `Detection means<br>≥${d.lr}x LR`),
+                        y: detectionProbs.map(d => d.prob),
+                        type: 'bar',
+                        marker: {
+                            color: detectionProbs.map(d => d.color)
+                        },
+                        hovertemplate: 'P(LR ≥ %{x}): %{y:.2%}<extra></extra>'
+                    };
+
+                    const barLayout = {
+                        xaxis: {
+                            title: 'Probability of detection',
+                            titlefont: { size: 11 },
+                            tickfont: { size: 9 }
+                        },
+                        yaxis: {
+                            title: 'P(Detection)',
+                            titlefont: { size: 11 },
+                            tickfont: { size: 10 },
+                            range: [0, 1],
+                            tickformat: '.0%'
+                        },
+                        showlegend: false,
+                        margin: { l: 55, r: 10, t: 10, b: 45 },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)'
+                    };
+
+                    Plotly.newPlot('initialDarkComputeDetectionPlot', [barTrace], barLayout, {displayModeBar: false, responsive: true});
+
+                    // Histogram for initial compute stock
+                    plotPDF('initialComputeStockPlot', data.initial_compute_stock_samples, '#9B72B0', 'PRC Dark Compute Stock (H100e)', 30, false);
+                } else {
+                    console.log('No detection probability or compute stock data available');
+                }
+
+                // Plot LR breakdown histograms for initial compute reporting
+                if (data.lr_prc_accounting_samples && data.lr_global_accounting_samples && data.lr_combined_samples) {
+                    console.log('Plotting LR breakdown histograms...');
+                    // Use log scale with range 1/3 to 5, and blue color #5B8DBE
+                    plotPDF('lrPrcAccountingPlot', data.lr_prc_accounting_samples, '#5B8DBE', 'Likelihood Ratio from PRC Accounting', 12, true, 1/3, 5);
+                    plotPDF('lrGlobalAccountingPlot', data.lr_global_accounting_samples, '#5B8DBE', 'Likelihood Ratio from Global Production Accounting', 12, true, 1/3, 5);
+                    plotPDF('lrCombinedPlot', data.lr_combined_samples, '#5B8DBE', 'Combined LR', 12, true, 1/3, 5);
+                } else {
+                    console.log('No LR samples in data');
+                }
+
+                // Plot initial dark compute stock breakdown
+                if (data.initial_prc_stock_samples && data.diversion_proportion && data.initial_compute_stock_samples) {
+                    console.log('Plotting initial dark compute stock breakdown...');
+
+                    // Plot initial PRC stock distribution - purple color #9B72B0
+                    plotPDF('initialPrcStockPlot', data.initial_prc_stock_samples, '#9B72B0', 'Initial PRC Compute Stock (H100e)', 30, false);
+
+                    // Display the diversion proportion
+                    const diversionPercent = (data.diversion_proportion * 100).toFixed(0);
+                    document.getElementById('diversionProportionDisplay').textContent = diversionPercent + '%';
+
+                    // Plot the resulting dark compute stock - purple color #9B72B0
+                    plotPDF('darkComputeResultPlot', data.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100e)', 30, false);
+                } else {
+                    console.log('No initial dark compute stock breakdown data available');
+                }
+
                 // Plot main charts
                 plotTimeSeries(data);
                 plotComputeCcdf(data);
 
                 // Force resize after a brief delay to ensure plots fill containers
                 setTimeout(() => {
+                    Plotly.Plots.resize('initialDarkComputePlot');
+                    Plotly.Plots.resize('covertFabFlowPlot');
+                    Plotly.Plots.resize('chipSurvivalPlot');
+                    Plotly.Plots.resize('totalDarkComputePlot');
+                    Plotly.Plots.resize('initialDarkComputeDetectionPlot');
+                    Plotly.Plots.resize('initialComputeStockPlot');
+                    Plotly.Plots.resize('lrPrcAccountingPlot');
+                    Plotly.Plots.resize('lrGlobalAccountingPlot');
+                    Plotly.Plots.resize('lrCombinedPlot');
+                    Plotly.Plots.resize('initialPrcStockPlot');
+                    Plotly.Plots.resize('darkComputeResultPlot');
                     Plotly.Plots.resize('timeSeriesPlot');
                     Plotly.Plots.resize('computeCcdfPlot');
                 }, 100);
@@ -1642,6 +2121,17 @@
         // Run simulation automatically on page load
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(runSimulation, 500); // Small delay to ensure page is fully loaded
+        });
+
+        // Add Enter key listener to all input fields and select elements in sidebar
+        const sidebarInputs = document.querySelectorAll('.sidebar input, .sidebar select');
+        sidebarInputs.forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    runSimulation();
+                }
+            });
         });
 
         // Setup tooltip handlers

@@ -262,7 +262,7 @@ Then query compute production and likelihood ratio:
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 import numpy as np
 from scipy.interpolate import interp1d
@@ -967,7 +967,6 @@ class PRCCovertFab(CovertFab):
     construction_duration : float
     wafer_starts_per_month : float
     h100_sized_chips_per_wafer : float
-    h100_equival : float
     agreement_year : float
 
     # Properties that are used to determine detection probability
@@ -977,6 +976,10 @@ class PRCCovertFab(CovertFab):
     construction_labor : int
     operation_labor : int
     us_estimate_of_prc_lithography_scanners : float
+
+    # Fields with default values must come last
+    dark_compute_over_time : dict = field(default_factory=dict)
+    detection_updates : dict = field(default_factory=dict)
 
     def __init__(
             self,
@@ -1049,6 +1052,15 @@ class PRCCovertFab(CovertFab):
             total_labor=construction_labor + operation_labor
         )
 
+        # Initialize fields that have default_factory in dataclass
+        self.dark_compute_over_time = {}
+        self.detection_updates = {}
+
+        # Initialize tracking dictionaries for detection components over time
+        self.lr_inventory_over_time = {}
+        self.lr_procurement_over_time = {}
+        self.lr_other_over_time = {}
+
     def is_operational(self, year):
         if self.construction_start_year != None: # Construction start year can be none if the PRC never builds a covert fab
             return year >= self.construction_start_year + self.construction_duration
@@ -1103,5 +1115,10 @@ class PRCCovertFab(CovertFab):
             time_of_detection=self.time_of_detection_via_other_strategies,
             total_labor=self.construction_labor + self.operation_labor
         )
+
+        # Store component LRs for tracking over time
+        self.lr_inventory_over_time[year] = self.lr_inventory
+        self.lr_procurement_over_time[year] = self.lr_procurement
+        self.lr_other_over_time[year] = self.lr_other
 
         return self.lr_inventory * self.lr_procurement * self.lr_other

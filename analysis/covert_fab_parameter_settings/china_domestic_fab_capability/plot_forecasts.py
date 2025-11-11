@@ -42,7 +42,7 @@ for node, data in forecasts.items():
     ax.plot(years_smooth, probabilities_smooth,
             label=node,
             color=colors[node],
-            linewidth=2.5)
+            linewidth=2.0)
 
     # Plot the original data points
     ax.scatter(years, probabilities,
@@ -53,10 +53,10 @@ for node, data in forecasts.items():
               linewidth=1.5)
 
 # Styling
-ax.set_xlabel('Year', fontsize=12, fontweight='bold')
+ax.set_xlabel('Year', fontsize=12)
 ax.set_ylabel('Probability of >90% localization for node', fontsize=12)
 ax.set_title('China Semiconductor Self-Sufficiency Probability Forecasts',
-             fontsize=14, fontweight='bold', pad=20)
+             fontsize=14, pad=20)
 
 # Set y-axis to percentage format
 ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.0%}'))
@@ -93,7 +93,7 @@ for node, data in forecasts.items():
     ax2.plot(years_smooth, probabilities_smooth,
             label=node,
             color=colors[node],
-            linewidth=2.5)
+            linewidth=2.0)
 
     # Add shaded area under the curve
     ax2.fill_between(years_smooth, 0, probabilities_smooth,
@@ -109,10 +109,10 @@ for node, data in forecasts.items():
               linewidth=1.5)
 
 # Styling
-ax2.set_xlabel('Year', fontsize=12, fontweight='bold')
-ax2.set_ylabel('Probability of Self-Sufficiency', fontsize=12, fontweight='bold')
+ax2.set_xlabel('Year', fontsize=12)
+ax2.set_ylabel('Probability of Self-Sufficiency', fontsize=12)
 ax2.set_title('China Semiconductor Self-Sufficiency Probability Forecasts',
-             fontsize=14, fontweight='bold', pad=20)
+             fontsize=14, pad=20)
 ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.0%}'))
 ax2.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
 ax2.legend(loc='upper left', fontsize=11, framealpha=0.95)
@@ -141,7 +141,7 @@ for node, data in forecasts.items():
     ax3.plot(years_smooth, probabilities_smooth,
             label=node,
             color=colors[node],
-            linewidth=2.5)
+            linewidth=2.0)
 
     # Plot the original data points
     ax3.scatter(years, probabilities_inverted,

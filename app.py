@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, request, send_file
-from model import Model, CovertProjectStrategy, default_prc_covert_project_strategy
+from model import Model, CovertProjectStrategy, default_prc_covert_project_strategy, best_prc_covert_project_strategy
 from fab_model import ProcessNode, FabModelParameters
 import numpy as np
 import base64
@@ -17,10 +17,21 @@ LIKELIHOOD_RATIOS = [1, 3, 5]
 @app.route('/')
 def index():
     # Pass default strategy values to template
+    from stock_model import InitialPRCComputeStockParameters
     defaults = {
+        'proportion_of_initial_chip_stock_to_divert': default_prc_covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
         'operating_labor': default_prc_covert_project_strategy.covert_fab_operating_labor,
         'construction_labor': default_prc_covert_project_strategy.covert_fab_construction_labor,
         'scanner_proportion': default_prc_covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
+        'total_prc_compute_stock_in_2025': InitialPRCComputeStockParameters.total_prc_compute_stock_in_2025,
+        'annual_growth_rate_of_prc_compute_stock': InitialPRCComputeStockParameters.annual_growth_rate_of_prc_compute_stock,
+        'relative_sigma_of_prc_compute_stock': InitialPRCComputeStockParameters.relative_sigma_of_prc_compute_stock,
+        'us_intelligence_median_error_in_estimate_of_prc_compute_stock': InitialPRCComputeStockParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock,
+        'total_global_compute_in_2025': InitialPRCComputeStockParameters.total_global_compute_in_2025,
+        'annual_growth_rate_of_global_compute': InitialPRCComputeStockParameters.annual_growth_rate_of_global_compute,
+        'relative_sigma_of_global_compute': InitialPRCComputeStockParameters.relative_sigma_of_global_compute,
+        'median_unreported_compute_owned_by_non_prc_actors': InitialPRCComputeStockParameters.median_unreported_compute_owned_by_non_prc_actors,
+        'relative_sigma_unreported_compute_owned_by_non_prc_actors': InitialPRCComputeStockParameters.relative_sigma_unreported_compute_owned_by_non_prc_actors,
     }
     return render_template('index.html', defaults=defaults)
 
@@ -40,6 +51,7 @@ def run_simulation():
 
     # PRC strategy parameters
     run_covert_project = data.get('run_covert_project', True)
+    proportion_of_initial_chip_stock_to_divert = float(data.get('proportion_of_initial_chip_stock_to_divert', 0.05))
     build_covert_fab = data.get('build_covert_fab', True)
     operating_labor = int(data.get('operating_labor', 728))
     construction_labor = int(data.get('construction_labor', 448))
@@ -52,6 +64,19 @@ def run_simulation():
     # US prior probabilities
     p_project_exists = float(data.get('p_project_exists', 0.2))
     p_fab_exists = float(data.get('p_fab_exists', 0.1))
+
+    # Initial PRC compute stock parameters
+    from stock_model import InitialPRCComputeStockParameters
+    print(f"DEBUG: Received compute stock params from client: total_2025={data.get('total_prc_compute_stock_in_2025')}, growth={data.get('annual_growth_rate_of_prc_compute_stock')}, sigma={data.get('relative_sigma_of_prc_compute_stock')}", flush=True)
+    if 'total_prc_compute_stock_in_2025' in data:
+        InitialPRCComputeStockParameters.total_prc_compute_stock_in_2025 = float(data['total_prc_compute_stock_in_2025'])
+    if 'annual_growth_rate_of_prc_compute_stock' in data:
+        InitialPRCComputeStockParameters.annual_growth_rate_of_prc_compute_stock = float(data['annual_growth_rate_of_prc_compute_stock'])
+    if 'relative_sigma_of_prc_compute_stock' in data:
+        InitialPRCComputeStockParameters.relative_sigma_of_prc_compute_stock = float(data['relative_sigma_of_prc_compute_stock'])
+    if 'us_intelligence_median_error_in_estimate_of_prc_compute_stock' in data:
+        InitialPRCComputeStockParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock = float(data['us_intelligence_median_error_in_estimate_of_prc_compute_stock'])
+    print(f"DEBUG: Updated params to: total_2025={InitialPRCComputeStockParameters.total_prc_compute_stock_in_2025}, growth={InitialPRCComputeStockParameters.annual_growth_rate_of_prc_compute_stock}, sigma={InitialPRCComputeStockParameters.relative_sigma_of_prc_compute_stock}", flush=True)
 
     # Fab model parameters - update all parameters from data
     if 'median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock' in data:
@@ -128,6 +153,7 @@ def run_simulation():
         print(f"DEBUG: About to create strategy...", flush=True)
         custom_strategy = CovertProjectStrategy(
             run_a_covert_project=run_covert_project,
+            proportion_of_initial_compute_stock_to_divert=proportion_of_initial_chip_stock_to_divert,
             build_a_covert_fab=build_covert_fab,
             covert_fab_operating_labor=operating_labor,
             covert_fab_construction_labor=construction_labor,
@@ -173,9 +199,47 @@ def run_simulation():
                     print(f"DEBUG: Sample fab wafer_starts_per_month = {fab.wafer_starts_per_month}", flush=True)
                     print(f"DEBUG: Sample fab production_capacity = {fab.production_capacity}", flush=True)
 
+        # Sample initial dark compute stock distribution
+        from stock_model import PRCDarkComputeStock, InitialPRCComputeStockParameters as StockParams
+        print(f"DEBUG: Sampling with params - total_2025={StockParams.total_prc_compute_stock_in_2025}, growth_rate={StockParams.annual_growth_rate_of_prc_compute_stock}, sigma={StockParams.relative_sigma_of_prc_compute_stock}, divert_proportion={proportion_of_initial_chip_stock_to_divert}", flush=True)
+        initial_prc_stock_samples = []  # Total PRC compute stock before diversion
+        initial_compute_samples = []  # Dark compute diverted to covert project
+        initial_lr_samples = []  # Combined likelihood ratios for detection
+        lr_prc_accounting_samples = []  # Individual LR from PRC compute accounting
+        lr_global_accounting_samples = []  # Individual LR from global compute production accounting
+        for _ in range(1000):
+            compute_stock = PRCDarkComputeStock(agreement_year, proportion_of_initial_chip_stock_to_divert, best_prc_covert_project_strategy.proportion_of_initial_compute_stock_to_divert)
+            initial_prc_stock_samples.append(compute_stock.initial_prc_stock)
+            initial_compute_samples.append(compute_stock.initial_prc_dark_compute)
+            # Get individual LRs
+            lr_prc = compute_stock.lr_from_prc_compute_accounting
+            lr_global = compute_stock.lr_from_global_compute_production_accounting
+            lr_prc_accounting_samples.append(lr_prc)
+            lr_global_accounting_samples.append(lr_global)
+            # Get combined LR from both PRC and global compute accounting
+            combined_lr = lr_prc * lr_global
+            initial_lr_samples.append(combined_lr)
+        print(f"DEBUG: Sampled {len(initial_compute_samples)} dark compute samples, min={min(initial_compute_samples):.0f}, max={max(initial_compute_samples):.0f}, mean={sum(initial_compute_samples)/len(initial_compute_samples):.0f}", flush=True)
+
+        # Calculate detection probabilities for different LR thresholds
+        detection_probs = {}
+        for threshold in LIKELIHOOD_RATIOS:
+            num_detected = sum(1 for lr in initial_lr_samples if lr >= threshold)
+            detection_probs[f"{threshold}x"] = num_detected / len(initial_lr_samples)
+        print(f"DEBUG: Detection probabilities - {detection_probs}", flush=True)
+
         # Extract data for plots
         print(f"DEBUG: Extracting plot data...", flush=True)
         results = extract_plot_data(model, p_fab_exists)
+
+        # Add initial compute stock distribution to results
+        results['initial_prc_stock_samples'] = initial_prc_stock_samples
+        results['initial_compute_stock_samples'] = initial_compute_samples
+        results['initial_dark_compute_detection_probs'] = detection_probs
+        results['lr_prc_accounting_samples'] = lr_prc_accounting_samples
+        results['lr_global_accounting_samples'] = lr_global_accounting_samples
+        results['lr_combined_samples'] = initial_lr_samples
+        results['diversion_proportion'] = proportion_of_initial_chip_stock_to_divert
 
         print(f"DEBUG: Returning results...", flush=True)
         return jsonify(results)
@@ -197,7 +261,7 @@ def extract_plot_data(model, p_fab_exists):
     us_probs_by_sim = []
     h100e_by_sim = []
 
-    # Individual likelihood ratio components over time
+    # Individual fab detection likelihood ratios over time
     lr_inventory_by_sim = []
     lr_procurement_by_sim = []
     lr_other_by_sim = []
@@ -214,37 +278,67 @@ def extract_plot_data(model, p_fab_exists):
     # Use all simulations for visualization
     simulations_to_plot = model.simulation_results
 
+    # Track survival rates and operational dark compute
+    survival_rate_by_sim = []
+    operational_dark_compute_by_sim = []
+
     for covert_projects, detectors in simulations_to_plot:
         us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        h100e_over_time = covert_projects["prc_covert_project"].h100e_over_time
         covert_fab = covert_projects["prc_covert_project"].covert_fab
+        dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
 
         years = sorted(us_beliefs.keys())
         if not all_years:
             all_years = years
 
         us_probs = [us_beliefs[year].p_covert_fab_exists for year in years]
-        h100e_counts = [h100e_over_time.get(year, 0.0) for year in years]
+        # Use covert fab's production over time if fab exists, otherwise 0
+        if covert_fab is not None and hasattr(covert_fab, 'dark_compute_over_time'):
+            h100e_counts = [covert_fab.dark_compute_over_time.get(year, 0.0) for year in years]
+        else:
+            h100e_counts = [0.0 for year in years]
+
+        # Calculate survival rates and operational dark compute for this simulation
+        survival_rates = []
+        operational_dark_compute = []
+        for year in years:
+            operational = dark_compute_stock.operational_dark_compute(year)
+            total = dark_compute_stock.operational_and_nonoperational_dark_compute(year)
+            if total > 0:
+                survival_rates.append(operational / total)
+            else:
+                survival_rates.append(0.0)
+            operational_dark_compute.append(operational)
 
         us_probs_by_sim.append(us_probs)
         h100e_by_sim.append(h100e_counts)
+        survival_rate_by_sim.append(survival_rates)
+        operational_dark_compute_by_sim.append(operational_dark_compute)
 
         # Extract likelihood ratio components
         if covert_fab is not None:
-            lr_inventory = []
-            lr_procurement = []
-            lr_other = []
+            # Use detection_updates which stores fab-specific detection LRs over time
+            detection_lr_over_time = []
+            lr_inventory_over_time = []
+            lr_procurement_over_time = []
+            lr_other_over_time = []
             is_operational = []
             wafer_starts = []
             architecture_efficiency = []
             compute_per_wafer_2022_arch = []
 
             for year in years:
-                # Trigger calculation of LRs by calling detection_likelihood_ratio
-                _ = covert_fab.detection_likelihood_ratio(year)
-                lr_inventory.append(covert_fab.lr_inventory)
-                lr_procurement.append(covert_fab.lr_procurement)
-                lr_other.append(covert_fab.lr_other)
+                # Get the detection LR components from the fab's tracking dictionaries
+                if hasattr(covert_fab, 'lr_inventory_over_time') and year in covert_fab.lr_inventory_over_time:
+                    lr_inventory_over_time.append(covert_fab.lr_inventory_over_time[year])
+                    lr_procurement_over_time.append(covert_fab.lr_procurement_over_time[year])
+                    lr_other_over_time.append(covert_fab.lr_other_over_time[year])
+                    detection_lr_over_time.append(covert_fab.detection_updates[year])
+                else:
+                    lr_inventory_over_time.append(1.0)
+                    lr_procurement_over_time.append(1.0)
+                    lr_other_over_time.append(1.0)
+                    detection_lr_over_time.append(1.0)
 
                 # Calculate compute factors
                 is_operational.append(1.0 if covert_fab.is_operational(year) else 0.0)
@@ -261,9 +355,9 @@ def extract_plot_data(model, p_fab_exists):
                     covert_fab.transistor_density_relative_to_h100
                 )
 
-            lr_inventory_by_sim.append(lr_inventory)
-            lr_procurement_by_sim.append(lr_procurement)
-            lr_other_by_sim.append(lr_other)
+            lr_inventory_by_sim.append(lr_inventory_over_time)
+            lr_procurement_by_sim.append(lr_procurement_over_time)
+            lr_other_by_sim.append(lr_other_over_time)
             is_operational_by_sim.append(is_operational)
             wafer_starts_by_sim.append(wafer_starts)
             chips_per_wafer_by_sim.append([covert_fab.h100_sized_chips_per_wafer] * len(years))
@@ -276,6 +370,7 @@ def extract_plot_data(model, p_fab_exists):
     years_array = np.array(all_years)
     us_probs_array = np.array(us_probs_by_sim)
     h100e_array = np.array(h100e_by_sim)
+    survival_rate_array = np.array(survival_rate_by_sim)
 
     us_probs_median = np.median(us_probs_array, axis=0)
     us_probs_p25 = np.percentile(us_probs_array, 25, axis=0)
@@ -284,6 +379,14 @@ def extract_plot_data(model, p_fab_exists):
     h100e_median = np.median(h100e_array, axis=0) / 1e3  # Convert to thousands
     h100e_p25 = np.percentile(h100e_array, 25, axis=0) / 1e3
     h100e_p75 = np.percentile(h100e_array, 75, axis=0) / 1e3
+
+    survival_rate_median = np.median(survival_rate_array, axis=0)
+    survival_rate_p25 = np.percentile(survival_rate_array, 25, axis=0)
+    survival_rate_p75 = np.percentile(survival_rate_array, 75, axis=0)
+
+    operational_dark_compute_median = np.median(operational_dark_compute_array, axis=0) / 1e3  # Convert to thousands
+    operational_dark_compute_p25 = np.percentile(operational_dark_compute_array, 25, axis=0) / 1e3
+    operational_dark_compute_p75 = np.percentile(operational_dark_compute_array, 75, axis=0) / 1e3
 
     # Extract compute before detection data for multiple thresholds
     # Calculate thresholds based on prior and likelihood ratios
@@ -330,12 +433,21 @@ def extract_plot_data(model, p_fab_exists):
         if final_year >= operational_start:
             fabs_finished_construction += 1
 
-            # Check if detected before finishing construction
+            # Check if detected before finishing construction using fab-only detection
             detection_year = None
+            initial_p_fab = us_beliefs[min(years)].p_covert_fab_exists
+            prior_odds_fab = initial_p_fab / (1 - initial_p_fab)
+
             for year in years:
-                if us_beliefs[year].p_covert_fab_exists >= 0.5:
-                    detection_year = year
-                    break
+                # Calculate fab-only detection probability
+                if hasattr(covert_fab, 'detection_updates') and year in covert_fab.detection_updates:
+                    fab_lr = covert_fab.detection_updates[year]
+                    posterior_odds_fab = prior_odds_fab * fab_lr
+                    p_fab_detected = posterior_odds_fab / (1 + posterior_odds_fab)
+
+                    if p_fab_detected >= 0.5:
+                        detection_year = year
+                        break
 
             if detection_year is not None and detection_year < operational_start:
                 fabs_finished_and_detected_before_finish += 1
@@ -354,18 +466,33 @@ def extract_plot_data(model, p_fab_exists):
 
         for covert_projects, detectors in model.simulation_results:
             us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-            h100e_over_time = covert_projects["prc_covert_project"].h100e_over_time
             covert_fab = covert_projects["prc_covert_project"].covert_fab
 
             if covert_fab is None:
                 continue
 
+            # Get fab production over time
+            h100e_over_time = covert_fab.dark_compute_over_time if hasattr(covert_fab, 'dark_compute_over_time') else {}
+
             years = sorted(us_beliefs.keys())
             detection_year = None
+
+            # Calculate fab-only detection probability using only fab-specific detection updates
+            # Start with the initial prior for covert fab
+            initial_p_fab = us_beliefs[min(years)].p_covert_fab_exists
+            prior_odds_fab = initial_p_fab / (1 - initial_p_fab)
+
             for year in years:
-                if us_beliefs[year].p_covert_fab_exists >= threshold:
-                    detection_year = year
-                    break
+                # Get cumulative likelihood ratio from fab detection updates only
+                if hasattr(covert_fab, 'detection_updates') and year in covert_fab.detection_updates:
+                    fab_lr = covert_fab.detection_updates[year]
+                    # Calculate posterior probability using only fab-specific evidence
+                    posterior_odds_fab = prior_odds_fab * fab_lr
+                    p_fab_detected = posterior_odds_fab / (1 + posterior_odds_fab)
+
+                    if p_fab_detected >= threshold:
+                        detection_year = year
+                        break
 
             if detection_year is not None:
                 # Find the most recent year <= detection_year in h100e_over_time
@@ -551,25 +678,28 @@ def extract_plot_data(model, p_fab_exists):
                 print(f"  CCDF smallest x value: {compute_ccdf[0]['x']:.2f} H100e", flush=True)
                 print(f"  CCDF at smallest x: P(compute > {compute_ccdf[0]['x']:.2f}) = {compute_ccdf[0]['y']:.4f}", flush=True)
 
-    # Calculate statistics for LR components
+    # Calculate statistics for fab detection LR
     lr_components = {}
     if lr_inventory_by_sim:
-        lr_inventory_array = np.array(lr_inventory_by_sim)
-        lr_procurement_array = np.array(lr_procurement_by_sim)
-        lr_other_array = np.array(lr_other_by_sim)
+        lr_fab_detection_array = np.array(lr_inventory_by_sim)
 
-        # Analyze final timestep inventory LR distribution
-        lr_inventory_final = [sim[-1] for sim in lr_inventory_by_sim]
-        num_lr_equals_1 = sum(1 for lr in lr_inventory_final if abs(lr - 1.0) < 0.01)
-        num_lr_gte_10 = sum(1 for lr in lr_inventory_final if lr >= 10.0)
-        num_lr_gt_2_5 = sum(1 for lr in lr_inventory_final if lr > 2.5)
-        total_sims = len(lr_inventory_final)
-        print(f"INVENTORY LR ANALYSIS (final timestep):", flush=True)
+        # Analyze final timestep fab detection LR distribution
+        lr_fab_detection_final = [sim[-1] for sim in lr_inventory_by_sim]
+        num_lr_equals_1 = sum(1 for lr in lr_fab_detection_final if abs(lr - 1.0) < 0.01)
+        num_lr_gte_10 = sum(1 for lr in lr_fab_detection_final if lr >= 10.0)
+        num_lr_gt_2_5 = sum(1 for lr in lr_fab_detection_final if lr > 2.5)
+        total_sims = len(lr_fab_detection_final)
+        print(f"FAB DETECTION LR ANALYSIS (final timestep):", flush=True)
         print(f"  Total simulations: {total_sims}", flush=True)
         print(f"  LR ≈ 1.0: {num_lr_equals_1} ({100*num_lr_equals_1/total_sims:.1f}%)", flush=True)
         print(f"  LR > 2.5: {num_lr_gt_2_5} ({100*num_lr_gt_2_5/total_sims:.1f}%)", flush=True)
         print(f"  LR ≥ 10.0: {num_lr_gte_10} ({100*num_lr_gte_10/total_sims:.1f}%)", flush=True)
         print(f"  Other values: {total_sims - num_lr_equals_1 - num_lr_gte_10} ({100*(total_sims - num_lr_equals_1 - num_lr_gte_10)/total_sims:.1f}%)", flush=True)
+
+        # Calculate medians and prepare data for all three components
+        lr_inventory_array = np.array(lr_inventory_by_sim)
+        lr_procurement_array = np.array(lr_procurement_by_sim)
+        lr_other_array = np.array(lr_other_by_sim)
 
         lr_components = {
             "inventory_median": np.median(lr_inventory_array, axis=0).tolist(),
@@ -664,6 +794,12 @@ def extract_plot_data(model, p_fab_exists):
             "h100e_median": h100e_median.tolist(),
             "h100e_p25": h100e_p25.tolist(),
             "h100e_p75": h100e_p75.tolist(),
+            "survival_rate_median": survival_rate_median.tolist(),
+            "survival_rate_p25": survival_rate_p25.tolist(),
+            "survival_rate_p75": survival_rate_p75.tolist(),
+            "operational_dark_compute_median": operational_dark_compute_median.tolist(),
+            "operational_dark_compute_p25": operational_dark_compute_p25.tolist(),
+            "operational_dark_compute_p75": operational_dark_compute_p75.tolist(),
             "individual_us_probs": [list(sim) for sim in us_probs_by_sim],
             "individual_h100e": [list(np.array(sim) / 1e3) for sim in h100e_by_sim]
         },

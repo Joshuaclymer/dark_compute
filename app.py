@@ -17,7 +17,7 @@ LIKELIHOOD_RATIOS = [1, 3, 5]
 @app.route('/')
 def index():
     # Pass default strategy values to template
-    from stock_model import InitialPRCComputeStockParameters
+    from stock_model import InitialPRCComputeStockParameters, SurvivalRateParameters
     defaults = {
         'proportion_of_initial_chip_stock_to_divert': default_prc_covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
         'operating_labor': default_prc_covert_project_strategy.covert_fab_operating_labor,
@@ -32,6 +32,10 @@ def index():
         'relative_sigma_of_global_compute': InitialPRCComputeStockParameters.relative_sigma_of_global_compute,
         'median_unreported_compute_owned_by_non_prc_actors': InitialPRCComputeStockParameters.median_unreported_compute_owned_by_non_prc_actors,
         'relative_sigma_unreported_compute_owned_by_non_prc_actors': InitialPRCComputeStockParameters.relative_sigma_unreported_compute_owned_by_non_prc_actors,
+        'initial_hazard_rate_p50': SurvivalRateParameters.initial_hazard_rate_p50,
+        'increase_of_hazard_rate_per_year_p50': SurvivalRateParameters.increase_of_hazard_rate_per_year_p50,
+        'hazard_rate_p25_relative_to_p50': SurvivalRateParameters.hazard_rate_p25_relative_to_p50,
+        'hazard_rate_p75_relative_to_p50': SurvivalRateParameters.hazard_rate_p75_relative_to_p50,
     }
     return render_template('index.html', defaults=defaults)
 
@@ -77,6 +81,28 @@ def run_simulation():
     if 'us_intelligence_median_error_in_estimate_of_prc_compute_stock' in data:
         InitialPRCComputeStockParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock = float(data['us_intelligence_median_error_in_estimate_of_prc_compute_stock'])
     print(f"DEBUG: Updated params to: total_2025={InitialPRCComputeStockParameters.total_prc_compute_stock_in_2025}, growth={InitialPRCComputeStockParameters.annual_growth_rate_of_prc_compute_stock}, sigma={InitialPRCComputeStockParameters.relative_sigma_of_prc_compute_stock}", flush=True)
+
+    # Survival rate parameters
+    from stock_model import SurvivalRateParameters
+    from util import clear_metalog_cache
+
+    survival_params_changed = False
+    if 'initial_hazard_rate_p50' in data:
+        SurvivalRateParameters.initial_hazard_rate_p50 = float(data['initial_hazard_rate_p50'])
+        survival_params_changed = True
+    if 'increase_of_hazard_rate_per_year_p50' in data:
+        SurvivalRateParameters.increase_of_hazard_rate_per_year_p50 = float(data['increase_of_hazard_rate_per_year_p50'])
+        survival_params_changed = True
+    if 'hazard_rate_p25_relative_to_p50' in data:
+        SurvivalRateParameters.hazard_rate_p25_relative_to_p50 = float(data['hazard_rate_p25_relative_to_p50'])
+        survival_params_changed = True
+    if 'hazard_rate_p75_relative_to_p50' in data:
+        SurvivalRateParameters.hazard_rate_p75_relative_to_p50 = float(data['hazard_rate_p75_relative_to_p50'])
+        survival_params_changed = True
+
+    # Clear metalog cache if survival parameters changed
+    if survival_params_changed:
+        clear_metalog_cache()
 
     # Fab model parameters - update all parameters from data
     if 'median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock' in data:
@@ -640,18 +666,24 @@ def extract_plot_data(model, p_fab_exists):
 
     # Print USER'S DIRECT QUESTIONS FIRST
     print(f"\n=== DIRECT ANSWERS TO USER'S QUESTIONS ===", flush=True)
-    print(f"1. Fabs that NEVER finished construction before simulation end: {fabs_never_finished_construction} ({100*fabs_never_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
-    print(f"2. Fabs that DID finish construction before simulation end: {fabs_finished_construction} ({100*fabs_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
-    print(f"3. Of those that finished, detected BEFORE finishing construction: {fabs_finished_and_detected_before_finish} ({100*fabs_finished_and_detected_before_finish/fabs_finished_construction:.1f}% of finished fabs)" if fabs_finished_construction > 0 else "3. Of those that finished, detected BEFORE finishing construction: 0", flush=True)
+    if total_simulations_with_fab > 0:
+        print(f"1. Fabs that NEVER finished construction before simulation end: {fabs_never_finished_construction} ({100*fabs_never_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
+        print(f"2. Fabs that DID finish construction before simulation end: {fabs_finished_construction} ({100*fabs_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
+        print(f"3. Of those that finished, detected BEFORE finishing construction: {fabs_finished_and_detected_before_finish} ({100*fabs_finished_and_detected_before_finish/fabs_finished_construction:.1f}% of finished fabs)" if fabs_finished_construction > 0 else "3. Of those that finished, detected BEFORE finishing construction: 0", flush=True)
+    else:
+        print(f"No fab simulations (build_covert_fab is disabled)", flush=True)
     print(f"==========================================\n", flush=True)
 
     # Print detection timing analysis
     print(f"\nDETECTION TIMING ANALYSIS (P(fab) >= 50%):", flush=True)
     print(f"  Total simulations with fab: {total_simulations_with_fab}", flush=True)
-    print(f"  Detected during construction: {detected_during_construction_count} ({100*detected_during_construction_count/total_simulations_with_fab:.1f}%)", flush=True)
-    print(f"  Detected after finished construction: {detected_after_operational_count} ({100*detected_after_operational_count/total_simulations_with_fab:.1f}%)", flush=True)
-    print(f"  Never detected: {never_detected_count} ({100*never_detected_count/total_simulations_with_fab:.1f}%)", flush=True)
-    print(f"  Fabs that never finished construction (should equal fabs never finished above): {fabs_never_finished_construction} ({100*fabs_never_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
+    if total_simulations_with_fab > 0:
+        print(f"  Detected during construction: {detected_during_construction_count} ({100*detected_during_construction_count/total_simulations_with_fab:.1f}%)", flush=True)
+        print(f"  Detected after finished construction: {detected_after_operational_count} ({100*detected_after_operational_count/total_simulations_with_fab:.1f}%)", flush=True)
+        print(f"  Never detected: {never_detected_count} ({100*never_detected_count/total_simulations_with_fab:.1f}%)", flush=True)
+        print(f"  Fabs that never finished construction (should equal fabs never finished above): {fabs_never_finished_construction} ({100*fabs_never_finished_construction/total_simulations_with_fab:.1f}%)", flush=True)
+    else:
+        print(f"  No fab simulations to analyze", flush=True)
 
     # Debug: Compare CCDF data with dashboard data
     if individual_h100e_before_detection:

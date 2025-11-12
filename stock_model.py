@@ -22,23 +22,21 @@ class InitialPRCComputeStockParameters():
 
 class SurvivalRateParameters():
 
-    # Median survival rate
-    initial_hazard_rate = 0.02
-    increase_of_hazard_rate_per_year = 0.0416
-    increase_of_hazard_rate_per_year_relative_sigma = 0.2
-
+    # Survival rate parameters
+    initial_hazard_rate_p50 = 0.01
+    increase_of_hazard_rate_per_year_p50 = 0.0035
+    hazard_rate_p25_relative_to_p50 = 0.1
+    hazard_rate_p75_relative_to_p50 = 6
 
 def sample_initial_prc_compute_stock(year):
     """Sample initial PRC compute stock based on year and proportion diverted to covert project"""
+    from util import sample_from_log_normal
     params = InitialPRCComputeStockParameters
     years_since_2025 = year - 2025
-    total_stock_mu = params.total_prc_compute_stock_in_2025 * (params.annual_growth_rate_of_prc_compute_stock ** years_since_2025)
+    median_total_stock = params.total_prc_compute_stock_in_2025 * (params.annual_growth_rate_of_prc_compute_stock ** years_since_2025)
     relative_sigma = params.relative_sigma_of_prc_compute_stock
 
-    sigma_log = np.sqrt(np.log(1 + relative_sigma**2))
-    mu_log = np.log(total_stock_mu) - 0.5 * sigma_log**2
-
-    total_stock_sample = np.random.lognormal(mu_log, sigma_log)
+    total_stock_sample = sample_from_log_normal(median_total_stock, relative_sigma)
 
     return total_stock_sample
 
@@ -103,29 +101,25 @@ def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion
 
 def sample_global_compute(year):
     """Sample global compute stock based on year"""
+    from util import sample_from_log_normal
     params = InitialPRCComputeStockParameters
     years_since_2025 = year - 2025
-    total_stock_mu = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** years_since_2025)
+    median_total_stock = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** years_since_2025)
     relative_sigma = params.relative_sigma_of_global_compute
 
-    sigma_log = np.sqrt(np.log(1 + relative_sigma**2))
-    mu_log = np.log(total_stock_mu) - 0.5 * sigma_log**2
-
-    global_compute = np.random.lognormal(mu_log, sigma_log)
+    global_compute = sample_from_log_normal(median_total_stock, relative_sigma)
 
     return global_compute
 
 def sample_reported_global_compute(prc_compute_stock_diverted, global_compute):
     def _sample_unreported_compute_owned_by_non_prc_actors():
         """Sample unreported compute owned by non-PRC actors based on year"""
+        from util import sample_from_log_normal
         params = InitialPRCComputeStockParameters
-        mu = params.median_unreported_compute_owned_by_non_prc_actors = 1e6
+        median = params.median_unreported_compute_owned_by_non_prc_actors = 1e6
         relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors = 0.5
 
-        sigma_log = np.sqrt(np.log(1 + relative_sigma**2))
-        mu_log = np.log(mu) - 0.5 * sigma_log**2
-
-        unreported_compute_owned_by_non_prc_actors = np.random.lognormal(mu_log, sigma_log)
+        unreported_compute_owned_by_non_prc_actors = sample_from_log_normal(median, relative_sigma)
 
         return unreported_compute_owned_by_non_prc_actors
     
@@ -149,7 +143,7 @@ def lr_from_global_compute_production_accounting(reported_historical_global_comp
     params = InitialPRCComputeStockParameters
     relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors
     sigma_log = np.sqrt(np.log(1 + relative_sigma**2))
-    mu_log = np.log(params.median_unreported_compute_owned_by_non_prc_actors) - 0.5 * sigma_log**2
+    mu_log = np.log(params.median_unreported_compute_owned_by_non_prc_actors)
 
     # Lognormal PDF
     if discrepency > 0:
@@ -173,22 +167,36 @@ def lr_from_global_compute_production_accounting(reported_historical_global_comp
 
     return lr
 
-def sample_increase_in_hazard_rate_per_year() -> float:
+def sample_hazard_rate_multiplier() -> float:
+    """Sample a multiplier for hazard rates from a metalog distribution.
+
+    Returns a multiplier that will be applied to both initial_hazard_rate and
+    increase_of_hazard_rate_per_year to create correlated uncertainty.
+    """
+    from util import sample_from_metalog_3term_semi_bounded
     params = SurvivalRateParameters
-    increase_of_hazard_rate_per_year = params.increase_of_hazard_rate_per_year
-    relative_sigma = params.increase_of_hazard_rate_per_year_relative_sigma
-    
-    # Calculate log-normal parameters for the increase rate
-    # For a log-normal distribution with mean μ and relative_sigma σ_rel:
-    # sigma_log = sqrt(log(1 + relative_sigma²))
-    # mu_log = log(mean) - sigma_log²/2
-    sigma_log = np.sqrt(np.log(1 + relative_sigma**2))
-    mu_log = np.log(increase_of_hazard_rate_per_year) - 0.5 * sigma_log**2
-    
-    # Sample increase rates from log-normal distribution
-    sampled_increase_of_rates_per_year = np.random.lognormal(mu_log, sigma_log, size=1)
-    
-    return sampled_increase_of_rates_per_year[0]
+
+    # Compute absolute percentiles from the ratios
+    p25 = params.hazard_rate_p25_relative_to_p50
+    p50 = 1.0  # Median multiplier is 1.0
+    p75 = params.hazard_rate_p75_relative_to_p50
+
+    # Sample multiplier from semi-bounded metalog distribution (lower bound 0, no upper bound)
+    return sample_from_metalog_3term_semi_bounded(p25, p50, p75)
+
+def sample_hazard_rates() -> tuple[float, float]:
+    """Sample both initial hazard rate and increase rate using a common multiplier.
+
+    Returns:
+        tuple: (initial_hazard_rate, increase_of_hazard_rate_per_year)
+    """
+    params = SurvivalRateParameters
+    multiplier = sample_hazard_rate_multiplier()
+
+    initial_hazard_rate = params.initial_hazard_rate_p50 * multiplier
+    increase_of_hazard_rate_per_year = params.increase_of_hazard_rate_per_year_p50 * multiplier
+
+    return initial_hazard_rate, increase_of_hazard_rate_per_year
 
 
 class Stock(ABC):
@@ -222,22 +230,40 @@ class PRCDarkComputeStock():
             reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
             optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert
         )
-        self.increase_in_hazard_rate_per_year = sample_increase_in_hazard_rate_per_year()
+        # Sample both hazard rates using the correlated multiplier
+        self.initial_hazard_rate, self.increase_in_hazard_rate_per_year = sample_hazard_rates()
     
     def add_dark_compute(self, year : float, additional_dark_compute : float):
         self.dark_compute_added_per_year[year] = additional_dark_compute
     
     def operational_and_nonoperational_dark_compute(self, year : float):
-        return sum(self.dark_compute_added_per_year[y] for y in self.dark_compute_added_per_year if y <= year)
+        total = sum(self.dark_compute_added_per_year[y] for y in self.dark_compute_added_per_year if y <= year)
+        print(f"DEBUG operational_and_nonoperational_dark_compute(year={year}): total={total}, dark_compute_added_per_year={dict(list(self.dark_compute_added_per_year.items())[:5])}", flush=True)
+        return total
 
     def annual_hazard_rate_after_years_of_life(self, years_of_life: float) -> float:
-        return SurvivalRateParameters.initial_hazard_rate + self.increase_in_hazard_rate_per_year * years_of_life
+        return self.initial_hazard_rate + self.increase_in_hazard_rate_per_year * years_of_life
 
     def operational_dark_compute(self, year : float):
         total_surviving_compute = 0
+        debug_info = []
         for y in self.dark_compute_added_per_year:
             years_of_life = year - y
-            cumulative_hazard = SurvivalRateParameters.initial_hazard_rate * y + self.increase_in_hazard_rate_per_year * years_of_life**2 / 2
-            surviving_compute_from_year_y = np.exp(-cumulative_hazard)
+            # Skip if compute hasn't been added yet (negative years of life)
+            if years_of_life < 0:
+                continue
+            # Cumulative hazard: integral of hazard rate from 0 to years_of_life
+            # hazard_rate(t) = initial_hazard_rate + increase_in_hazard_rate_per_year * t
+            # cumulative_hazard = integral_0^T (initial + increase * t) dt = initial*T + increase*T^2/2
+            cumulative_hazard = self.initial_hazard_rate * years_of_life + self.increase_in_hazard_rate_per_year * years_of_life**2 / 2
+            survival_rate = np.exp(-cumulative_hazard)
+            surviving_compute_from_year_y = self.dark_compute_added_per_year[y] * survival_rate
             total_surviving_compute += surviving_compute_from_year_y
+            if len(debug_info) < 3:  # Only log first 3 entries
+                debug_info.append(f"y={y}, years_of_life={years_of_life:.2f}, cumulative_hazard={cumulative_hazard:.4f}, survival_rate={survival_rate:.4f}, surviving_compute={surviving_compute_from_year_y:.2f}, compute_added={self.dark_compute_added_per_year[y]:.2f}")
+
+        if debug_info:
+            print(f"DEBUG operational_dark_compute(year={year}): total_surviving={total_surviving_compute:.4f}, initial_hazard={self.initial_hazard_rate}, increase_per_year={self.increase_in_hazard_rate_per_year:.4f}", flush=True)
+            for info in debug_info:
+                print(f"  {info}", flush=True)
         return total_surviving_compute

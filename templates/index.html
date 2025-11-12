@@ -514,6 +514,24 @@
             <input type="number" id="relative_sigma_unreported_compute_owned_by_non_prc_actors" value="{{ defaults.relative_sigma_unreported_compute_owned_by_non_prc_actors }}" step="0.1">
         </div>
 
+        <h2>Survival Rate Parameters</h2>
+        <div class="param-group">
+            <label for="initial_hazard_rate_p50">Initial hazard rate (median)</label>
+            <input type="number" id="initial_hazard_rate_p50" value="{{ defaults.initial_hazard_rate_p50 }}" step="0.001">
+        </div>
+        <div class="param-group">
+            <label for="increase_of_hazard_rate_per_year_p50">Increase of hazard rate per year (median)</label>
+            <input type="number" id="increase_of_hazard_rate_per_year_p50" value="{{ defaults.increase_of_hazard_rate_per_year_p50 }}" step="0.001">
+        </div>
+        <div class="param-group">
+            <label for="hazard_rate_p25_relative_to_p50">Hazard rate 25th percentile (relative to median)</label>
+            <input type="number" id="hazard_rate_p25_relative_to_p50" value="{{ defaults.hazard_rate_p25_relative_to_p50 }}" step="0.01">
+        </div>
+        <div class="param-group">
+            <label for="hazard_rate_p75_relative_to_p50">Hazard rate 75th percentile (relative to median)</label>
+            <input type="number" id="hazard_rate_p75_relative_to_p50" value="{{ defaults.hazard_rate_p75_relative_to_p50 }}" step="0.1">
+        </div>
+
         <h2>Covert fab parameters</h2>
 
         <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Odds of Covert Project</h3>
@@ -665,6 +683,7 @@
                 <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">(</div>
                 <div style="flex: 1; min-width: 200px;">
                     <div id="initialDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Initial Dark Compute</div>
                 </div>
                 <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">+</div>
                 <div style="flex: 1; min-width: 200px;">
@@ -675,10 +694,12 @@
                 <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">×</div>
                 <div style="flex: 1; min-width: 200px;">
                     <div id="chipSurvivalPlot" style="width: 100%; height: 250px;"></div>
+                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Average Survival Rate</div>
                 </div>
                 <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
                 <div style="flex: 1; min-width: 200px;">
                     <div id="totalDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Dark Compute</div>
                 </div>
             </div>
 
@@ -1001,7 +1022,12 @@
                 localization_14nm_2025: parseFloat(document.getElementById('localization_14nm_2025').value),
                 localization_14nm_2031: parseFloat(document.getElementById('localization_14nm_2031').value),
                 localization_7nm_2025: parseFloat(document.getElementById('localization_7nm_2025').value),
-                localization_7nm_2031: parseFloat(document.getElementById('localization_7nm_2031').value)
+                localization_7nm_2031: parseFloat(document.getElementById('localization_7nm_2031').value),
+                // Survival rate parameters
+                initial_hazard_rate_p50: parseFloat(document.getElementById('initial_hazard_rate_p50').value),
+                increase_of_hazard_rate_per_year_p50: parseFloat(document.getElementById('increase_of_hazard_rate_per_year_p50').value),
+                hazard_rate_p25_relative_to_p50: parseFloat(document.getElementById('hazard_rate_p25_relative_to_p50').value),
+                hazard_rate_p75_relative_to_p50: parseFloat(document.getElementById('hazard_rate_p75_relative_to_p50').value)
             };
         }
 
@@ -1676,7 +1702,7 @@
                 if (data.initial_compute_stock_samples) {
                     // Convert to thousands
                     const samplesInThousands = data.initial_compute_stock_samples.map(v => v / 1000);
-                    plotPDF('initialDarkComputePlot', samplesInThousands, '#9B72B0', 'Thousands of H100 Equivalents', 30, false, null, null, 'Initial Dark Compute');
+                    plotPDF('initialDarkComputePlot', samplesInThousands, '#9B72B0', 'Thousands of H100 Equivalents', 30, false, null, null);
                 }
 
                 // Plot 2: Flow from covert fab (line plot - cumulative production over time)
@@ -1733,13 +1759,7 @@
                             titlefont: { size: 10 },
                             tickfont: { size: 9 }
                         },
-                        title: {
-                            text: '<b>Covert Fab Compute</b>',
-                            font: { size: 12 },
-                            x: 0.5,
-                            xanchor: 'center'
-                        },
-                        margin: { l: 50, r: 20, t: 30, b: 40 },
+                        margin: { l: 50, r: 20, t: 35, b: 40 },
                         height: 250,
                         hovermode: 'x unified',
                         legend: {
@@ -1807,7 +1827,8 @@
                         yaxis: {
                             title: 'Survival Rate',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            range: [0, 1]
                         },
                         margin: { l: 50, r: 20, t: 10, b: 40 },
                         height: 250,

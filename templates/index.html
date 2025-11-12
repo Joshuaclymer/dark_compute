@@ -1224,7 +1224,7 @@
             setTimeout(() => Plotly.Plots.resize('computeCcdfPlot'), 50);
         }
 
-        function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null) {
+        function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null) {
             // Create histogram/PDF from values
             console.log(`plotPDF called for ${divId}:`, values);
             console.log(`plotPDF ${divId} - min: ${Math.min(...values)}, max: ${Math.max(...values)}, count: ${values.length}`);
@@ -1325,9 +1325,18 @@
                     automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
+                margin: { l: 50, r: 50, t: title ? 30 : 10, b: 55, pad: 10 },
                 hovermode: 'closest'
             };
+
+            if (title) {
+                layout.title = {
+                    text: `<b>${title}</b>`,
+                    font: { size: 12 },
+                    x: 0.5,
+                    xanchor: 'center'
+                };
+            }
 
             Plotly.newPlot(divId, [trace], layout, {displayModeBar: false, responsive: true});
             setTimeout(() => Plotly.Plots.resize(divId), 50);
@@ -1665,7 +1674,9 @@
 
                 // Plot 1: Initial dark compute (histogram)
                 if (data.initial_compute_stock_samples) {
-                    plotPDF('initialDarkComputePlot', data.initial_compute_stock_samples, '#9B72B0', 'Initial Dark Compute (H100e)', 30, false);
+                    // Convert to thousands
+                    const samplesInThousands = data.initial_compute_stock_samples.map(v => v / 1000);
+                    plotPDF('initialDarkComputePlot', samplesInThousands, '#9B72B0', 'Thousands of H100 Equivalents', 30, false, null, null, 'Initial Dark Compute');
                 }
 
                 // Plot 2: Flow from covert fab (line plot - cumulative production over time)
@@ -1722,7 +1733,13 @@
                             titlefont: { size: 10 },
                             tickfont: { size: 9 }
                         },
-                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        title: {
+                            text: '<b>Covert Fab Compute</b>',
+                            font: { size: 12 },
+                            x: 0.5,
+                            xanchor: 'center'
+                        },
+                        margin: { l: 50, r: 20, t: 30, b: 40 },
                         height: 250,
                         hovermode: 'x unified',
                         legend: {

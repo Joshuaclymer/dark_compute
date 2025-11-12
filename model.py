@@ -33,6 +33,12 @@ class CovertProjectStrategy:
     # Initial compute stock
     proportion_of_initial_compute_stock_to_divert : Optional[float] = None
 
+    # Data centers (initially concealed)
+    number_of_data_centers_to_build : Optional[int] = 5
+    GW_per_data_center = 0.1
+
+    # Data centers (initially unconcealed)
+
     # Covert fab
     build_a_covert_fab : bool = False
     covert_fab_operating_labor : Optional[int] = None
@@ -147,6 +153,10 @@ default_prc_covert_project_strategy = CovertProjectStrategy(
     covert_fab_construction_labor = 250,
     covert_fab_process_node = "best_available_indigenously",
     covert_fab_proportion_of_prc_lithography_scanners_devoted = 0.1,
+
+
+
+
 )
 
 best_prc_covert_project_strategy = default_prc_covert_project_strategy

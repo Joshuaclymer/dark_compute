@@ -269,6 +269,7 @@ from scipy.interpolate import interp1d
 from scipy import stats
 from typing import List
 import random
+from util import sample_from_log_normal
 
 # ============================================================================
 # SHARED TYPES AND CONSTANTS
@@ -408,28 +409,19 @@ def estimate_wafer_starts_per_month(
         float: Estimated wafer starts per month (with random variation)
     """
     # Base labor capacity with uncertainty
-    base_labor_capacity = FabModelParameters.wafers_per_month_per_worker * operation_labor
+    median_labor_capacity = FabModelParameters.wafers_per_month_per_worker * operation_labor
 
-    # Sample a productivity multiplier from a log-normal distribution
-    # Log-normal ensures productivity stays positive and has realistic right tail
-    # Mean of 1.0 (unbiased), std of 0.62 (from empirical data)
-    # For log-normal: if X ~ LogNormal(mu, sigma_log), then E[X]=1 requires mu = -0.5*sigma_log^2
+    # Sample labor capacity from a log-normal distribution
+    # Median of median_labor_capacity, relative std of 0.62 (from empirical data)
     sigma_relative = FabModelParameters.labor_productivity_relative_sigma
-    sigma_log = np.sqrt(np.log(1 + sigma_relative**2))
-    mu_log = -0.5 * sigma_log**2
-
-    productivity_multiplier = np.random.lognormal(mean=mu_log, sigma=sigma_log)
-    wafers_per_month_achievable_given_operation_labor = base_labor_capacity * productivity_multiplier
+    wafers_per_month_achievable_given_operation_labor = sample_from_log_normal(median_labor_capacity, sigma_relative)
 
     # Base scanner capacity with uncertainty
-    base_scanner_capacity = FabModelParameters.wafers_per_month_per_lithography_scanner * number_of_prc_lithography_scanners_devoted_to_fab
+    median_scanner_capacity = FabModelParameters.wafers_per_month_per_lithography_scanner * number_of_prc_lithography_scanners_devoted_to_fab
 
-    # Sample scanner productivity multiplier (ESTIMATED: 20% relative uncertainty)
+    # Sample scanner capacity from a log-normal distribution (ESTIMATED: 20% relative uncertainty)
     sigma_relative_scanner = FabModelParameters.scanner_productivity_relative_sigma
-    sigma_log_scanner = np.sqrt(np.log(1 + sigma_relative_scanner**2))
-    mu_log_scanner = -0.5 * sigma_log_scanner**2
-    scanner_productivity_multiplier = np.random.lognormal(mean=mu_log_scanner, sigma=sigma_log_scanner)
-    wafers_per_month_achievable_given_lithography_scanners = base_scanner_capacity * scanner_productivity_multiplier
+    wafers_per_month_achievable_given_lithography_scanners = sample_from_log_normal(median_scanner_capacity, sigma_relative_scanner)
 
     # Return minimum of labor and scanner capacity, with a floor of 1 wafer/month to prevent log(0) errors
     result = min(wafers_per_month_achievable_given_operation_labor, wafers_per_month_achievable_given_lithography_scanners)
@@ -475,14 +467,11 @@ def estimate_construction_duration(
         slope = (time2 - time1) / (np.log10(capacity2) - np.log10(capacity1))
         intercept = time1 - slope * np.log10(capacity1)
 
-        base_duration = slope * np.log10(wafer_starts_per_month) + intercept
+        median_duration = slope * np.log10(wafer_starts_per_month) + intercept
 
         # Add uncertainty to construction time (includes both regression and residual uncertainty)
         sigma_relative = FabModelParameters.construction_time_relative_sigma
-        sigma_log = np.sqrt(np.log(1 + sigma_relative**2))
-        mu_log = np.log(base_duration) - 0.5 * sigma_log**2
-
-        return np.random.lognormal(mean=mu_log, sigma=sigma_log)
+        return sample_from_log_normal(median_duration, sigma_relative)
 
     # Step 1: Calculate construction duration given wafer capacity
     construction_duration = _construction_duration_given_wafer_capacity(wafer_starts_per_month)
@@ -705,16 +694,12 @@ def estimate_total_prc_lithography_scanners_for_node(current_year: float, locali
     # Total = sum from i=0 to n of (intercept + i*slope)
     #       = intercept * (n+1) + slope * n*(n+1)/2
     n = years_since_localization
-    base_total_scanners = (FabModelParameters.prc_lithography_scanners_produced_in_first_year * (n + 1) +
+    median_total_scanners = (FabModelParameters.prc_lithography_scanners_produced_in_first_year * (n + 1) +
                           FabModelParameters.prc_additional_lithography_scanners_produced_per_year * n * (n + 1) / 2)
 
     # Add uncertainty to PRC scanner production (ESTIMATED: 30% relative uncertainty)
     sigma_relative = FabModelParameters.prc_scanner_production_relative_sigma
-    sigma_log = np.sqrt(np.log(1 + sigma_relative**2))
-    mu_log = -0.5 * sigma_log**2
-    production_multiplier = np.random.lognormal(mean=mu_log, sigma=sigma_log)
-
-    return base_total_scanners * production_multiplier
+    return sample_from_log_normal(median_total_scanners, sigma_relative)
 
 # ============================================================================
 # Helper functions for estimating likelihood ratios

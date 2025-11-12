@@ -371,6 +371,7 @@ def extract_plot_data(model, p_fab_exists):
     us_probs_array = np.array(us_probs_by_sim)
     h100e_array = np.array(h100e_by_sim)
     survival_rate_array = np.array(survival_rate_by_sim)
+    operational_dark_compute_array = np.array(operational_dark_compute_by_sim)
 
     us_probs_median = np.median(us_probs_array, axis=0)
     us_probs_p25 = np.percentile(us_probs_array, 25, axis=0)

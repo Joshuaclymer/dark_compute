@@ -1,0 +1,17 @@
+China Building Footprint Analysis
+==================================================
+
+Total buildings in China: 248,856,847
+Sampled buildings: 2,488,395
+Sampling rate: 1.00%
+
+Area Statistics (m²) [after filtering]:
+  Mean: 285.86
+  Median: 114.13
+  Std Dev: 1036.37
+  Min: 0.00
+  Max: 99987.87
+  25th percentile: 42.93
+  75th percentile: 250.04
+  95th percentile: 948.36
+  99th percentile: 2828.22

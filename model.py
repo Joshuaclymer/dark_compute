@@ -3,12 +3,12 @@ from typing import Optional, List
 from enum import Enum
 from fab_model import CovertFab, PRCCovertFab, ProcessNode
 from stock_model import PRCDarkComputeStock
+from datacenter_model import CovertPRCDatacenters
 import numpy as np
 from scipy import stats
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from copy import deepcopy
-from stock_model import Stock
 
 # ============================================================================
 # ENUMS
@@ -18,6 +18,7 @@ class UpdateSource(Enum):
     """Sources of intelligence that can update beliefs about covert projects"""
     PRC_COMPUTE_ACCOUNTING = "prc_compute_accounting"
     GLOBAL_COMPUTE_PRODUCTION_ACCOUNTING = "global_compute_production_accounting"
+    DATACENTERS_CONCEALED = "datacenters_concealed"  # HUMINT, SIGINT, etc.
     FAB_INVENTORY_INTELLIGENCE = "fab_inventory_intelligence"
     FAB_PROCUREMENT_INTELLIGENCE = "fab_procurement_intelligence"
     FAB_OTHER_INTELLIGENCE = "fab_other_intelligence"  # HUMINT, SIGINT, etc.
@@ -29,15 +30,13 @@ class UpdateSource(Enum):
 @dataclass
 class CovertProjectStrategy:
     run_a_covert_project : bool
-
     # Initial compute stock
     proportion_of_initial_compute_stock_to_divert : Optional[float] = None
 
-    # Data centers (initially concealed)
-    number_of_data_centers_to_build : Optional[int] = 5
-    GW_per_data_center = 0.1
-
-    # Data centers (initially unconcealed)
+    # Data centers
+    GW_per_initial_datacenter : float = 5
+    number_of_initial_datacenters : float = 0.1
+    GW_per_year_of_concealed_datacenters : float = 1
 
     # Covert fab
     build_a_covert_fab : bool = False
@@ -51,7 +50,7 @@ class CovertProject:
     name : str
     covert_project_strategy : CovertProjectStrategy
     agreement_year : float
-    stock : Optional[Stock] = None
+    stock : Optional[PRCDarkComputeStock] = None
     covert_fab : Optional[CovertFab] = None
 
     def __post_init__(self):
@@ -60,6 +59,12 @@ class CovertProject:
             agreement_year = self.agreement_year,
             proportion_of_initial_compute_stock_to_divert = self.covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
             optimal_proportion_of_initial_compute_stock_to_divert = best_prc_covert_project_strategy.proportion_of_initial_compute_stock_to_divert
+        )
+
+        self.covert_datacenters = CovertPRCDatacenters(
+            GW_per_initial_datacenter = self.covert_project_strategy.GW_per_initial_datacenter,
+            number_of_initial_datacenters = self.covert_project_strategy.number_of_initial_datacenters,
+            GW_per_year_of_concealed_datacenters = self.covert_project_strategy.GW_per_year_of_concealed_datacenters
         )
 
         if (self.covert_project_strategy.build_a_covert_fab):
@@ -71,7 +76,6 @@ class CovertProject:
                 operation_labor = self.covert_project_strategy.covert_fab_operating_labor,
                 agreement_year = self.agreement_year
             )
-
 
 @dataclass
 class DetectorStrategy:
@@ -153,10 +157,6 @@ default_prc_covert_project_strategy = CovertProjectStrategy(
     covert_fab_construction_labor = 250,
     covert_fab_process_node = "best_available_indigenously",
     covert_fab_proportion_of_prc_lithography_scanners_devoted = 0.1,
-
-
-
-
 )
 
 best_prc_covert_project_strategy = default_prc_covert_project_strategy
@@ -212,7 +212,7 @@ class Simulation:
         current_year = self.year_us_prc_agreement_goes_into_force + increment
         while current_year <= end_year:
             for project in self.covert_projects.values():
-                # ========== Section 1: Update beliefs about covert project (from dark compute stock accounting) ==========
+                # ========== Update beliefs about covert project from dark compute stock accounting ==========
                 for detector_name, detector in self.detectors.items():
                     # Update from PRC compute accounting
                     prior_p_covert_project_exists = initial_priors[detector_name][project.name]['p_project_exists']
@@ -234,8 +234,21 @@ class Simulation:
                         prior_p=updated_prior_p,
                         source=UpdateSource.GLOBAL_COMPUTE_PRODUCTION_ACCOUNTING
                     )
+                
+                # ========== Update beliefs about covert project from evidence of data centers ==========
 
-                # ========== Section 2: Update beliefs about covert fab (from fab-specific intelligence) ==========
+                for detector_name, detector in self.detectors.items():
+                    # Update from data center detection evidence
+                    prior_p_covert_project_exists = initial_priors[detector_name][project.name]['p_project_exists']
+                    lr_datacenters = project.covert_datacenters.lr_from_concealed_datacenters(current_year)
+                    detector.beliefs_about_projects[project.name][current_year].update_p_project_exists(
+                        year=current_year,
+                        likelihood_ratio=lr_datacenters,
+                        prior_p=prior_p_covert_project_exists,
+                        source=UpdateSource.DATACENTERS_CONCEALED
+                    )
+
+                # ========== Update beliefs about covert project from evidence of fab ==========
                 if project.covert_fab is not None:
                     # h100e_produced_per_month returns monthly production, multiply by increment (in years) and months per year
                     additional_dark_compute = project.covert_fab.h100e_produced_per_month(current_year) * 12 * increment

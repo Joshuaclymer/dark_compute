@@ -446,6 +446,20 @@
             <input type="number" id="proportion_of_initial_chip_stock_to_divert" value="{{ defaults.proportion_of_initial_chip_stock_to_divert }}" step="0.01" min="0" max="1">
         </div>
 
+        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Covert datacenters</h3>
+        <div class="param-group">
+            <label for="GW_per_initial_datacenter">GW per initial datacenter</label>
+            <input type="number" id="GW_per_initial_datacenter" value="{{ defaults.GW_per_initial_datacenter }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="number_of_initial_datacenters">Number of initial datacenters</label>
+            <input type="number" id="number_of_initial_datacenters" value="{{ defaults.number_of_initial_datacenters }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="GW_per_year_of_concealed_datacenters">GW per year of concealed datacenters</label>
+            <input type="number" id="GW_per_year_of_concealed_datacenters" value="{{ defaults.GW_per_year_of_concealed_datacenters }}" step="0.1">
+        </div>
+
         <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Covert fab</h3>
         <div class="param-group">
             <label>
@@ -530,6 +544,44 @@
         <div class="param-group">
             <label for="hazard_rate_p75_relative_to_p50">Hazard rate 75th percentile (relative to median)</label>
             <input type="number" id="hazard_rate_p75_relative_to_p50" value="{{ defaults.hazard_rate_p75_relative_to_p50 }}" step="0.1">
+        </div>
+
+        <h2>Covert Datacenter Parameters</h2>
+        <div class="param-group">
+            <label for="max_proportion_of_PRC_energy_consumption">Max proportion of PRC energy consumption</label>
+            <input type="number" id="max_proportion_of_PRC_energy_consumption" value="{{ defaults.max_proportion_of_PRC_energy_consumption }}" step="0.01">
+        </div>
+        <div class="param-group">
+            <label for="total_GW_of_PRC_energy_consumption">Total GW of PRC energy consumption</label>
+            <input type="number" id="total_GW_of_PRC_energy_consumption" value="{{ defaults.total_GW_of_PRC_energy_consumption }}" step="10">
+        </div>
+        <div class="param-group">
+            <label for="construction_labor_per_MW_per_year">Construction labor per MW per year</label>
+            <input type="number" id="construction_labor_per_MW_per_year" value="{{ defaults.construction_labor_per_MW_per_year }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="relative_sigma_construction_labor_per_MW_per_year">Relative sigma construction labor per MW per year</label>
+            <input type="number" id="relative_sigma_construction_labor_per_MW_per_year" value="{{ defaults.relative_sigma_construction_labor_per_MW_per_year }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="operating_labor_per_MW">Operating labor per MW</label>
+            <input type="number" id="operating_labor_per_MW" value="{{ defaults.operating_labor_per_MW }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="relative_sigma_operating_labor_per_MW">Relative sigma operating labor per MW</label>
+            <input type="number" id="relative_sigma_operating_labor_per_MW" value="{{ defaults.relative_sigma_operating_labor_per_MW }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="mean_detection_time_of_covert_site_for_100_workers">Mean detection time for 100 workers (years)</label>
+            <input type="number" id="mean_detection_time_of_covert_site_for_100_workers" value="{{ defaults.mean_detection_time_of_covert_site_for_100_workers }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="mean_detection_time_of_covert_site_for_1000_workers">Mean detection time for 1000 workers (years)</label>
+            <input type="number" id="mean_detection_time_of_covert_site_for_1000_workers" value="{{ defaults.mean_detection_time_of_covert_site_for_1000_workers }}" step="0.1">
+        </div>
+        <div class="param-group">
+            <label for="variance_of_detection_time_given_num_workers">Variance of detection time given num workers</label>
+            <input type="number" id="variance_of_detection_time_given_num_workers" value="{{ defaults.variance_of_detection_time_given_num_workers }}" step="0.1">
         </div>
 
         <h2>Covert fab parameters</h2>
@@ -835,6 +887,11 @@
                     <div class="plot-title">Simulation Runs</div>
                     <div id="timeSeriesPlot" class="plot"></div>
                 </div>
+
+                <div class="plot-container">
+                    <div class="plot-title">Covert Datacenters</div>
+                    <div id="datacenterCapacityPlot" class="plot"></div>
+                </div>
             </div>
 
             <div class="breakdown-section">
@@ -985,6 +1042,9 @@
                 us_intelligence_median_error_in_estimate_of_prc_compute_stock: parseFloat(document.getElementById('us_intelligence_median_error_in_estimate_of_prc_compute_stock').value),
                 run_covert_project: document.getElementById('run_covert_project').checked,
                 proportion_of_initial_chip_stock_to_divert: parseFloat(document.getElementById('proportion_of_initial_chip_stock_to_divert').value),
+                GW_per_initial_datacenter: parseFloat(document.getElementById('GW_per_initial_datacenter').value),
+                number_of_initial_datacenters: parseFloat(document.getElementById('number_of_initial_datacenters').value),
+                GW_per_year_of_concealed_datacenters: parseFloat(document.getElementById('GW_per_year_of_concealed_datacenters').value),
                 build_covert_fab: document.getElementById('build_covert_fab').checked,
                 operating_labor: parseInt(document.getElementById('operating_labor').value),
                 construction_labor: parseInt(document.getElementById('construction_labor').value),
@@ -1027,7 +1087,17 @@
                 initial_hazard_rate_p50: parseFloat(document.getElementById('initial_hazard_rate_p50').value),
                 increase_of_hazard_rate_per_year_p50: parseFloat(document.getElementById('increase_of_hazard_rate_per_year_p50').value),
                 hazard_rate_p25_relative_to_p50: parseFloat(document.getElementById('hazard_rate_p25_relative_to_p50').value),
-                hazard_rate_p75_relative_to_p50: parseFloat(document.getElementById('hazard_rate_p75_relative_to_p50').value)
+                hazard_rate_p75_relative_to_p50: parseFloat(document.getElementById('hazard_rate_p75_relative_to_p50').value),
+                // Covert datacenter parameters
+                max_proportion_of_PRC_energy_consumption: parseFloat(document.getElementById('max_proportion_of_PRC_energy_consumption').value),
+                total_GW_of_PRC_energy_consumption: parseFloat(document.getElementById('total_GW_of_PRC_energy_consumption').value),
+                construction_labor_per_MW_per_year: parseFloat(document.getElementById('construction_labor_per_MW_per_year').value),
+                relative_sigma_construction_labor_per_MW_per_year: parseFloat(document.getElementById('relative_sigma_construction_labor_per_MW_per_year').value),
+                operating_labor_per_MW: parseFloat(document.getElementById('operating_labor_per_MW').value),
+                relative_sigma_operating_labor_per_MW: parseFloat(document.getElementById('relative_sigma_operating_labor_per_MW').value),
+                mean_detection_time_of_covert_site_for_100_workers: parseFloat(document.getElementById('mean_detection_time_of_covert_site_for_100_workers').value),
+                mean_detection_time_of_covert_site_for_1000_workers: parseFloat(document.getElementById('mean_detection_time_of_covert_site_for_1000_workers').value),
+                variance_of_detection_time_given_num_workers: parseFloat(document.getElementById('variance_of_detection_time_given_num_workers').value)
             };
         }
 
@@ -1170,6 +1240,76 @@
 
             Plotly.newPlot('timeSeriesPlot', traces, layout, {displayModeBar: false, responsive: true});
             setTimeout(() => Plotly.Plots.resize('timeSeriesPlot'), 50);
+        }
+
+        function plotDatacenterCapacity(data) {
+            const ts = data.time_series;
+
+            // Color for datacenter capacity
+            const datacenterColor = '#4CAF50'; // Green
+
+            // Create traces for datacenter capacity with percentiles
+            const traces = [
+                {
+                    x: ts.years,
+                    y: ts.datacenter_capacity_p25,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: 'transparent' },
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: ts.years,
+                    y: ts.datacenter_capacity_p75,
+                    type: 'scatter',
+                    mode: 'lines',
+                    fill: 'tonexty',
+                    fillcolor: datacenterColor + '30',
+                    line: { color: 'transparent' },
+                    name: '25th-75th %ile',
+                    hovertemplate: 'Capacity: %{y:.1f} GW<extra></extra>'
+                },
+                {
+                    x: ts.years,
+                    y: ts.datacenter_capacity_median,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: datacenterColor, width: 3 },
+                    name: 'Median Capacity',
+                    hovertemplate: 'Capacity: %{y:.1f} GW<extra></extra>'
+                }
+            ];
+
+            const layout = {
+                xaxis: {
+                    title: 'Year',
+                    titlefont: { size: 13 },
+                    automargin: true
+                },
+                yaxis: {
+                    title: 'Datacenter Capacity (GW)',
+                    titlefont: { size: 13 },
+                    tickfont: { size: 10 },
+                    automargin: true
+                },
+                showlegend: true,
+                legend: {
+                    x: 0.02,
+                    y: -0.25,
+                    xanchor: 'left',
+                    yanchor: 'top',
+                    orientation: 'h',
+                    font: { size: 10 }
+                },
+                hovermode: 'x unified',
+                margin: { l: 50, r: 50, t: 10, b: 85, pad: 10 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('datacenterCapacityPlot', traces, layout, {displayModeBar: false, responsive: true});
+            setTimeout(() => Plotly.Plots.resize('datacenterCapacityPlot'), 50);
         }
 
         function plotComputeCcdf(data) {
@@ -1755,7 +1895,7 @@
                             tickfont: { size: 9 }
                         },
                         yaxis: {
-                            title: 'K H100e',
+                            title: 'H100e (thousands)',
                             titlefont: { size: 10 },
                             tickfont: { size: 9 }
                         },
@@ -1887,7 +2027,7 @@
                             tickfont: { size: 9 }
                         },
                         yaxis: {
-                            title: 'K H100e',
+                            title: 'H100e (thousands)',
                             titlefont: { size: 10 },
                             tickfont: { size: 9 }
                         },
@@ -1992,6 +2132,7 @@
                 // Plot main charts
                 plotTimeSeries(data);
                 plotComputeCcdf(data);
+                plotDatacenterCapacity(data);
 
                 // Force resize after a brief delay to ensure plots fill containers
                 setTimeout(() => {

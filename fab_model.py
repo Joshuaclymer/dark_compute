@@ -355,6 +355,10 @@ class FabModelParameters:
     # With exponent = 1.49, halving node size increases density by 2^1.49 ≈ 2.81×
     transistor_density_scaling_exponent = 1.49
 
+    w_per_tpp_vs_transistor_density_exponent = -1.11
+
+    h100_w_per_tflop = 
+
     # Chip architecture efficiency improvement over time
     # Architectures improve at a pace of 1.23× per year
     # H100 serves as the reference point (released in 2022)
@@ -823,6 +827,34 @@ def lr_from_procurement_accounting(
     else:
         return 1.0  # No evidence from procurement (neutral)
 
+# Pre-compute constants for detection time calculations
+_detection_time_A = None
+_detection_time_B = None
+_detection_time_theta = None
+
+def _initialize_detection_constants():
+    """Pre-compute constants used in detection time calculations."""
+    global _detection_time_A, _detection_time_B, _detection_time_theta
+
+    if _detection_time_A is not None:
+        return  # Already initialized
+
+    x1 = 100
+    mu1 = FabModelParameters.mean_detection_time_for_100_workers
+    x2 = 1000
+    mu2 = FabModelParameters.mean_detection_time_for_1000_workers
+
+    _detection_time_B = np.log(mu1 / mu2) / np.log(np.log10(x2) / np.log10(x1))
+    _detection_time_A = mu1 * (np.log10(x1) ** _detection_time_B)
+    _detection_time_theta = FabModelParameters.variance_of_detection_time_given_num_workers
+
+def clear_detection_constants_cache():
+    """Clear cached detection constants. Call this when FabModelParameters change."""
+    global _detection_time_A, _detection_time_B, _detection_time_theta
+    _detection_time_A = None
+    _detection_time_B = None
+    _detection_time_theta = None
+
 def sample_time_of_detection_via_other_strategies(total_labor: int) -> float:
     """
     Sample the time when detection occurs via other intelligence strategies (HUMINT, SIGINT, etc.).
@@ -839,26 +871,19 @@ def sample_time_of_detection_via_other_strategies(total_labor: int) -> float:
     if total_labor <= 0:
         return float('inf')  # Never detected if no workers
 
-    # Derive model parameters from anchor points for the detection model: μ(x) = A / log10(x)^B
-    x1 = 100
-    mu1 = FabModelParameters.mean_detection_time_for_100_workers
-    x2 = 1000
-    mu2 = FabModelParameters.mean_detection_time_for_1000_workers
-
-    B = np.log(mu1 / mu2) / np.log(np.log10(x2) / np.log10(x1))
-    A = mu1 * (np.log10(x1) ** B)
+    # Initialize constants if not already done
+    _initialize_detection_constants()
 
     # Mean detection time: μ(x) = A / log10(x)^B
-    mu = A / (np.log10(total_labor) ** B)
+    mu = _detection_time_A / (np.log10(total_labor) ** _detection_time_B)
 
     # Gamma distribution parameters: mean = k*θ, variance = k*θ²
     # Given: mean = μ, variance = σ²*μ (proportional to mean)
     # Solving: θ = σ², k = μ/σ²
-    theta = FabModelParameters.variance_of_detection_time_given_num_workers
-    k = mu / FabModelParameters.variance_of_detection_time_given_num_workers
+    k = mu / _detection_time_theta
 
     # Sample from Gamma distribution
-    detection_time = stats.gamma.rvs(a=k, scale=theta)
+    detection_time = stats.gamma.rvs(a=k, scale=_detection_time_theta)
 
     return detection_time
 
@@ -900,25 +925,18 @@ def lr_from_other_strategies(
         if total_labor <= 0:
             return 1.0  # No workers, no detection possible
 
-        # Reconstruct Gamma distribution parameters (same as in sample_time_of_detection_via_other_strategies)
-        x1 = 100
-        mu1 = FabModelParameters.mean_detection_time_for_100_workers
-        x2 = 1000
-        mu2 = FabModelParameters.mean_detection_time_for_1000_workers
-
-        B = np.log(mu1 / mu2) / np.log(np.log10(x2) / np.log10(x1))
-        A = mu1 * (np.log10(x1) ** B)
+        # Initialize constants if not already done
+        _initialize_detection_constants()
 
         # Mean detection time: μ(x) = A / log10(x)^B
-        mu = A / (np.log10(total_labor) ** B)
+        mu = _detection_time_A / (np.log10(total_labor) ** _detection_time_B)
 
         # Gamma distribution parameters
-        theta = FabModelParameters.variance_of_detection_time_given_num_workers
-        k = mu / FabModelParameters.variance_of_detection_time_given_num_workers
+        k = mu / _detection_time_theta
 
         # P(not detected by time t | fab exists) = P(T ≥ t) = 1 - CDF(t)
         # This is the survival function (sf) of the Gamma distribution
-        p_not_detected_given_fab = stats.gamma.sf(years_since_construction_start, a=k, scale=theta)
+        p_not_detected_given_fab = stats.gamma.sf(years_since_construction_start, a=k, scale=_detection_time_theta)
 
         # P(not detected | no fab) = 1.0 (no fab means never detected)
         p_not_detected_given_no_fab = 1.0

@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from typing import List
+from typing import List, Dict
 from abc import ABC, abstractmethod
 
 class InitialPRCComputeStockParameters():
@@ -199,9 +199,22 @@ def sample_hazard_rates() -> tuple[float, float]:
     return initial_hazard_rate, increase_of_hazard_rate_per_year
 
 
-class Stock(ABC):
-    dark_compute_over_time : dict[float, float]  # year -> cumulative H100e of dark compute
-    dark_compute : float  # Total current dark compute stock
+class Chip():
+    def __init__(self, h100e_per_chip: float, energy_consumed_per_chip_GW: float, intra_chip_memory_bandwidth_tbps: float = 8, inter_chip_memory_bandwidth_tbps: float = 1.8):
+        self.h100e_per_chip = h100e_per_chip
+        self.energy_consumed_per_chip_GW = energy_consumed_per_chip_GW
+        self.intra_chip_memory_bandwidth_tbps = intra_chip_memory_bandwidth_tbps
+        self.inter_chip_memory_bandwidth_tbps = inter_chip_memory_bandwidth_tbps
+    
+class Compute():
+    def __init__(self, chip_counts: Dict[Chip, float]):
+        self.chip_counts = chip_counts  # Dict of Chip to number of chips
+    
+    def total_h100e(self) -> float:
+        return sum(chip.h100e_per_chip * count for chip, count in self.chip_counts.items())
+    
+    def total_energy_requirements_GW(self) -> float:
+        return sum(chip.energy_consumed_per_chip_GW * count for chip, count in self.chip_counts.items())
 
 class PRCDarkComputeStock():
 

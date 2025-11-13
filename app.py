@@ -18,8 +18,12 @@ LIKELIHOOD_RATIOS = [1, 3, 5]
 def index():
     # Pass default strategy values to template
     from stock_model import InitialPRCComputeStockParameters, SurvivalRateParameters
+    from datacenter_model import CovertDatacenterParameters
     defaults = {
         'proportion_of_initial_chip_stock_to_divert': default_prc_covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
+        'GW_per_initial_datacenter': default_prc_covert_project_strategy.GW_per_initial_datacenter,
+        'number_of_initial_datacenters': default_prc_covert_project_strategy.number_of_initial_datacenters,
+        'GW_per_year_of_concealed_datacenters': default_prc_covert_project_strategy.GW_per_year_of_concealed_datacenters,
         'operating_labor': default_prc_covert_project_strategy.covert_fab_operating_labor,
         'construction_labor': default_prc_covert_project_strategy.covert_fab_construction_labor,
         'scanner_proportion': default_prc_covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
@@ -36,6 +40,15 @@ def index():
         'increase_of_hazard_rate_per_year_p50': SurvivalRateParameters.increase_of_hazard_rate_per_year_p50,
         'hazard_rate_p25_relative_to_p50': SurvivalRateParameters.hazard_rate_p25_relative_to_p50,
         'hazard_rate_p75_relative_to_p50': SurvivalRateParameters.hazard_rate_p75_relative_to_p50,
+        'max_proportion_of_PRC_energy_consumption': CovertDatacenterParameters.max_proportion_of_PRC_energy_consumption,
+        'total_GW_of_PRC_energy_consumption': CovertDatacenterParameters.total_GW_of_PRC_energy_consumption,
+        'construction_labor_per_MW_per_year': CovertDatacenterParameters.construction_labor_per_MW_per_year,
+        'relative_sigma_construction_labor_per_MW_per_year': CovertDatacenterParameters.relative_sigma_construction_labor_per_MW_per_year,
+        'operating_labor_per_MW': CovertDatacenterParameters.operating_labor_per_MW,
+        'relative_sigma_operating_labor_per_MW': CovertDatacenterParameters.relative_sigma_operating_labor_per_MW,
+        'mean_detection_time_of_covert_site_for_100_workers': CovertDatacenterParameters.mean_detection_time_of_covert_site_for_100_workers,
+        'mean_detection_time_of_covert_site_for_1000_workers': CovertDatacenterParameters.mean_detection_time_of_covert_site_for_1000_workers,
+        'variance_of_detection_time_given_num_workers': CovertDatacenterParameters.variance_of_detection_time_given_num_workers,
     }
     return render_template('index.html', defaults=defaults)
 
@@ -56,6 +69,13 @@ def run_simulation():
     # PRC strategy parameters
     run_covert_project = data.get('run_covert_project', True)
     proportion_of_initial_chip_stock_to_divert = float(data.get('proportion_of_initial_chip_stock_to_divert', 0.05))
+
+    # Datacenter strategic choices
+    GW_per_initial_datacenter = float(data.get('GW_per_initial_datacenter', 5))
+    number_of_initial_datacenters = float(data.get('number_of_initial_datacenters', 0.1))
+    GW_per_year_of_concealed_datacenters = float(data.get('GW_per_year_of_concealed_datacenters', 1))
+
+    # Fab strategic choices
     build_covert_fab = data.get('build_covert_fab', True)
     operating_labor = int(data.get('operating_labor', 728))
     construction_labor = int(data.get('construction_labor', 448))
@@ -105,14 +125,24 @@ def run_simulation():
         clear_metalog_cache()
 
     # Fab model parameters - update all parameters from data
+    from fab_model import clear_detection_constants_cache
+
+    detection_params_changed = False
     if 'median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock' in data:
         FabModelParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock = float(data['median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock'])
     if 'mean_detection_time_for_100_workers' in data:
         FabModelParameters.mean_detection_time_for_100_workers = float(data['mean_detection_time_for_100_workers'])
+        detection_params_changed = True
     if 'mean_detection_time_for_1000_workers' in data:
         FabModelParameters.mean_detection_time_for_1000_workers = float(data['mean_detection_time_for_1000_workers'])
+        detection_params_changed = True
     if 'variance_of_detection_time_given_num_workers' in data:
         FabModelParameters.variance_of_detection_time_given_num_workers = float(data['variance_of_detection_time_given_num_workers'])
+        detection_params_changed = True
+
+    # Clear detection constants cache if detection parameters changed
+    if detection_params_changed:
+        clear_detection_constants_cache()
     if 'wafers_per_month_per_worker' in data:
         FabModelParameters.wafers_per_month_per_worker = float(data['wafers_per_month_per_worker'])
     if 'labor_productivity_relative_sigma' in data:
@@ -164,6 +194,28 @@ def run_simulation():
             (2031, float(data['localization_7nm_2031']))
         ]
 
+    # Covert datacenter parameters
+    from datacenter_model import CovertDatacenterParameters
+
+    if 'max_proportion_of_PRC_energy_consumption' in data:
+        CovertDatacenterParameters.max_proportion_of_PRC_energy_consumption = float(data['max_proportion_of_PRC_energy_consumption'])
+    if 'total_GW_of_PRC_energy_consumption' in data:
+        CovertDatacenterParameters.total_GW_of_PRC_energy_consumption = float(data['total_GW_of_PRC_energy_consumption'])
+    if 'construction_labor_per_MW_per_year' in data:
+        CovertDatacenterParameters.construction_labor_per_MW_per_year = float(data['construction_labor_per_MW_per_year'])
+    if 'relative_sigma_construction_labor_per_MW_per_year' in data:
+        CovertDatacenterParameters.relative_sigma_construction_labor_per_MW_per_year = float(data['relative_sigma_construction_labor_per_MW_per_year'])
+    if 'operating_labor_per_MW' in data:
+        CovertDatacenterParameters.operating_labor_per_MW = float(data['operating_labor_per_MW'])
+    if 'relative_sigma_operating_labor_per_MW' in data:
+        CovertDatacenterParameters.relative_sigma_operating_labor_per_MW = float(data['relative_sigma_operating_labor_per_MW'])
+    if 'mean_detection_time_of_covert_site_for_100_workers' in data:
+        CovertDatacenterParameters.mean_detection_time_of_covert_site_for_100_workers = float(data['mean_detection_time_of_covert_site_for_100_workers'])
+    if 'mean_detection_time_of_covert_site_for_1000_workers' in data:
+        CovertDatacenterParameters.mean_detection_time_of_covert_site_for_1000_workers = float(data['mean_detection_time_of_covert_site_for_1000_workers'])
+    if 'variance_of_detection_time_given_num_workers' in data:
+        CovertDatacenterParameters.variance_of_detection_time_given_num_workers = float(data['variance_of_detection_time_given_num_workers'])
+
     try:
         # Create custom covert project strategy with user parameters
         # Map process node string to enum (or keep as string for "best_available_indigenously")
@@ -180,6 +232,9 @@ def run_simulation():
         custom_strategy = CovertProjectStrategy(
             run_a_covert_project=run_covert_project,
             proportion_of_initial_compute_stock_to_divert=proportion_of_initial_chip_stock_to_divert,
+            GW_per_initial_datacenter=GW_per_initial_datacenter,
+            number_of_initial_datacenters=number_of_initial_datacenters,
+            GW_per_year_of_concealed_datacenters=GW_per_year_of_concealed_datacenters,
             build_a_covert_fab=build_covert_fab,
             covert_fab_operating_labor=operating_labor,
             covert_fab_construction_labor=construction_labor,
@@ -304,14 +359,16 @@ def extract_plot_data(model, p_fab_exists):
     # Use all simulations for visualization
     simulations_to_plot = model.simulation_results
 
-    # Track survival rates and operational dark compute
+    # Track survival rates, operational dark compute, and datacenter capacity
     survival_rate_by_sim = []
     operational_dark_compute_by_sim = []
+    datacenter_capacity_by_sim = []
 
     for covert_projects, detectors in simulations_to_plot:
         us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
         covert_fab = covert_projects["prc_covert_project"].covert_fab
         dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+        covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
 
         years = sorted(us_beliefs.keys())
         if not all_years:
@@ -324,9 +381,10 @@ def extract_plot_data(model, p_fab_exists):
         else:
             h100e_counts = [0.0 for year in years]
 
-        # Calculate survival rates and operational dark compute for this simulation
+        # Calculate survival rates, operational dark compute, and datacenter capacity for this simulation
         survival_rates = []
         operational_dark_compute = []
+        datacenter_capacity_gw = []
         for year in years:
             operational = dark_compute_stock.operational_dark_compute(year)
             total = dark_compute_stock.operational_and_nonoperational_dark_compute(year)
@@ -336,10 +394,16 @@ def extract_plot_data(model, p_fab_exists):
                 survival_rates.append(0.0)
             operational_dark_compute.append(operational)
 
+            # Get datacenter capacity in GW for this year
+            # Years are relative to agreement year, so calculate relative year
+            relative_year = year - agreement_year
+            datacenter_capacity_gw.append(covert_datacenters.get_GW_capacity(relative_year))
+
         us_probs_by_sim.append(us_probs)
         h100e_by_sim.append(h100e_counts)
         survival_rate_by_sim.append(survival_rates)
         operational_dark_compute_by_sim.append(operational_dark_compute)
+        datacenter_capacity_by_sim.append(datacenter_capacity_gw)
 
         # Extract likelihood ratio components
         if covert_fab is not None:
@@ -398,6 +462,7 @@ def extract_plot_data(model, p_fab_exists):
     h100e_array = np.array(h100e_by_sim)
     survival_rate_array = np.array(survival_rate_by_sim)
     operational_dark_compute_array = np.array(operational_dark_compute_by_sim)
+    datacenter_capacity_array = np.array(datacenter_capacity_by_sim)
 
     us_probs_median = np.median(us_probs_array, axis=0)
     us_probs_p25 = np.percentile(us_probs_array, 25, axis=0)
@@ -414,6 +479,10 @@ def extract_plot_data(model, p_fab_exists):
     operational_dark_compute_median = np.median(operational_dark_compute_array, axis=0) / 1e3  # Convert to thousands
     operational_dark_compute_p25 = np.percentile(operational_dark_compute_array, 25, axis=0) / 1e3
     operational_dark_compute_p75 = np.percentile(operational_dark_compute_array, 75, axis=0) / 1e3
+
+    datacenter_capacity_median = np.median(datacenter_capacity_array, axis=0)
+    datacenter_capacity_p25 = np.percentile(datacenter_capacity_array, 25, axis=0)
+    datacenter_capacity_p75 = np.percentile(datacenter_capacity_array, 75, axis=0)
 
     # Extract compute before detection data for multiple thresholds
     # Calculate thresholds based on prior and likelihood ratios
@@ -833,6 +902,9 @@ def extract_plot_data(model, p_fab_exists):
             "operational_dark_compute_median": operational_dark_compute_median.tolist(),
             "operational_dark_compute_p25": operational_dark_compute_p25.tolist(),
             "operational_dark_compute_p75": operational_dark_compute_p75.tolist(),
+            "datacenter_capacity_median": datacenter_capacity_median.tolist(),
+            "datacenter_capacity_p25": datacenter_capacity_p25.tolist(),
+            "datacenter_capacity_p75": datacenter_capacity_p75.tolist(),
             "individual_us_probs": [list(sim) for sim in us_probs_by_sim],
             "individual_h100e": [list(np.array(sim) / 1e3) for sim in h100e_by_sim]
         },

@@ -139,12 +139,24 @@ for idx, row in results_df.iterrows():
     const_type = row['Construction Type']
 
     # Determine text position and alignment based on datacenter
-    if 'xAI Colossus 1' in datacenter or 'LLNL El Capitan' in datacenter:
+    if 'LLNL El Capitan' in datacenter:
         # Bottom left: anchor at right (text extends left), anchor at top (text extends down)
         xanchor = 'right'
         yanchor = 'top'
         x_offset = -3
         y_offset = -3
+    elif 'xAI Colossus 1' in datacenter:
+        # Bottom right: anchor at left (text extends right), anchor at top (text extends down)
+        xanchor = 'left'
+        yanchor = 'top'
+        x_offset = 3
+        y_offset = -3
+    elif 'Google New Albany' in datacenter or 'ORNL Frontier' in datacenter:
+        # Top left: anchor at right (text extends left), anchor at bottom (text extends up)
+        xanchor = 'right'
+        yanchor = 'bottom'
+        x_offset = -3
+        y_offset = 3
     else:
         # Upper right (default, including Colossus 2): anchor at left (text extends right), anchor at bottom (text extends up)
         xanchor = 'left'
@@ -152,27 +164,28 @@ for idx, row in results_df.iterrows():
         x_offset = 3
         y_offset = 3
 
-    # Add marker (all blue circles)
+    # Add marker (all blue circles, using color from app.py)
+    # X and Y are flipped: x is now MW/year, y is now workers
     fig.add_trace(go.Scatter(
-        x=[workers],
-        y=[mw_per_year],
+        x=[mw_per_year],
+        y=[workers],
         mode='markers',
         marker=dict(
             size=6,
-            color='blue',
+            color='#5B8DBE',  # Blue color from app.py
             symbol='circle'
         ),
         hovertemplate='<b>' + datacenter + '</b><br>' +
-                      'Workers: %{x:,.0f}<br>' +
-                      'MW/year: %{y:.1f}<br>' +
+                      'MW/year: %{x:.1f}<br>' +
+                      'Workers: %{y:,.0f}<br>' +
                       '<extra></extra>',
         showlegend=False
     ))
 
     # Add text annotation with proper alignment
     fig.add_annotation(
-        x=workers,
-        y=mw_per_year,
+        x=mw_per_year,
+        y=workers,
         text=short_name,
         showarrow=False,
         xshift=x_offset,
@@ -185,9 +198,10 @@ for idx, row in results_df.iterrows():
 # Legend removed per user request
 
 # Calculate and add regression line (forcing through origin)
+# X and Y are flipped: X is now MW/year, Y is now workers
 if len(results_df) > 1:
-    X = results_df['Workers'].values
-    y = results_df['MW per Year'].values
+    X = results_df['MW per Year'].values  # Now MW/year is X
+    y = results_df['Workers'].values  # Now workers is Y
 
     # Fit linear regression through origin (intercept = 0)
     # slope = sum(x*y) / sum(x^2)
@@ -195,7 +209,7 @@ if len(results_df) > 1:
     intercept = 0
 
     # Calculate relative sigma as the coefficient of variation of individual ratios (y/x)
-    # For each datacenter, compute the ratio of MW/year per worker
+    # For each datacenter, compute the ratio of workers per MW/year
     ratios = y / X
 
     # Mean of ratios (this will be close to but not exactly the regression slope)
@@ -228,17 +242,18 @@ if len(results_df) > 1:
     ))
 
     print(f"\n\nRegression Results (through origin):")
-    print(f"Slope (m): {slope:.6f} MW/year per worker")
-    print(f"Mean of individual ratios: {mean_ratio:.6f} MW/year per worker")
+    print(f"Slope (m): {slope:.6f} workers per MW/year")
+    print(f"Mean of individual ratios: {mean_ratio:.6f} workers per MW/year")
     print(f"Standard deviation of ratios: {std_ratio:.6f}")
     print(f"Relative Sigma (σ/m): {relative_sigma:.4f} ({relative_sigma*100:.2f}%)")
-    print(f"Intercept: {intercept:.6f} MW/year (forced to 0)")
+    print(f"Intercept: {intercept:.6f} workers (forced to 0)")
     print(f"R²: {r2:.4f}")
 
 # Update layout (6 inches x 3.5 inches at 100 DPI)
+# X and Y axes are flipped
 fig.update_layout(
-    xaxis_title='Number of Concurrent Construction Workers',
-    yaxis_title='Build Rate (MW per Year)',
+    xaxis_title='Build Rate (MW per Year)',
+    yaxis_title='Number of Concurrent Construction Workers',
     width=600,
     height=350,
     hovermode='closest',

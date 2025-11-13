@@ -30,9 +30,9 @@ MODEL OUTPUTS
 -------------
 Given a specific year, the model provides two key outputs:
 
-1. h100e_produced_per_month(year) -> float
-   - Compute output in H100-equivalent chips per month at the specified year
-   - Returns 0 if fab not yet operational
+1. compute_produced_per_month(year) -> Compute
+   - Compute object containing chip specifications and monthly production count
+   - Returns empty Compute object if fab not yet operational
 
 2. likelihood_ratio_from_evidence(year) -> float
    - Likelihood ratio from intelligence evidence about the fab at the specified year
@@ -257,7 +257,7 @@ Instantiate PRCCovertFab with construction parameters:
     )
 
 Then query compute production and likelihood ratio:
-    h100e_per_month = fab.h100e_produced_per_month(year=2030)
+    compute_per_month = fab.compute_produced_per_month(year=2030)
     likelihood_ratio = fab.likelihood_ratio_from_evidence(year=2030)
 """
 
@@ -267,9 +267,10 @@ from enum import Enum
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import stats
-from typing import List
+from typing import List, Dict
 import random
 from util import sample_from_log_normal
+from stock_model import Chip, Compute
 
 # ============================================================================
 # SHARED TYPES AND CONSTANTS
@@ -278,6 +279,9 @@ from util import sample_from_log_normal
 # H100 reference constants
 H100_PROCESS_NODE_NM = 4  # H100 was fabricated on 4nm node
 H100_RELEASE_YEAR = 2022  # H100 was released in 2022
+H100_TRANSISTOR_DENSITY_M_PER_MM2 = 98.28  # Million transistors per mm²
+H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass
+H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
 
 class ProcessNode(Enum):
     nm130 = "130nm"
@@ -355,9 +359,19 @@ class FabModelParameters:
     # With exponent = 1.49, halving node size increases density by 2^1.49 ≈ 2.81×
     transistor_density_scaling_exponent = 1.49
 
-    w_per_tpp_vs_transistor_density_exponent = -1.11
 
-    h100_w_per_tflop = 
+    # Energy efficiency scaling with transistor density
+    # Power law: W/TPP ∝ (transistor_density)^exponent
+    # Before Dennard scaling ended (transistor density <= ~1.98 M/mm², year <= 2006):
+    # Higher density led to WORSE efficiency (positive relationship with power)
+    watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended = -2.006575
+
+    # After Dennard scaling ended (transistor density > ~1.98 M/mm², year > 2006):
+    # Higher density leads to BETTER efficiency (negative relationship with power)
+    watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended = -0.909355
+
+    # Transistor density threshold marking the end of Dennard scaling (2006)
+    transistor_density_at_end_of_dennard_scaling_m_per_mm2 = 1.98  # Million transistors per mm²
 
     # Chip architecture efficiency improvement over time
     # Architectures improve at a pace of 1.23× per year
@@ -947,6 +961,79 @@ def lr_from_other_strategies(
         return max(lr, 0.001)  # Floor at 0.001 to avoid numerical issues
 
 # ============================================================================
+# Energy efficiency prediction
+# ============================================================================
+
+def predict_watts_per_tpp_from_transistor_density(transistor_density_m_per_mm2: float) -> float:
+    """Predict energy consumption (watts per TPP) from transistor density.
+
+    Uses power law relationships that differ before and after Dennard scaling ended (~2006).
+
+    Args:
+        transistor_density_m_per_mm2: Transistor density in millions of transistors per mm²
+
+    Returns:
+        Watts per Tera-Parameter-Pass (W/TPP)
+    """
+    # Get parameters from FabModelParameters
+    params = FabModelParameters
+
+    # Determine which exponent to use based on Dennard scaling threshold
+    if transistor_density_m_per_mm2 <= params.transistor_density_at_end_of_dennard_scaling_m_per_mm2:
+        # Before Dennard scaling ended
+        exponent = params.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended
+    else:
+        # After Dennard scaling ended
+        exponent = params.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended
+
+    # Power law: W/TPP = H100_W/TPP * (density / H100_density)^exponent
+    density_ratio = transistor_density_m_per_mm2 / H100_TRANSISTOR_DENSITY_M_PER_MM2
+    watts_per_tpp = H100_WATTS_PER_TPP * (density_ratio ** exponent)
+
+    return watts_per_tpp
+
+def process_node_to_nm(process_node: ProcessNode) -> float:
+    """Convert ProcessNode enum to nanometer value.
+
+    Args:
+        process_node: ProcessNode enum value
+
+    Returns:
+        Process node size in nanometers
+    """
+    node_map = {
+        ProcessNode.nm130: 130.0,
+        ProcessNode.nm28: 28.0,
+        ProcessNode.nm14: 14.0,
+        ProcessNode.nm7: 7.0,
+    }
+    return node_map[process_node]
+
+def calculate_transistor_density_from_process_node(process_node_nm: float) -> float:
+    """Calculate transistor density from process node size.
+
+    Uses Moore's Law scaling based on H100 as reference point.
+
+    Args:
+        process_node_nm: Process node size in nanometers
+
+    Returns:
+        Transistor density in millions of transistors per mm²
+    """
+    params = FabModelParameters
+
+    # Calculate how many times the process node has been halved relative to H100
+    # node_ratio > 1 means larger/older node, node_ratio < 1 means smaller/newer node
+    node_ratio = process_node_nm / H100_PROCESS_NODE_NM
+
+    # Transistor density scales as: density = H100_density * (node_ratio)^(-exponent)
+    # When node size doubles, density decreases by 2^exponent
+    # When node size halves, density increases by 2^exponent
+    transistor_density = H100_TRANSISTOR_DENSITY_M_PER_MM2 * (node_ratio ** (-params.transistor_density_scaling_exponent))
+
+    return transistor_density
+
+# ============================================================================
 # PRC covert fab core logic
 # ============================================================================
 
@@ -956,9 +1043,10 @@ class CovertFab(ABC):
         return None
 
     @abstractmethod
-    def h100e_produced_per_month(self, year):
+    def compute_produced_per_month(self, year):
+        """Return Compute object representing monthly production."""
         return None
-    
+
     @abstractmethod
     def detection_likelihood_ratio(self, year):
         return None
@@ -1070,11 +1158,47 @@ class PRCCovertFab(CovertFab):
         else:
             return False
 
-    def h100e_produced_per_month(self, year):
+    def compute_produced_per_month(self, year):
+        """Calculate monthly compute production as a Compute object.
+
+        Returns:
+            Compute: Object containing chip specifications and counts
+        """
+        if not self.is_operational(year):
+            # Return empty Compute object if not operational
+            return Compute(chip_counts={})
+
+        # Calculate H100-equivalent performance per chip
         chip_architecture_efficiency_relative_to_h100 = estimate_architecture_efficiency_relative_to_h100(year, self.agreement_year)
-        compute_per_wafer = self.h100_sized_chips_per_wafer * self.transistor_density_relative_to_h100 * chip_architecture_efficiency_relative_to_h100
-        return self.is_operational(year) \
-            * self.wafer_starts_per_month * compute_per_wafer
+        h100e_per_chip = self.transistor_density_relative_to_h100 * chip_architecture_efficiency_relative_to_h100
+
+        # Convert process node to nm and calculate transistor density
+        process_node_nm = process_node_to_nm(self.process_node)
+        transistor_density = calculate_transistor_density_from_process_node(process_node_nm)
+
+        # Calculate energy consumption per chip
+        # First convert H100e to actual TPP
+        tpp_per_chip = h100e_per_chip * H100_TPP_PER_CHIP
+
+        # Get watts per TPP based on transistor density
+        watts_per_tpp = predict_watts_per_tpp_from_transistor_density(transistor_density)
+
+        # Calculate total watts per chip
+        watts_per_chip = tpp_per_chip * watts_per_tpp
+
+        # Calculate number of chips produced per month
+        chips_per_month = self.wafer_starts_per_month * self.h100_sized_chips_per_wafer
+
+        # Create Chip object
+        chip = Chip(
+            h100e_tpp_per_chip=h100e_per_chip,
+            W_of_energy_consumed=watts_per_chip,
+            intra_chip_memory_bandwidth_tbps=8.0,  # Default H100-like bandwidth
+            inter_chip_memory_bandwidth_tbps=1.8   # Default H100-like bandwidth
+        )
+
+        # Return Compute object with chip counts
+        return Compute(chip_counts={chip: chips_per_month})
 
     def detection_likelihood_ratio(self, year):
         """

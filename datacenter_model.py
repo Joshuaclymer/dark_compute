@@ -52,9 +52,9 @@ def _initialize_detection_constants():
         return  # Already initialized
 
     x1 = 100
-    mu1 = CovertDatacenterParameters.mean_detection_time_for_100_workers
+    mu1 = CovertDatacenterParameters.mean_detection_time_of_covert_site_for_100_workers
     x2 = 1000
-    mu2 = CovertDatacenterParameters.mean_detection_time_for_1000_workers
+    mu2 = CovertDatacenterParameters.mean_detection_time_of_covert_site_for_1000_workers
 
     _detection_time_B = np.log(mu1 / mu2) / np.log(np.log10(x2) / np.log10(x1))
     _detection_time_A = mu1 * (np.log10(x1) ** _detection_time_B)
@@ -178,6 +178,20 @@ class CovertPRCDatacenters():
         self.GW_per_initial_datacenter = GW_per_initial_datacenter
         self.number_of_initial_datacenters = number_of_initial_datacenters
         self.GW_per_year_of_concealed_datacenters = GW_per_year_of_concealed_datacenters
+
+        # Sample labor parameters once at initialization for efficiency
+        self.construction_labor_per_GW_per_year = sample_construction_labor_per_GW_per_year()
+        self.operating_labor_per_GW = sample_operating_labor_per_GW()
+
+        # Calculate total labor and sample detection time once
+        # Use a representative time point (e.g., year 5) for labor calculation
+        representative_capacity = self.GW_per_initial_datacenter * self.number_of_initial_datacenters + self.GW_per_year_of_concealed_datacenters * 5
+        construction_labor = self.construction_labor_per_GW_per_year * self.GW_per_year_of_concealed_datacenters
+        operating_labor = self.operating_labor_per_GW * representative_capacity
+        total_labor = construction_labor + operating_labor
+        self.time_of_detection = sample_time_of_detection_via_other_strategies(total_labor)
+
+        # Cache for operating labor calculation
         self.construction_labor = 0
         self.operating_labor = 0
     
@@ -185,11 +199,12 @@ class CovertPRCDatacenters():
         return self.GW_per_initial_datacenter * self.number_of_initial_datacenters + self.GW_per_year_of_concealed_datacenters * year
 
     def get_operating_labor(self, year):
-        self.operating_labor = sample_operating_labor_per_GW() * self.get_GW_capacity(year)
-    
+        self.operating_labor = self.operating_labor_per_GW * self.get_GW_capacity(year)
+        return self.operating_labor
+
     def lr_from_concealed_datacenters(self, year):
-        construction_labor = sample_construction_labor_per_GW_per_year() * self.GW_per_year_of_concealed_datacenters
+        # Use pre-computed labor parameters and detection time
+        construction_labor = self.construction_labor_per_GW_per_year * self.GW_per_year_of_concealed_datacenters
         operating_labor = self.get_operating_labor(year)
         total_labor = construction_labor + operating_labor
-        time_of_detection = sample_time_of_detection_via_other_strategies(total_labor)
-        return lr_from_other_strategies(year, time_of_detection, total_labor)
+        return lr_from_other_strategies(year, self.time_of_detection, total_labor)

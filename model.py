@@ -250,8 +250,9 @@ class Simulation:
 
                 # ========== Update beliefs about covert project from evidence of fab ==========
                 if project.covert_fab is not None:
-                    # h100e_produced_per_month returns monthly production, multiply by increment (in years) and months per year
-                    additional_dark_compute = project.covert_fab.h100e_produced_per_month(current_year) * 12 * increment
+                    # compute_produced_per_month returns Compute object with monthly production, multiply by increment (in years) and months per year
+                    compute_per_month = project.covert_fab.compute_produced_per_month(current_year)
+                    additional_dark_compute = compute_per_month.total_h100e_tpp() * 12 * increment
                     project.dark_compute_stock.add_dark_compute(current_year, additional_dark_compute)
 
                     # Track cumulative covert fab production over time

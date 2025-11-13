@@ -138,11 +138,28 @@ if len(pre_dennard_regression) > 1:
     z_pre = np.polyfit(log_density_pre, log_efficiency_pre, 1)
     p_pre = np.poly1d(z_pre)
 
+    # Calculate variance parameters
+    y_pred_pre = p_pre(log_density_pre)
+    residuals_pre = log_efficiency_pre - y_pred_pre
+    ss_res_pre = np.sum(residuals_pre**2)
+    ss_tot_pre = np.sum((log_efficiency_pre - np.mean(log_efficiency_pre))**2)
+    r_squared_pre = 1 - (ss_res_pre / ss_tot_pre)
+
+    # Standard error of the estimate
+    n_pre = len(log_density_pre)
+    se_pre = np.sqrt(ss_res_pre / (n_pre - 2))
+
+    print(f"\nBefore Dennard scaling (≤2006) regression statistics:")
+    print(f"  N = {n_pre}")
+    print(f"  R² = {r_squared_pre:.4f}")
+    print(f"  Standard Error = {se_pre:.4f}")
+    print(f"  Power law exponent = {z_pre[0]:.3f}")
+
     x_trend_pre = np.logspace(np.log10(pre_dennard_regression['Transistor Density (M/mm^2)'].min()),
                                np.log10(pre_dennard_regression['Transistor Density (M/mm^2)'].max()), 100)
     y_trend_pre = 10**(p_pre(np.log10(x_trend_pre)))
     plt.plot(x_trend_pre, y_trend_pre, "--", alpha=0.8, linewidth=2, color='darkblue',
-             label=f'Before Dennard end: y ∝ x^{z_pre[0]:.3f}')
+             label=f'Before Dennard end: y ∝ x$^{{{z_pre[0]:.3f}}}$ (R²={r_squared_pre:.3f}, SE={se_pre:.3f})')
 
 # Power law for AFTER end of Dennard scaling (>2006)
 post_dennard_regression = data_clean[(data_clean['Release year'] > 2006) & ~outlier_mask]
@@ -152,11 +169,28 @@ if len(post_dennard_regression) > 1:
     z_post = np.polyfit(log_density_post, log_efficiency_post, 1)
     p_post = np.poly1d(z_post)
 
+    # Calculate variance parameters
+    y_pred_post = p_post(log_density_post)
+    residuals_post = log_efficiency_post - y_pred_post
+    ss_res_post = np.sum(residuals_post**2)
+    ss_tot_post = np.sum((log_efficiency_post - np.mean(log_efficiency_post))**2)
+    r_squared_post = 1 - (ss_res_post / ss_tot_post)
+
+    # Standard error of the estimate
+    n_post = len(log_density_post)
+    se_post = np.sqrt(ss_res_post / (n_post - 2))
+
+    print(f"\nAfter Dennard scaling (>2006) regression statistics:")
+    print(f"  N = {n_post}")
+    print(f"  R² = {r_squared_post:.4f}")
+    print(f"  Standard Error = {se_post:.4f}")
+    print(f"  Power law exponent = {z_post[0]:.3f}")
+
     x_trend_post = np.logspace(np.log10(post_dennard_regression['Transistor Density (M/mm^2)'].min()),
                                 np.log10(post_dennard_regression['Transistor Density (M/mm^2)'].max()), 100)
     y_trend_post = 10**(p_post(np.log10(x_trend_post)))
     plt.plot(x_trend_post, y_trend_post, "--", alpha=0.8, linewidth=2, color='darkred',
-             label=f'After Dennard end: y ∝ x^{z_post[0]:.3f}')
+             label=f'After Dennard end: y ∝ x$^{{{z_post[0]:.3f}}}$ (R²={r_squared_post:.3f}, SE={se_post:.3f})')
 
 plt.legend()
 

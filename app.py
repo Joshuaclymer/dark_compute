@@ -31,6 +31,7 @@ def index():
         'annual_growth_rate_of_prc_compute_stock': InitialPRCComputeStockParameters.annual_growth_rate_of_prc_compute_stock,
         'relative_sigma_of_prc_compute_stock': InitialPRCComputeStockParameters.relative_sigma_of_prc_compute_stock,
         'us_intelligence_median_error_in_estimate_of_prc_compute_stock': InitialPRCComputeStockParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock,
+        'energy_efficiency_relative_to_h100': InitialPRCComputeStockParameters.energy_efficiency_relative_to_h100,
         'total_global_compute_in_2025': InitialPRCComputeStockParameters.total_global_compute_in_2025,
         'annual_growth_rate_of_global_compute': InitialPRCComputeStockParameters.annual_growth_rate_of_global_compute,
         'relative_sigma_of_global_compute': InitialPRCComputeStockParameters.relative_sigma_of_global_compute,
@@ -100,6 +101,8 @@ def run_simulation():
         InitialPRCComputeStockParameters.relative_sigma_of_prc_compute_stock = float(data['relative_sigma_of_prc_compute_stock'])
     if 'us_intelligence_median_error_in_estimate_of_prc_compute_stock' in data:
         InitialPRCComputeStockParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock = float(data['us_intelligence_median_error_in_estimate_of_prc_compute_stock'])
+    if 'energy_efficiency_relative_to_h100' in data:
+        InitialPRCComputeStockParameters.energy_efficiency_relative_to_h100 = float(data['energy_efficiency_relative_to_h100'])
     print(f"DEBUG: Updated params to: total_2025={InitialPRCComputeStockParameters.total_prc_compute_stock_in_2025}, growth={InitialPRCComputeStockParameters.annual_growth_rate_of_prc_compute_stock}, sigma={InitialPRCComputeStockParameters.relative_sigma_of_prc_compute_stock}", flush=True)
 
     # Survival rate parameters
@@ -359,10 +362,13 @@ def extract_plot_data(model, p_fab_exists):
     # Use all simulations for visualization
     simulations_to_plot = model.simulation_results
 
-    # Track survival rates, operational dark compute, and datacenter capacity
+    # Track survival rates, dark compute, operational dark compute, and datacenter capacity
     survival_rate_by_sim = []
+    dark_compute_by_sim = []
+    dark_compute_objects_by_sim = []  # Store Compute objects for energy breakdown
     operational_dark_compute_by_sim = []
     datacenter_capacity_by_sim = []
+    lr_datacenters_by_sim = []
 
     for covert_projects, detectors in simulations_to_plot:
         us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
@@ -383,27 +389,52 @@ def extract_plot_data(model, p_fab_exists):
 
         # Calculate survival rates, operational dark compute, and datacenter capacity for this simulation
         survival_rates = []
+        dark_compute = []
+        dark_compute_objects = []  # Store Compute objects for energy breakdown
         operational_dark_compute = []
         datacenter_capacity_gw = []
+        lr_datacenters_over_time = []
         for year in years:
-            operational = dark_compute_stock.operational_dark_compute(year)
-            total = dark_compute_stock.operational_and_nonoperational_dark_compute(year)
-            if total > 0:
-                survival_rates.append(operational / total)
-            else:
-                survival_rates.append(0.0)
-            operational_dark_compute.append(operational)
-
             # Get datacenter capacity in GW for this year
             # Years are relative to agreement year, so calculate relative year
             relative_year = year - agreement_year
-            datacenter_capacity_gw.append(covert_datacenters.get_GW_capacity(relative_year))
+            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+            datacenter_capacity_gw.append(capacity_gw)
+
+            # Get compute stocks for survival rate calculation
+            surviving_compute = dark_compute_stock.dark_compute(year)
+            total_compute = dark_compute_stock.dark_compute_dead_and_alive(year)
+
+            # Calculate survival rate (ratio of surviving to total, not limited by capacity)
+            surviving = surviving_compute.total_h100e_tpp()
+            total = total_compute.total_h100e_tpp()
+
+            if total > 0:
+                survival_rates.append(surviving / total)
+            else:
+                survival_rates.append(0.0)
+
+            # Store dark compute (surviving, not limited by capacity)
+            dark_compute.append(surviving)
+            dark_compute_objects.append(surviving_compute)  # Store Compute object for energy breakdown
+
+            # Get operational compute (limited by datacenter capacity)
+            operational_compute = dark_compute_stock.operational_dark_compute(year, capacity_gw)
+            operational = operational_compute.total_h100e_tpp()
+            operational_dark_compute.append(operational)
+
+            # Get likelihood ratio from datacenters for this year
+            lr_datacenters = covert_datacenters.lr_from_concealed_datacenters(relative_year)
+            lr_datacenters_over_time.append(lr_datacenters)
 
         us_probs_by_sim.append(us_probs)
         h100e_by_sim.append(h100e_counts)
         survival_rate_by_sim.append(survival_rates)
+        dark_compute_by_sim.append(dark_compute)
+        dark_compute_objects_by_sim.append(dark_compute_objects)
         operational_dark_compute_by_sim.append(operational_dark_compute)
         datacenter_capacity_by_sim.append(datacenter_capacity_gw)
+        lr_datacenters_by_sim.append(lr_datacenters_over_time)
 
         # Extract likelihood ratio components
         if covert_fab is not None:
@@ -461,6 +492,7 @@ def extract_plot_data(model, p_fab_exists):
     us_probs_array = np.array(us_probs_by_sim)
     h100e_array = np.array(h100e_by_sim)
     survival_rate_array = np.array(survival_rate_by_sim)
+    dark_compute_array = np.array(dark_compute_by_sim)
     operational_dark_compute_array = np.array(operational_dark_compute_by_sim)
     datacenter_capacity_array = np.array(datacenter_capacity_by_sim)
 
@@ -476,6 +508,10 @@ def extract_plot_data(model, p_fab_exists):
     survival_rate_p25 = np.percentile(survival_rate_array, 25, axis=0)
     survival_rate_p75 = np.percentile(survival_rate_array, 75, axis=0)
 
+    dark_compute_median = np.median(dark_compute_array, axis=0) / 1e3  # Convert to thousands
+    dark_compute_p25 = np.percentile(dark_compute_array, 25, axis=0) / 1e3
+    dark_compute_p75 = np.percentile(dark_compute_array, 75, axis=0) / 1e3
+
     operational_dark_compute_median = np.median(operational_dark_compute_array, axis=0) / 1e3  # Convert to thousands
     operational_dark_compute_p25 = np.percentile(operational_dark_compute_array, 25, axis=0) / 1e3
     operational_dark_compute_p75 = np.percentile(operational_dark_compute_array, 75, axis=0) / 1e3
@@ -483,6 +519,53 @@ def extract_plot_data(model, p_fab_exists):
     datacenter_capacity_median = np.median(datacenter_capacity_array, axis=0)
     datacenter_capacity_p25 = np.percentile(datacenter_capacity_array, 25, axis=0)
     datacenter_capacity_p75 = np.percentile(datacenter_capacity_array, 75, axis=0)
+
+    lr_datacenters_array = np.array(lr_datacenters_by_sim)
+    lr_datacenters_median = np.median(lr_datacenters_array, axis=0)
+    lr_datacenters_p25 = np.percentile(lr_datacenters_array, 25, axis=0)
+    lr_datacenters_p75 = np.percentile(lr_datacenters_array, 75, axis=0)
+
+    # Calculate probability of detection (LR >= 5) for each year
+    detection_threshold = 5.0
+    datacenter_detection_prob = np.mean(lr_datacenters_array >= detection_threshold, axis=0)
+
+    # Find the simulation with median dark compute at final year to use for energy breakdown
+    final_year_dark_compute = dark_compute_array[:, -1]
+    median_sim_idx = np.argsort(final_year_dark_compute)[len(final_year_dark_compute) // 2]
+
+    # Get energy breakdown for the median simulation by source (initial stock vs fab)
+    # Find which simulation is the median
+    median_sim_covert_projects, _ = simulations_to_plot[median_sim_idx]
+    median_dark_compute_stock = median_sim_covert_projects["prc_covert_project"].dark_compute_stock
+
+    # Extract energy breakdown by source for each year
+    num_years = len(years_array)
+    energy_by_source_array = np.zeros((num_years, 2))  # 2 sources: initial stock, fab
+
+    # Calculate average efficiency for each source across all years
+    initial_energy_total = 0.0
+    fab_energy_total = 0.0
+    initial_h100e_total = 0.0
+    fab_h100e_total = 0.0
+
+    for year_idx, year in enumerate(years_array):
+        initial_energy, fab_energy, initial_h100e, fab_h100e = median_dark_compute_stock.dark_compute_energy_by_source(year)
+        energy_by_source_array[year_idx, 0] = initial_energy
+        energy_by_source_array[year_idx, 1] = fab_energy
+
+        initial_energy_total += initial_energy
+        fab_energy_total += fab_energy
+        initial_h100e_total += initial_h100e
+        fab_h100e_total += fab_h100e
+
+    # Calculate average efficiency: H100e TPP per GW
+    initial_efficiency = (initial_h100e_total / initial_energy_total) if initial_energy_total > 0 else 0
+    fab_efficiency = (fab_h100e_total / fab_energy_total) if fab_energy_total > 0 else 0
+
+    source_labels = [
+        f"Initial Stock ({initial_efficiency:.0f} H100e/GW)",
+        f"Fab-Produced ({fab_efficiency:.0f} H100e/GW)"
+    ]
 
     # Extract compute before detection data for multiple thresholds
     # Calculate thresholds based on prior and likelihood ratios
@@ -499,6 +582,7 @@ def extract_plot_data(model, p_fab_exists):
     individual_h100e_before_detection = []
     individual_time_before_detection = []
     individual_process_nodes = []
+    individual_energy_before_detection = []
     dashboard_threshold = detection_thresholds[-1]  # Use highest LR update threshold
 
     # Count total simulations with covert fab for correct CCDF calculation
@@ -632,6 +716,13 @@ def extract_plot_data(model, p_fab_exists):
                     individual_time_before_detection.append(operational_time)
                     individual_process_nodes.append(covert_fab.process_node.value)
 
+                    # Calculate energy (GW) from H100e TPP
+                    # Formula: energy_gw = h100e_tpp * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP / energy_efficiency / 1e9
+                    from stock_model import InitialPRCComputeStockParameters, H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+                    energy_gw = (h100e_at_detection * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
+                                InitialPRCComputeStockParameters.energy_efficiency_relative_to_h100 / 1e9)
+                    individual_energy_before_detection.append(energy_gw)
+
                     # Debug: Check fabs that finished construction but have 0 compute
                     if detection_year >= operational_start and h100e_at_detection <= 0.0:
                         print(f"DEBUG: Fab finished construction but has 0 compute - detection_year={detection_year}, operational_start={operational_start}, time_since_operational={detection_year - operational_start:.4f}, available_years_count={len(h100e_over_time)}", flush=True)
@@ -677,6 +768,12 @@ def extract_plot_data(model, p_fab_exists):
                     individual_h100e_before_detection.append(h100e_at_end)
                     individual_time_before_detection.append(operational_time)
                     individual_process_nodes.append(covert_fab.process_node.value)
+
+                    # Calculate energy (GW) from H100e TPP
+                    from stock_model import InitialPRCComputeStockParameters, H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+                    energy_gw = (h100e_at_end * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
+                                InitialPRCComputeStockParameters.energy_efficiency_relative_to_h100 / 1e9)
+                    individual_energy_before_detection.append(energy_gw)
 
         # Calculate CCDFs for this threshold
         # Use total_simulations_with_fab as denominator to account for runs where detection never happened
@@ -899,12 +996,21 @@ def extract_plot_data(model, p_fab_exists):
             "survival_rate_median": survival_rate_median.tolist(),
             "survival_rate_p25": survival_rate_p25.tolist(),
             "survival_rate_p75": survival_rate_p75.tolist(),
+            "dark_compute_median": dark_compute_median.tolist(),
+            "dark_compute_p25": dark_compute_p25.tolist(),
+            "dark_compute_p75": dark_compute_p75.tolist(),
             "operational_dark_compute_median": operational_dark_compute_median.tolist(),
             "operational_dark_compute_p25": operational_dark_compute_p25.tolist(),
             "operational_dark_compute_p75": operational_dark_compute_p75.tolist(),
             "datacenter_capacity_median": datacenter_capacity_median.tolist(),
             "datacenter_capacity_p25": datacenter_capacity_p25.tolist(),
             "datacenter_capacity_p75": datacenter_capacity_p75.tolist(),
+            "lr_datacenters_median": lr_datacenters_median.tolist(),
+            "lr_datacenters_p25": lr_datacenters_p25.tolist(),
+            "lr_datacenters_p75": lr_datacenters_p75.tolist(),
+            "datacenter_detection_prob": datacenter_detection_prob.tolist(),
+            "energy_by_source": energy_by_source_array.tolist(),
+            "source_labels": source_labels,
             "individual_us_probs": [list(sim) for sim in us_probs_by_sim],
             "individual_h100e": [list(np.array(sim) / 1e3) for sim in h100e_by_sim]
         },
@@ -919,7 +1025,8 @@ def extract_plot_data(model, p_fab_exists):
         "num_simulations": len(model.simulation_results),
         "individual_h100e_before_detection": individual_h100e_before_detection,
         "individual_time_before_detection": individual_time_before_detection,
-        "individual_process_node": individual_process_nodes
+        "individual_process_node": individual_process_nodes,
+        "individual_energy_before_detection": individual_energy_before_detection
     }
 
 @app.route('/download/nuclear_case_studies')

@@ -1067,6 +1067,59 @@
                     </div>
                 </div>
             </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Energy Requirements Breakdown</div>
+                <div class="section-description">
+                    Energy requirements (GW / month) = Compute produced per month × Transistor density relative to H100 × Energy efficiency relative to H100 × Energy requirements of H100<br>
+                    Shows how compute production translates to energy consumption based on chip characteristics.
+                </div>
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item">
+                        <div id="energyTransistorDensityPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator">→</div>
+                    <div class="breakdown-item">
+                        <div id="densityVsEfficiencyPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator">×</div>
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                        <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Energy requirements of H100</div>
+                        <div id="h100EnergyDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
+                            --
+                        </div>
+                        <div class="breakdown-label" style="margin-top: 5px;">Energy requirements of H100</div>
+                    </div>
+                    <div class="operator">×</div>
+                    <div class="breakdown-item">
+                        <div id="energyComputePerMonthPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator">=</div>
+                    <div class="breakdown-item">
+                        <div id="energyPerMonthPlot" class="breakdown-plot"></div>
+                    </div>
+                </div>
+                <div class="breakdown-labels-row">
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Transistor density relative to H100</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">→</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Energy efficiency by transistor density</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Compute produced per month (H100e / month)</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">=</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Energy requirements per month (GW / month)</div>
+                    </div>
+                </div>
+            </div>
             </div>
         </div>
     </div>
@@ -1424,16 +1477,23 @@
             setTimeout(() => Plotly.Plots.resize('computeCcdfPlot'), 50);
         }
 
-        function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null) {
+        function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null) {
             // Create histogram/PDF from values
             console.log(`plotPDF called for ${divId}:`, values);
             console.log(`plotPDF ${divId} - min: ${Math.min(...values)}, max: ${Math.max(...values)}, count: ${values.length}`);
+
+            const marker = { color: color, line: { width: 0.5, color: 'white' } };
+
+            // Add pattern if specified
+            if (pattern) {
+                marker.pattern = pattern;
+            }
 
             const trace = {
                 x: values,
                 type: 'histogram',
                 histnorm: 'probability density',
-                marker: { color: color, line: { width: 0.5, color: 'white' } },
+                marker: marker,
                 hovertemplate: '%{x:.2f}<br>Density: %{y:.3f}<extra></extra>'
             };
 
@@ -1890,7 +1950,7 @@
                 if (data.initial_compute_stock_samples) {
                     // Convert to thousands
                     const samplesInThousands = data.initial_compute_stock_samples.map(v => v / 1000);
-                    plotPDF('initialDarkComputePlot', samplesInThousands, '#6C3483', 'Thousands of H100 Equivalents', 30, false, null, null);
+                    plotPDF('initialDarkComputePlot', samplesInThousands, '#8E44AD', 'Thousands of H100 Equivalents', 30, false, null, null, null, { shape: '/', fgcolor: '#FFFFFF', bgcolor: '#8E44AD', size: 4, solidity: 0.3 });
                 }
 
                 // Plot 2: Flow from covert fab (line plot - cumulative production over time)
@@ -1930,8 +1990,8 @@
                             y: h100e_median,
                             type: 'scatter',
                             mode: 'lines',
-                            line: { color: '#BB8FCE', width: 2 },
-                            name: 'Covert fab production',
+                            line: { color: '#8E44AD', width: 2 },
+                            name: 'Covert Fab Production',
                             showlegend: true
                         }
                     ];
@@ -2099,6 +2159,18 @@
                     const capacity_p75 = data.time_series.datacenter_capacity_p75;
 
                     const traces = [
+                        // Shading below the median line
+                        {
+                            x: years,
+                            y: capacity_median,
+                            type: 'scatter',
+                            mode: 'lines',
+                            fill: 'tozeroy',
+                            fillcolor: 'rgba(45, 107, 97, 0.1)',  // Light dark turquoise
+                            line: { width: 0 },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
                         // Upper bound of shaded region (invisible line)
                         {
                             x: years,
@@ -2127,7 +2199,7 @@
                             y: capacity_median,
                             type: 'scatter',
                             mode: 'lines',
-                            line: { color: '#000000', width: 3 },
+                            line: { color: '#2D6B61', width: 3 },  // Dark turquoise
                             name: 'Median',
                             showlegend: false
                         }
@@ -2137,14 +2209,16 @@
                         xaxis: {
                             title: 'Year',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true
                         },
                         yaxis: {
                             title: 'GW',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true
                         },
-                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        margin: { l: 50, r: 20, t: 10, b: 45 },
                         height: 250,
                         hovermode: 'x unified'
                     };
@@ -2162,17 +2236,24 @@
                     const sourceLabels = data.time_series.source_labels;
                     const datacenterCapacity = data.time_series.datacenter_capacity_median;
 
-                    // Two colors: darker purple for initial stock (bottom), lighter purple for fab-produced (top)
-                    const colors = ['#6C3483', '#BB8FCE'];  // Dark purple, light purple
+                    // Two colors: turquoise shades for initial stock (bottom) and fab-produced (top)
+                    const colors = ['#4A9B8E', '#74B3A8'];  // Dark turquoise, light turquoise
 
                     const traces = [];
 
                     // Create traces for each source (initial stock = index 0, fab = index 1)
                     for (let i = 0; i < sourceLabels.length; i++) {
                         const energyAtSource = energyData.map(yearData => yearData[i]);
-                        const sourceLabel = sourceLabels[i];
+                        let sourceLabel = sourceLabels[i];
 
-                        traces.push({
+                        // Add (hashed) or (solid) indicator
+                        if (i === 0) {
+                            sourceLabel = sourceLabel + ' (hashed)';
+                        } else {
+                            sourceLabel = sourceLabel + ' (solid)';
+                        }
+
+                        const trace = {
                             x: years,
                             y: energyAtSource,
                             type: 'scatter',
@@ -2182,16 +2263,42 @@
                             line: { width: 0 },
                             name: sourceLabel,
                             hovertemplate: `${sourceLabel}<br>Energy: %{y:.2f} GW<extra></extra>`
-                        });
+                        };
+
+                        // Add hash marks to initial stock (i === 0)
+                        if (i === 0) {
+                            trace.fillpattern = {
+                                shape: '/',
+                                fgcolor: '#FFFFFF',
+                                bgcolor: colors[i],
+                                size: 6,
+                                solidity: 0.3
+                            };
+                        }
+
+                        traces.push(trace);
                     }
 
-                    // Add datacenter capacity as a black bold line
+                    // Add light shading under the capacity line
                     traces.push({
                         x: years,
                         y: datacenterCapacity,
                         type: 'scatter',
                         mode: 'lines',
-                        line: { color: '#000000', width: 3 },
+                        fill: 'tozeroy',
+                        fillcolor: 'rgba(74, 155, 142, 0.1)',  // Very light dark turquoise
+                        line: { width: 0 },
+                        showlegend: false,
+                        hoverinfo: 'skip'
+                    });
+
+                    // Add datacenter capacity as a dark turquoise bold line
+                    traces.push({
+                        x: years,
+                        y: datacenterCapacity,
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#2D6B61', width: 3 },  // Dark turquoise
                         name: 'Covert Datacenter Capacity',
                         hovertemplate: 'Capacity: %{y:.1f} GW<extra></extra>'
                     });
@@ -2513,6 +2620,150 @@
                         p75: totalComputeP75,
                         individual: totalComputeArray
                     }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
+
+                    // Plot energy breakdown
+                    // 1. Compute produced per month (reuse from above)
+                    plotMedianWithPercentiles('energyComputePerMonthPlot', {
+                        median: totalComputeMedian,
+                        p25: totalComputeP25,
+                        p75: totalComputeP75,
+                        individual: totalComputeArray
+                    }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
+
+                    // 2. Transistor density relative to H100 (reuse from above)
+                    plotBarByProcessNode('energyTransistorDensityPlot', transistorDensityFinal, processNodes, '#E8A863');
+
+                    // 3. Curve plot: Transistor density vs Energy efficiency
+                    // Energy efficiency follows power law from fab_model.py:
+                    // watts_per_tpp = H100_watts * (density_ratio)^exponent
+                    // efficiency = 1 / (watts_per_tpp / H100_watts) = 1 / (density_ratio^exponent)
+
+                    // Constants from fab_model.py
+                    const H100_TRANSISTOR_DENSITY = 98.28;  // Million transistors per mm²
+                    const DENNARD_THRESHOLD_DENSITY = 1.98;  // Million transistors per mm²
+                    const EXPONENT_BEFORE_DENNARD = -2.006575;
+                    const EXPONENT_AFTER_DENNARD = -0.909355;
+
+                    // Generate density range for the curve (from 0.1x to 3x relative to H100)
+                    const numPoints = 100;
+                    const densityRangeRelative = [];
+                    for (let i = 0; i < numPoints; i++) {
+                        densityRangeRelative.push(0.1 + (i / (numPoints - 1)) * 2.9);
+                    }
+
+                    // Calculate efficiency for each density point
+                    const efficiencyCurve = densityRangeRelative.map(densityRelative => {
+                        const densityAbsolute = densityRelative * H100_TRANSISTOR_DENSITY;
+
+                        // Determine exponent based on Dennard threshold
+                        const exponent = densityAbsolute <= DENNARD_THRESHOLD_DENSITY
+                            ? EXPONENT_BEFORE_DENNARD
+                            : EXPONENT_AFTER_DENNARD;
+
+                        // Calculate watts per TPP: watts_per_tpp = H100_watts * (density_ratio)^exponent
+                        const wattsPerTppRatio = Math.pow(densityRelative, exponent);
+
+                        // Efficiency relative to H100 = 1 / wattsPerTppRatio
+                        const efficiencyRelative = 1 / wattsPerTppRatio;
+
+                        return efficiencyRelative;
+                    });
+
+                    // Create curve plot with actual simulation points overlaid
+                    Plotly.newPlot('densityVsEfficiencyPlot', [
+                        {
+                            x: densityRangeRelative,
+                            y: efficiencyCurve,
+                            mode: 'lines',
+                            type: 'scatter',
+                            line: {
+                                color: '#74B3A8',
+                                width: 2
+                            },
+                            name: 'Power Law',
+                            hovertemplate: 'Density: %{x:.2f}x<br>Efficiency: %{y:.2f}x<extra></extra>'
+                        },
+                        {
+                            x: transistorDensityFinal,
+                            y: transistorDensityFinal.map(d => {
+                                const densityAbsolute = d * H100_TRANSISTOR_DENSITY;
+                                const exponent = densityAbsolute <= DENNARD_THRESHOLD_DENSITY
+                                    ? EXPONENT_BEFORE_DENNARD
+                                    : EXPONENT_AFTER_DENNARD;
+                                return 1 / Math.pow(d, exponent);
+                            }),
+                            mode: 'markers',
+                            type: 'scatter',
+                            marker: {
+                                size: 6,
+                                color: '#E8A863',
+                                opacity: 0.7
+                            },
+                            name: 'Simulations',
+                            hovertemplate: 'Density: %{x:.2f}x<br>Efficiency: %{y:.2f}x<extra></extra>'
+                        }
+                    ], {
+                        xaxis: {
+                            title: 'Transistor Density (relative to H100)',
+                            titlefont: { size: 9 },
+                            tickfont: { size: 8 }
+                        },
+                        yaxis: {
+                            title: 'Energy Efficiency (relative to H100)',
+                            titlefont: { size: 9 },
+                            tickfont: { size: 8 }
+                        },
+                        margin: { l: 50, r: 15, t: 15, b: 40 },
+                        height: 140,
+                        showlegend: false
+                    }, {responsive: true});
+
+                    // 4. Display H100 energy requirements (constant)
+                    const H100_TPP_PER_CHIP = 2144.0;
+                    const H100_WATTS_PER_TPP = 0.326493;
+                    const h100EnergyWatts = H100_TPP_PER_CHIP * H100_WATTS_PER_TPP;
+                    const h100EnergyKW = h100EnergyWatts / 1000;
+                    document.getElementById('h100EnergyDisplay').innerHTML = `<div style="font-size: 24px; font-weight: bold; color: #555;">${h100EnergyKW.toFixed(2)} kW</div>`;
+
+                    // Get energy efficiency parameter for energy calculations
+                    const energyEfficiencyParam = parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value);
+
+                    // 5. Calculate and plot energy requirements per month (GW/month)
+                    // Energy = Compute (H100e) × Transistor_Density × Energy_Efficiency × H100_Energy
+                    // But actually: Energy = Compute (H100e) × H100_Energy / Energy_Efficiency
+                    // (Transistor density affects compute, not energy directly in this formulation)
+                    const energyPerMonthArray = totalComputeArray.map(simArray => {
+                        return simArray.map(h100ePerMonth => {
+                            // Convert H100e/month to GW
+                            // h100ePerMonth is in thousands of H100e
+                            const h100eActual = h100ePerMonth * 1000;
+                            const energyGW = (h100eActual * h100EnergyWatts / energyEfficiencyParam) / 1e9;
+                            return energyGW;
+                        });
+                    });
+
+                    const energyPerMonthMedian = years.map((_, i) => {
+                        const values = energyPerMonthArray.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.5)];
+                    });
+                    const energyPerMonthP25 = years.map((_, i) => {
+                        const values = energyPerMonthArray.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
+                    });
+                    const energyPerMonthP75 = years.map((_, i) => {
+                        const values = energyPerMonthArray.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
+                    });
+
+                    const maxEnergyP75 = Math.max(...energyPerMonthP75);
+                    const yMaxEnergy = maxEnergyP75 * 1.2;
+
+                    plotMedianWithPercentiles('energyPerMonthPlot', {
+                        median: energyPerMonthMedian,
+                        p25: energyPerMonthP25,
+                        p75: energyPerMonthP75,
+                        individual: energyPerMonthArray
+                    }, years, '#5AA89B', 'GW/Month', [0, yMaxEnergy], false, true);
                 }
 
                 // Check if project is running

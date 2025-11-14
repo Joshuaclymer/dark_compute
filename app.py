@@ -531,34 +531,42 @@ def extract_plot_data(model, p_fab_exists):
     detection_threshold = 5.0
     datacenter_detection_prob = np.mean(lr_datacenters_array >= detection_threshold, axis=0)
 
-    # Find the simulation with median dark compute at final year to use for energy breakdown
-    final_year_dark_compute = dark_compute_array[:, -1]
-    median_sim_idx = np.argsort(final_year_dark_compute)[len(final_year_dark_compute) // 2]
-
-    # Get energy breakdown for the median simulation by source (initial stock vs fab)
-    # Find which simulation is the median
-    median_sim_covert_projects, _ = simulations_to_plot[median_sim_idx]
-    median_dark_compute_stock = median_sim_covert_projects["prc_covert_project"].dark_compute_stock
-
-    # Extract energy breakdown by source for each year
+    # Extract energy breakdown by source for ALL simulations, then compute median
     num_years = len(years_array)
+    num_sims = len(simulations_to_plot)
+
+    # Arrays to store energy by source for all simulations: [sim_idx, year_idx, source]
+    initial_energy_all_sims = np.zeros((num_sims, num_years))
+    fab_energy_all_sims = np.zeros((num_sims, num_years))
+    initial_h100e_all_sims = np.zeros((num_sims, num_years))
+    fab_h100e_all_sims = np.zeros((num_sims, num_years))
+
+    for sim_idx, (covert_projects, _) in enumerate(simulations_to_plot):
+        dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+
+        for year_idx, year in enumerate(years_array):
+            initial_energy, fab_energy, initial_h100e, fab_h100e = dark_compute_stock.dark_compute_energy_by_source(year)
+            initial_energy_all_sims[sim_idx, year_idx] = initial_energy
+            fab_energy_all_sims[sim_idx, year_idx] = fab_energy
+            initial_h100e_all_sims[sim_idx, year_idx] = initial_h100e
+            fab_h100e_all_sims[sim_idx, year_idx] = fab_h100e
+
+    # Compute median across simulations for each year
+    initial_energy_median = np.median(initial_energy_all_sims, axis=0)
+    fab_energy_median = np.median(fab_energy_all_sims, axis=0)
+    initial_h100e_median = np.median(initial_h100e_all_sims, axis=0)
+    fab_h100e_median = np.median(fab_h100e_all_sims, axis=0)
+
+    # Create energy_by_source_array using median values
     energy_by_source_array = np.zeros((num_years, 2))  # 2 sources: initial stock, fab
+    energy_by_source_array[:, 0] = initial_energy_median
+    energy_by_source_array[:, 1] = fab_energy_median
 
-    # Calculate average efficiency for each source across all years
-    initial_energy_total = 0.0
-    fab_energy_total = 0.0
-    initial_h100e_total = 0.0
-    fab_h100e_total = 0.0
-
-    for year_idx, year in enumerate(years_array):
-        initial_energy, fab_energy, initial_h100e, fab_h100e = median_dark_compute_stock.dark_compute_energy_by_source(year)
-        energy_by_source_array[year_idx, 0] = initial_energy
-        energy_by_source_array[year_idx, 1] = fab_energy
-
-        initial_energy_total += initial_energy
-        fab_energy_total += fab_energy
-        initial_h100e_total += initial_h100e
-        fab_h100e_total += fab_h100e
+    # Calculate average efficiency using median values across all years
+    initial_energy_total = np.sum(initial_energy_median)
+    fab_energy_total = np.sum(fab_energy_median)
+    initial_h100e_total = np.sum(initial_h100e_median)
+    fab_h100e_total = np.sum(fab_h100e_median)
 
     # Calculate average efficiency: H100e TPP per GW
     initial_efficiency = (initial_h100e_total / initial_energy_total) if initial_energy_total > 0 else 0

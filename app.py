@@ -335,6 +335,8 @@ def run_simulation():
 
 def extract_plot_data(model, p_fab_exists):
     """Extract plot data from model simulation results"""
+    from stock_model import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+
     if not model.simulation_results:
         return {"error": "No simulation results"}
 
@@ -562,9 +564,18 @@ def extract_plot_data(model, p_fab_exists):
     initial_efficiency = (initial_h100e_total / initial_energy_total) if initial_energy_total > 0 else 0
     fab_efficiency = (fab_h100e_total / fab_energy_total) if fab_energy_total > 0 else 0
 
+    # Calculate baseline H100 efficiency (H100e/GW for standard H100 with efficiency=1.0)
+    # Energy per H100e = H100_TPP_PER_CHIP * H100_WATTS_PER_TPP / 1e9 GW
+    # H100e per GW = 1e9 / (H100_TPP_PER_CHIP * H100_WATTS_PER_TPP)
+    h100_baseline_efficiency = 1e9 / (H100_TPP_PER_CHIP * H100_WATTS_PER_TPP)
+
+    # Energy efficiency relative to H100 (higher is more efficient)
+    initial_efficiency_relative = initial_efficiency / h100_baseline_efficiency if h100_baseline_efficiency > 0 else 0
+    fab_efficiency_relative = fab_efficiency / h100_baseline_efficiency if h100_baseline_efficiency > 0 else 0
+
     source_labels = [
-        f"Initial Stock ({initial_efficiency:.0f} H100e/GW)",
-        f"Fab-Produced ({fab_efficiency:.0f} H100e/GW)"
+        f"Initial Dark Compute ({initial_efficiency_relative:.2f}x energy efficiency)",
+        f"Covert Fab Compute ({fab_efficiency_relative:.2f}x energy efficiency)"
     ]
 
     # Extract compute before detection data for multiple thresholds

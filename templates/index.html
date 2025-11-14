@@ -792,7 +792,7 @@
                     <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 9px; text-align: center; color: #888; white-space: nowrap;">limits</div>
                     <div style="font-size: 20px; color: #666;">→</div>
                 </div>
-                <div style="flex: 1; min-width: 200px;">
+                <div style="flex: 1; min-width: 200px; overflow: hidden;">
                     <div id="darkComputeEnergyPlot" style="width: 100%; height: 250px;"></div>
                     <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Dark Compute Energy Requirements</div>
                 </div>
@@ -1950,7 +1950,7 @@
                 if (data.initial_compute_stock_samples) {
                     // Convert to thousands
                     const samplesInThousands = data.initial_compute_stock_samples.map(v => v / 1000);
-                    plotPDF('initialDarkComputePlot', samplesInThousands, '#8E44AD', 'Thousands of H100 Equivalents', 30, false, null, null, null, { shape: '/', fgcolor: '#FFFFFF', bgcolor: '#8E44AD', size: 4, solidity: 0.3 });
+                    plotPDF('initialDarkComputePlot', samplesInThousands, '#9B72B0', 'Thousands of H100 Equivalents');
                 }
 
                 // Plot 2: Flow from covert fab (line plot - cumulative production over time)
@@ -2159,18 +2159,6 @@
                     const capacity_p75 = data.time_series.datacenter_capacity_p75;
 
                     const traces = [
-                        // Shading below the median line
-                        {
-                            x: years,
-                            y: capacity_median,
-                            type: 'scatter',
-                            mode: 'lines',
-                            fill: 'tozeroy',
-                            fillcolor: 'rgba(45, 107, 97, 0.1)',  // Light dark turquoise
-                            line: { width: 0 },
-                            showlegend: false,
-                            hoverinfo: 'skip'
-                        },
                         // Upper bound of shaded region (invisible line)
                         {
                             x: years,
@@ -2205,6 +2193,11 @@
                         }
                     ];
 
+                    // Calculate Y-axis range (1.6x max value to match darkComputeEnergyPlot)
+                    const allYValues = [...capacity_p75, ...capacity_median, ...capacity_p25];
+                    const maxY = Math.max(...allYValues);
+                    const yMax = maxY * 1.6;
+
                     const layout = {
                         xaxis: {
                             title: 'Year',
@@ -2216,16 +2209,18 @@
                             title: 'GW',
                             titlefont: { size: 10 },
                             tickfont: { size: 9 },
-                            automargin: true
+                            automargin: true,
+                            range: [0, yMax]
                         },
-                        margin: { l: 50, r: 20, t: 10, b: 45 },
+                        margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                         height: 250,
                         hovermode: 'x unified'
                     };
 
                     layout.xaxis.range = [years[0], 2037];
 
-                    Plotly.newPlot('datacenterCapacityPlot2', traces, layout, {responsive: true});
+                    Plotly.newPlot('datacenterCapacityPlot2', traces, layout, {responsive: true, displayModeBar: false});
+                    setTimeout(() => Plotly.Plots.resize('datacenterCapacityPlot2'), 50);
                 }
 
                 // Energy Consumption Stacked Area Plot (for median simulation)
@@ -2241,19 +2236,15 @@
 
                     const traces = [];
 
-                    // Create traces for each source (initial stock = index 0, fab = index 1)
+                    // Calculate total energy (sum of both sources) at each time point
+                    const totalEnergy = energyData.map(yearData => yearData[0] + yearData[1]);
+
+                    // LAYER 1: Create stacked area traces for each source (bottom layer)
                     for (let i = 0; i < sourceLabels.length; i++) {
                         const energyAtSource = energyData.map(yearData => yearData[i]);
-                        let sourceLabel = sourceLabels[i];
+                        const sourceLabel = sourceLabels[i];
 
-                        // Add (hashed) or (solid) indicator
-                        if (i === 0) {
-                            sourceLabel = sourceLabel + ' (hashed)';
-                        } else {
-                            sourceLabel = sourceLabel + ' (solid)';
-                        }
-
-                        const trace = {
+                        traces.push({
                             x: years,
                             y: energyAtSource,
                             type: 'scatter',
@@ -2263,71 +2254,115 @@
                             line: { width: 0 },
                             name: sourceLabel,
                             hovertemplate: `${sourceLabel}<br>Energy: %{y:.2f} GW<extra></extra>`
-                        };
-
-                        // Add hash marks to initial stock (i === 0)
-                        if (i === 0) {
-                            trace.fillpattern = {
-                                shape: '/',
-                                fgcolor: '#FFFFFF',
-                                bgcolor: colors[i],
-                                size: 6,
-                                solidity: 0.3
-                            };
-                        }
-
-                        traces.push(trace);
+                        });
                     }
 
-                    // Add light shading under the capacity line
+                    // LAYER 2: Create hash pattern ONLY where total energy exceeds capacity
+                    // For each time point, the unpowered region is: max(0, totalEnergy - capacity)
+                    // We'll stack this on TOP of the capacity line
+                    const unpoweredEnergy = years.map((year, i) =>
+                        Math.max(0, totalEnergy[i] - datacenterCapacity[i])
+                    );
+
+                    // Create the hash region as a shape that sits above the capacity line
+                    // It goes from capacity to (capacity + unpowered)
+                    const hashX = [...years, ...years.slice().reverse()];
+                    const hashYTop = years.map((year, i) => datacenterCapacity[i] + unpoweredEnergy[i]);
+                    const hashY = [...hashYTop, ...datacenterCapacity.slice().reverse()];
+
                     traces.push({
-                        x: years,
-                        y: datacenterCapacity,
+                        x: hashX,
+                        y: hashY,
                         type: 'scatter',
-                        mode: 'lines',
-                        fill: 'tozeroy',
-                        fillcolor: 'rgba(74, 155, 142, 0.1)',  // Very light dark turquoise
-                        line: { width: 0 },
+                        mode: 'none',
+                        fill: 'toself',
+                        fillcolor: 'rgba(0, 0, 0, 0)',
+                        fillpattern: {
+                            shape: '/',
+                            fgcolor: 'rgba(100, 100, 100, 0.8)',
+                            bgcolor: 'rgba(0, 0, 0, 0)',
+                            size: 8,
+                            solidity: 0.7
+                        },
                         showlegend: false,
-                        hoverinfo: 'skip'
+                        hoverinfo: 'skip',
+                        line: { width: 0 }
                     });
 
-                    // Add datacenter capacity as a dark turquoise bold line
+                    // LAYER 3: Add datacenter capacity line on top (just a line, no hash)
                     traces.push({
                         x: years,
                         y: datacenterCapacity,
                         type: 'scatter',
                         mode: 'lines',
-                        line: { color: '#2D6B61', width: 3 },  // Dark turquoise
+                        line: { color: '#2D6B61', width: 3 },
                         name: 'Covert Datacenter Capacity',
                         hovertemplate: 'Capacity: %{y:.1f} GW<extra></extra>'
                     });
+
+                    // Add legend entry for the hash pattern
+                    traces.push({
+                        x: [years[0], years[1]],
+                        y: [null, null],
+                        type: 'scatter',
+                        mode: 'lines',
+                        fill: 'tozeroy',
+                        fillcolor: 'rgba(0, 0, 0, 0)',
+                        fillpattern: {
+                            shape: '/',
+                            fgcolor: 'rgba(100, 100, 100, 0.8)',
+                            bgcolor: 'rgba(0, 0, 0, 0)',
+                            size: 8,
+                            solidity: 0.7
+                        },
+                        line: { width: 0 },
+                        name: 'Cannot be powered',
+                        showlegend: true,
+                        hoverinfo: 'skip'
+                    });
+
+                    // Datacenter capacity line already added above
+
+                    // Calculate max y value to set range to 1.6x
+                    const allYValues = [...totalEnergy, ...datacenterCapacity];
+                    const maxY = Math.max(...allYValues);
+                    const yMax = maxY * 1.6;
 
                     const layout = {
                         xaxis: {
                             title: 'Year',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true
                         },
                         yaxis: {
                             title: 'Energy Requirements',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true,
+                            range: [0, yMax]
                         },
-                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                         height: 250,
                         hovermode: 'x unified',
                         showlegend: true,
                         legend: {
-                            x: 1.05,
-                            y: 1,
-                            font: { size: 8 }
-                        }
+                            x: 0.02,
+                            y: 0.98,
+                            xanchor: 'left',
+                            yanchor: 'top',
+                            bgcolor: 'rgba(255,255,255,0.9)',
+                            bordercolor: '#ccc',
+                            borderwidth: 1,
+                            font: { size: 7 }
+                        },
+                        autosize: true
                     };
 
                     layout.xaxis.range = [years[0], 2037];
 
-                    Plotly.newPlot('darkComputeEnergyPlot', traces, layout, {responsive: true});
+                    Plotly.newPlot('darkComputeEnergyPlot', traces, layout, {responsive: true, displayModeBar: false});
+                    setTimeout(() => Plotly.Plots.resize('darkComputeEnergyPlot'), 50);
                 }
 
                 // Plot 6: Operational dark compute (limited by capacity)
@@ -2376,21 +2411,24 @@
                         xaxis: {
                             title: 'Year',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true
                         },
                         yaxis: {
                             title: 'H100e (thousands)',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true
                         },
-                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                         height: 250,
                         hovermode: 'x unified'
                     };
 
                     layout.xaxis.range = [years[0], 2037];
 
-                    Plotly.newPlot('operationalDarkComputePlot', traces, layout, {responsive: true});
+                    Plotly.newPlot('operationalDarkComputePlot', traces, layout, {responsive: true, displayModeBar: false});
+                    setTimeout(() => Plotly.Plots.resize('operationalDarkComputePlot'), 50);
                 }
 
                 // Plot detection probability bar chart and initial compute stock histogram
@@ -2704,17 +2742,20 @@
                         }
                     ], {
                         xaxis: {
-                            title: 'Transistor Density (relative to H100)',
+                            title: 'Density (rel. to H100)',
                             titlefont: { size: 9 },
-                            tickfont: { size: 8 }
+                            tickfont: { size: 8 },
+                            range: [0, 1.2],
+                            automargin: true
                         },
                         yaxis: {
-                            title: 'Energy Efficiency (relative to H100)',
+                            title: 'Efficiency (rel. to H100)',
                             titlefont: { size: 9 },
-                            tickfont: { size: 8 }
+                            tickfont: { size: 8 },
+                            automargin: true
                         },
-                        margin: { l: 50, r: 15, t: 15, b: 40 },
-                        height: 140,
+                        margin: { l: 55, r: 15, t: 15, b: 50 },
+                        height: 160,
                         showlegend: false
                     }, {responsive: true});
 

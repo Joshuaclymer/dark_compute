@@ -5,11 +5,13 @@ from abc import ABC, abstractmethod
 
 # Constants for H100 chip (duplicated from fab_model to avoid circular import)
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
-H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass
+H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass (default, can be overridden)
 
-WATT_CONSUMED_PER_H100 = 700  # Example constant, replace with actual value if needed
 class InitialPRCComputeStockParameters():
-    
+
+    # H100 power consumption
+    h100_power_watts = 700  # Total power consumption of NVIDIA H100 GPU
+
     # PRC compute stock
     total_prc_compute_stock_in_2025 = 1e6
     energy_efficiency_relative_to_h100 = 0.5
@@ -287,25 +289,34 @@ class PRCDarkComputeStock():
                 'bandwidth': 1.8  # Default inter-chip bandwidth in tbps (H100-like)
             }
         } 
-        self.us_estimate_of_prc_stock = sample_us_estimate_of_prc_compute_stock(self.initial_prc_stock)
-        self.lr_from_prc_compute_accounting = lr_from_prc_compute_accounting(
-            reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
-            optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
-            us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock
-        )
-        self.global_compute = sample_global_compute(agreement_year)
-        print(f"DEBUG: global compute: {self.global_compute}", flush=True)
+        # TEMPORARILY DISABLED FOR PERFORMANCE
+        self.us_estimate_of_prc_stock = self.initial_prc_stock  # Skip sampling
+        self.lr_from_prc_compute_accounting = 1.0  # No detection evidence
+        self.global_compute = 0  # Skip global compute sampling
+        self.reported_global_compute = 0  # Skip reported global compute
+        self.reported_historical_global_compute_production = 0  # Skip historical production
+        self.lr_from_global_compute_production_accounting = 1.0  # No detection evidence
 
-        self.reported_global_compute = sample_reported_global_compute(self.initial_prc_dark_compute, self.global_compute)
-        print(f"DEBUG: reported global compute: {self.reported_global_compute}", flush=True)
+        # # Original code (disabled):
+        # self.us_estimate_of_prc_stock = sample_us_estimate_of_prc_compute_stock(self.initial_prc_stock)
+        # self.lr_from_prc_compute_accounting = lr_from_prc_compute_accounting(
+        #     reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
+        #     optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
+        #     us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock
+        # )
+        # self.global_compute = sample_global_compute(agreement_year)
+        # print(f"DEBUG: global compute: {self.global_compute}", flush=True)
 
-        self.reported_historical_global_compute_production = get_reported_global_compute_production(agreement_year, self.initial_prc_dark_compute)
-        self.lr_from_global_compute_production_accounting = lr_from_global_compute_production_accounting(
-            reported_historical_global_compute_production= self.reported_historical_global_compute_production,
-            reported_global_compute=self.reported_global_compute,
-            reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
-            optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert
-        )
+        # self.reported_global_compute = sample_reported_global_compute(self.initial_prc_dark_compute, self.global_compute)
+        # print(f"DEBUG: reported global compute: {self.reported_global_compute}", flush=True)
+
+        # self.reported_historical_global_compute_production = get_reported_global_compute_production(agreement_year, self.initial_prc_dark_compute)
+        # self.lr_from_global_compute_production_accounting = lr_from_global_compute_production_accounting(
+        #     reported_historical_global_compute_production= self.reported_historical_global_compute_production,
+        #     reported_global_compute=self.reported_global_compute,
+        #     reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
+        #     optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert
+        # )
         # Sample both hazard rates using the correlated multiplier
         self.initial_hazard_rate, self.increase_in_hazard_rate_per_year = sample_hazard_rates()
     

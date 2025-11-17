@@ -252,9 +252,45 @@ plt.text(density_2006, y_max * 0.4, 'End of\nDennard Scaling\n(2006)',
 
 plt.tight_layout()
 
+# Add forced-continuity curve overlay (from fab_model.py implementation)
+# H100 parameters
+H100_DENSITY = 98.28  # M/mm²
+H100_WATTS_PER_TPP = 0.326493
+DENNARD_TRANSITION = 1.98  # M/mm²
+
+# Exponents from fab_model.py
+PRE_DENNARD_EXP = -2.006575
+POST_DENNARD_EXP = -0.909355
+
+# Calculate transition point value using post-Dennard formula
+transition_density_ratio = DENNARD_TRANSITION / H100_DENSITY
+transition_watts_per_tpp = H100_WATTS_PER_TPP * (transition_density_ratio ** POST_DENNARD_EXP)
+
+# Generate forced-continuity curve
+density_range = np.logspace(np.log10(0.5), np.log10(150), 200)
+watts_per_tpp_forced = []
+
+for density in density_range:
+    if density < DENNARD_TRANSITION:
+        # Pre-Dennard: anchor to transition point
+        density_ratio = density / DENNARD_TRANSITION
+        watts = transition_watts_per_tpp * (density_ratio ** PRE_DENNARD_EXP)
+    else:
+        # Post-Dennard: anchor to H100
+        density_ratio = density / H100_DENSITY
+        watts = H100_WATTS_PER_TPP * (density_ratio ** POST_DENNARD_EXP)
+    watts_per_tpp_forced.append(watts)
+
+# Plot forced-continuity curve
+plt.plot(density_range, watts_per_tpp_forced, "-", alpha=0.9, linewidth=2.5, color='green',
+         label='Forced continuity model (fab_model.py)', zorder=3)
+
+# Update legend
+plt.legend()
+
 # Save the plot
-plt.savefig('energy_efficiency_vs_transistors.png', dpi=300, bbox_inches='tight')
-print(f"\nPlot saved as 'energy_efficiency_vs_transistors.png'")
+plt.savefig('energy_efficiency_vs_transistors_with_continuity.png', dpi=300, bbox_inches='tight')
+print(f"\nPlot with forced-continuity overlay saved as 'energy_efficiency_vs_transistors_with_continuity.png'")
 
 # Also print correlation
 correlation = data_clean['Number of transistors in million'].corr(data_clean['Energy per TPP (W/TPP)'])

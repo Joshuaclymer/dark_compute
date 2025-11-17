@@ -203,8 +203,10 @@ class CovertPRCDatacenters():
         return self.operating_labor
 
     def lr_from_concealed_datacenters(self, year):
-        # Use pre-computed labor parameters and detection time
-        construction_labor = self.construction_labor_per_GW_per_year * self.GW_per_year_of_concealed_datacenters
-        operating_labor = self.get_operating_labor(year)
-        total_labor = construction_labor + operating_labor
-        return lr_from_other_strategies(year, self.time_of_detection, total_labor)
+        # TEMPORARILY DISABLED FOR PERFORMANCE
+        return 1.0
+        # # Use pre-computed labor parameters and detection time
+        # construction_labor = self.construction_labor_per_GW_per_year * self.GW_per_year_of_concealed_datacenters
+        # operating_labor = self.get_operating_labor(year)
+        # total_labor = construction_labor + operating_labor
+        # return lr_from_other_strategies(year, self.time_of_detection, total_labor)

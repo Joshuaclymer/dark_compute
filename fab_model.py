@@ -364,11 +364,11 @@ class FabModelParameters:
     # Power law: W/TPP ∝ (transistor_density)^exponent
     # Before Dennard scaling ended (transistor density <= ~1.98 M/mm², year <= 2006):
     # Higher density led to WORSE efficiency (positive relationship with power)
-    watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended = -2.006575
+    watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended = -2.01
 
     # After Dennard scaling ended (transistor density > ~1.98 M/mm², year > 2006):
     # Higher density leads to BETTER efficiency (negative relationship with power)
-    watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended = -0.909355
+    watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended = -0.909
 
     # Transistor density threshold marking the end of Dennard scaling (2006)
     transistor_density_at_end_of_dennard_scaling_m_per_mm2 = 1.98  # Million transistors per mm²
@@ -978,17 +978,25 @@ def predict_watts_per_tpp_from_transistor_density(transistor_density_m_per_mm2: 
     # Get parameters from FabModelParameters
     params = FabModelParameters
 
-    # Determine which exponent to use based on Dennard scaling threshold
-    if transistor_density_m_per_mm2 <= params.transistor_density_at_end_of_dennard_scaling_m_per_mm2:
-        # Before Dennard scaling ended
-        exponent = params.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended
-    else:
-        # After Dennard scaling ended
-        exponent = params.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended
+    # Always calculate post-Dennard line first (anchored to H100)
+    # Then calculate pre-Dennard line to connect to it at the transition point
 
-    # Power law: W/TPP = H100_W/TPP * (density / H100_density)^exponent
-    density_ratio = transistor_density_m_per_mm2 / H100_TRANSISTOR_DENSITY_M_PER_MM2
-    watts_per_tpp = H100_WATTS_PER_TPP * (density_ratio ** exponent)
+    # Calculate the transition point value using the post-Dennard relationship
+    transition_density = params.transistor_density_at_end_of_dennard_scaling_m_per_mm2
+    transition_density_ratio = transition_density / H100_TRANSISTOR_DENSITY_M_PER_MM2
+    transition_watts_per_tpp = H100_WATTS_PER_TPP * (transition_density_ratio ** params.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended)
+
+    # Determine which regime we're in
+    if transistor_density_m_per_mm2 < params.transistor_density_at_end_of_dennard_scaling_m_per_mm2:
+        # Before Dennard scaling ended - use transition point as anchor
+        exponent = params.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended
+        density_ratio = transistor_density_m_per_mm2 / transition_density
+        watts_per_tpp = transition_watts_per_tpp * (density_ratio ** exponent)
+    else:
+        # After Dennard scaling ended - anchor to H100
+        exponent = params.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended
+        density_ratio = transistor_density_m_per_mm2 / H100_TRANSISTOR_DENSITY_M_PER_MM2
+        watts_per_tpp = H100_WATTS_PER_TPP * (density_ratio ** exponent)
 
     return watts_per_tpp
 

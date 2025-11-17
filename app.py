@@ -14,12 +14,39 @@ app = Flask(__name__)
 # Update this list to change all plots automatically
 LIKELIHOOD_RATIOS = [1, 3, 5]
 
+def generate_watts_per_tpp_curve():
+    """Generate the watts per TPP vs transistor density curve data for plotting."""
+    from fab_model import predict_watts_per_tpp_from_transistor_density, H100_TRANSISTOR_DENSITY_M_PER_MM2, H100_WATTS_PER_TPP
+
+    # Generate density range in log space (0.001x to 10x H100)
+    num_points = 100
+    min_density_relative = 0.001
+    max_density_relative = 10
+
+    density_relative = np.logspace(np.log10(min_density_relative), np.log10(max_density_relative), num_points)
+    density_absolute = density_relative * H100_TRANSISTOR_DENSITY_M_PER_MM2
+
+    # Calculate watts per TPP for each density using the Python function
+    watts_per_tpp_absolute = [predict_watts_per_tpp_from_transistor_density(d) for d in density_absolute]
+
+    # Convert to relative values (relative to H100)
+    watts_per_tpp_relative = [w / H100_WATTS_PER_TPP for w in watts_per_tpp_absolute]
+
+    return {
+        "density_relative": density_relative.tolist(),
+        "watts_per_tpp_relative": watts_per_tpp_relative
+    }
+
 @app.route('/')
 def index():
     # Pass default strategy values to template
-    from stock_model import InitialPRCComputeStockParameters, SurvivalRateParameters
+    from stock_model import InitialPRCComputeStockParameters, SurvivalRateParameters, H100_TPP_PER_CHIP
     from datacenter_model import CovertDatacenterParameters
     defaults = {
+        'h100_power_watts': InitialPRCComputeStockParameters.h100_power_watts,
+        'watts_per_tpp_exponent_before_dennard': FabModelParameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended,
+        'watts_per_tpp_exponent_after_dennard': FabModelParameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended,
+        'transistor_density_at_dennard_end': FabModelParameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2,
         'proportion_of_initial_chip_stock_to_divert': default_prc_covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
         'GW_per_initial_datacenter': default_prc_covert_project_strategy.GW_per_initial_datacenter,
         'number_of_initial_datacenters': default_prc_covert_project_strategy.number_of_initial_datacenters,
@@ -93,6 +120,8 @@ def run_simulation():
     # Initial PRC compute stock parameters
     from stock_model import InitialPRCComputeStockParameters
     print(f"DEBUG: Received compute stock params from client: total_2025={data.get('total_prc_compute_stock_in_2025')}, growth={data.get('annual_growth_rate_of_prc_compute_stock')}, sigma={data.get('relative_sigma_of_prc_compute_stock')}", flush=True)
+    if 'h100_power_watts' in data:
+        InitialPRCComputeStockParameters.h100_power_watts = float(data['h100_power_watts'])
     if 'total_prc_compute_stock_in_2025' in data:
         InitialPRCComputeStockParameters.total_prc_compute_stock_in_2025 = float(data['total_prc_compute_stock_in_2025'])
     if 'annual_growth_rate_of_prc_compute_stock' in data:
@@ -126,6 +155,23 @@ def run_simulation():
     # Clear metalog cache if survival parameters changed
     if survival_params_changed:
         clear_metalog_cache()
+
+    # H100 power parameters
+    from stock_model import H100_TPP_PER_CHIP
+    import stock_model
+    import fab_model
+
+    if 'h100_power_watts' in data:
+        h100_power_watts = float(data['h100_power_watts'])
+        h100_watts_per_tpp = h100_power_watts / H100_TPP_PER_CHIP
+        # Update the constants in both modules
+        stock_model.H100_WATTS_PER_TPP = h100_watts_per_tpp
+        fab_model.H100_WATTS_PER_TPP = h100_watts_per_tpp
+
+    if 'h100_watts_per_tpp' in data:
+        # Also allow direct setting via h100_watts_per_tpp
+        stock_model.H100_WATTS_PER_TPP = float(data['h100_watts_per_tpp'])
+        fab_model.H100_WATTS_PER_TPP = float(data['h100_watts_per_tpp'])
 
     # Fab model parameters - update all parameters from data
     from fab_model import clear_detection_constants_cache
@@ -174,6 +220,12 @@ def run_simulation():
         FabModelParameters.prc_lithography_scanners_produced_in_first_year = float(data['prc_lithography_scanners_produced_in_first_year'])
     if 'prc_scanner_production_relative_sigma' in data:
         FabModelParameters.prc_scanner_production_relative_sigma = float(data['prc_scanner_production_relative_sigma'])
+    if 'watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended' in data:
+        FabModelParameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended = float(data['watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended'])
+    if 'watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended' in data:
+        FabModelParameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended = float(data['watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended'])
+    if 'transistor_density_at_end_of_dennard_scaling_m_per_mm2' in data:
+        FabModelParameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2 = float(data['transistor_density_at_end_of_dennard_scaling_m_per_mm2'])
 
     # Update localization probabilities (only two points: 2025 and 2031)
     if 'localization_130nm_2025' in data:
@@ -964,6 +1016,20 @@ def extract_plot_data(model, p_fab_exists):
         print(f"Total non-operational at last timestep: {non_operational_count}", flush=True)
         print(f"=====================================\n", flush=True)
 
+        # Calculate watts per TPP for each simulation's transistor density
+        from fab_model import predict_watts_per_tpp_from_transistor_density, H100_TRANSISTOR_DENSITY_M_PER_MM2, H100_WATTS_PER_TPP
+        watts_per_tpp_by_sim = []
+        for sim_densities in transistor_density_by_sim:
+            sim_watts = []
+            for density_relative in sim_densities:
+                density_absolute = density_relative * H100_TRANSISTOR_DENSITY_M_PER_MM2
+                watts_absolute = predict_watts_per_tpp_from_transistor_density(density_absolute)
+                watts_relative = watts_absolute / H100_WATTS_PER_TPP
+                sim_watts.append(watts_relative)
+            watts_per_tpp_by_sim.append(sim_watts)
+
+        watts_per_tpp_array = np.array(watts_per_tpp_by_sim)
+
         compute_factors = {
             "is_operational_median": np.mean(is_operational_array, axis=0).tolist(),
             "is_operational_individual": [list(sim) for sim in is_operational_by_sim],
@@ -977,6 +1043,8 @@ def extract_plot_data(model, p_fab_exists):
             "compute_per_wafer_2022_arch_individual": [list(sim) for sim in compute_per_wafer_2022_arch_by_sim],
             "transistor_density_median": np.median(transistor_density_array, axis=0).tolist(),
             "transistor_density_individual": [list(sim) for sim in transistor_density_by_sim],
+            "watts_per_tpp_median": np.median(watts_per_tpp_array, axis=0).tolist(),
+            "watts_per_tpp_individual": [list(sim) for sim in watts_per_tpp_by_sim],
             "process_node_by_sim": process_node_by_sim
         }
 
@@ -1026,7 +1094,8 @@ def extract_plot_data(model, p_fab_exists):
         "individual_h100e_before_detection": individual_h100e_before_detection,
         "individual_time_before_detection": individual_time_before_detection,
         "individual_process_node": individual_process_nodes,
-        "individual_energy_before_detection": individual_energy_before_detection
+        "individual_energy_before_detection": individual_energy_before_detection,
+        "watts_per_tpp_curve": generate_watts_per_tpp_curve()
     }
 
 @app.route('/download/nuclear_case_studies')
@@ -1079,4 +1148,7 @@ def download_construction_time_vs_fab_capacity():
     return send_file(file_path, as_attachment=True, download_name='construction_time_vs_fab_capacity.csv')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    import sys
+    import os
+    port = int(os.environ.get('PORT', sys.argv[1] if len(sys.argv) > 1 else 5000))
+    app.run(debug=True, port=port)

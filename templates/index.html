@@ -21,10 +21,35 @@
 
         .sidebar {
             width: 350px;
+            min-width: 250px;
+            max-width: 450px;
             background-color: #f5f5f5;
             padding: 20px;
             overflow-y: auto;
             border-right: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 1400px) {
+            .sidebar {
+                width: 300px;
+                min-width: 250px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 280px;
+                min-width: 250px;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .sidebar {
+                width: 250px;
+                min-width: 200px;
+                padding: 15px;
+            }
         }
 
         .sidebar h1 {
@@ -56,10 +81,13 @@
         .param-group input,
         .param-group select {
             width: 100%;
+            min-width: 0;
+            max-width: 100%;
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 13px;
+            box-sizing: border-box;
         }
 
         .param-group input[type="checkbox"] {
@@ -296,19 +324,22 @@
             text-align: center;
             min-width: 0;
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
         }
 
         .breakdown-plot {
             height: 240px;
             width: 100%;
             max-width: 100%;
-            flex: 1;
             background: white;
             border: 1px solid #ddd;
             border-radius: 4px;
             overflow: hidden;
             position: relative;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         .breakdown-plot.clickable {
@@ -321,9 +352,16 @@
             transform: scale(1.02);
         }
 
-        .breakdown-plot > div {
+        .breakdown-plot > div:not(.js-plotly-plot) {
             width: 100% !important;
             max-width: 100% !important;
+        }
+
+        .breakdown-plot > .js-plotly-plot {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100% !important;
+            max-height: 100% !important;
         }
 
         .breakdown-label {
@@ -332,6 +370,7 @@
             margin-top: 5px;
             color: #555;
             line-height: 1.2;
+            text-align: center;
         }
 
         .breakdown-description {
@@ -431,7 +470,7 @@
         </div>
         <div class="param-group">
             <label for="num_simulations">Number of simulations</label>
-            <input type="number" id="num_simulations" value="300" min="1" max="10000">
+            <input type="number" id="num_simulations" value="5" min="1" max="10000">
         </div>
 
         <h2>PRC Strategy</h2>
@@ -531,6 +570,11 @@
         <div class="param-group">
             <label for="relative_sigma_unreported_compute_owned_by_non_prc_actors">Relative sigma of unreported compute owned by non-PRC actors (log scale)</label>
             <input type="number" id="relative_sigma_unreported_compute_owned_by_non_prc_actors" value="{{ defaults.relative_sigma_unreported_compute_owned_by_non_prc_actors }}" step="0.1">
+        </div>
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>H100 Power Consumption</strong><br><br>Total power consumption of NVIDIA H100 GPU during operation. Source: <a href='https://www.nvidia.com/en-us/data-center/h100/' style='color: #6db4ff;' target='_blank'>https://www.nvidia.com/en-us/data-center/h100/</a>">
+            <label for="h100_power_watts">H100 power consumption (W)</label>
+            <input type="number" id="h100_power_watts" value="{{ defaults.h100_power_watts }}" step="1">
         </div>
 
         <h2>Survival Rate Parameters</h2>
@@ -726,27 +770,27 @@
             <label for="architecture_efficiency">Rate of architecture efficiency improvement per year</label>
             <input type="number" id="architecture_efficiency" value="1.23" step="0.01">
         </div>
+
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+
+        <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Energy Requirements</h3>
         <div class="param-group has-tooltip"
-             data-tooltip="<strong>H100 Reference Specifications</strong><br><br>The H100 chip serves as a reference point for energy efficiency calculations. These parameters define the H100's transistor density and energy consumption per Tera-Parameter-Pass (TPP).">
-            <label for="h100_transistor_density">H100 transistor density (M transistors/mm²)</label>
-            <input type="number" id="h100_transistor_density" value="98.28" step="0.01">
-        </div>
-        <div class="param-group">
-            <label for="h100_watts_per_tpp">H100 watts per TPP (W/TPP)</label>
-            <input type="number" id="h100_watts_per_tpp" value="0.326493" step="0.000001">
-        </div>
-        <div class="param-group has-tooltip"
-             data-tooltip="<strong>Energy Efficiency Scaling</strong><br><br>Energy efficiency (W/TPP) scales with transistor density following different power laws before and after the end of Dennard scaling in 2006. Before 2006, voltage could scale down with transistor size. After 2006, voltage scaling stalled, changing how efficiency improves with density.<br><br>Power law: W/TPP ∝ (transistor_density)^exponent">
+             data-tooltip="<strong>W/TPP vs Density Exponent (Before Dennard Scaling End)</strong><br><br>Energy efficiency (watts per tera-parameter-pass) scales with transistor density following a power law: W/TPP ∝ (transistor_density)^exponent. Before Dennard scaling ended in ~2006, voltage could scale down with transistor size, leading to more aggressive efficiency improvements with density.<br><br>We estimated the value of this parameter using Epoch's AI hardware trends: <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>https://epoch.ai/blog/trends-in-machine-learning-hardware</a>"
+             data-image="/static/energy_efficiency_vs_transistors.png">
             <label for="watts_per_tpp_exponent_before_dennard">W/TPP vs density exponent (before Dennard scaling end, ≤2006)</label>
-            <input type="number" id="watts_per_tpp_exponent_before_dennard" value="-2.006575" step="0.01">
+            <input type="number" id="watts_per_tpp_exponent_before_dennard" value="{{ defaults.watts_per_tpp_exponent_before_dennard }}" step="0.01">
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>W/TPP vs Density Exponent (After Dennard Scaling End)</strong><br><br>Energy efficiency (watts per tera-parameter-pass) scales with transistor density following a power law: W/TPP ∝ (transistor_density)^exponent. After Dennard scaling ended in ~2006, voltage scaling stalled, changing how efficiency improves with density. The exponent became less negative, meaning efficiency improvements slowed down.<br><br>We estimated the value of this parameter using Epoch's AI hardware trends: <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>https://epoch.ai/blog/trends-in-machine-learning-hardware</a>"
+             data-image="/static/energy_efficiency_vs_transistors.png">
             <label for="watts_per_tpp_exponent_after_dennard">W/TPP vs density exponent (after Dennard scaling end, >2006)</label>
-            <input type="number" id="watts_per_tpp_exponent_after_dennard" value="-0.909355" step="0.01">
+            <input type="number" id="watts_per_tpp_exponent_after_dennard" value="{{ defaults.watts_per_tpp_exponent_after_dennard }}" step="0.001">
         </div>
-        <div class="param-group">
+        <div class="param-group has-tooltip"
+             data-tooltip="<strong>Transistor Density at Dennard Scaling End</strong><br><br>Dennard scaling refers to the historical period when voltage could scale down proportionally with transistor size. This ended around 2006 when voltage scaling hit physical limits. This parameter specifies the transistor density (in millions of transistors per mm²) at which this transition occurred.<br><br>We estimated the value of this parameter using Epoch's AI hardware trends: <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>https://epoch.ai/blog/trends-in-machine-learning-hardware</a>"
+             data-image="/static/energy_efficiency_vs_transistors.png">
             <label for="transistor_density_at_dennard_end">Transistor density at Dennard scaling end (M/mm², ~2006)</label>
-            <input type="number" id="transistor_density_at_dennard_end" value="1.98" step="0.01">
+            <input type="number" id="transistor_density_at_dennard_end" value="{{ defaults.transistor_density_at_dennard_end }}" step="0.01">
         </div>
     </div>
 
@@ -959,7 +1003,7 @@
                         <div id="priorOddsDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
                             --
                         </div>
-                        <div class="breakdown-label" style="margin-top: 5px;">Prior Odds of<br>Covert Fab</div>
+                        <div class="breakdown-label" style="margin-top: 15px;">Prior Odds of<br>Covert Fab</div>
                     </div>
                     <div class="operator">×</div>
                     <div class="breakdown-item">
@@ -1021,7 +1065,7 @@
                         <div id="waferStartsPlot" class="breakdown-plot"></div>
                     </div>
                     <div class="operator">×</div>
-                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    <div class="breakdown-item">
                         <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Working H100-sized chips per wafer</div>
                         <div id="chipsPerWaferPlot" class="breakdown-plot" style="padding: 0; height: 70px;"></div>
                         <div class="breakdown-label" style="margin-top: 5px;">Working H100-sized chips per wafer</div>
@@ -1031,7 +1075,7 @@
                         <div id="computePerChipPlot" class="breakdown-plot"></div>
                     </div>
                     <div class="operator">×</div>
-                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    <div class="breakdown-item">
                         <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Architecture Efficiency (relative to H100)</div>
                         <div id="architectureEfficiencyDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
                             --
@@ -1052,14 +1096,14 @@
                         <div class="breakdown-label">Production capacity (wafer starts per month)</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
-                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    <div class="breakdown-item">
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item">
                         <div class="breakdown-label">Transistor density relative to H100</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
-                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    <div class="breakdown-item">
                     </div>
                     <div class="operator" style="visibility: hidden;">=</div>
                     <div class="breakdown-item">
@@ -1078,12 +1122,15 @@
                     <div class="breakdown-item">
                         <div id="energyTransistorDensityPlot" class="breakdown-plot"></div>
                     </div>
-                    <div class="operator">→</div>
+                    <div class="operator arrow-operator" style="position: relative;">
+                        <div style="position: absolute; top: 15px; left: 50%; transform: translateX(-50%); font-size: 9px; text-align: center; color: #888; line-height: 1.3; width: 70px;">Plug into</div>
+                        <div style="font-size: 20px;">→</div>
+                    </div>
                     <div class="breakdown-item">
                         <div id="densityVsEfficiencyPlot" class="breakdown-plot"></div>
                     </div>
                     <div class="operator">×</div>
-                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    <div class="breakdown-item" style="flex: 0 0 140px; max-width: 140px;">
                         <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Energy requirements of H100</div>
                         <div id="h100EnergyDisplay" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
                             --
@@ -1103,12 +1150,12 @@
                     <div class="breakdown-item">
                         <div class="breakdown-label">Transistor density relative to H100</div>
                     </div>
-                    <div class="operator" style="visibility: hidden;">→</div>
+                    <div class="operator arrow-operator" style="visibility: hidden;">→</div>
                     <div class="breakdown-item">
-                        <div class="breakdown-label">Energy efficiency by transistor density</div>
+                        <div class="breakdown-label">Watts per TPP relative to H100</div>
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
-                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    <div class="breakdown-item" style="flex: 0 0 140px; max-width: 140px;">
                     </div>
                     <div class="operator" style="visibility: hidden;">×</div>
                     <div class="breakdown-item">
@@ -1178,8 +1225,9 @@
                 transistor_density_scaling_exponent: parseFloat(document.getElementById('transistor_density_exponent').value),
                 architecture_efficiency_improvement_per_year: parseFloat(document.getElementById('architecture_efficiency').value),
                 // H100 reference specifications
-                h100_transistor_density_m_per_mm2: parseFloat(document.getElementById('h100_transistor_density').value),
-                h100_watts_per_tpp: parseFloat(document.getElementById('h100_watts_per_tpp').value),
+                h100_transistor_density_m_per_mm2: 98.28,
+                h100_power_watts: parseFloat(document.getElementById('h100_power_watts').value),
+                h100_watts_per_tpp: parseFloat(document.getElementById('h100_power_watts').value) / 2144.0,
                 // Energy efficiency scaling parameters
                 watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended: parseFloat(document.getElementById('watts_per_tpp_exponent_before_dennard').value),
                 watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended: parseFloat(document.getElementById('watts_per_tpp_exponent_after_dennard').value),
@@ -1347,7 +1395,7 @@
                     font: { size: 10 }
                 },
                 hovermode: 'x unified',
-                margin: { l: 50, r: 50, t: 10, b: 85, pad: 10 },
+                margin: { l: 50, r: 10, t: 10, b: 85, pad: 10 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)'
             };
@@ -1468,7 +1516,7 @@
                     borderwidth: 1
                 },
                 hovermode: 'closest',
-                margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
+                margin: { l: 50, r: 10, t: 10, b: 65, pad: 10 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)'
             };
@@ -1585,7 +1633,7 @@
                     automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: title ? 30 : 10, b: 55, pad: 10 },
+                margin: { l: 50, r: 10, t: title ? 30 : 10, b: 55, pad: 10 },
                 hovermode: 'closest'
             };
 
@@ -1691,16 +1739,16 @@
                 yaxis: yaxisConfig,
                 showlegend: showLegend,
                 legend: {
-                    x: 0.02,
+                    x: 0.98,
                     y: 0.98,
-                    xanchor: 'left',
+                    xanchor: 'right',
                     yanchor: 'top',
                     bgcolor: 'rgba(255,255,255,0.8)',
                     bordercolor: '#ccc',
                     borderwidth: 1,
                     font: { size: 10 }
                 },
-                margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
+                margin: { l: 50, r: 10, t: 10, b: 55, pad: 10 },
                 hovermode: 'x'
             };
 
@@ -1758,7 +1806,7 @@
                     automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
+                margin: { l: 50, r: 10, t: 10, b: 65, pad: 10 },
                 hovermode: 'closest',
                 bargap: 0.2
             };
@@ -1800,7 +1848,7 @@
                     automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
+                margin: { l: 50, r: 10, t: 10, b: 55, pad: 10 },
                 hovermode: 'x'
             };
 
@@ -1846,7 +1894,7 @@
                     automargin: true
                 },
                 showlegend: false,
-                margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
+                margin: { l: 50, r: 10, t: 10, b: 65, pad: 10 },
                 hovermode: 'closest',
                 bargap: 0.2
             };
@@ -2644,36 +2692,24 @@
                     const EXPONENT_BEFORE_DENNARD = -2.006575;
                     const EXPONENT_AFTER_DENNARD = -0.909355;
 
-                    // Generate density range for the curve (from 0.1x to 3x relative to H100)
-                    const numPoints = 100;
-                    const densityRangeRelative = [];
-                    for (let i = 0; i < numPoints; i++) {
-                        densityRangeRelative.push(0.1 + (i / (numPoints - 1)) * 2.9);
-                    }
+                    // Use curve data from backend (calculated by Python)
+                    const densityRangeRelative = data.watts_per_tpp_curve.density_relative;
+                    const wattsPerTppCurve = data.watts_per_tpp_curve.watts_per_tpp_relative;
+                    const dennardDataX = 1.98 / 98.28;
 
-                    // Calculate efficiency for each density point
-                    const efficiencyCurve = densityRangeRelative.map(densityRelative => {
-                        const densityAbsolute = densityRelative * H100_TRANSISTOR_DENSITY;
+                    const xMin = 0.001;  // From your range
+                    const xMax = 100;    // From your range
 
-                        // Determine exponent based on Dennard threshold
-                        const exponent = densityAbsolute <= DENNARD_THRESHOLD_DENSITY
-                            ? EXPONENT_BEFORE_DENNARD
-                            : EXPONENT_AFTER_DENNARD;
+                    // Convert data coordinate to paper coordinate for log scale
+                    const dennardPaperX = (Math.log10(dennardDataX) - Math.log10(xMin)) / 
+                                        (Math.log10(xMax) - Math.log10(xMin));
 
-                        // Calculate watts per TPP: watts_per_tpp = H100_watts * (density_ratio)^exponent
-                        const wattsPerTppRatio = Math.pow(densityRelative, exponent);
-
-                        // Efficiency relative to H100 = 1 / wattsPerTppRatio
-                        const efficiencyRelative = 1 / wattsPerTppRatio;
-
-                        return efficiencyRelative;
-                    });
 
                     // Create curve plot with actual simulation points overlaid
                     Plotly.newPlot('densityVsEfficiencyPlot', [
                         {
                             x: densityRangeRelative,
-                            y: efficiencyCurve,
+                            y: wattsPerTppCurve,
                             mode: 'lines',
                             type: 'scatter',
                             line: {
@@ -2681,17 +2717,11 @@
                                 width: 2
                             },
                             name: 'Power Law',
-                            hovertemplate: 'Density: %{x:.2f}x<br>Efficiency: %{y:.2f}x<extra></extra>'
+                            hovertemplate: 'Density: %{x:.2g}x<br>Efficiency: %{y:.2g}x<extra></extra>'
                         },
                         {
                             x: transistorDensityFinal,
-                            y: transistorDensityFinal.map(d => {
-                                const densityAbsolute = d * H100_TRANSISTOR_DENSITY;
-                                const exponent = densityAbsolute <= DENNARD_THRESHOLD_DENSITY
-                                    ? EXPONENT_BEFORE_DENNARD
-                                    : EXPONENT_AFTER_DENNARD;
-                                return 1 / Math.pow(d, exponent);
-                            }),
+                            y: data.compute_factors.watts_per_tpp_individual.map(sim => sim[sim.length - 1]),
                             mode: 'markers',
                             type: 'scatter',
                             marker: {
@@ -2700,44 +2730,81 @@
                                 opacity: 0.7
                             },
                             name: 'Simulations',
-                            hovertemplate: 'Density: %{x:.2f}x<br>Efficiency: %{y:.2f}x<extra></extra>'
+                            hovertemplate: 'Density: %{x:.2g}x<br>Watts/TPP: %{y:.2g}x<extra></extra>'
                         }
                     ], {
                         xaxis: {
                             title: 'Transistor Density (relative to H100)',
-                            titlefont: { size: 9 },
-                            tickfont: { size: 8 }
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 },
+                            type: 'log',
+                            range: [Math.log10(0.001), Math.log10(100)],
+                            automargin: true
                         },
                         yaxis: {
-                            title: 'Energy Efficiency (relative to H100)',
-                            titlefont: { size: 9 },
-                            tickfont: { size: 8 }
+                            title: 'Watts per TPP (relative to H100)',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 },
+                            type: 'log',
+                            tickmode: 'array',
+                            tickvals: [0.01, 0.1, 1, 10, 100, 1000],
+                            automargin: true
                         },
-                        margin: { l: 50, r: 15, t: 15, b: 40 },
-                        height: 140,
-                        showlegend: false
-                    }, {responsive: true});
+                        shapes: [{
+                            type: 'line',
+                            x0: dennardPaperX,
+                            x1: dennardPaperX,
+                            y0: 0,
+                            y1: 1,
+                            xref: 'paper',
+                            yref: 'paper',
+                            line: {
+                                color: '#999',
+                                width: 1,
+                                dash: 'dot'
+                            }
+                        }],
+                        annotations: [{
+                            x: dennardPaperX + 0.02,
+                            y: 0.85,
+                            yref: 'paper',
+                            xref: 'paper',
+                            xanchor: 'left',
+                            yanchor: 'bottom',
+                            text: 'End of Dennard<br>Scaling',
+                            showarrow: false,
+                            align: "left",
+                            font: {
+                                size: 9,
+                                color: '#666',
+                            }
+                        }],
+                        margin: { l: 60, r: 10, t: 10, b: 65, pad: 10 },
+                        showlegend: false,
+                        hovermode: 'closest'
+                    }, {displayModeBar: false, responsive: true});
+                    setTimeout(() => Plotly.Plots.resize('densityVsEfficiencyPlot'), 50);
 
-                    // 4. Display H100 energy requirements (constant)
-                    const H100_TPP_PER_CHIP = 2144.0;
-                    const H100_WATTS_PER_TPP = 0.326493;
-                    const h100EnergyWatts = H100_TPP_PER_CHIP * H100_WATTS_PER_TPP;
-                    const h100EnergyKW = h100EnergyWatts / 1000;
+                    // 4. Display H100 energy requirements (from user input)
+                    const h100PowerWatts = parseFloat(document.getElementById('h100_power_watts').value);
+                    const h100EnergyWatts = h100PowerWatts; // Store in watts for calculations below
+                    const h100EnergyKW = h100PowerWatts / 1000;
                     document.getElementById('h100EnergyDisplay').innerHTML = `<div style="font-size: 24px; font-weight: bold; color: #555;">${h100EnergyKW.toFixed(2)} kW</div>`;
 
-                    // Get energy efficiency parameter for energy calculations
-                    const energyEfficiencyParam = parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value);
-
                     // 5. Calculate and plot energy requirements per month (GW/month)
-                    // Energy = Compute (H100e) × Transistor_Density × Energy_Efficiency × H100_Energy
-                    // But actually: Energy = Compute (H100e) × H100_Energy / Energy_Efficiency
-                    // (Transistor density affects compute, not energy directly in this formulation)
-                    const energyPerMonthArray = totalComputeArray.map(simArray => {
-                        return simArray.map(h100ePerMonth => {
-                            // Convert H100e/month to GW
+                    // Energy = H100e_per_month × watts_per_TPP_relative × H100_energy
+                    // Note: transistor_density is already factored into H100e calculation, don't multiply again!
+                    const wattsPerTppBySimAndTime = data.compute_factors.watts_per_tpp_individual;
+
+                    const energyPerMonthArray = totalComputeArray.map((simArray, simIdx) => {
+                        return simArray.map((h100ePerMonth, timeIdx) => {
                             // h100ePerMonth is in thousands of H100e
                             const h100eActual = h100ePerMonth * 1000;
-                            const energyGW = (h100eActual * h100EnergyWatts / energyEfficiencyParam) / 1e9;
+                            const wattsPerTppRelative = wattsPerTppBySimAndTime[simIdx][timeIdx];
+
+                            // Energy (W) = H100e × watts_per_TPP_rel × H100_energy_watts
+                            const totalWatts = h100eActual * wattsPerTppRelative * h100EnergyWatts;
+                            const energyGW = totalWatts / 1e9;
                             return energyGW;
                         });
                     });
@@ -2946,7 +3013,14 @@
             'chipsPerWaferPlot': 'chips_per_wafer',
             'computePerChipPlot': 'transistor_density_exponent',
             'architectureEfficiencyDisplay': 'architecture_efficiency',
-            'totalComputePlot': null // Output, not an input
+            'totalComputePlot': null, // Output, not an input
+
+            // Section 4: Energy Requirements plots
+            'energyTransistorDensityPlot': 'transistor_density_exponent',
+            'densityVsEfficiencyPlot': 'watts_per_tpp_exponent_before_dennard',
+            'h100EnergyDisplay': 'h100_power_watts',
+            'energyComputePerMonthPlot': null, // This shows compute per month, not an input
+            'energyPerMonthPlot': null // Output, not an input
         };
 
         // Add clickable class and click handlers to plots with associated inputs

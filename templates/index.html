@@ -819,49 +819,169 @@
         </div>
 
         <div id="plots" style="display: none;">
-            <!-- Dark Compute Equation Section -->
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
-                <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">(</div>
-                <div style="flex: 1; min-width: 200px;">
-                    <div id="initialDarkComputePlot" style="width: 100%; height: 250px;"></div>
-                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Initial Dark Compute</div>
+            <!-- Dark Compute Model Section -->
+            <h1 style="margin-top: 40px; margin-bottom: 10px; font-size: 32px; font-weight: bold; color: #333;">Dark Compute Model</h1>
+            <p style="margin-bottom: 30px; font-size: 16px; color: #666;">A model of how much compute the PRC might covertly operate during an AI slowdown agreement.</p>
+
+            <!-- Dashboard and CCDF Side-by-Side -->
+            <div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-start;">
+                <!-- Dark Compute Dashboard -->
+                <div class="dashboard" style="flex: 0 0 auto; margin-bottom: 0;">
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardProject80thH100Years">--</div>
+                        <div class="dashboard-label">H100-Years of Computation Before Detection (80th %ile Outcome)</div>
+                        <div class="dashboard-sublabel">Detection = US estimates covert project has ≥5x higher odds than previously thought</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div style="display: flex; align-items: baseline; justify-content: center; gap: 15px;">
+                            <div class="dashboard-value" id="dashboardProject80thH100e">--</div>
+                            <div class="dashboard-value" id="dashboardProject80thEnergy" style="font-size: 24px; color: #666;">--</div>
+                        </div>
+                        <div class="dashboard-label">Operating Dark Compute Before Detection (80th %ile Outcome)</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardProject80thTime">--</div>
+                        <div class="dashboard-label">Years Operational Before Detection (80th %ile Outcome)</div>
+                    </div>
                 </div>
-                <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">+</div>
-                <div style="flex: 1; min-width: 200px;">
-                    <div id="covertFabFlowPlot" style="width: 100%; height: 250px;"></div>
-                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Compute Flow</div>
-                </div>
-                <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">)</div>
-                <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">×</div>
-                <div style="flex: 1; min-width: 200px;">
-                    <div id="chipSurvivalPlot" style="width: 100%; height: 250px;"></div>
-                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Average Survival Rate</div>
-                </div>
-                <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
-                <div style="flex: 1; min-width: 200px;">
-                    <div id="totalDarkComputePlot" style="width: 100%; height: 250px;"></div>
-                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Dark Compute</div>
+
+                <!-- H100-Years CCDF Plot -->
+                <div style="flex: 1; min-width: 400px;">
+                    <div class="plot-container" style="margin-bottom: 0;">
+                        <div class="plot-title">H100-Years of Computation Before Detection</div>
+                        <div id="projectH100YearsCcdfPlot" class="plot" style="height: 350px;"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Operational Dark Compute Equation Section -->
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
-                <div style="flex: 1; min-width: 200px;">
-                    <div id="datacenterCapacityPlot2" style="width: 100%; height: 250px;"></div>
-                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Covert Datacenter Capacity</div>
+            <!-- Dark Compute Stock Breakdown Section -->
+            <div class="breakdown-section">
+                <div class="breakdown-title">Dark Compute Stock Breakdown</div>
+                <div class="section-description">
+                    Dark Compute = (Initial Dark Compute + Covert Fab Flow) × (Average Survival Rate of Compute)<br>
+                    The total stock of undeclared PRC compute is equal to the compute that the PRC initially stashes away, plus whatever compute it can obtain during the agreement. Finally, we need to factor in that some of this compute may start to burn out over time.
                 </div>
-                <div style="position: relative; flex: 0 0 30px; text-align: center;">
-                    <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 9px; text-align: center; color: #888; white-space: nowrap;">limits</div>
-                    <div style="font-size: 20px; color: #666;">→</div>
+
+                <!-- Dark Compute Equation Section -->
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px;">
+                    <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">(</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="initialDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Initial Dark Compute</div>
+                        <div class="breakdown-description" style="text-align: center;">Chips diverted from PRC's existing inventory at the time the agreement goes into force.</div>
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">+</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="covertFabFlowPlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Compute Flow</div>
+                        <div class="breakdown-description" style="text-align: center;">Chips produced by the covert fab over time, accumulated as a flow.</div>
+                    </div>
+                    <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">)</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">×</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="chipSurvivalPlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Average Survival Rate</div>
+                        <div class="breakdown-description" style="text-align: center;">The fraction of chips that remain operational over time, accounting for degradation and failure.</div>
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="totalDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Dark Compute Stock</div>
+                        <div class="breakdown-description" style="text-align: center;">Total operational compute available to the covert project, combining initial stock and production flow adjusted for chip survival.</div>
+                    </div>
                 </div>
-                <div style="flex: 1; min-width: 200px;">
-                    <div id="darkComputeEnergyPlot" style="width: 100%; height: 250px;"></div>
-                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Dark Compute Energy Requirements</div>
+            </div>
+
+            <!-- Data Center Capacity Breakdown Section -->
+            <div class="breakdown-section">
+                <div class="breakdown-title">Data Center Capacity Breakdown</div>
+                <div class="section-description">
+                    GW of Dark Compute = min(GW of Covert Datacenter Capacity, GW of Dark Compute Stock Energy Usage)<br>
+                    The amount of dark compute that can actually be operated is constrained by available datacenter capacity.
                 </div>
-                <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
-                <div style="flex: 1; min-width: 200px;">
-                    <div id="operationalDarkComputePlot" style="width: 100%; height: 250px;"></div>
-                    <div style="text-align: center; margin-top: 5px; font-weight: bold; color: #333; font-size: 14px;">Operational Dark Compute</div>
+
+                <!-- Operational Dark Compute Equation Section -->
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="datacenterCapacityPlot2" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Covert Datacenter Capacity</div>
+                        <div class="breakdown-description" style="text-align: center;">Energy capacity available in covert datacenters, measured in gigawatts.</div>
+                    </div>
+                    <div style="position: relative; flex: 0 0 30px; text-align: center;">
+                        <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 9px; text-align: center; color: #888; white-space: nowrap;">Limits</div>
+                        <div style="font-size: 20px; color: #666;">→</div>
+                    </div>
+                    <div style="flex: 1; min-width: 200px; overflow: hidden;">
+                        <div id="darkComputeEnergyPlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Dark Compute Energy Usage</div>
+                        <div class="breakdown-description" style="text-align: center;">Energy required to run all dark compute chips at full capacity.</div>
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="operationalDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Dark Compute Operating in Datacenters</div>
+                        <div class="breakdown-description" style="text-align: center;">Actual dark compute that can be operated, constrained by available datacenter capacity.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Strength of Evidence Gathered by US Intelligence Breakdown</div>
+                <div class="section-description">
+                    Posterior = Prior × LR<sub>initial stock</sub> × LR<sub>diverted SME</sub> × LR<sub>other intel</sub><br>
+                    Multiply the prior probability with likelihood ratios from multiple independent sources of evidence to assess the overall probability of a PRC covert project.
+                </div>
+
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                        <div class="breakdown-label" style="visibility: hidden; margin-bottom: 5px;">Prior Probability of<br>Covert Project</div>
+                        <div id="dashboardPriorProject" class="breakdown-plot" style="display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #555; padding: 0; height: 70px;">
+                            --
+                        </div>
+                        <div class="breakdown-label" style="margin-top: 5px;">Prior Probability of<br>Covert Project</div>
+                    </div>
+                    <div class="operator">×</div>
+                    <div class="breakdown-item">
+                        <div id="lrInitialStockPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator">×</div>
+                    <div class="breakdown-item">
+                        <div id="lrDivertedSMEPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator">×</div>
+                    <div class="breakdown-item">
+                        <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
+                    </div>
+                    <div class="operator arrow-operator" style="position: relative;">
+                        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 9px; text-align: center; color: #888; line-height: 1.3; width: 70px;">Convert to<br>probability</div>
+                        <div style="font-size: 20px;">→</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="posteriorProbProjectPlot" class="breakdown-plot"></div>
+                    </div>
+                </div>
+                <div class="breakdown-labels-row">
+                    <div class="breakdown-item" style="flex: 0 0 140px; min-width: 140px;">
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Evidence from initial chip diversion</div>
+                        <div class="breakdown-description">Combined likelihood ratio from PRC compute stock accounting and global compute production accounting.</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Evidence from diverted SME</div>
+                        <div class="breakdown-description">Combined likelihood ratio from PRC SME stock accounting and SME procurement tracing.</div>
+                    </div>
+                    <div class="operator" style="visibility: hidden;">×</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Evidence from other intelligence sources</div>
+                        <div class="breakdown-description">Likelihood ratio from HUMINT, SIGINT, and other intelligence sources over time.</div>
+                    </div>
+                    <div class="operator arrow-operator" style="visibility: hidden;">→</div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">Posterior Probability of<br>Covert Project</div>
+                    </div>
                 </div>
             </div>
 
@@ -1549,6 +1669,91 @@
             setTimeout(() => Plotly.Plots.resize('computeCcdfPlot'), 50);
         }
 
+        function plotProjectH100YearsCcdf(data) {
+            if (!data.project_h100_years_ccdfs) {
+                document.getElementById('projectH100YearsCcdfPlot').innerHTML = '<p>No detection data available</p>';
+                return;
+            }
+
+            // Get prior probability from the data
+            const priorProb = data.p_project_exists || 0.1;
+            const priorOdds = priorProb / (1 - priorProb);
+
+            // Use likelihood ratios from backend
+            const likelihoodRatios = data.likelihood_ratios || [1, 2, 5];
+            const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
+
+            const traces = [];
+            const thresholds = likelihoodRatios.map((lr, index) => {
+                const posteriorOdds = priorOdds * lr;
+                const posteriorProb = posteriorOdds / (1 + posteriorOdds);
+                return {
+                    value: posteriorProb,
+                    label: `>${lr}x update`,
+                    color: colors[index % colors.length]
+                };
+            });
+
+            console.log('Project H100-Years CCDF Debug:');
+            console.log('priorProb:', priorProb);
+            console.log('likelihoodRatios:', likelihoodRatios);
+            console.log('thresholds:', thresholds);
+            console.log('CCDF data keys:', Object.keys(data.project_h100_years_ccdfs));
+            console.log('CCDF data:', data.project_h100_years_ccdfs);
+
+            // Reverse thresholds for legend order (highest to lowest)
+            const thresholdsReversed = [...thresholds].reverse();
+
+            for (const threshold of thresholdsReversed) {
+                const ccdf = data.project_h100_years_ccdfs[threshold.value];
+                if (ccdf && ccdf.length > 0) {
+                    traces.push({
+                        x: ccdf.map(d => d.x),
+                        y: ccdf.map(d => d.y),
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: threshold.color, width: 2 },
+                        name: `"Detection" = ${threshold.label}`,
+                        hovertemplate: 'H100-years: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>'
+                    });
+                }
+            }
+
+            const layout = {
+                xaxis: {
+                    title: "H100-Years Before 'Detection'",
+                    titlefont: { size: 13 },
+                    tickfont: { size: 10 },
+                    type: 'log',
+                    automargin: true
+                },
+                yaxis: {
+                    title: 'P(H100-years > x)',
+                    titlefont: { size: 13 },
+                    tickfont: { size: 10 },
+                    range: [0, 1],
+                    automargin: true
+                },
+                showlegend: true,
+                legend: {
+                    x: 0.98,
+                    y: 0.98,
+                    xanchor: 'right',
+                    yanchor: 'top',
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#ccc',
+                    borderwidth: 1
+                },
+                hovermode: 'closest',
+                margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('projectH100YearsCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
+            setTimeout(() => Plotly.Plots.resize('projectH100YearsCcdfPlot'), 50);
+        }
+
         function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null) {
             // Create histogram/PDF from values
             console.log(`plotPDF called for ${divId}:`, values);
@@ -1988,6 +2193,67 @@
                 document.getElementById('dashboardDetectionLabel').textContent =
                     `Detection means ≥${highestLR}x update`;
             }
+
+            // Populate dark compute project dashboard
+            const projectH100eValues = data.individual_project_h100e_before_detection || [];
+            const projectEnergyValues = data.individual_project_energy_before_detection || [];
+            const projectTimeValues = data.individual_project_time_before_detection || [];
+            const projectH100YearsValues = data.individual_project_h100_years_before_detection || [];
+
+            if (projectH100eValues.length > 0) {
+                // Sort by H100-years and find 80th percentile simulation
+                const projectIndexed = projectH100YearsValues.map((h100years, idx) => ({ h100years, idx }));
+                projectIndexed.sort((a, b) => a.h100years - b.h100years);
+                const projectIdx80 = Math.floor(projectIndexed.length * 0.8);
+                const projectSim80th = projectIndexed[projectIdx80];
+
+                // Get all values from this same simulation
+                const projectH100Years80th = projectSim80th.h100years;
+                const projectH100e80th = projectH100eValues[projectSim80th.idx];
+                const projectEnergy80th = projectEnergyValues[projectSim80th.idx];
+                const projectTime80th = projectTimeValues[projectSim80th.idx];
+
+                // Display H100-years
+                const h100YearsRounded = Math.round(projectH100Years80th / 100000) * 100000;
+                if (h100YearsRounded >= 1000000) {
+                    document.getElementById('dashboardProject80thH100Years').textContent =
+                        `~${(h100YearsRounded / 1000000).toFixed(1)}M H100-years`;
+                } else if (h100YearsRounded >= 1000) {
+                    document.getElementById('dashboardProject80thH100Years').textContent =
+                        `~${(h100YearsRounded / 1000).toFixed(0)}K H100-years`;
+                } else {
+                    document.getElementById('dashboardProject80thH100Years').textContent =
+                        `~${h100YearsRounded.toFixed(0)} H100-years`;
+                }
+
+                // Display H100e
+                const projectRounded = Math.round(projectH100e80th / 100000) * 100000;
+                if (projectRounded >= 1000000) {
+                    document.getElementById('dashboardProject80thH100e').textContent =
+                        `~${(projectRounded / 1000000).toFixed(1)}M H100e`;
+                } else if (projectRounded >= 1000) {
+                    document.getElementById('dashboardProject80thH100e').textContent =
+                        `~${(projectRounded / 1000).toFixed(0)}K H100e`;
+                } else {
+                    document.getElementById('dashboardProject80thH100e').textContent =
+                        `~${projectRounded.toFixed(0)} H100e`;
+                }
+
+                // Display energy (GW)
+                if (projectEnergy80th >= 1) {
+                    document.getElementById('dashboardProject80thEnergy').textContent =
+                        `~${projectEnergy80th.toFixed(1)} GW`;
+                } else if (projectEnergy80th >= 0.001) {
+                    document.getElementById('dashboardProject80thEnergy').textContent =
+                        `~${(projectEnergy80th * 1000).toFixed(0)} MW`;
+                } else {
+                    document.getElementById('dashboardProject80thEnergy').textContent =
+                        `~${(projectEnergy80th * 1000).toFixed(1)} MW`;
+                }
+
+                // Display time
+                document.getElementById('dashboardProject80thTime').textContent = projectTime80th.toFixed(1);
+            }
         }
 
         async function runSimulation() {
@@ -2026,7 +2292,7 @@
                 if (data.initial_compute_stock_samples) {
                     // Convert to thousands
                     const samplesInThousands = data.initial_compute_stock_samples.map(v => v / 1000);
-                    plotPDF('initialDarkComputePlot', samplesInThousands, '#8E44AD', 'Thousands of H100 Equivalents', 30, false, null, null, null, { shape: '/', fgcolor: '#FFFFFF', bgcolor: '#8E44AD', size: 4, solidity: 0.3 });
+                    plotPDF('initialDarkComputePlot', samplesInThousands, '#9B72B0', 'Thousands of H100 Equivalents');
                 }
 
                 // Plot 2: Flow from covert fab (line plot - cumulative production over time)
@@ -2235,18 +2501,6 @@
                     const capacity_p75 = data.time_series.datacenter_capacity_p75;
 
                     const traces = [
-                        // Shading below the median line
-                        {
-                            x: years,
-                            y: capacity_median,
-                            type: 'scatter',
-                            mode: 'lines',
-                            fill: 'tozeroy',
-                            fillcolor: 'rgba(45, 107, 97, 0.1)',  // Light dark turquoise
-                            line: { width: 0 },
-                            showlegend: false,
-                            hoverinfo: 'skip'
-                        },
                         // Upper bound of shaded region (invisible line)
                         {
                             x: years,
@@ -2281,6 +2535,11 @@
                         }
                     ];
 
+                    // Calculate Y-axis range (1.8x max value to match darkComputeEnergyPlot)
+                    const allYValues = [...capacity_p75, ...capacity_median, ...capacity_p25];
+                    const maxY = Math.max(...allYValues);
+                    const yMax = maxY * 1.8;
+
                     const layout = {
                         xaxis: {
                             title: 'Year',
@@ -2292,16 +2551,18 @@
                             title: 'GW',
                             titlefont: { size: 10 },
                             tickfont: { size: 9 },
-                            automargin: true
+                            automargin: true,
+                            range: [0, yMax]
                         },
-                        margin: { l: 50, r: 20, t: 10, b: 45 },
+                        margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                         height: 250,
                         hovermode: 'x unified'
                     };
 
                     layout.xaxis.range = [years[0], 2037];
 
-                    Plotly.newPlot('datacenterCapacityPlot2', traces, layout, {responsive: true});
+                    Plotly.newPlot('datacenterCapacityPlot2', traces, layout, {responsive: true, displayModeBar: false});
+                    setTimeout(() => Plotly.Plots.resize('datacenterCapacityPlot2'), 50);
                 }
 
                 // Energy Consumption Stacked Area Plot (for median simulation)
@@ -2317,19 +2578,15 @@
 
                     const traces = [];
 
-                    // Create traces for each source (initial stock = index 0, fab = index 1)
+                    // Calculate total energy (sum of both sources) at each time point
+                    const totalEnergy = energyData.map(yearData => yearData[0] + yearData[1]);
+
+                    // LAYER 1: Create stacked area traces for each source (bottom layer)
                     for (let i = 0; i < sourceLabels.length; i++) {
                         const energyAtSource = energyData.map(yearData => yearData[i]);
-                        let sourceLabel = sourceLabels[i];
+                        const sourceLabel = sourceLabels[i];
 
-                        // Add (hashed) or (solid) indicator
-                        if (i === 0) {
-                            sourceLabel = sourceLabel + ' (hashed)';
-                        } else {
-                            sourceLabel = sourceLabel + ' (solid)';
-                        }
-
-                        const trace = {
+                        traces.push({
                             x: years,
                             y: energyAtSource,
                             type: 'scatter',
@@ -2339,71 +2596,115 @@
                             line: { width: 0 },
                             name: sourceLabel,
                             hovertemplate: `${sourceLabel}<br>Energy: %{y:.2f} GW<extra></extra>`
-                        };
-
-                        // Add hash marks to initial stock (i === 0)
-                        if (i === 0) {
-                            trace.fillpattern = {
-                                shape: '/',
-                                fgcolor: '#FFFFFF',
-                                bgcolor: colors[i],
-                                size: 6,
-                                solidity: 0.3
-                            };
-                        }
-
-                        traces.push(trace);
+                        });
                     }
 
-                    // Add light shading under the capacity line
+                    // LAYER 2: Create hash pattern ONLY where total energy exceeds capacity
+                    // For each time point, the unpowered region is: max(0, totalEnergy - capacity)
+                    // We'll stack this on TOP of the capacity line
+                    const unpoweredEnergy = years.map((year, i) =>
+                        Math.max(0, totalEnergy[i] - datacenterCapacity[i])
+                    );
+
+                    // Create the hash region as a shape that sits above the capacity line
+                    // It goes from capacity to (capacity + unpowered)
+                    const hashX = [...years, ...years.slice().reverse()];
+                    const hashYTop = years.map((year, i) => datacenterCapacity[i] + unpoweredEnergy[i]);
+                    const hashY = [...hashYTop, ...datacenterCapacity.slice().reverse()];
+
                     traces.push({
-                        x: years,
-                        y: datacenterCapacity,
+                        x: hashX,
+                        y: hashY,
                         type: 'scatter',
-                        mode: 'lines',
-                        fill: 'tozeroy',
-                        fillcolor: 'rgba(74, 155, 142, 0.1)',  // Very light dark turquoise
-                        line: { width: 0 },
+                        mode: 'none',
+                        fill: 'toself',
+                        fillcolor: 'rgba(0, 0, 0, 0)',
+                        fillpattern: {
+                            shape: '/',
+                            fgcolor: 'rgba(100, 100, 100, 0.8)',
+                            bgcolor: 'rgba(0, 0, 0, 0)',
+                            size: 8,
+                            solidity: 0.7
+                        },
                         showlegend: false,
-                        hoverinfo: 'skip'
+                        hoverinfo: 'skip',
+                        line: { width: 0 }
                     });
 
-                    // Add datacenter capacity as a dark turquoise bold line
+                    // LAYER 3: Add datacenter capacity line on top (just a line, no hash)
                     traces.push({
                         x: years,
                         y: datacenterCapacity,
                         type: 'scatter',
                         mode: 'lines',
-                        line: { color: '#2D6B61', width: 3 },  // Dark turquoise
+                        line: { color: '#2D6B61', width: 3 },
                         name: 'Covert Datacenter Capacity',
                         hovertemplate: 'Capacity: %{y:.1f} GW<extra></extra>'
                     });
+
+                    // Add legend entry for the hash pattern
+                    traces.push({
+                        x: [years[0], years[1]],
+                        y: [null, null],
+                        type: 'scatter',
+                        mode: 'lines',
+                        fill: 'tozeroy',
+                        fillcolor: 'rgba(0, 0, 0, 0)',
+                        fillpattern: {
+                            shape: '/',
+                            fgcolor: 'rgba(100, 100, 100, 0.8)',
+                            bgcolor: 'rgba(0, 0, 0, 0)',
+                            size: 8,
+                            solidity: 0.7
+                        },
+                        line: { width: 0 },
+                        name: 'Cannot be powered',
+                        showlegend: true,
+                        hoverinfo: 'skip'
+                    });
+
+                    // Datacenter capacity line already added above
+
+                    // Calculate max y value to set range to 1.8x
+                    const allYValues = [...totalEnergy, ...datacenterCapacity];
+                    const maxY = Math.max(...allYValues);
+                    const yMax = maxY * 1.8;
 
                     const layout = {
                         xaxis: {
                             title: 'Year',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true
                         },
                         yaxis: {
-                            title: 'Energy Requirements',
+                            title: 'Energy Usage',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true,
+                            range: [0, yMax]
                         },
-                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                         height: 250,
                         hovermode: 'x unified',
                         showlegend: true,
                         legend: {
-                            x: 1.05,
-                            y: 1,
-                            font: { size: 8 }
-                        }
+                            x: 0.02,
+                            y: 0.98,
+                            xanchor: 'left',
+                            yanchor: 'top',
+                            bgcolor: 'rgba(255,255,255,0.9)',
+                            bordercolor: '#ccc',
+                            borderwidth: 1,
+                            font: { size: 7 }
+                        },
+                        autosize: true
                     };
 
                     layout.xaxis.range = [years[0], 2037];
 
-                    Plotly.newPlot('darkComputeEnergyPlot', traces, layout, {responsive: true});
+                    Plotly.newPlot('darkComputeEnergyPlot', traces, layout, {responsive: true, displayModeBar: false});
+                    setTimeout(() => Plotly.Plots.resize('darkComputeEnergyPlot'), 50);
                 }
 
                 // Plot 6: Operational dark compute (limited by capacity)
@@ -2452,21 +2753,24 @@
                         xaxis: {
                             title: 'Year',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true
                         },
                         yaxis: {
                             title: 'H100e (thousands)',
                             titlefont: { size: 10 },
-                            tickfont: { size: 9 }
+                            tickfont: { size: 9 },
+                            automargin: true
                         },
-                        margin: { l: 50, r: 20, t: 10, b: 40 },
+                        margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
                         height: 250,
                         hovermode: 'x unified'
                     };
 
                     layout.xaxis.range = [years[0], 2037];
 
-                    Plotly.newPlot('operationalDarkComputePlot', traces, layout, {responsive: true});
+                    Plotly.newPlot('operationalDarkComputePlot', traces, layout, {responsive: true, displayModeBar: false});
+                    setTimeout(() => Plotly.Plots.resize('operationalDarkComputePlot'), 50);
                 }
 
                 // Plot detection probability bar chart and initial compute stock histogram
@@ -2563,6 +2867,7 @@
                 plotTimeSeries(data);
                 plotComputeCcdf(data);
                 plotDatacenterCapacity(data);
+                plotProjectH100YearsCcdf(data);
 
                 // Force resize after a brief delay to ensure plots fill containers
                 setTimeout(() => {
@@ -2579,6 +2884,10 @@
                     Plotly.Plots.resize('darkComputeResultPlot');
                     Plotly.Plots.resize('timeSeriesPlot');
                     Plotly.Plots.resize('computeCcdfPlot');
+                    Plotly.Plots.resize('lrInitialStockPlot');
+                    Plotly.Plots.resize('lrDivertedSMEPlot');
+                    Plotly.Plots.resize('lrOtherIntelPlot');
+                    Plotly.Plots.resize('posteriorProbProjectPlot');
                 }, 100);
 
                 // Plot LR breakdown
@@ -2625,7 +2934,7 @@
                         p25: lrOtherP25,
                         p75: lrOtherP75,
                         individual: data.lr_components.other_individual
-                    }, years, '#7CAE7A', 'Likelihood Ratio', null, true);
+                    }, years, '#5B8DBE', 'Likelihood Ratio', null, true);
 
                     // Use backend-filtered array that only includes simulations where fab was built
                     plotMedianWithPercentiles('posteriorProbPlot', {
@@ -2634,6 +2943,82 @@
                         p75: data.time_series.us_prob_p75,
                         individual: data.time_series.individual_us_probs_with_fab || data.time_series.individual_us_probs
                     }, data.time_series.years, '#5B8DBE', 'Posterior Probability');
+                }
+
+                // Plot "Strength of Evidence of Covert Project" section
+                if (data.lr_combined_samples && data.lr_components && data.time_series) {
+                    console.log('Plotting Strength of Evidence of Covert Project section...');
+                    const years = data.time_series.years;
+
+                    // Get prior probability from parameters
+                    const priorProb = getParameters().p_fab_exists;
+
+                    // Display prior probability (matching priorOddsDisplay style)
+                    document.getElementById('dashboardPriorProject').textContent = priorProb.toFixed(3);
+
+                    // 1. LR from initial stock (Combined LR from PRC and global accounting)
+                    // Use the same data as lrCombinedPlot
+                    plotPDF('lrInitialStockPlot', data.lr_combined_samples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
+
+                    // 2. LR from diverted SME (multiply inventory and procurement LRs)
+                    const lrInventoryFinal = data.lr_components.inventory_individual.map(sim => sim[sim.length - 1]);
+                    const lrProcurementFinal = data.lr_components.procurement_individual.map(sim => sim[sim.length - 1]);
+                    const lrDivertedSME = lrInventoryFinal.map((inv, i) => inv * lrProcurementFinal[i]);
+                    plotPDF('lrDivertedSMEPlot', lrDivertedSME, '#6B9BD1', 'Likelihood Ratio', 12, true, 1/3, 50);
+
+                    // 3. LR from other intelligence sources (same as lrOtherPlot)
+                    const lrOtherArray = data.lr_components.other_individual.map(sim => sim.map(v => v));
+                    const lrOtherP25 = years.map((_, i) => {
+                        const values = lrOtherArray.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
+                    });
+                    const lrOtherP75 = years.map((_, i) => {
+                        const values = lrOtherArray.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
+                    });
+                    plotMedianWithPercentiles('lrOtherIntelPlot', {
+                        median: data.lr_components.other_median,
+                        p25: lrOtherP25,
+                        p75: lrOtherP75,
+                        individual: data.lr_components.other_individual
+                    }, years, '#7CAE7A', 'Likelihood Ratio', null, true);
+
+                    // 4. Posterior probability of covert project
+                    // Calculate: Prior × LR_initial × LR_SME × LR_other for each simulation at each timestep
+                    const posteriorProbProject_individual = data.lr_components.other_individual.map((other_sim, sim_idx) => {
+                        const lr_initial = data.lr_combined_samples[sim_idx];
+                        const lr_sme = lrDivertedSME[sim_idx];
+
+                        return other_sim.map((lr_other_t) => {
+                            // Calculate posterior odds
+                            const priorOdds = priorProb / (1 - priorProb);
+                            const posteriorOdds = priorOdds * lr_initial * lr_sme * lr_other_t;
+                            // Convert to probability
+                            const posteriorProb = posteriorOdds / (1 + posteriorOdds);
+                            return posteriorProb;
+                        });
+                    });
+
+                    // Calculate median and percentiles
+                    const posteriorProbProject_median = years.map((_, i) => {
+                        const values = posteriorProbProject_individual.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.5)];
+                    });
+                    const posteriorProbProject_p25 = years.map((_, i) => {
+                        const values = posteriorProbProject_individual.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
+                    });
+                    const posteriorProbProject_p75 = years.map((_, i) => {
+                        const values = posteriorProbProject_individual.map(sim => sim[i]);
+                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
+                    });
+
+                    plotMedianWithPercentiles('posteriorProbProjectPlot', {
+                        median: posteriorProbProject_median,
+                        p25: posteriorProbProject_p25,
+                        p75: posteriorProbProject_p75,
+                        individual: posteriorProbProject_individual
+                    }, years, '#5B8DBE', 'Posterior Probability');
                 }
 
                 // Plot compute breakdown

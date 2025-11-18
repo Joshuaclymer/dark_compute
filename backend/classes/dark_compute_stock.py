@@ -2,7 +2,7 @@ import numpy as np
 import random
 from typing import List, Dict
 from abc import ABC, abstractmethod
-from paramaters import InitialPRCDarkComputeParameters, SurvivalRateParameters
+from backend.paramaters import InitialPRCDarkComputeParameters, SurvivalRateParameters
 
 # Constants for H100 chip (duplicated from covert_fab to avoid circular import)
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
@@ -11,7 +11,7 @@ H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass (default, can be 
 
 def sample_initial_prc_compute_stock(year):
     """Sample initial PRC compute stock based on year and proportion diverted to covert project"""
-    from util import sample_from_log_normal
+    from backend.util import sample_from_log_normal
     params = InitialPRCDarkComputeParameters
     years_since_2025 = year - 2025
     median_total_stock = params.total_prc_compute_stock_in_2025 * (params.annual_growth_rate_of_prc_compute_stock ** years_since_2025)
@@ -82,7 +82,7 @@ def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion
 
 def sample_global_compute(year):
     """Sample global compute stock based on year"""
-    from util import sample_from_log_normal
+    from backend_model.util import sample_from_log_normal
     params = InitialPRCDarkComputeParameters
     years_since_2025 = year - 2025
     median_total_stock = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** years_since_2025)
@@ -95,7 +95,7 @@ def sample_global_compute(year):
 def sample_reported_global_compute(prc_compute_stock_diverted, global_compute):
     def _sample_unreported_compute_owned_by_non_prc_actors():
         """Sample unreported compute owned by non-PRC actors based on year"""
-        from util import sample_from_log_normal
+        from backend_model.util import sample_from_log_normal
         params = InitialPRCDarkComputeParameters
         median = params.median_unreported_compute_owned_by_non_prc_actors = 1e6
         relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors = 0.5
@@ -154,7 +154,7 @@ def sample_hazard_rate_multiplier() -> float:
     Returns a multiplier that will be applied to both initial_hazard_rate and
     increase_of_hazard_rate_per_year to create correlated uncertainty.
     """
-    from util import sample_from_metalog_3term_semi_bounded
+    from backend_model.util import sample_from_metalog_3term_semi_bounded
     params = SurvivalRateParameters
 
     # Compute absolute percentiles from the ratios

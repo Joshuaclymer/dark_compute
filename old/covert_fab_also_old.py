@@ -5,10 +5,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Dict, Optional
 import random
-from util import sample_from_log_normal
-from stock_model import Chip, Compute
-from util import lr_vs_num_workers
-from paramaters import ProcessNode, CovertFabParameters, CovertProjectParameters
+from backend_model.util import sample_from_log_normal
+from backend.classes.dark_compute_stock import Chip, Compute
+from backend_model.util import lr_vs_num_workers
+from backend_model.paramaters import ProcessNode, CovertFabParameters, CovertProjectParameters
 
 """
 PRC Covert Semiconductor Fab Model
@@ -289,6 +289,14 @@ H100_TRANSISTOR_DENSITY_M_PER_MM2 = 98.28  # Million transistors per mm²
 H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
 
+# PRC localization probabilities by process node (updated from parameters)
+PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE = {
+    ProcessNode.nm130: [(2025, 0.80), (2031, 0.80)],
+    ProcessNode.nm28: [(2025, 0.0), (2031, 0.25)],
+    ProcessNode.nm14: [(2025, 0.0), (2031, 0.10)],
+    ProcessNode.nm7: [(2025, 0.0), (2031, 0.06)]
+}
+
 class ProcessNodeStrategy(Enum):
     """Strategy for selecting process node for covert fab"""
     BEST_INDIGENOUS = "best_indigenous"
@@ -464,7 +472,7 @@ def _get_localization_cdf(process_node: ProcessNode) -> tuple:
     Cached helper to compute the CDF for localization years.
     Returns the CDF years and probabilities as tuples (immutable for caching).
     """
-    data = CovertFabParameters.Probability_of_90p_PRC_localization_at_node[process_node]
+    data = PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE[process_node]
     data_years = np.array([point[0] for point in data])
     data_probabilities = np.array([point[1] for point in data])
 
@@ -491,7 +499,7 @@ def sample_year_prc_achieved_node_localization(process_node: ProcessNode) -> flo
     """
     Randomly samples the year when PRC first achieved >90% localization for a given process node.
 
-    Uses the probability curves in CovertFabParameters.Probability_of_90p_PRC_localization_at_node
+    Uses the probability curves in PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE
     as a CDF to randomly sample when localization was achieved. This treats the probability
     as the cumulative probability that localization has been achieved by that year.
 
@@ -501,8 +509,8 @@ def sample_year_prc_achieved_node_localization(process_node: ProcessNode) -> flo
     Returns:
         float: Randomly sampled year when PRC achieved localization
     """
-    if process_node not in CovertFabParameters.Probability_of_90p_PRC_localization_at_node:
-        raise ValueError(f"Process node {process_node} not found in Probability_of_90p_PRC_localization_at_node parameters")
+    if process_node not in PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE:
+        raise ValueError(f"Process node {process_node} not found in PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE parameters")
 
     # Get cached CDF
     cdf_years_tuple, cdf_probabilities_tuple = _get_localization_cdf(process_node)

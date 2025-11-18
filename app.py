@@ -1,14 +1,12 @@
 from flask import Flask, render_template, jsonify, request, send_file
-from model import Model
-from covert_fab import ProcessNode, PRCCovertFab
-from stock_model import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP, PRCDarkComputeStock
-from paramaters import (
+from backend.model import Model
+from backend.classes.dark_compute_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP, PRCDarkComputeStock
+from backend.classes.covert_fab import PRCCovertFab
+from backend.paramaters import (
     CovertProjectStrategy,
-    CovertFabParameters,
-    InitialPRCDarkComputeParameters,
-    SurvivalRateParameters,
-    CovertDatacenterParameters,
-    CovertProjectParameters
+    CovertProjectParameters,
+    SimulationSettings,
+    Parameters
 )
 import numpy as np
 import base64
@@ -16,56 +14,25 @@ from io import BytesIO
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from backend.util import clear_metalog_cache
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='frontend')
 
 # Configure likelihood ratio thresholds for detection plots
 # Update this list to change all plots automatically
 LIKELIHOOD_RATIOS = [1, 3, 5]
 
-# Create a single default strategy instance
-DEFAULT_STRATEGY = CovertProjectStrategy()
+# Create a global Parameters instance that stays synchronized with the sidebar
+app_params = Parameters(
+    simulation_settings=SimulationSettings(),
+    covert_project_strategy=CovertProjectStrategy(),
+    covert_project_parameters=CovertProjectParameters()
+)
 
 @app.route('/')
 def index():
-    # Pass default strategy values to template
-    from stock_model import H100_TPP_PER_CHIP
-    defaults = {
-        'h100_power_watts': InitialPRCDarkComputeParameters.h100_power_watts,
-        'watts_per_tpp_exponent_before_dennard': CovertFabParameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended,
-        'watts_per_tpp_exponent_after_dennard': CovertFabParameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended,
-        'transistor_density_at_dennard_end': CovertFabParameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2,
-        'proportion_of_initial_chip_stock_to_divert': DEFAULT_STRATEGY.proportion_of_initial_compute_stock_to_divert,
-        'GW_per_initial_datacenter': DEFAULT_STRATEGY.GW_per_initial_datacenter,
-        'number_of_initial_datacenters': DEFAULT_STRATEGY.number_of_initial_datacenters,
-        'GW_per_year_of_concealed_datacenters': DEFAULT_STRATEGY.GW_per_year_of_concealed_datacenters,
-        'operating_labor': DEFAULT_STRATEGY.covert_fab_operating_labor,
-        'construction_labor': DEFAULT_STRATEGY.covert_fab_construction_labor,
-        'scanner_proportion': DEFAULT_STRATEGY.covert_fab_proportion_of_prc_lithography_scanners_devoted,
-        'total_prc_compute_stock_in_2025': InitialPRCDarkComputeParameters.total_prc_compute_stock_in_2025,
-        'annual_growth_rate_of_prc_compute_stock': InitialPRCDarkComputeParameters.annual_growth_rate_of_prc_compute_stock,
-        'relative_sigma_of_prc_compute_stock': InitialPRCDarkComputeParameters.relative_sigma_of_prc_compute_stock,
-        'us_intelligence_median_error_in_estimate_of_prc_compute_stock': InitialPRCDarkComputeParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock,
-        'energy_efficiency_relative_to_h100': InitialPRCDarkComputeParameters.energy_efficiency_relative_to_h100,
-        'total_global_compute_in_2025': InitialPRCDarkComputeParameters.total_global_compute_in_2025,
-        'annual_growth_rate_of_global_compute': InitialPRCDarkComputeParameters.annual_growth_rate_of_global_compute,
-        'relative_sigma_of_global_compute': InitialPRCDarkComputeParameters.relative_sigma_of_global_compute,
-        'median_unreported_compute_owned_by_non_prc_actors': InitialPRCDarkComputeParameters.median_unreported_compute_owned_by_non_prc_actors,
-        'relative_sigma_unreported_compute_owned_by_non_prc_actors': InitialPRCDarkComputeParameters.relative_sigma_unreported_compute_owned_by_non_prc_actors,
-        'initial_hazard_rate_p50': SurvivalRateParameters.initial_hazard_rate_p50,
-        'increase_of_hazard_rate_per_year_p50': SurvivalRateParameters.increase_of_hazard_rate_per_year_p50,
-        'hazard_rate_p25_relative_to_p50': SurvivalRateParameters.hazard_rate_p25_relative_to_p50,
-        'hazard_rate_p75_relative_to_p50': SurvivalRateParameters.hazard_rate_p75_relative_to_p50,
-        'max_proportion_of_PRC_energy_consumption': CovertDatacenterParameters.max_proportion_of_PRC_energy_consumption,
-        'total_GW_of_PRC_energy_consumption': CovertDatacenterParameters.total_GW_of_PRC_energy_consumption,
-        'construction_labor_per_MW_per_year': CovertDatacenterParameters.construction_labor_per_MW_per_year,
-        'relative_sigma_construction_labor_per_MW_per_year': CovertDatacenterParameters.relative_sigma_construction_labor_per_MW_per_year,
-        'operating_labor_per_MW': CovertDatacenterParameters.operating_labor_per_MW,
-        'relative_sigma_operating_labor_per_MW': CovertDatacenterParameters.relative_sigma_operating_labor_per_MW,
-        'mean_detection_time_of_covert_site_for_100_workers': CovertProjectParameters.mean_detection_time_for_100_workers,
-        'mean_detection_time_of_covert_site_for_1000_workers': CovertProjectParameters.mean_detection_time_for_1000_workers,
-        'variance_of_detection_time_given_num_workers': CovertProjectParameters.variance_of_detection_time_given_num_workers,
-    }
+    # Pass current parameter values to template
+    defaults = app_params.to_dict()
     return render_template('index.html', defaults=defaults)
 
 @app.route('/run_simulation', methods=['POST'])
@@ -75,276 +42,61 @@ def run_simulation():
     except Exception as e:
         print(f"ERROR parsing request: {e}", flush=True)
         return jsonify({"error": str(e)}), 400
+    
+    # Clear caches
+    clear_metalog_cache()
 
-    # Extract parameters
-    agreement_year = float(data.get('agreement_year', 2030))
-    end_year = float(data.get('end_year', 2037))
-    increment = float(data.get('increment', 0.1))
-    num_simulations = int(data.get('num_simulations', 60))
-
-    # PRC strategy parameters
-    run_covert_project = data.get('run_covert_project', True)
-    proportion_of_initial_chip_stock_to_divert = float(data.get('proportion_of_initial_chip_stock_to_divert', 0.05))
-
-    # Datacenter strategic choices
-    GW_per_initial_datacenter = float(data.get('GW_per_initial_datacenter', 5))
-    number_of_initial_datacenters = float(data.get('number_of_initial_datacenters', 0.1))
-    GW_per_year_of_concealed_datacenters = float(data.get('GW_per_year_of_concealed_datacenters', 1))
-
-    # Fab strategic choices
-    build_covert_fab = data.get('build_covert_fab', True)
-    operating_labor = int(data.get('operating_labor', 728))
-    construction_labor = int(data.get('construction_labor', 448))
-    process_node_str = data.get('process_node', 'best_indigenous_gte_28nm')
-    scanner_proportion = float(data.get('scanner_proportion', 0.102))
-
-    print(f"DEBUG: Received scanner_proportion = {scanner_proportion}", flush=True)
-    print(f"DEBUG: operating_labor = {operating_labor}, construction_labor = {construction_labor}", flush=True)
+    # Update module-level constants from app_params
+    import backend.classes.covert_fab as covert_fab
+    covert_fab.PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE = app_params.covert_project_parameters.covert_fab_parameters.Probability_of_90p_PRC_localization_at_node.copy()
 
     # US prior probabilities
-    p_project_exists = float(data.get('p_project_exists', 0.2))
-    p_fab_exists = float(data.get('p_fab_exists', 0.1))
-
-    # Initial PRC compute stock parameters
-    print(f"DEBUG: Received compute stock params from client: total_2025={data.get('total_prc_compute_stock_in_2025')}, growth={data.get('annual_growth_rate_of_prc_compute_stock')}, sigma={data.get('relative_sigma_of_prc_compute_stock')}", flush=True)
-    if 'h100_power_watts' in data:
-        InitialPRCDarkComputeParameters.h100_power_watts = float(data['h100_power_watts'])
-    if 'total_prc_compute_stock_in_2025' in data:
-        InitialPRCDarkComputeParameters.total_prc_compute_stock_in_2025 = float(data['total_prc_compute_stock_in_2025'])
-    if 'annual_growth_rate_of_prc_compute_stock' in data:
-        InitialPRCDarkComputeParameters.annual_growth_rate_of_prc_compute_stock = float(data['annual_growth_rate_of_prc_compute_stock'])
-    if 'relative_sigma_of_prc_compute_stock' in data:
-        InitialPRCDarkComputeParameters.relative_sigma_of_prc_compute_stock = float(data['relative_sigma_of_prc_compute_stock'])
-    if 'us_intelligence_median_error_in_estimate_of_prc_compute_stock' in data:
-        InitialPRCDarkComputeParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock = float(data['us_intelligence_median_error_in_estimate_of_prc_compute_stock'])
-    if 'energy_efficiency_relative_to_h100' in data:
-        InitialPRCDarkComputeParameters.energy_efficiency_relative_to_h100 = float(data['energy_efficiency_relative_to_h100'])
-    print(f"DEBUG: Updated params to: total_2025={InitialPRCDarkComputeParameters.total_prc_compute_stock_in_2025}, growth={InitialPRCDarkComputeParameters.annual_growth_rate_of_prc_compute_stock}, sigma={InitialPRCDarkComputeParameters.relative_sigma_of_prc_compute_stock}", flush=True)
-
-    # Survival rate parameters
-    from util import clear_metalog_cache
-
-    survival_params_changed = False
-    if 'initial_hazard_rate_p50' in data:
-        SurvivalRateParameters.initial_hazard_rate_p50 = float(data['initial_hazard_rate_p50'])
-        survival_params_changed = True
-    if 'increase_of_hazard_rate_per_year_p50' in data:
-        SurvivalRateParameters.increase_of_hazard_rate_per_year_p50 = float(data['increase_of_hazard_rate_per_year_p50'])
-        survival_params_changed = True
-    if 'hazard_rate_p25_relative_to_p50' in data:
-        SurvivalRateParameters.hazard_rate_p25_relative_to_p50 = float(data['hazard_rate_p25_relative_to_p50'])
-        survival_params_changed = True
-    if 'hazard_rate_p75_relative_to_p50' in data:
-        SurvivalRateParameters.hazard_rate_p75_relative_to_p50 = float(data['hazard_rate_p75_relative_to_p50'])
-        survival_params_changed = True
-
-    # Clear metalog cache if survival parameters changed
-    if survival_params_changed:
-        clear_metalog_cache()
-
-    # H100 power parameters
-    from stock_model import H100_TPP_PER_CHIP
-    import stock_model
-    import covert_fab
-
-    if 'h100_power_watts' in data:
-        h100_power_watts = float(data['h100_power_watts'])
-        h100_watts_per_tpp = h100_power_watts / H100_TPP_PER_CHIP
-        # Update the constants in both modules
-        stock_model.H100_WATTS_PER_TPP = h100_watts_per_tpp
-        covert_fab.H100_WATTS_PER_TPP = h100_watts_per_tpp
-
-    if 'h100_watts_per_tpp' in data:
-        # Also allow direct setting via h100_watts_per_tpp
-        stock_model.H100_WATTS_PER_TPP = float(data['h100_watts_per_tpp'])
-        covert_fab.H100_WATTS_PER_TPP = float(data['h100_watts_per_tpp'])
-
-    # Fab model parameters - update all parameters from data
-    if 'median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock' in data:
-        CovertFabParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock = float(data['median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock'])
-    if 'mean_detection_time_for_100_workers' in data:
-        CovertProjectParameters.mean_detection_time_for_100_workers = float(data['mean_detection_time_for_100_workers'])
-    if 'mean_detection_time_for_1000_workers' in data:
-        CovertProjectParameters.mean_detection_time_for_1000_workers = float(data['mean_detection_time_for_1000_workers'])
-    if 'variance_of_detection_time_given_num_workers' in data:
-        CovertProjectParameters.variance_of_detection_time_given_num_workers = float(data['variance_of_detection_time_given_num_workers'])
-    if 'wafers_per_month_per_worker' in data:
-        CovertFabParameters.wafers_per_month_per_worker = float(data['wafers_per_month_per_worker'])
-    if 'labor_productivity_relative_sigma' in data:
-        CovertFabParameters.labor_productivity_relative_sigma = float(data['labor_productivity_relative_sigma'])
-    if 'wafers_per_month_per_lithography_scanner' in data:
-        CovertFabParameters.wafers_per_month_per_lithography_scanner = float(data['wafers_per_month_per_lithography_scanner'])
-    if 'scanner_productivity_relative_sigma' in data:
-        CovertFabParameters.scanner_productivity_relative_sigma = float(data['scanner_productivity_relative_sigma'])
-    if 'construction_time_for_5k_wafers_per_month' in data:
-        CovertFabParameters.construction_time_for_5k_wafers_per_month = float(data['construction_time_for_5k_wafers_per_month'])
-    if 'construction_time_for_100k_wafers_per_month' in data:
-        CovertFabParameters.construction_time_for_100k_wafers_per_month = float(data['construction_time_for_100k_wafers_per_month'])
-    if 'construction_time_relative_sigma' in data:
-        CovertFabParameters.construction_time_relative_sigma = float(data['construction_time_relative_sigma'])
-    if 'construction_workers_per_1000_wafers_per_month' in data:
-        CovertFabParameters.construction_workers_per_1000_wafers_per_month = float(data['construction_workers_per_1000_wafers_per_month'])
-    if 'h100_sized_chips_per_wafer' in data:
-        CovertFabParameters.h100_sized_chips_per_wafer = float(data['h100_sized_chips_per_wafer'])
-    if 'transistor_density_scaling_exponent' in data:
-        CovertFabParameters.transistor_density_scaling_exponent = float(data['transistor_density_scaling_exponent'])
-    if 'architecture_efficiency_improvement_per_year' in data:
-        CovertFabParameters.architecture_efficiency_improvement_per_year = float(data['architecture_efficiency_improvement_per_year'])
-    if 'prc_additional_lithography_scanners_produced_per_year' in data:
-        CovertFabParameters.prc_additional_lithography_scanners_produced_per_year = float(data['prc_additional_lithography_scanners_produced_per_year'])
-    if 'prc_lithography_scanners_produced_in_first_year' in data:
-        CovertFabParameters.prc_lithography_scanners_produced_in_first_year = float(data['prc_lithography_scanners_produced_in_first_year'])
-    if 'prc_scanner_production_relative_sigma' in data:
-        CovertFabParameters.prc_scanner_production_relative_sigma = float(data['prc_scanner_production_relative_sigma'])
-    if 'watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended' in data:
-        CovertFabParameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended = float(data['watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended'])
-    if 'watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended' in data:
-        CovertFabParameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended = float(data['watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended'])
-    if 'transistor_density_at_end_of_dennard_scaling_m_per_mm2' in data:
-        CovertFabParameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2 = float(data['transistor_density_at_end_of_dennard_scaling_m_per_mm2'])
-
-    # Update localization probabilities (only two points: 2025 and 2031)
-    if 'localization_130nm_2025' in data:
-        CovertFabParameters.Probability_of_90p_PRC_localization_at_node[ProcessNode.nm130] = [
-            (2025, float(data['localization_130nm_2025'])),
-            (2031, float(data['localization_130nm_2031']))
-        ]
-    if 'localization_28nm_2025' in data:
-        CovertFabParameters.Probability_of_90p_PRC_localization_at_node[ProcessNode.nm28] = [
-            (2025, float(data['localization_28nm_2025'])),
-            (2031, float(data['localization_28nm_2031']))
-        ]
-    if 'localization_14nm_2025' in data:
-        CovertFabParameters.Probability_of_90p_PRC_localization_at_node[ProcessNode.nm14] = [
-            (2025, float(data['localization_14nm_2025'])),
-            (2031, float(data['localization_14nm_2031']))
-        ]
-    if 'localization_7nm_2025' in data:
-        CovertFabParameters.Probability_of_90p_PRC_localization_at_node[ProcessNode.nm7] = [
-            (2025, float(data['localization_7nm_2025'])),
-            (2031, float(data['localization_7nm_2031']))
-        ]
-
-    # Covert datacenter parameters
-
-    if 'max_proportion_of_PRC_energy_consumption' in data:
-        CovertDatacenterParameters.max_proportion_of_PRC_energy_consumption = float(data['max_proportion_of_PRC_energy_consumption'])
-    if 'total_GW_of_PRC_energy_consumption' in data:
-        CovertDatacenterParameters.total_GW_of_PRC_energy_consumption = float(data['total_GW_of_PRC_energy_consumption'])
-    if 'construction_labor_per_MW_per_year' in data:
-        CovertDatacenterParameters.construction_labor_per_MW_per_year = float(data['construction_labor_per_MW_per_year'])
-    if 'relative_sigma_construction_labor_per_MW_per_year' in data:
-        CovertDatacenterParameters.relative_sigma_construction_labor_per_MW_per_year = float(data['relative_sigma_construction_labor_per_MW_per_year'])
-    if 'operating_labor_per_MW' in data:
-        CovertDatacenterParameters.operating_labor_per_MW = float(data['operating_labor_per_MW'])
-    if 'relative_sigma_operating_labor_per_MW' in data:
-        CovertDatacenterParameters.relative_sigma_operating_labor_per_MW = float(data['relative_sigma_operating_labor_per_MW'])
-    if 'mean_detection_time_of_covert_site_for_100_workers' in data:
-        CovertProjectParameters.mean_detection_time_for_100_workers = float(data['mean_detection_time_of_covert_site_for_100_workers'])
-    if 'mean_detection_time_of_covert_site_for_1000_workers' in data:
-        CovertProjectParameters.mean_detection_time_for_1000_workers = float(data['mean_detection_time_of_covert_site_for_1000_workers'])
-    if 'variance_of_detection_time_given_num_workers' in data:
-        CovertProjectParameters.variance_of_detection_time_given_num_workers = float(data['variance_of_detection_time_given_num_workers'])
+    p_project_exists = app_params.covert_project_parameters.p_project_exists
 
     try:
-        # Create custom covert project strategy with user parameters
-        # Map process node string to enum or keep as strategy string
-        process_node_map = {
-            'best_indigenous': 'best_indigenous',
-            'best_indigenous_gte_28nm': 'best_indigenous_gte_28nm',
-            'best_indigenous_gte_14nm': 'best_indigenous_gte_14nm',
-            'best_indigenous_gte_7nm': 'best_indigenous_gte_7nm',
-            'best_available_indigenously': 'best_indigenous',  # Legacy support
-            'nm130': ProcessNode.nm130,
-            'nm28': ProcessNode.nm28,
-            'nm14': ProcessNode.nm14,
-            'nm7': ProcessNode.nm7
-        }
-        process_node = process_node_map.get(process_node_str, process_node_str)
-
-        print(f"DEBUG: About to create strategy...", flush=True)
-        custom_strategy = CovertProjectStrategy(
-            run_a_covert_project=run_covert_project,
-            proportion_of_initial_compute_stock_to_divert=proportion_of_initial_chip_stock_to_divert,
-            GW_per_initial_datacenter=GW_per_initial_datacenter,
-            number_of_initial_datacenters=number_of_initial_datacenters,
-            GW_per_year_of_concealed_datacenters=GW_per_year_of_concealed_datacenters,
-            build_a_covert_fab=build_covert_fab,
-            covert_fab_operating_labor=operating_labor,
-            covert_fab_construction_labor=construction_labor,
-            covert_fab_process_node=process_node,
-            covert_fab_proportion_of_prc_lithography_scanners_devoted=scanner_proportion
+        # Create model using updated app_params
+        model = Model(
+            year_us_prc_agreement_goes_into_force=app_params.simulation_settings.start_year,
+            end_year=app_params.simulation_settings.end_year,
+            increment=app_params.simulation_settings.time_step_years,
+            prc_strategy=app_params.covert_project_strategy,
+            p_project_exists=p_project_exists
         )
 
-        print(f"DEBUG: Created strategy with scanner_proportion = {custom_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted}", flush=True)
-    except Exception as e:
-        print(f"ERROR creating strategy: {e}", flush=True)
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-    # Create and run model
-    model = Model(
-        year_us_prc_agreement_goes_into_force=agreement_year,
-        end_year=end_year,
-        increment=increment,
-        prc_strategy=custom_strategy  # PRC's actual strategy from user input
-    )
-
-    # Update initial detector beliefs (US's prior probabilities)
-    # Note: US beliefs about PRC strategy are always best_prc_covert_project_strategy
-    model.initial_detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"].p_project_exists = p_project_exists
-    model.initial_detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"].p_covert_fab_exists = p_fab_exists
-
-    try:
         # Run simulations
         print(f"DEBUG: Running simulations...", flush=True)
-        model.run_simulations(num_simulations=num_simulations)
-
-        # Debug: Check a sample fab's production capacity
-        if model.simulation_results:
-            covert_projects, _ = model.simulation_results[0]
-            if 'prc_covert_project' in covert_projects:
-                fab = covert_projects['prc_covert_project'].covert_fab
-                if fab:
-                    print(f"DEBUG: Sample fab construction_start_year = {fab.construction_start_year}", flush=True)
-                    print(f"DEBUG: Sample fab construction_duration = {fab.construction_duration}", flush=True)
-                    print(f"DEBUG: Sample fab total_prc_lithography_scanners_for_node = {fab.total_prc_lithography_scanners_for_node}", flush=True)
-                    print(f"DEBUG: Sample fab process_node = {fab.process_node}", flush=True)
-                    print(f"DEBUG: Sample fab wafer_starts_per_month = {fab.wafer_starts_per_month}", flush=True)
-                    print(f"DEBUG: Sample fab production_capacity = {fab.production_capacity}", flush=True)
+        model.run_simulations(num_simulations=app_params.simulation_settings.num_simulations)
 
         # Sample initial dark compute stock distribution
-        print(f"DEBUG: Sampling with params - total_2025={InitialPRCDarkComputeParameters.total_prc_compute_stock_in_2025}, growth_rate={InitialPRCDarkComputeParameters.annual_growth_rate_of_prc_compute_stock}, sigma={InitialPRCDarkComputeParameters.relative_sigma_of_prc_compute_stock}, divert_proportion={proportion_of_initial_chip_stock_to_divert}", flush=True)
-        initial_prc_stock_samples = []  # Total PRC compute stock before diversion
-        initial_compute_samples = []  # Dark compute diverted to covert project
-        initial_lr_samples = []  # Combined likelihood ratios for detection
-        lr_prc_accounting_samples = []  # Individual LR from PRC compute accounting
-        lr_global_accounting_samples = []  # Individual LR from global compute production accounting
+        initial_prc_stock_samples = []
+        initial_compute_samples = []
+        initial_lr_samples = []
+        lr_prc_accounting_samples = []
+        lr_global_accounting_samples = []
+
         for _ in range(1000):
-            compute_stock = PRCDarkComputeStock(agreement_year, proportion_of_initial_chip_stock_to_divert, DEFAULT_STRATEGY.proportion_of_initial_compute_stock_to_divert)
+            compute_stock = PRCDarkComputeStock(
+                app_params.simulation_settings.start_year,
+                app_params.covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
+                app_params.covert_project_strategy.proportion_of_initial_compute_stock_to_divert
+            )
             initial_prc_stock_samples.append(compute_stock.initial_prc_stock)
             initial_compute_samples.append(compute_stock.initial_prc_dark_compute)
-            # Get individual LRs
             lr_prc = compute_stock.lr_from_prc_compute_accounting
             lr_global = compute_stock.lr_from_global_compute_production_accounting
             lr_prc_accounting_samples.append(lr_prc)
             lr_global_accounting_samples.append(lr_global)
-            # Get combined LR from both PRC and global compute accounting
             combined_lr = lr_prc * lr_global
             initial_lr_samples.append(combined_lr)
-        print(f"DEBUG: Sampled {len(initial_compute_samples)} dark compute samples, min={min(initial_compute_samples):.0f}, max={max(initial_compute_samples):.0f}, mean={sum(initial_compute_samples)/len(initial_compute_samples):.0f}", flush=True)
 
-        # Calculate detection probabilities for different LR thresholds
+        # Calculate detection probabilities
         detection_probs = {}
         for threshold in LIKELIHOOD_RATIOS:
             num_detected = sum(1 for lr in initial_lr_samples if lr >= threshold)
             detection_probs[f"{threshold}x"] = num_detected / len(initial_lr_samples)
-        print(f"DEBUG: Detection probabilities - {detection_probs}", flush=True)
 
         # Extract data for plots
-        print(f"DEBUG: Extracting plot data...", flush=True)
-        results = extract_plot_data(model, p_fab_exists, p_project_exists)
+        results = extract_plot_data(model, p_project_exists)
 
         # Add initial compute stock distribution to results
         results['initial_prc_stock_samples'] = initial_prc_stock_samples
@@ -353,9 +105,25 @@ def run_simulation():
         results['lr_prc_accounting_samples'] = lr_prc_accounting_samples
         results['lr_global_accounting_samples'] = lr_global_accounting_samples
         results['lr_combined_samples'] = initial_lr_samples
-        results['diversion_proportion'] = proportion_of_initial_chip_stock_to_divert
+        results['diversion_proportion'] = app_params.covert_project_strategy.proportion_of_initial_compute_stock_to_divert
 
-        print(f"DEBUG: Returning results...", flush=True)
+        # Convert numpy types to native Python types for JSON serialization
+        def convert_numpy_types(obj):
+            if isinstance(obj, dict):
+                return {k: convert_numpy_types(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_numpy_types(item) for item in obj]
+            elif isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            else:
+                return obj
+
+        results = convert_numpy_types(results)
+
         return jsonify(results)
     except Exception as e:
         print(f"ERROR running simulation: {e}", flush=True)
@@ -363,9 +131,9 @@ def run_simulation():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-def extract_plot_data(model, p_fab_exists, p_project_exists):
+def extract_plot_data(model, p_project_exists):
     """Extract plot data from model simulation results"""
-    from stock_model import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+    from backend.classes.dark_compute_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
 
     if not model.simulation_results:
         return {"error": "No simulation results"}
@@ -500,7 +268,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
             wafer_starts.append(covert_projects["prc_covert_project"].get_fab_wafer_starts_per_month())
 
             # Architecture efficiency and compute per wafer (2022 architectures)
-            from covert_fab import estimate_architecture_efficiency_relative_to_h100
+            from backend.classes.covert_fab import estimate_architecture_efficiency_relative_to_h100
             arch_efficiency = estimate_architecture_efficiency_relative_to_h100(year, agreement_year)
             architecture_efficiency.append(arch_efficiency)
 
@@ -627,13 +395,8 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
     ]
 
     # Extract compute before detection data for multiple thresholds
-    # Calculate thresholds based on prior and likelihood ratios
-    prior_odds = p_fab_exists / (1 - p_fab_exists)
-    detection_thresholds = []
-    for lr in LIKELIHOOD_RATIOS:
-        posterior_odds = prior_odds * lr
-        threshold = posterior_odds / (1 + posterior_odds)
-        detection_thresholds.append(threshold)
+    # Note: detection_thresholds removed with p_fab_exists
+    detection_thresholds = [0.5]  # Default threshold for detection
     compute_ccdfs = {}
     op_time_ccdfs = {}
 
@@ -778,7 +541,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
                     # Calculate energy (GW) from H100e TPP
                     # Formula: energy_gw = h100e_tpp * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP / energy_efficiency / 1e9
                     energy_gw = (h100e_at_detection * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
-                                InitialPRCDarkComputeParameters.energy_efficiency_relative_to_h100 / 1e9)
+                                app_params.covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100 / 1e9)
                     individual_energy_before_detection.append(energy_gw)
 
                     # Debug: Check fabs that finished construction but have 0 compute
@@ -829,7 +592,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
 
                     # Calculate energy (GW) from H100e TPP
                     energy_gw = (h100e_at_end * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
-                                InitialPRCDarkComputeParameters.energy_efficiency_relative_to_h100 / 1e9)
+                                app_params.covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100 / 1e9)
                     individual_energy_before_detection.append(energy_gw)
 
         # Calculate CCDFs for this threshold
@@ -928,7 +691,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
 
             # Calculate energy (GW) from H100e TPP
             energy_gw = (operational_h100e * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
-                        InitialPRCDarkComputeParameters.energy_efficiency_relative_to_h100 / 1e9)
+                        app_params.covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100 / 1e9)
 
             # Calculate time operational (detection year - agreement start)
             time_operational = detection_year - agreement_year
@@ -960,7 +723,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
             operational_h100e = operational_compute.total_h100e_tpp()
 
             energy_gw = (operational_h100e * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
-                        InitialPRCDarkComputeParameters.energy_efficiency_relative_to_h100 / 1e9)
+                        app_params.covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100 / 1e9)
 
             time_operational = final_year - agreement_year
 
@@ -1214,7 +977,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
         print(f"=====================================\n", flush=True)
 
         # Calculate watts per TPP for each simulation's transistor density
-        from covert_fab import predict_watts_per_tpp_from_transistor_density, H100_TRANSISTOR_DENSITY_M_PER_MM2, H100_WATTS_PER_TPP
+        from backend.classes.covert_fab import predict_watts_per_tpp_from_transistor_density, H100_TRANSISTOR_DENSITY_M_PER_MM2, H100_WATTS_PER_TPP
         watts_per_tpp_by_sim = []
         for sim_densities in transistor_density_by_sim:
             sim_watts = []
@@ -1250,7 +1013,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
         }
 
     # Calculate architecture efficiency at agreement year
-    from covert_fab import estimate_architecture_efficiency_relative_to_h100
+    from backend.classes.covert_fab import estimate_architecture_efficiency_relative_to_h100
     architecture_efficiency_at_agreement = estimate_architecture_efficiency_relative_to_h100(agreement_year, agreement_year)
 
     # Calculate H100-years time series (cumulative H100-years at each time point)

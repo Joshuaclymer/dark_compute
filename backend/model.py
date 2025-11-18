@@ -21,8 +21,8 @@ class UpdateSource(Enum):
 # ============================================================================
 
 # Import CovertProject and CovertProjectStrategy
-from covert_project import CovertProject
-from paramaters import CovertProjectStrategy
+from backend.classes.covert_project import CovertProject
+from backend.paramaters import CovertProjectStrategy
 
 @dataclass
 class DetectorStrategy:
@@ -128,6 +128,7 @@ class Model:
             end_year : float,
             increment: float,
             prc_strategy: 'CovertProjectStrategy' = None,
+            p_project_exists: float = 0.2
         ):
         self.year_us_prc_agreement_goes_into_force = year_us_prc_agreement_goes_into_force
         self.end_year = end_year
@@ -143,7 +144,7 @@ class Model:
                 strategy = default_us_detection_strategy,
                 beliefs_about_projects = {
                     "prc_covert_project" : BeliefsAboutProject(
-                        p_project_exists = 0.2,
+                        p_project_exists = p_project_exists,
                         p_covert_fab_exists = 0.1,
                         # US beliefs about PRC strategy use default CovertProjectStrategy
                         project_strategy_conditional_on_existence = CovertProjectStrategy(),

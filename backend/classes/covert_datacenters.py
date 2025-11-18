@@ -2,14 +2,8 @@ import numpy as np
 from scipy import stats
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from util import sample_from_log_normal, lr_vs_num_workers
-from paramaters import CovertDatacenterParameters, CovertProjectParameters
-
-
-    # Data centers not built for concealment
-
-    # meters_squared_of_footprint_area_per_gw = 1e-2
-    # relative_sigma_meters_squared_of_footprint_per_gw = 0.1
+from backend.util import sample_from_log_normal, lr_vs_num_workers
+from backend.paramaters import CovertDatacenterParameters, CovertProjectParameters
 
 def sample_construction_labor_per_GW_per_year():
     median = CovertDatacenterParameters.construction_labor_per_MW_per_year * 1000

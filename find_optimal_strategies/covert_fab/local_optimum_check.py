@@ -11,8 +11,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-import model
-from model import Model, CovertProjectStrategy
+import backend_model.model as model
+from backend_model.model import Model, CovertProjectStrategy
 
 def run_local_optimum_analysis(
     base_operational_workers=728,

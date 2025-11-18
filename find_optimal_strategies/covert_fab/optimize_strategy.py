@@ -11,8 +11,8 @@ to maximize P(compute > 500K H100e before detection)
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
-import model
-from model import Model, CovertProjectStrategy
+import backend_model.model as model
+from backend_model.model import Model, CovertProjectStrategy
 import pickle
 import os
 

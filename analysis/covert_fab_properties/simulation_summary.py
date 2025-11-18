@@ -7,7 +7,7 @@ the complementary cumulative distribution function (CCDF) showing P(H100e > x) b
 
 import numpy as np
 import matplotlib.pyplot as plt
-from model import Model
+from backend_model.model import Model
 
 # Configuration
 AGREEMENT_START_YEARS = [2027, 2030]

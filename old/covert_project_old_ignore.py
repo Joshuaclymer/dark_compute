@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
-from covert_fab import CovertFab, PRCCovertFab, ProcessNode, FabNotBuiltException, Compute
-from stock_model import PRCDarkComputeStock
-from datacenter_model import CovertPRCDatacenters
-from util import lr_vs_num_workers
-from paramaters import CovertProjectStrategy, CovertProjectParameters
+from backend_model.covert_fab import CovertFab, PRCCovertFab, ProcessNode, FabNotBuiltException, Compute
+from backend.classes.dark_compute_stock import PRCDarkComputeStock
+from backend.classes.covert_datacenters import CovertPRCDatacenters
+from backend_model.util import lr_vs_num_workers
+from backend_model.paramaters import CovertProjectStrategy, CovertProjectParameters
 
 
 @dataclass

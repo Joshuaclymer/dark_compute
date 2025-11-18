@@ -2,44 +2,17 @@ import numpy as np
 import random
 from typing import List, Dict
 from abc import ABC, abstractmethod
+from paramaters import InitialPRCDarkComputeParameters, SurvivalRateParameters
 
-# Constants for H100 chip (duplicated from fab_model to avoid circular import)
+# Constants for H100 chip (duplicated from covert_fab to avoid circular import)
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
 H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass (default, can be overridden)
 
-class InitialPRCComputeStockParameters():
-
-    # H100 power consumption
-    h100_power_watts = 700  # Total power consumption of NVIDIA H100 GPU
-
-    # PRC compute stock
-    total_prc_compute_stock_in_2025 = 1e6
-    energy_efficiency_relative_to_h100 = 0.5
-    annual_growth_rate_of_prc_compute_stock = 2.4
-    relative_sigma_of_prc_compute_stock = 0.1
-
-    us_intelligence_median_error_in_estimate_of_prc_compute_stock = 0.07
-
-    # Global compute stock parameters
-    total_global_compute_in_2025 = 1e7
-    annual_growth_rate_of_global_compute = 2.4
-    relative_sigma_of_global_compute = 0.1
-
-    median_unreported_compute_owned_by_non_prc_actors = 1e6
-    relative_sigma_unreported_compute_owned_by_non_prc_actors = 0.5
-
-class SurvivalRateParameters():
-
-    # Survival rate parameters
-    initial_hazard_rate_p50 = 0.01
-    increase_of_hazard_rate_per_year_p50 = 0.0035
-    hazard_rate_p25_relative_to_p50 = 0.1
-    hazard_rate_p75_relative_to_p50 = 6
 
 def sample_initial_prc_compute_stock(year):
     """Sample initial PRC compute stock based on year and proportion diverted to covert project"""
     from util import sample_from_log_normal
-    params = InitialPRCComputeStockParameters
+    params = InitialPRCDarkComputeParameters
     years_since_2025 = year - 2025
     median_total_stock = params.total_prc_compute_stock_in_2025 * (params.annual_growth_rate_of_prc_compute_stock ** years_since_2025)
     relative_sigma = params.relative_sigma_of_prc_compute_stock
@@ -50,7 +23,7 @@ def sample_initial_prc_compute_stock(year):
 
 def sample_us_estimate_of_prc_compute_stock(prc_compute_stock):
     # Calculate pdf of absolute relative error
-    k = -np.log(0.5) / InitialPRCComputeStockParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock
+    k = -np.log(0.5) / InitialPRCDarkComputeParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock
 
     u = np.random.uniform(0, 1)
 
@@ -91,7 +64,7 @@ def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion
     us_estimate_absolute_error_if_project_exists = abs(us_estimate_of_prc_compute_stock - true_compute_stock_if_covert_project_exists) / true_compute_stock_if_covert_project_exists
 
     # PDF of absolute error
-    k = -np.log(0.5) / InitialPRCComputeStockParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock
+    k = -np.log(0.5) / InitialPRCDarkComputeParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock
     p_observe_us_estimate_error_if_project_exists = k * np.exp(-k * us_estimate_absolute_error_if_project_exists)
 
     # Case 2: Fab does not exist
@@ -110,7 +83,7 @@ def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion
 def sample_global_compute(year):
     """Sample global compute stock based on year"""
     from util import sample_from_log_normal
-    params = InitialPRCComputeStockParameters
+    params = InitialPRCDarkComputeParameters
     years_since_2025 = year - 2025
     median_total_stock = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** years_since_2025)
     relative_sigma = params.relative_sigma_of_global_compute
@@ -123,7 +96,7 @@ def sample_reported_global_compute(prc_compute_stock_diverted, global_compute):
     def _sample_unreported_compute_owned_by_non_prc_actors():
         """Sample unreported compute owned by non-PRC actors based on year"""
         from util import sample_from_log_normal
-        params = InitialPRCComputeStockParameters
+        params = InitialPRCDarkComputeParameters
         median = params.median_unreported_compute_owned_by_non_prc_actors = 1e6
         relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors = 0.5
 
@@ -140,7 +113,7 @@ def sample_reported_global_compute(prc_compute_stock_diverted, global_compute):
     return reported_global_compute
 
 def get_reported_global_compute_production(year, prc_compute_stock_diverted):
-    total_global_compute = InitialPRCComputeStockParameters.total_global_compute_in_2025 * (InitialPRCComputeStockParameters.annual_growth_rate_of_global_compute ** (year - 2025))
+    total_global_compute = InitialPRCDarkComputeParameters.total_global_compute_in_2025 * (InitialPRCDarkComputeParameters.annual_growth_rate_of_global_compute ** (year - 2025))
     return total_global_compute - prc_compute_stock_diverted
 
 def lr_from_global_compute_production_accounting(reported_historical_global_compute_production, reported_global_compute, reported_prc_compute_stock, optimal_diversion_proportion):
@@ -148,7 +121,7 @@ def lr_from_global_compute_production_accounting(reported_historical_global_comp
     discrepency = reported_global_compute - reported_historical_global_compute_production
 
     # Case 1: There's no covert PRC project
-    params = InitialPRCComputeStockParameters
+    params = InitialPRCDarkComputeParameters
     relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors
     sigma_log = np.sqrt(np.log(1 + relative_sigma**2))
     mu_log = np.log(params.median_unreported_compute_owned_by_non_prc_actors)
@@ -280,7 +253,7 @@ class PRCDarkComputeStock():
         self.dark_compute_added_per_year = {}
 
         # Initialize with a default chip representing the initial PRC dark compute stock
-        params = InitialPRCComputeStockParameters
+        params = InitialPRCDarkComputeParameters
         self.dark_compute_added_per_year[agreement_year] = {
             'initial_prc_stock': {
                 'count': 1.0,  # Normalized count
@@ -289,35 +262,26 @@ class PRCDarkComputeStock():
                 'bandwidth': 1.8  # Default inter-chip bandwidth in tbps (H100-like)
             }
         } 
-        # TEMPORARILY DISABLED FOR PERFORMANCE
-        self.us_estimate_of_prc_stock = self.initial_prc_stock  # Skip sampling
-        self.lr_from_prc_compute_accounting = 1.0  # No detection evidence
-        self.global_compute = 0  # Skip global compute sampling
-        self.reported_global_compute = 0  # Skip reported global compute
-        self.reported_historical_global_compute_production = 0  # Skip historical production
-        self.lr_from_global_compute_production_accounting = 1.0  # No detection evidence
 
-        # # Original code (disabled):
-        # self.us_estimate_of_prc_stock = sample_us_estimate_of_prc_compute_stock(self.initial_prc_stock)
-        # self.lr_from_prc_compute_accounting = lr_from_prc_compute_accounting(
-        #     reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
-        #     optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
-        #     us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock
-        # )
-        # self.global_compute = sample_global_compute(agreement_year)
-        # print(f"DEBUG: global compute: {self.global_compute}", flush=True)
+        self.us_estimate_of_prc_stock = sample_us_estimate_of_prc_compute_stock(self.initial_prc_stock)
+        self.lr_from_prc_compute_accounting = lr_from_prc_compute_accounting(
+            reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
+            optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
+            us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock
+        )
+        self.global_compute = sample_global_compute(agreement_year)
+        print(f"DEBUG: global compute: {self.global_compute}", flush=True)
 
-        # self.reported_global_compute = sample_reported_global_compute(self.initial_prc_dark_compute, self.global_compute)
-        # print(f"DEBUG: reported global compute: {self.reported_global_compute}", flush=True)
+        self.reported_global_compute = sample_reported_global_compute(self.initial_prc_dark_compute, self.global_compute)
+        print(f"DEBUG: reported global compute: {self.reported_global_compute}", flush=True)
 
-        # self.reported_historical_global_compute_production = get_reported_global_compute_production(agreement_year, self.initial_prc_dark_compute)
-        # self.lr_from_global_compute_production_accounting = lr_from_global_compute_production_accounting(
-        #     reported_historical_global_compute_production= self.reported_historical_global_compute_production,
-        #     reported_global_compute=self.reported_global_compute,
-        #     reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
-        #     optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert
-        # )
-        # Sample both hazard rates using the correlated multiplier
+        self.reported_historical_global_compute_production = get_reported_global_compute_production(agreement_year, self.initial_prc_dark_compute)
+        self.lr_from_global_compute_production_accounting = lr_from_global_compute_production_accounting(
+            reported_historical_global_compute_production= self.reported_historical_global_compute_production,
+            reported_global_compute=self.reported_global_compute,
+            reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
+            optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert
+        )
         self.initial_hazard_rate, self.increase_in_hazard_rate_per_year = sample_hazard_rates()
     
     def add_dark_compute(self, year : float, additional_dark_compute : float):
@@ -327,7 +291,7 @@ class PRCDarkComputeStock():
             year: The year to add compute for
             additional_dark_compute: The H100-equivalent compute to add
         """
-        params = InitialPRCComputeStockParameters
+        params = InitialPRCDarkComputeParameters
         if year not in self.dark_compute_added_per_year:
             self.dark_compute_added_per_year[year] = {}
 

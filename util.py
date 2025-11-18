@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.stats import gamma
 import pymetalog as pm
+import numpy as np
+from scipy.interpolate import interp1d
+from scipy import stats
 
 # Cache for metalog distributions to avoid re-fitting the same distribution
 _metalog_cache = {}
@@ -120,3 +123,61 @@ def sample_from_metalog_3term_semi_bounded(p25: float, p50: float, p75: float) -
     result = max(result, 0)
 
     return result
+
+def lr_vs_num_workers(
+    years_since_start: float,
+    total_labor: int,
+    mean_detection_time_100_workers: float,
+    mean_detection_time_1000_workers: float,
+    variance_theta: float
+) -> float:
+    """
+    Sample detection time and calculate likelihood ratio from other intelligence strategies.
+    
+    Args:
+        years_since_construction_start: Years elapsed since construction began
+        total_labor: Total number of workers (construction + operation)
+        mean_detection_time_100: Mean detection time for 100 workers
+        mean_detection_time_1000: Mean detection time for 1000 workers
+        variance_theta: Variance parameter of detection time given num workers
+    
+    Returns:
+        float: Likelihood ratio LR = P(evidence|fab exists) / P(evidence|fab doesn't exist)
+    """
+    if years_since_start < 0:
+        return 1.0  # Project hasn't started yet
+    
+    if total_labor <= 0:
+        return 1.0  # No workers, no detection possible
+    
+    # Compute detection time constants
+    x1, mu1 = 100, mean_detection_time_100_workers
+    x2, mu2 = 1000, mean_detection_time_1000_workers
+    B = np.log(mu1 / mu2) / np.log(np.log10(x2) / np.log10(x1))
+    A = mu1 * (np.log10(x1) ** B)
+    
+    # Mean detection time: μ(x) = A / log10(x)^B
+    mu = A / (np.log10(total_labor) ** B)
+    
+    # Gamma distribution parameters
+    k = mu / variance_theta
+    
+    # Sample the time of detection
+    time_of_detection = stats.gamma.rvs(a=k, scale=variance_theta)
+    
+    # Check if current time has passed the detection time
+    if years_since_start >= time_of_detection:
+        return 100  # Very high LR - project has been detected
+    
+    # Evidence: No detection yet despite time elapsed
+    # P(not detected by time t | fab exists) = Survival function
+    p_not_detected_given_fab = stats.gamma.sf(
+        years_since_start, 
+        a=k, 
+        scale=variance_theta
+    )
+    
+    # Likelihood ratio
+    lr = p_not_detected_given_fab / 1.0
+    
+    return max(lr, 0.001)  # Floor at 0.001 to avoid numerical issues

@@ -1,3 +1,15 @@
+import numpy as np
+from scipy import stats
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Dict, Optional
+import random
+from util import sample_from_log_normal
+from stock_model import Chip, Compute
+from util import lr_vs_num_workers
+from paramaters import ProcessNode, CovertFabParameters, CovertProjectParameters
+
 """
 PRC Covert Semiconductor Fab Model
 
@@ -261,16 +273,6 @@ Then query compute production and likelihood ratio:
     likelihood_ratio = fab.likelihood_ratio_from_evidence(year=2030)
 """
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from enum import Enum
-import numpy as np
-from scipy.interpolate import interp1d
-from scipy import stats
-from typing import List, Dict, Optional
-import random
-from util import sample_from_log_normal
-from stock_model import Chip, Compute
 
 class FabNotBuiltException(Exception):
     """Exception raised when fab cannot be built due to process node threshold not being met"""
@@ -287,128 +289,12 @@ H100_TRANSISTOR_DENSITY_M_PER_MM2 = 98.28  # Million transistors per mm²
 H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
 
-class ProcessNode(Enum):
-    nm130 = "130nm"
-    nm28 = "28nm"
-    nm14 = "14nm"
-    nm7 = "7nm"
-
-    def to_nm(self) -> int:
-        """Extract the numeric nanometer value from the enum."""
-        return int(self.value.replace("nm", ""))
-
 class ProcessNodeStrategy(Enum):
     """Strategy for selecting process node for covert fab"""
     BEST_INDIGENOUS = "best_indigenous"
     BEST_INDIGENOUS_GTE_28NM = "best_indigenous_gte_28nm"
     BEST_INDIGENOUS_GTE_14NM = "best_indigenous_gte_14nm"
     BEST_INDIGENOUS_GTE_7NM = "best_indigenous_gte_7nm"
-
-class FabModelParameters:
-    median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock = 0.07
-
-    # Detection via other strategies - anchor points (from detection_probability_vs_num_workers/model_bayesian.py)
-    # These define the relationship between number of workers and mean detection time
-    # Format: (number_of_workers, mean_detection_time_in_years)
-    mean_detection_time_for_100_workers = 6.95   # Small operation: ~7 years to detect
-    mean_detection_time_for_1000_workers = 3.42  # Medium operation: ~3.4 years to detect
-
-    # Variance parameter: describes uncertainty in detection time given number of workers
-    # Higher variance means more uncertainty about when detection will occur
-    # This represents the inherent randomness in intelligence collection effectiveness
-    variance_of_detection_time_given_num_workers = 3.880
-
-    # Fab production capacity parameters (from fab_production/)
-    # Production depends on both operating labor and photolithography scanners (SME)
-    # Labor relationship: wafers_per_month = wafers_per_month_per_worker * operating_labor
-    # Linear fit through origin from historical fab data (fab_production/labor_vs_fab_production.py)
-    wafers_per_month_per_worker = 24.64  # Each worker produces ~25 wafers per month
-
-    # Uncertainty in labor productivity (from regression residuals in fab_production/labor_vs_fab_production.py)
-    # Standard deviation of relative residuals: residual/prediction has std = 0.62
-    # This captures the wide variation in actual fab productivity relative to the linear model
-    # SOURCE: Empirical data from fab_production/labor_vs_fab_production.py
-    labor_productivity_relative_sigma = 0.62  # 62% relative uncertainty
-
-    # SME relationship: each photolithography scanner can process ~1000 wafers per month
-    # Based on ASML DUV specs: 250 wafers/hour, 80 patterning steps, 50% utilization
-    # Calculation: 0.5 * 180,000 wafers_per_month / 80 steps = 1000 wafers/month
-    # Source: fab_production/production_vs_sme.py
-    wafers_per_month_per_lithography_scanner = 1000
-
-    # Uncertainty in scanner productivity
-    # ESTIMATED: ~20% based on variation in utilization rates, process complexity, and maintenance
-    scanner_productivity_relative_sigma = 0.20  # 20% relative uncertainty
-
-    # Fab construction time parameters (from fab_construction_time/)
-    # Anchor points defining relationship between capacity and construction time for covert fabs
-    # Based on historical data from fab_construction_time/construction_time_plot.py
-    construction_time_for_5k_wafers_per_month = 1.40    # Small fab: ~1.4 years
-    construction_time_for_100k_wafers_per_month = 2.41  # Large fab: ~2.4 years
-
-    # Uncertainty in construction time
-    # SOURCE: Prediction interval from regression on empirical data (fab_construction_time/construction_time_plot.py)
-    # The variance accounts for both regression parameter uncertainty and residual variance.
-    # Calculated using prediction interval formula: Var(y_pred) = sigma²[1 + 1/n + (x - x_mean)²/SS_x]
-    # where sigma=0.6443 years (residual std), n=16 (sample size), and evaluated at typical
-    # covert fab capacity (log10(17000) ≈ 4.23). This gives combined relative std ~35%.
-    construction_time_relative_sigma = 0.35  # 35% relative uncertainty (prediction interval)
-
-    # Construction labor requirements (from fab_construction_time/)
-    # Combined parameter from cost_of_fab_plot.py and construction_time_vs_labor.py:
-    # - Cost: $0.000141B per wafer/month capacity
-    # - Labor: 100 workers per $1B construction cost
-    # Combined: 100 * 0.000141 * 1000 = 14.1 workers per 1000 wafers/month
-    construction_workers_per_1000_wafers_per_month = 14.1
-
-    # Chip production parameters
-    # Number of H100-sized chips that can be produced per wafer
-    h100_sized_chips_per_wafer = 28
-
-    # Transistor density scaling (Moore's Law)
-    # When process node halves, transistor density increases by 2^transistor_density_scaling_exponent
-    # With exponent = 1.49, halving node size increases density by 2^1.49 ≈ 2.81×
-    transistor_density_scaling_exponent = 1.49
-
-
-    # Energy efficiency scaling with transistor density
-    # Power law: W/TPP ∝ (transistor_density)^exponent
-    # Before Dennard scaling ended (transistor density <= ~1.98 M/mm², year <= 2006):
-    # Higher density led to WORSE efficiency (positive relationship with power)
-    watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended = -2.00
-
-    # After Dennard scaling ended (transistor density > ~1.98 M/mm², year > 2006):
-    # Higher density leads to BETTER efficiency (negative relationship with power)
-    watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended = -0.91
-
-    # Transistor density threshold marking the end of Dennard scaling (2006)
-    transistor_density_at_end_of_dennard_scaling_m_per_mm2 = 1.98  # Million transistors per mm²
-
-    # Chip architecture efficiency improvement over time
-    # Architectures improve at a pace of 1.23× per year
-    # H100 serves as the reference point (released in 2022)
-    architecture_efficiency_improvement_per_year = 1.23
-
-    # PRC lithography scanner production ramp-up (from china_domestic_fab_capability/lithography_sales_plot.py)
-    # Linear trend: production_per_year = additional_per_year * years_since_localization + first_year_production
-    # Based on estimated PRC ramp-up: 20 scanners at year 0, 100 scanners at year 5
-    prc_additional_lithography_scanners_produced_per_year = 16.0  # Additional scanners per year
-    prc_lithography_scanners_produced_in_first_year = 20.0  # Production in year of localization
-
-    # Uncertainty in PRC scanner production ramp-up
-    # ESTIMATED: ~30% based on uncertainty in industrial capacity buildout, geopolitical factors, and technology transfer
-    prc_scanner_production_relative_sigma = 0.30  # 30% relative uncertainty
-
-    # Self-sufficiency probability data (from china_domestic_fab_capability/forecasts.py)
-    # Represents probability of >90% localization for each node
-    # Data structure: {process_node: [(year, p_selfsufficiency), ...]}
-    # Uses linear interpolation between the two endpoints (2025 and 2031)
-    Probability_of_90p_PRC_localization_at_node = {
-        ProcessNode.nm130: [(2025, 0.80), (2031, 0.80)],
-        ProcessNode.nm28: [(2025, 0.0), (2031, 0.25)],
-        ProcessNode.nm14: [(2025, 0.0), (2031, 0.10)],
-        ProcessNode.nm7: [(2025, 0.0), (2031, 0.06)]
-    }
 
 # ============================================================================
 # Helper functions for estimating fab compute production
@@ -438,18 +324,18 @@ def estimate_wafer_starts_per_month(
         float: Estimated wafer starts per month (with random variation)
     """
     # Base labor capacity with uncertainty
-    median_labor_capacity = FabModelParameters.wafers_per_month_per_worker * operation_labor
+    median_labor_capacity = CovertFabParameters.wafers_per_month_per_worker * operation_labor
 
     # Sample labor capacity from a log-normal distribution
     # Median of median_labor_capacity, relative std of 0.62 (from empirical data)
-    sigma_relative = FabModelParameters.labor_productivity_relative_sigma
+    sigma_relative = CovertFabParameters.labor_productivity_relative_sigma
     wafers_per_month_achievable_given_operation_labor = sample_from_log_normal(median_labor_capacity, sigma_relative)
 
     # Base scanner capacity with uncertainty
-    median_scanner_capacity = FabModelParameters.wafers_per_month_per_lithography_scanner * number_of_prc_lithography_scanners_devoted_to_fab
+    median_scanner_capacity = CovertFabParameters.wafers_per_month_per_lithography_scanner * number_of_prc_lithography_scanners_devoted_to_fab
 
     # Sample scanner capacity from a log-normal distribution (ESTIMATED: 20% relative uncertainty)
-    sigma_relative_scanner = FabModelParameters.scanner_productivity_relative_sigma
+    sigma_relative_scanner = CovertFabParameters.scanner_productivity_relative_sigma
     wafers_per_month_achievable_given_lithography_scanners = sample_from_log_normal(median_scanner_capacity, sigma_relative_scanner)
 
     # Return minimum of labor and scanner capacity, with a floor of 1 wafer/month to prevent log(0) errors
@@ -489,9 +375,9 @@ def estimate_construction_duration(
         # And then: intercept = time1 - slope * log10(capacity1)
 
         capacity1 = 5000
-        time1 = FabModelParameters.construction_time_for_5k_wafers_per_month
+        time1 = CovertFabParameters.construction_time_for_5k_wafers_per_month
         capacity2 = 100000
-        time2 = FabModelParameters.construction_time_for_100k_wafers_per_month
+        time2 = CovertFabParameters.construction_time_for_100k_wafers_per_month
 
         slope = (time2 - time1) / (np.log10(capacity2) - np.log10(capacity1))
         intercept = time1 - slope * np.log10(capacity1)
@@ -499,7 +385,7 @@ def estimate_construction_duration(
         median_duration = slope * np.log10(wafer_starts_per_month) + intercept
 
         # Add uncertainty to construction time (includes both regression and residual uncertainty)
-        sigma_relative = FabModelParameters.construction_time_relative_sigma
+        sigma_relative = CovertFabParameters.construction_time_relative_sigma
         return sample_from_log_normal(median_duration, sigma_relative)
 
     # Step 1: Calculate construction duration given wafer capacity
@@ -508,7 +394,7 @@ def estimate_construction_duration(
     # Step 2: Calculate construction labor requirement given wafer capacity
     # Heuristic: 14.1 workers per 1000 wafers/month of capacity needed for baseline construction time
     construction_labor_requirement_given_wafer_capacity = (
-        FabModelParameters.construction_workers_per_1000_wafers_per_month / 1000
+        CovertFabParameters.construction_workers_per_1000_wafers_per_month / 1000
     ) * wafer_starts_per_month
 
     # Step 3: Check if construction labor is the constraining factor
@@ -540,7 +426,7 @@ def estimate_transistor_density_relative_to_h100(process_node_nm: float) -> floa
     # Estimate density ratio using Moore's Law scaling
     density_relative_to_h100 = (
         H100_PROCESS_NODE_NM / process_node_nm
-    ) ** FabModelParameters.transistor_density_scaling_exponent
+    ) ** CovertFabParameters.transistor_density_scaling_exponent
 
     return density_relative_to_h100
 
@@ -566,7 +452,7 @@ def estimate_architecture_efficiency_relative_to_h100(year: float, agreement_yea
         year = agreement_year
 
     years_since_h100 = year - H100_RELEASE_YEAR
-    efficiency_relative_to_h100 = FabModelParameters.architecture_efficiency_improvement_per_year ** years_since_h100
+    efficiency_relative_to_h100 = CovertFabParameters.architecture_efficiency_improvement_per_year ** years_since_h100
 
     return efficiency_relative_to_h100
 
@@ -578,7 +464,7 @@ def _get_localization_cdf(process_node: ProcessNode) -> tuple:
     Cached helper to compute the CDF for localization years.
     Returns the CDF years and probabilities as tuples (immutable for caching).
     """
-    data = FabModelParameters.Probability_of_90p_PRC_localization_at_node[process_node]
+    data = CovertFabParameters.Probability_of_90p_PRC_localization_at_node[process_node]
     data_years = np.array([point[0] for point in data])
     data_probabilities = np.array([point[1] for point in data])
 
@@ -605,7 +491,7 @@ def sample_year_prc_achieved_node_localization(process_node: ProcessNode) -> flo
     """
     Randomly samples the year when PRC first achieved >90% localization for a given process node.
 
-    Uses the probability curves in FabModelParameters.Probability_of_90p_PRC_localization_at_node
+    Uses the probability curves in CovertFabParameters.Probability_of_90p_PRC_localization_at_node
     as a CDF to randomly sample when localization was achieved. This treats the probability
     as the cumulative probability that localization has been achieved by that year.
 
@@ -615,7 +501,7 @@ def sample_year_prc_achieved_node_localization(process_node: ProcessNode) -> flo
     Returns:
         float: Randomly sampled year when PRC achieved localization
     """
-    if process_node not in FabModelParameters.Probability_of_90p_PRC_localization_at_node:
+    if process_node not in CovertFabParameters.Probability_of_90p_PRC_localization_at_node:
         raise ValueError(f"Process node {process_node} not found in Probability_of_90p_PRC_localization_at_node parameters")
 
     # Get cached CDF
@@ -755,11 +641,11 @@ def estimate_total_prc_lithography_scanners_for_node(current_year: float, locali
     # Total = sum from i=0 to n of (intercept + i*slope)
     #       = intercept * (n+1) + slope * n*(n+1)/2
     n = years_since_localization
-    median_total_scanners = (FabModelParameters.prc_lithography_scanners_produced_in_first_year * (n + 1) +
-                          FabModelParameters.prc_additional_lithography_scanners_produced_per_year * n * (n + 1) / 2)
+    median_total_scanners = (CovertFabParameters.prc_lithography_scanners_produced_in_first_year * (n + 1) +
+                          CovertFabParameters.prc_additional_lithography_scanners_produced_per_year * n * (n + 1) / 2)
 
     # Add uncertainty to PRC scanner production (ESTIMATED: 30% relative uncertainty)
-    sigma_relative = FabModelParameters.prc_scanner_production_relative_sigma
+    sigma_relative = CovertFabParameters.prc_scanner_production_relative_sigma
     return sample_from_log_normal(median_total_scanners, sigma_relative)
 
 # ============================================================================
@@ -782,7 +668,7 @@ def sample_us_estimate_of_prc_scanners(actual_prc_scanners: float) -> float:
     Returns:
         float: US intelligence estimate of PRC scanner count
     """
-    k = -np.log(0.5) / FabModelParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock
+    k = -np.log(0.5) / CovertFabParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock
 
     # Sample a uniform random value to invert the CDF
     u = random.random()
@@ -844,7 +730,7 @@ def lr_from_inventory_accounting(
     us_estimate_absolute_error_if_fab_exists = abs(us_estimate_of_prc_scanners - true_number_of_prc_scanners_if_fab_exists) / true_number_of_prc_scanners_if_fab_exists
 
     # PDF of absolute error
-    k = -np.log(0.5) / FabModelParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock
+    k = -np.log(0.5) / CovertFabParameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock
     p_observe_us_estimate_error_if_fab_exists = k * np.exp(-k * us_estimate_absolute_error_if_fab_exists)
 
     # Case 2: Fab does not exist
@@ -884,125 +770,6 @@ def lr_from_procurement_accounting(
     else:
         return 1.0  # No evidence from procurement (neutral)
 
-# Pre-compute constants for detection time calculations
-_detection_time_A = None
-_detection_time_B = None
-_detection_time_theta = None
-
-def _initialize_detection_constants():
-    """Pre-compute constants used in detection time calculations."""
-    global _detection_time_A, _detection_time_B, _detection_time_theta
-
-    if _detection_time_A is not None:
-        return  # Already initialized
-
-    x1 = 100
-    mu1 = FabModelParameters.mean_detection_time_for_100_workers
-    x2 = 1000
-    mu2 = FabModelParameters.mean_detection_time_for_1000_workers
-
-    _detection_time_B = np.log(mu1 / mu2) / np.log(np.log10(x2) / np.log10(x1))
-    _detection_time_A = mu1 * (np.log10(x1) ** _detection_time_B)
-    _detection_time_theta = FabModelParameters.variance_of_detection_time_given_num_workers
-
-def clear_detection_constants_cache():
-    """Clear cached detection constants. Call this when FabModelParameters change."""
-    global _detection_time_A, _detection_time_B, _detection_time_theta
-    _detection_time_A = None
-    _detection_time_B = None
-    _detection_time_theta = None
-
-def sample_time_of_detection_via_other_strategies(total_labor: int) -> float:
-    """
-    Sample the time when detection occurs via other intelligence strategies (HUMINT, SIGINT, etc.).
-
-    Based on historical nuclear program detection data. Detection timing follows a Gamma distribution
-    whose mean depends on the number of workers involved.
-
-    Args:
-        total_labor: Total number of workers involved (construction + operation)
-
-    Returns:
-        float: Years from construction start until detection occurs
-    """
-    if total_labor <= 0:
-        return float('inf')  # Never detected if no workers
-
-    # Initialize constants if not already done
-    _initialize_detection_constants()
-
-    # Mean detection time: μ(x) = A / log10(x)^B
-    mu = _detection_time_A / (np.log10(total_labor) ** _detection_time_B)
-
-    # Gamma distribution parameters: mean = k*θ, variance = k*θ²
-    # Given: mean = μ, variance = σ²*μ (proportional to mean)
-    # Solving: θ = σ², k = μ/σ²
-    k = mu / _detection_time_theta
-
-    # Sample from Gamma distribution
-    detection_time = stats.gamma.rvs(a=k, scale=_detection_time_theta)
-
-    return detection_time
-
-def lr_from_other_strategies(
-    years_since_construction_start: float,
-    time_of_detection: float,
-    total_labor: int
-) -> float:
-    """
-    Likelihood ratio from other intelligence strategies (HUMINT, SIGINT, etc.).
-
-    Uses the actual Gamma distribution of detection times to calculate principled likelihood ratio.
-
-    Evidence is whether detection has occurred by current time:
-    - If detected: LR is very high (strong evidence for fab)
-    - If not detected: LR = P(not detected by time t | fab exists) / P(not detected | no fab)
-                          = P(detection time ≥ t | fab exists) / 1.0
-                          = Survival function of Gamma distribution at t
-                          = 1 - CDF_Gamma(t)
-
-    Args:
-        years_since_construction_start: Years elapsed since construction began
-        time_of_detection: Sampled time (in years from start) when detection occurs
-        total_labor: Total number of workers (needed to get Gamma distribution parameters)
-
-    Returns:
-        float: Likelihood ratio LR = P(evidence|fab exists) / P(evidence|fab doesn't exist)
-    """
-    if years_since_construction_start < 0:
-        return 1.0  # Project hasn't started yet
-
-    # Check if current time has passed the detection time
-    if years_since_construction_start >= time_of_detection:
-        return 100  # Very high LR - project has been detected
-    else:
-        # Evidence: No detection yet despite time elapsed
-        # Need to calculate P(detection time ≥ t_current | fab exists)
-
-        if total_labor <= 0:
-            return 1.0  # No workers, no detection possible
-
-        # Initialize constants if not already done
-        _initialize_detection_constants()
-
-        # Mean detection time: μ(x) = A / log10(x)^B
-        mu = _detection_time_A / (np.log10(total_labor) ** _detection_time_B)
-
-        # Gamma distribution parameters
-        k = mu / _detection_time_theta
-
-        # P(not detected by time t | fab exists) = P(T ≥ t) = 1 - CDF(t)
-        # This is the survival function (sf) of the Gamma distribution
-        p_not_detected_given_fab = stats.gamma.sf(years_since_construction_start, a=k, scale=_detection_time_theta)
-
-        # P(not detected | no fab) = 1.0 (no fab means never detected)
-        p_not_detected_given_no_fab = 1.0
-
-        # Likelihood ratio
-        lr = p_not_detected_given_fab / p_not_detected_given_no_fab
-
-        return max(lr, 0.001)  # Floor at 0.001 to avoid numerical issues
-
 # ============================================================================
 # Energy efficiency prediction
 # ============================================================================
@@ -1018,8 +785,8 @@ def predict_watts_per_tpp_from_transistor_density(transistor_density_m_per_mm2: 
     Returns:
         Watts per Tera-Parameter-Pass (W/TPP)
     """
-    # Get parameters from FabModelParameters
-    params = FabModelParameters
+    # Get parameters from CovertFabParameters
+    params = CovertFabParameters
 
     # Always calculate post-Dennard line first (anchored to H100)
     # Then calculate pre-Dennard line to connect to it at the transition point
@@ -1071,7 +838,7 @@ def calculate_transistor_density_from_process_node(process_node_nm: float) -> fl
     Returns:
         Transistor density in millions of transistors per mm²
     """
-    params = FabModelParameters
+    params = CovertFabParameters
 
     # Calculate how many times the process node has been halved relative to H100
     # node_ratio > 1 means larger/older node, node_ratio < 1 means smaller/newer node
@@ -1120,7 +887,7 @@ class PRCCovertFab(CovertFab):
     us_estimate_of_prc_lithography_scanners : float
 
     # Fields with default values must come last
-    dark_compute_over_time : dict = field(default_factory=dict)
+    dark_compute_monthly_production_rate_history : dict = field(default_factory=dict)
     detection_updates : dict = field(default_factory=dict)
 
     def __init__(
@@ -1204,7 +971,7 @@ class PRCCovertFab(CovertFab):
             construction_labor=construction_labor
         )
 
-        self.h100_sized_chips_per_wafer = FabModelParameters.h100_sized_chips_per_wafer
+        self.h100_sized_chips_per_wafer = CovertFabParameters.h100_sized_chips_per_wafer
         self.transistor_density_relative_to_h100 = estimate_transistor_density_relative_to_h100(self.process_node.to_nm())
 
         # Production capacity (H100e per month, regardless of operational status)
@@ -1219,17 +986,23 @@ class PRCCovertFab(CovertFab):
         self.us_estimate_of_prc_lithography_scanners = sample_us_estimate_of_prc_scanners(
             self.total_prc_lithography_scanners_for_node
         )
-        self.time_of_detection_via_other_strategies = sample_time_of_detection_via_other_strategies(
-            total_labor=construction_labor + operation_labor
-        )
-
         # Initialize fields that have default_factory in dataclass
-        self.dark_compute_over_time = {}
+        self.dark_compute_monthly_production_rate_history = {}
         self.detection_updates = {}
 
-        # Initialize tracking dictionaries for detection components over time
-        self.lr_inventory_over_time = {}
-        self.lr_procurement_over_time = {}
+        self.lr_inventory = lr_from_inventory_accounting(
+            reported_prc_scanners= (1 - self.proportion_of_prc_lithography_scanners_devoted_to_fab) * self.total_prc_lithography_scanners_for_node,
+            us_estimate_of_prc_scanners=self.us_estimate_of_prc_lithography_scanners,
+            optimal_diversion_proportion=self.proportion_of_prc_lithography_scanners_devoted_to_fab
+        )
+
+        # Procurement accounting: Determine whether the SME China has imported can be accounted for
+        # If PRC hasn't achieved domestic localization, foreign scanner imports would be detectable
+        self.lr_procurement = lr_from_procurement_accounting(
+            construction_start_year=self.construction_start_year,
+            year_process_node_achieved_90p_prc_localization=self.year_process_node_achieved_90p_prc_localization
+        )
+
         self.lr_other_over_time = {}
 
     def is_operational(self, year):
@@ -1277,8 +1050,28 @@ class PRCCovertFab(CovertFab):
             inter_chip_memory_bandwidth_tbps=1.8   # Default H100-like bandwidth
         )
 
-        # Return Compute object with chip counts
-        return Compute(chip_counts={chip: chips_per_month})
+        compute_production_rate = Compute(chip_counts={chip: chips_per_month})
+        self.dark_compute_monthly_production_rate_history[year] = Compute(chip_counts={chip: chips_per_month})
+        return compute_production_rate
+    
+    def get_cumulative_compute_production(self, year):
+        """Calculate cumulative compute production up to a given year.
+
+        Returns:
+            Compute: Object containing cumulative chip specifications and counts
+        """
+        chip_type = self.dark_compute_monthly_production_rate_history[year].chip_counts.keys()[0]
+        cumulative_chip_count = 0
+        years_recorded = sorted(self.dark_compute_monthly_production_rate_history.keys())
+        years_before_year = [yr for yr in years_recorded if yr < year]
+        for i, yr in enumerate(years_before_year):
+            assert len(self.dark_compute_monthly_production_rate_history[yr].chip_counts) == 1, "Expected only one chip type in production rate history"
+            assert chip_type == list(self.dark_compute_monthly_production_rate_history[yr].chip_counts.keys())[0], "Inconsistent chip types in production rate history"
+            monthly_chip_count_rate = self.dark_compute_monthly_production_rate_history[yr][chip_type]
+            year_increment = years_before_year[i + 1] - yr if i + 1 < len(years_before_year) else year - yr
+            months_rate_is_sustained = year_increment * 12
+            cumulative_chip_count += months_rate_is_sustained * monthly_chip_count_rate
+        return Compute(chip_counts={chip_type: cumulative_chip_count})
 
     def energy_consumption_per_month_gw(self, year):
         """Calculate total energy consumption per month in gigawatts.
@@ -1287,9 +1080,7 @@ class PRCCovertFab(CovertFab):
             float: Energy consumption in GW per month
         """
         compute = self.compute_produced_per_month(year)
-        # Sum watts from all chip types and convert to GW
-        total_watts = compute.total_W()
-        return total_watts / 1e9
+        return compute.total_energy_requirements_GW()
 
     def detection_likelihood_ratio(self, year):
         """
@@ -1313,30 +1104,46 @@ class PRCCovertFab(CovertFab):
         """
         # Inventory accounting: Determine whether Chinese SME has gone missing
         # Tracks whether domestic PRC lithography scanners are unaccounted for
-        self.lr_inventory = lr_from_inventory_accounting(
-            reported_prc_scanners= (1 - self.proportion_of_prc_lithography_scanners_devoted_to_fab) * self.total_prc_lithography_scanners_for_node,
-            us_estimate_of_prc_scanners=self.us_estimate_of_prc_lithography_scanners,
-            optimal_diversion_proportion=self.proportion_of_prc_lithography_scanners_devoted_to_fab
-        )
-
-        # Procurement accounting: Determine whether the SME China has imported can be accounted for
-        # If PRC hasn't achieved domestic localization, foreign scanner imports would be detectable
-        self.lr_procurement = lr_from_procurement_accounting(
-            construction_start_year=self.construction_start_year,
-            year_process_node_achieved_90p_prc_localization=self.year_process_node_achieved_90p_prc_localization
-        )
 
         # Other: Leverage signals intelligence, human intelligence, and satellite imagery to detect a chip fab operation
         # Uses Gamma distribution survival function for principled likelihood ratio
-        self.lr_other = lr_from_other_strategies(
-            years_since_construction_start=year - self.construction_start_year,
-            time_of_detection=self.time_of_detection_via_other_strategies,
-            total_labor=self.construction_labor + self.operation_labor
+        lr_other = lr_vs_num_workers(
+            years_since_start = year - self.construction_start_year,
+            total_labor=self.operation_labor + self.construction_labor,
+            mean_detection_time_100_workers=CovertProjectParameters.mean_detection_time_for_100_workers,
+            mean_detection_time_1000_workers=CovertProjectParameters.mean_detection_time_for_1000_workers,
+            variance_theta=CovertProjectParameters.variance_of_detection_time_given_num_workers
         )
 
         # Store component LRs for tracking over time
-        self.lr_inventory_over_time[year] = self.lr_inventory
-        self.lr_procurement_over_time[year] = self.lr_procurement
-        self.lr_other_over_time[year] = self.lr_other
+        self.lr_other_over_time[year] = lr_other
 
-        return self.lr_inventory * self.lr_procurement * self.lr_other
+        return self.lr_inventory * self.lr_procurement * lr_other
+
+    @staticmethod
+    def watts_per_tpp_relative_to_H100():
+        """Generate the watts per TPP vs transistor density curve data for plotting.
+
+        Returns:
+            dict: Contains 'density_relative' and 'watts_per_tpp_relative' arrays
+                 for plotting the relationship between transistor density and power efficiency
+        """
+
+        # Generate density range in log space (0.001x to 10x H100)
+        num_points = 100
+        min_density_relative = 0.001
+        max_density_relative = 10
+
+        density_relative = np.logspace(np.log10(min_density_relative), np.log10(max_density_relative), num_points)
+        density_absolute = density_relative * H100_TRANSISTOR_DENSITY_M_PER_MM2
+
+        # Calculate watts per TPP for each density using the Python function
+        watts_per_tpp_absolute = [predict_watts_per_tpp_from_transistor_density(d) for d in density_absolute]
+
+        # Convert to relative values (relative to H100)
+        watts_per_tpp_relative = [w / H100_WATTS_PER_TPP for w in watts_per_tpp_absolute]
+
+        return {
+            "density_relative": density_relative.tolist(),
+            "watts_per_tpp_relative": watts_per_tpp_relative
+        }

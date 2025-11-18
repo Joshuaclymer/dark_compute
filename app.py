@@ -92,7 +92,7 @@ def run_simulation():
     agreement_year = float(data.get('agreement_year', 2030))
     end_year = float(data.get('end_year', 2037))
     increment = float(data.get('increment', 0.1))
-    num_simulations = int(data.get('num_simulations', 100))
+    num_simulations = int(data.get('num_simulations', 60))
 
     # PRC strategy parameters
     run_covert_project = data.get('run_covert_project', True)
@@ -107,7 +107,7 @@ def run_simulation():
     build_covert_fab = data.get('build_covert_fab', True)
     operating_labor = int(data.get('operating_labor', 728))
     construction_labor = int(data.get('construction_labor', 448))
-    process_node_str = data.get('process_node', 'best_available_indigenously')
+    process_node_str = data.get('process_node', 'best_indigenous_gte_28nm')
     scanner_proportion = float(data.get('scanner_proportion', 0.102))
 
     print(f"DEBUG: Received scanner_proportion = {scanner_proportion}", flush=True)
@@ -273,9 +273,13 @@ def run_simulation():
 
     try:
         # Create custom covert project strategy with user parameters
-        # Map process node string to enum (or keep as string for "best_available_indigenously")
+        # Map process node string to enum or keep as strategy string
         process_node_map = {
-            'best_available_indigenously': 'best_available_indigenously',  # Keep as string
+            'best_indigenous': 'best_indigenous',
+            'best_indigenous_gte_28nm': 'best_indigenous_gte_28nm',
+            'best_indigenous_gte_14nm': 'best_indigenous_gte_14nm',
+            'best_indigenous_gte_7nm': 'best_indigenous_gte_7nm',
+            'best_available_indigenously': 'best_indigenous',  # Legacy support
             'nm130': ProcessNode.nm130,
             'nm28': ProcessNode.nm28,
             'nm14': ProcessNode.nm14,
@@ -422,11 +426,17 @@ def extract_plot_data(model, p_fab_exists):
     datacenter_capacity_by_sim = []
     lr_datacenters_by_sim = []
 
+    # Track which simulations have fabs built
+    fab_built_in_sim = []
+
     for covert_projects, detectors in simulations_to_plot:
         us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
         covert_fab = covert_projects["prc_covert_project"].covert_fab
         dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
         covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+
+        # Track whether fab was built in this simulation
+        fab_built_in_sim.append(covert_fab is not None)
 
         years = sorted(us_beliefs.keys())
         if not all_years:
@@ -539,10 +549,19 @@ def extract_plot_data(model, p_fab_exists):
             transistor_density_by_sim.append([covert_fab.transistor_density_relative_to_h100] * len(years))
             process_node_by_sim.append(covert_fab.process_node.value)  # Store the process node label (e.g., "130nm")
 
+    # Filter arrays to only include simulations where fab was built
+    fab_built_mask = np.array(fab_built_in_sim)
+    us_probs_with_fab = [sim for i, sim in enumerate(us_probs_by_sim) if fab_built_in_sim[i]]
+    h100e_with_fab = [sim for i, sim in enumerate(h100e_by_sim) if fab_built_in_sim[i]]
+
     # Calculate statistics
     years_array = np.array(all_years)
-    us_probs_array = np.array(us_probs_by_sim)
-    h100e_array = np.array(h100e_by_sim)
+
+    # Use filtered arrays for covert fab statistics (only simulations where fab was built)
+    us_probs_array = np.array(us_probs_with_fab) if len(us_probs_with_fab) > 0 else np.array(us_probs_by_sim)
+    h100e_array = np.array(h100e_with_fab) if len(h100e_with_fab) > 0 else np.array(h100e_by_sim)
+
+    # These arrays are unrelated to fab building, so use all simulations
     survival_rate_array = np.array(survival_rate_by_sim)
     dark_compute_array = np.array(dark_compute_by_sim)
     operational_dark_compute_array = np.array(operational_dark_compute_by_sim)
@@ -948,28 +967,41 @@ def extract_plot_data(model, p_fab_exists):
         print(f"  Other values: {total_sims - num_lr_equals_1 - num_lr_gte_10} ({100*(total_sims - num_lr_equals_1 - num_lr_gte_10)/total_sims:.1f}%)", flush=True)
 
         # Calculate medians and prepare data for all three components
-        lr_inventory_array = np.array(lr_inventory_by_sim)
-        lr_procurement_array = np.array(lr_procurement_by_sim)
-        lr_other_array = np.array(lr_other_by_sim)
+        # Filter to only include simulations where fab was built
+        lr_inventory_with_fab = [sim for i, sim in enumerate(lr_inventory_by_sim) if fab_built_in_sim[i]]
+        lr_procurement_with_fab = [sim for i, sim in enumerate(lr_procurement_by_sim) if fab_built_in_sim[i]]
+        lr_other_with_fab = [sim for i, sim in enumerate(lr_other_by_sim) if fab_built_in_sim[i]]
+
+        lr_inventory_array = np.array(lr_inventory_with_fab) if len(lr_inventory_with_fab) > 0 else np.array(lr_inventory_by_sim)
+        lr_procurement_array = np.array(lr_procurement_with_fab) if len(lr_procurement_with_fab) > 0 else np.array(lr_procurement_by_sim)
+        lr_other_array = np.array(lr_other_with_fab) if len(lr_other_with_fab) > 0 else np.array(lr_other_by_sim)
 
         lr_components = {
             "inventory_median": np.median(lr_inventory_array, axis=0).tolist(),
-            "inventory_individual": [list(sim) for sim in lr_inventory_by_sim],
+            "inventory_individual": [list(sim) for sim in lr_inventory_with_fab] if len(lr_inventory_with_fab) > 0 else [list(sim) for sim in lr_inventory_by_sim],
             "procurement_median": np.median(lr_procurement_array, axis=0).tolist(),
-            "procurement_individual": [list(sim) for sim in lr_procurement_by_sim],
+            "procurement_individual": [list(sim) for sim in lr_procurement_with_fab] if len(lr_procurement_with_fab) > 0 else [list(sim) for sim in lr_procurement_by_sim],
             "other_median": np.median(lr_other_array, axis=0).tolist(),
-            "other_individual": [list(sim) for sim in lr_other_by_sim]
+            "other_individual": [list(sim) for sim in lr_other_with_fab] if len(lr_other_with_fab) > 0 else [list(sim) for sim in lr_other_by_sim]
         }
 
     # Calculate statistics for compute factors
     compute_factors = {}
     if is_operational_by_sim:
-        is_operational_array = np.array(is_operational_by_sim)
-        wafer_starts_array = np.array(wafer_starts_by_sim)
-        chips_per_wafer_array = np.array(chips_per_wafer_by_sim)
-        architecture_efficiency_array = np.array(architecture_efficiency_by_sim)
-        compute_per_wafer_2022_arch_array = np.array(compute_per_wafer_2022_arch_by_sim)
-        transistor_density_array = np.array(transistor_density_by_sim)
+        # Filter to only include simulations where fab was built
+        is_operational_with_fab = [sim for i, sim in enumerate(is_operational_by_sim) if fab_built_in_sim[i]]
+        wafer_starts_with_fab = [sim for i, sim in enumerate(wafer_starts_by_sim) if fab_built_in_sim[i]]
+        chips_per_wafer_with_fab = [sim for i, sim in enumerate(chips_per_wafer_by_sim) if fab_built_in_sim[i]]
+        architecture_efficiency_with_fab = [sim for i, sim in enumerate(architecture_efficiency_by_sim) if fab_built_in_sim[i]]
+        compute_per_wafer_2022_arch_with_fab = [sim for i, sim in enumerate(compute_per_wafer_2022_arch_by_sim) if fab_built_in_sim[i]]
+        transistor_density_with_fab = [sim for i, sim in enumerate(transistor_density_by_sim) if fab_built_in_sim[i]]
+
+        is_operational_array = np.array(is_operational_with_fab) if len(is_operational_with_fab) > 0 else np.array(is_operational_by_sim)
+        wafer_starts_array = np.array(wafer_starts_with_fab) if len(wafer_starts_with_fab) > 0 else np.array(wafer_starts_by_sim)
+        chips_per_wafer_array = np.array(chips_per_wafer_with_fab) if len(chips_per_wafer_with_fab) > 0 else np.array(chips_per_wafer_by_sim)
+        architecture_efficiency_array = np.array(architecture_efficiency_with_fab) if len(architecture_efficiency_with_fab) > 0 else np.array(architecture_efficiency_by_sim)
+        compute_per_wafer_2022_arch_array = np.array(compute_per_wafer_2022_arch_with_fab) if len(compute_per_wafer_2022_arch_with_fab) > 0 else np.array(compute_per_wafer_2022_arch_by_sim)
+        transistor_density_array = np.array(transistor_density_with_fab) if len(transistor_density_with_fab) > 0 else np.array(transistor_density_by_sim)
 
         # Debug: Check construction completion
         print(f"\n=== DEBUG CONSTRUCTION COMPLETION ===", flush=True)
@@ -1028,24 +1060,26 @@ def extract_plot_data(model, p_fab_exists):
                 sim_watts.append(watts_relative)
             watts_per_tpp_by_sim.append(sim_watts)
 
-        watts_per_tpp_array = np.array(watts_per_tpp_by_sim)
+        # Filter watts_per_tpp to only include simulations where fab was built
+        watts_per_tpp_with_fab = [sim for i, sim in enumerate(watts_per_tpp_by_sim) if fab_built_in_sim[i]]
+        watts_per_tpp_array = np.array(watts_per_tpp_with_fab) if len(watts_per_tpp_with_fab) > 0 else np.array(watts_per_tpp_by_sim)
 
         compute_factors = {
             "is_operational_median": np.mean(is_operational_array, axis=0).tolist(),
-            "is_operational_individual": [list(sim) for sim in is_operational_by_sim],
+            "is_operational_individual": [list(sim) for sim in is_operational_with_fab] if len(is_operational_with_fab) > 0 else [list(sim) for sim in is_operational_by_sim],
             "wafer_starts_median": np.median(wafer_starts_array, axis=0).tolist(),
-            "wafer_starts_individual": [list(sim) for sim in wafer_starts_by_sim],
+            "wafer_starts_individual": [list(sim) for sim in wafer_starts_with_fab] if len(wafer_starts_with_fab) > 0 else [list(sim) for sim in wafer_starts_by_sim],
             "chips_per_wafer_median": np.median(chips_per_wafer_array, axis=0).tolist(),
-            "chips_per_wafer_individual": [list(sim) for sim in chips_per_wafer_by_sim],
+            "chips_per_wafer_individual": [list(sim) for sim in chips_per_wafer_with_fab] if len(chips_per_wafer_with_fab) > 0 else [list(sim) for sim in chips_per_wafer_by_sim],
             "architecture_efficiency_median": np.median(architecture_efficiency_array, axis=0).tolist(),
-            "architecture_efficiency_individual": [list(sim) for sim in architecture_efficiency_by_sim],
+            "architecture_efficiency_individual": [list(sim) for sim in architecture_efficiency_with_fab] if len(architecture_efficiency_with_fab) > 0 else [list(sim) for sim in architecture_efficiency_by_sim],
             "compute_per_wafer_2022_arch_median": np.median(compute_per_wafer_2022_arch_array, axis=0).tolist(),
-            "compute_per_wafer_2022_arch_individual": [list(sim) for sim in compute_per_wafer_2022_arch_by_sim],
+            "compute_per_wafer_2022_arch_individual": [list(sim) for sim in compute_per_wafer_2022_arch_with_fab] if len(compute_per_wafer_2022_arch_with_fab) > 0 else [list(sim) for sim in compute_per_wafer_2022_arch_by_sim],
             "transistor_density_median": np.median(transistor_density_array, axis=0).tolist(),
-            "transistor_density_individual": [list(sim) for sim in transistor_density_by_sim],
+            "transistor_density_individual": [list(sim) for sim in transistor_density_with_fab] if len(transistor_density_with_fab) > 0 else [list(sim) for sim in transistor_density_by_sim],
             "watts_per_tpp_median": np.median(watts_per_tpp_array, axis=0).tolist(),
-            "watts_per_tpp_individual": [list(sim) for sim in watts_per_tpp_by_sim],
-            "process_node_by_sim": process_node_by_sim
+            "watts_per_tpp_individual": [list(sim) for sim in watts_per_tpp_with_fab] if len(watts_per_tpp_with_fab) > 0 else [list(sim) for sim in watts_per_tpp_by_sim],
+            "process_node_by_sim": [node for i, node in enumerate(process_node_by_sim) if fab_built_in_sim[i]]
         }
 
     # Calculate architecture efficiency at agreement year
@@ -1080,7 +1114,10 @@ def extract_plot_data(model, p_fab_exists):
             "energy_by_source": energy_by_source_array.tolist(),
             "source_labels": source_labels,
             "individual_us_probs": [list(sim) for sim in us_probs_by_sim],
-            "individual_h100e": [list(np.array(sim) / 1e3) for sim in h100e_by_sim]
+            "individual_h100e": [list(np.array(sim) / 1e3) for sim in h100e_by_sim],
+            "individual_us_probs_with_fab": [list(sim) for sim in us_probs_with_fab],
+            "individual_h100e_with_fab": [list(np.array(sim) / 1e3) for sim in h100e_with_fab],
+            "fab_built": fab_built_in_sim
         },
         "compute_ccdf": compute_ccdf,
         "compute_ccdfs": compute_ccdfs,
@@ -1091,6 +1128,7 @@ def extract_plot_data(model, p_fab_exists):
         "compute_factors": compute_factors,
         "architecture_efficiency_at_agreement": architecture_efficiency_at_agreement,
         "num_simulations": len(model.simulation_results),
+        "prob_fab_built": sum(fab_built_in_sim) / len(fab_built_in_sim) if len(fab_built_in_sim) > 0 else 0.0,
         "individual_h100e_before_detection": individual_h100e_before_detection,
         "individual_time_before_detection": individual_time_before_detection,
         "individual_process_node": individual_process_nodes,

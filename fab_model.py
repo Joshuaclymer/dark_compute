@@ -267,10 +267,14 @@ from enum import Enum
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import stats
-from typing import List, Dict
+from typing import List, Dict, Optional
 import random
 from util import sample_from_log_normal
 from stock_model import Chip, Compute
+
+class FabNotBuiltException(Exception):
+    """Exception raised when fab cannot be built due to process node threshold not being met"""
+    pass
 
 # ============================================================================
 # SHARED TYPES AND CONSTANTS
@@ -292,6 +296,13 @@ class ProcessNode(Enum):
     def to_nm(self) -> int:
         """Extract the numeric nanometer value from the enum."""
         return int(self.value.replace("nm", ""))
+
+class ProcessNodeStrategy(Enum):
+    """Strategy for selecting process node for covert fab"""
+    BEST_INDIGENOUS = "best_indigenous"
+    BEST_INDIGENOUS_GTE_28NM = "best_indigenous_gte_28nm"
+    BEST_INDIGENOUS_GTE_14NM = "best_indigenous_gte_14nm"
+    BEST_INDIGENOUS_GTE_7NM = "best_indigenous_gte_7nm"
 
 class FabModelParameters:
     median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock = 0.07
@@ -683,6 +694,38 @@ def determine_best_available_node(construction_start_year: float, localization_y
 
     # If no node achieved yet, default to nm130 (least advanced, most likely to be available)
     return ProcessNode.nm130
+
+def determine_best_available_node_with_min_threshold(
+    construction_start_year: float,
+    localization_years: dict,
+    min_node: ProcessNode
+) -> Optional[ProcessNode]:
+    """
+    Determines the best (most advanced) process node available indigenously at construction start,
+    but only if it meets the minimum threshold. Returns None if threshold not met.
+
+    Args:
+        construction_start_year: Year when fab construction starts
+        localization_years: Dict mapping ProcessNode to localization year
+        min_node: Minimum acceptable process node (more advanced or equal)
+
+    Returns:
+        ProcessNode: Best available node that meets threshold, or None if threshold not met
+    """
+    # Order nodes from most to least advanced
+    nodes_advanced_to_basic = [ProcessNode.nm7, ProcessNode.nm14, ProcessNode.nm28, ProcessNode.nm130]
+
+    # Find the minimum acceptable nodes (min_node and everything more advanced)
+    min_threshold_nm = min_node.to_nm()
+    acceptable_nodes = [node for node in nodes_advanced_to_basic if node.to_nm() <= min_threshold_nm]
+
+    # Find best available node among acceptable ones
+    for node in acceptable_nodes:
+        if localization_years[node] <= construction_start_year:
+            return node
+
+    # No acceptable node available yet
+    return None
 
 def estimate_total_prc_lithography_scanners_for_node(current_year: float, localization_year: float) -> float:
     """
@@ -1084,22 +1127,51 @@ class PRCCovertFab(CovertFab):
             self,
             construction_start_year : float,
             construction_labor : float,
-            process_node,  # Can be ProcessNode enum or "best_available_indigenously" string
+            process_node,  # Can be ProcessNode enum, ProcessNodeStrategy, or legacy "best_available_indigenously" string
             proportion_of_prc_lithography_scanners_devoted_to_fab : float,
             operation_labor : float,
             agreement_year : float,
     ):
-        # Handle "best_available_indigenously" special case
-        if process_node == "best_available_indigenously":
-            # Sample all node localization years with consistency constraint
-            all_localization_years = sample_all_node_localization_years()
+        # Sample all node localization years with consistency constraint (needed for strategy-based selection)
+        all_localization_years = sample_all_node_localization_years()
 
-            # Determine best available node at construction start
+        # Handle different process node selection strategies
+        if process_node == "best_available_indigenously" or process_node == ProcessNodeStrategy.BEST_INDIGENOUS or process_node == "best_indigenous":
+            # Original behavior: select best available node without threshold
             actual_process_node = determine_best_available_node(construction_start_year, all_localization_years)
-
-            # Get localization year for the chosen node
             self.year_process_node_achieved_90p_prc_localization = all_localization_years[actual_process_node]
             self.process_node = actual_process_node
+
+        elif process_node == ProcessNodeStrategy.BEST_INDIGENOUS_GTE_28NM or process_node == "best_indigenous_gte_28nm":
+            # Only build if 28nm or better is available
+            actual_process_node = determine_best_available_node_with_min_threshold(
+                construction_start_year, all_localization_years, ProcessNode.nm28
+            )
+            if actual_process_node is None:
+                raise FabNotBuiltException("28nm or better not available indigenously")
+            self.year_process_node_achieved_90p_prc_localization = all_localization_years[actual_process_node]
+            self.process_node = actual_process_node
+
+        elif process_node == ProcessNodeStrategy.BEST_INDIGENOUS_GTE_14NM or process_node == "best_indigenous_gte_14nm":
+            # Only build if 14nm or better is available
+            actual_process_node = determine_best_available_node_with_min_threshold(
+                construction_start_year, all_localization_years, ProcessNode.nm14
+            )
+            if actual_process_node is None:
+                raise FabNotBuiltException("14nm or better not available indigenously")
+            self.year_process_node_achieved_90p_prc_localization = all_localization_years[actual_process_node]
+            self.process_node = actual_process_node
+
+        elif process_node == ProcessNodeStrategy.BEST_INDIGENOUS_GTE_7NM or process_node == "best_indigenous_gte_7nm":
+            # Only build if 7nm or better is available
+            actual_process_node = determine_best_available_node_with_min_threshold(
+                construction_start_year, all_localization_years, ProcessNode.nm7
+            )
+            if actual_process_node is None:
+                raise FabNotBuiltException("7nm or better not available indigenously")
+            self.year_process_node_achieved_90p_prc_localization = all_localization_years[actual_process_node]
+            self.process_node = actual_process_node
+
         else:
             # Normal case: specific process node provided
             # Sample the year when this process node achieved 90% PRC localization
@@ -1207,6 +1279,17 @@ class PRCCovertFab(CovertFab):
 
         # Return Compute object with chip counts
         return Compute(chip_counts={chip: chips_per_month})
+
+    def energy_consumption_per_month_gw(self, year):
+        """Calculate total energy consumption per month in gigawatts.
+
+        Returns:
+            float: Energy consumption in GW per month
+        """
+        compute = self.compute_produced_per_month(year)
+        # Sum watts from all chip types and convert to GW
+        total_watts = compute.total_W()
+        return total_watts / 1e9
 
     def detection_likelihood_ratio(self, year):
         """

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, List
 from enum import Enum
-from fab_model import CovertFab, PRCCovertFab, ProcessNode
+from fab_model import CovertFab, PRCCovertFab, ProcessNode, FabNotBuiltException
 from stock_model import PRCDarkComputeStock
 from datacenter_model import CovertPRCDatacenters
 import numpy as np
@@ -68,14 +68,18 @@ class CovertProject:
         )
 
         if (self.covert_project_strategy.build_a_covert_fab):
-            self.covert_fab = PRCCovertFab(
-                construction_start_year = self.agreement_year,
-                construction_labor = self.covert_project_strategy.covert_fab_construction_labor,
-                process_node = self.covert_project_strategy.covert_fab_process_node,
-                proportion_of_prc_lithography_scanners_devoted_to_fab = self.covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
-                operation_labor = self.covert_project_strategy.covert_fab_operating_labor,
-                agreement_year = self.agreement_year
-            )
+            try:
+                self.covert_fab = PRCCovertFab(
+                    construction_start_year = self.agreement_year,
+                    construction_labor = self.covert_project_strategy.covert_fab_construction_labor,
+                    process_node = self.covert_project_strategy.covert_fab_process_node,
+                    proportion_of_prc_lithography_scanners_devoted_to_fab = self.covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
+                    operation_labor = self.covert_project_strategy.covert_fab_operating_labor,
+                    agreement_year = self.agreement_year
+                )
+            except FabNotBuiltException:
+                # Fab not built because process node threshold not met
+                self.covert_fab = None
 
 @dataclass
 class DetectorStrategy:
@@ -155,7 +159,7 @@ default_prc_covert_project_strategy = CovertProjectStrategy(
     build_a_covert_fab = True,
     covert_fab_operating_labor = 550,
     covert_fab_construction_labor = 250,
-    covert_fab_process_node = "best_available_indigenously",
+    covert_fab_process_node = "best_indigenous",
     covert_fab_proportion_of_prc_lithography_scanners_devoted = 0.1,
 )
 

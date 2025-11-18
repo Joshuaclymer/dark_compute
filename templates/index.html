@@ -3523,6 +3523,20 @@
             });
         });
 
+        // Add click handler to breakdown box to focus corresponding input field
+        const diversionProportionDisplay = document.getElementById('diversionProportionDisplay');
+        if (diversionProportionDisplay) {
+            diversionProportionDisplay.addEventListener('click', () => {
+                const inputField = document.getElementById('proportion_of_initial_chip_stock_to_divert');
+                if (inputField) {
+                    inputField.focus();
+                    inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            // Add cursor pointer style to indicate it's clickable
+            diversionProportionDisplay.style.cursor = 'pointer';
+        }
+
         // Setup tooltip handlers
         const globalTooltip = document.getElementById('globalTooltip');
         const tooltipElements = document.querySelectorAll('.has-tooltip');

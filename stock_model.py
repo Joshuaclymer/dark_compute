@@ -6,8 +6,8 @@ from abc import ABC, abstractmethod
 # Constants for H100 chip (duplicated from fab_model to avoid circular import)
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
 H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass
-
 WATT_CONSUMED_PER_H100 = 700  # Example constant, replace with actual value if needed
+
 class InitialPRCComputeStockParameters():
     
     # PRC compute stock

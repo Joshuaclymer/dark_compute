@@ -364,11 +364,11 @@ class FabModelParameters:
     # Power law: W/TPP ∝ (transistor_density)^exponent
     # Before Dennard scaling ended (transistor density <= ~1.98 M/mm², year <= 2006):
     # Higher density led to WORSE efficiency (positive relationship with power)
-    watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended = -2.006575
+    watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended = -2.00
 
     # After Dennard scaling ended (transistor density > ~1.98 M/mm², year > 2006):
     # Higher density leads to BETTER efficiency (negative relationship with power)
-    watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended = -0.909355
+    watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended = -0.91
 
     # Transistor density threshold marking the end of Dennard scaling (2006)
     transistor_density_at_end_of_dennard_scaling_m_per_mm2 = 1.98  # Million transistors per mm²

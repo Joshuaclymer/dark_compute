@@ -314,7 +314,7 @@ def run_simulation():
 
         # Extract data for plots
         print(f"DEBUG: Extracting plot data...", flush=True)
-        results = extract_plot_data(model, p_fab_exists)
+        results = extract_plot_data(model, p_fab_exists, p_project_exists)
 
         # Add initial compute stock distribution to results
         results['initial_prc_stock_samples'] = initial_prc_stock_samples
@@ -333,7 +333,7 @@ def run_simulation():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-def extract_plot_data(model, p_fab_exists):
+def extract_plot_data(model, p_fab_exists, p_project_exists):
     """Extract plot data from model simulation results"""
     from stock_model import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
 
@@ -849,6 +849,205 @@ def extract_plot_data(model, p_fab_exists):
     compute_ccdf = compute_ccdfs.get(dashboard_threshold, [])
     op_time_ccdf = op_time_ccdfs.get(dashboard_threshold, [])
 
+    # Track dark compute project detection (for dashboard)
+    # We track operational dark compute at detection for each simulation
+    individual_project_h100e_before_detection = []
+    individual_project_energy_before_detection = []
+    individual_project_time_before_detection = []
+    individual_project_h100_years_before_detection = []
+
+    for sim_idx, (covert_projects, detectors) in enumerate(model.simulation_results):
+        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
+        dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+        covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+
+        years = sorted(us_beliefs.keys())
+        detection_year = None
+
+        # Get initial prior for covert project (not just fab)
+        initial_p_project = us_beliefs[min(years)].p_project_exists
+        prior_odds_project = initial_p_project / (1 - initial_p_project) if initial_p_project < 1.0 else 1e10
+
+        # Find detection year based on project probability and odds ratio
+        for year in years:
+            p_project = us_beliefs[year].p_project_exists
+            # Detection occurs when odds ratio >= threshold (dashboard_threshold)
+            current_odds = p_project / (1 - p_project) if p_project < 1.0 else 1e10
+            odds_ratio = current_odds / prior_odds_project
+
+            if odds_ratio >= dashboard_threshold:
+                detection_year = year
+                break
+
+        # If detected, get operational dark compute at detection
+        if detection_year is not None:
+            # Get datacenter capacity at detection year
+            capacity_gw = covert_datacenters.get_GW_capacity(detection_year - agreement_year)
+
+            # Get operational dark compute (limited by capacity)
+            operational_compute = dark_compute_stock.operational_dark_compute(
+                detection_year - agreement_year,
+                capacity_gw
+            )
+            operational_h100e = operational_compute.total_h100e_tpp()
+
+            # Calculate energy (GW) from H100e TPP
+            from stock_model import InitialPRCComputeStockParameters, H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+            energy_gw = (operational_h100e * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
+                        InitialPRCComputeStockParameters.energy_efficiency_relative_to_h100 / 1e9)
+
+            # Calculate time operational (detection year - agreement start)
+            time_operational = detection_year - agreement_year
+
+            # Calculate H100-years: integrate operational H100e over time until detection
+            # For each year from agreement start to detection, calculate operational H100e
+            h100_years = 0.0
+            years_to_integrate = [y for y in years if agreement_year <= y <= detection_year]
+            for i in range(len(years_to_integrate) - 1):
+                year = years_to_integrate[i]
+                next_year = years_to_integrate[i + 1]
+                time_increment = next_year - year
+
+                # Get operational H100e at this time
+                year_since_agreement = year - agreement_year
+                capacity_at_year = covert_datacenters.get_GW_capacity(year_since_agreement)
+                operational_at_year = dark_compute_stock.operational_dark_compute(
+                    year_since_agreement,
+                    capacity_at_year
+                )
+                h100e_at_year = operational_at_year.total_h100e_tpp()
+
+                # Add contribution: H100e * time_increment (in years)
+                h100_years += h100e_at_year * time_increment
+
+            individual_project_h100e_before_detection.append(operational_h100e)
+            individual_project_energy_before_detection.append(energy_gw)
+            individual_project_time_before_detection.append(time_operational)
+            individual_project_h100_years_before_detection.append(h100_years)
+        else:
+            # Never detected - use final year values
+            final_year = max(years)
+            capacity_gw = covert_datacenters.get_GW_capacity(final_year - agreement_year)
+            operational_compute = dark_compute_stock.operational_dark_compute(
+                final_year - agreement_year,
+                capacity_gw
+            )
+            operational_h100e = operational_compute.total_h100e_tpp()
+
+            from stock_model import InitialPRCComputeStockParameters, H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+            energy_gw = (operational_h100e * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
+                        InitialPRCComputeStockParameters.energy_efficiency_relative_to_h100 / 1e9)
+
+            time_operational = final_year - agreement_year
+
+            # Calculate H100-years over entire simulation period
+            h100_years = 0.0
+            years_to_integrate = [y for y in years if agreement_year <= y]
+            for i in range(len(years_to_integrate) - 1):
+                year = years_to_integrate[i]
+                next_year = years_to_integrate[i + 1]
+                time_increment = next_year - year
+
+                # Get operational H100e at this time
+                year_since_agreement = year - agreement_year
+                capacity_at_year = covert_datacenters.get_GW_capacity(year_since_agreement)
+                operational_at_year = dark_compute_stock.operational_dark_compute(
+                    year_since_agreement,
+                    capacity_at_year
+                )
+                h100e_at_year = operational_at_year.total_h100e_tpp()
+
+                # Add contribution: H100e * time_increment (in years)
+                h100_years += h100e_at_year * time_increment
+
+            individual_project_h100e_before_detection.append(operational_h100e)
+            individual_project_energy_before_detection.append(energy_gw)
+            individual_project_time_before_detection.append(time_operational)
+            individual_project_h100_years_before_detection.append(h100_years)
+
+    # Calculate CCDFs for H100-years at different detection thresholds
+    # Similar to compute_ccdfs but for dark compute project
+    project_h100_years_ccdfs = {}
+    total_simulations = len(model.simulation_results)
+
+    # For each threshold (likelihood ratio), collect H100-years at detection
+    for lr in LIKELIHOOD_RATIOS:
+        posterior_odds = prior_odds_project * lr
+        threshold = posterior_odds / (1 + posterior_odds)
+
+        h100_years_at_threshold = []
+
+        # Go through each simulation and find detection year for this threshold
+        for sim_idx, (covert_projects, detectors) in enumerate(model.simulation_results):
+            us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
+            dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+            covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+
+            years = sorted(us_beliefs.keys())
+            detection_year = None
+
+            # Get initial prior for covert project
+            initial_p_project = us_beliefs[min(years)].p_project_exists
+            prior_odds = initial_p_project / (1 - initial_p_project) if initial_p_project < 1.0 else 1e10
+
+            # Find detection year based on project probability and odds ratio
+            for year in years:
+                p_project = us_beliefs[year].p_project_exists
+                current_odds = p_project / (1 - p_project) if p_project < 1.0 else 1e10
+                odds_ratio = current_odds / prior_odds
+
+                if odds_ratio >= lr:
+                    detection_year = year
+                    break
+
+            # Calculate H100-years until detection (or end of simulation)
+            end_year = detection_year if detection_year is not None else max(years)
+            h100_years = 0.0
+            years_to_integrate = [y for y in years if agreement_year <= y <= end_year]
+
+            for i in range(len(years_to_integrate) - 1):
+                year = years_to_integrate[i]
+                next_year = years_to_integrate[i + 1]
+                time_increment = next_year - year
+
+                # Get operational H100e at this time
+                year_since_agreement = year - agreement_year
+                capacity_at_year = covert_datacenters.get_GW_capacity(year_since_agreement)
+                operational_at_year = dark_compute_stock.operational_dark_compute(
+                    year_since_agreement,
+                    capacity_at_year
+                )
+                h100e_at_year = operational_at_year.total_h100e_tpp()
+
+                # Add contribution: H100e * time_increment (in years)
+                h100_years += h100e_at_year * time_increment
+
+            h100_years_at_threshold.append(h100_years)
+
+        # Calculate CCDF for this threshold
+        if h100_years_at_threshold:
+            h100_years_sorted = np.sort(h100_years_at_threshold)
+
+            # Handle ties correctly
+            unique_x = []
+            ccdf_y = []
+            seen_values = set()
+
+            for i, x in enumerate(h100_years_sorted):
+                if x not in seen_values:
+                    seen_values.add(x)
+                    # Find last occurrence of this x value
+                    last_idx = i
+                    while last_idx + 1 < len(h100_years_sorted) and h100_years_sorted[last_idx + 1] == x:
+                        last_idx += 1
+                    # CCDF at x = (number of values > x) / total
+                    num_greater = total_simulations - (last_idx + 1)
+                    ccdf = num_greater / total_simulations
+                    unique_x.append(float(x))
+                    ccdf_y.append(float(ccdf))
+
+            project_h100_years_ccdfs[threshold] = [{"x": x, "y": y} for x, y in zip(unique_x, ccdf_y)]
+
     # Print USER'S DIRECT QUESTIONS FIRST
     print(f"\n=== DIRECT ANSWERS TO USER'S QUESTIONS ===", flush=True)
     if total_simulations_with_fab > 0:
@@ -1045,7 +1244,13 @@ def extract_plot_data(model, p_fab_exists):
         "individual_h100e_before_detection": individual_h100e_before_detection,
         "individual_time_before_detection": individual_time_before_detection,
         "individual_process_node": individual_process_nodes,
-        "individual_energy_before_detection": individual_energy_before_detection
+        "individual_energy_before_detection": individual_energy_before_detection,
+        "individual_project_h100e_before_detection": individual_project_h100e_before_detection,
+        "individual_project_energy_before_detection": individual_project_energy_before_detection,
+        "individual_project_time_before_detection": individual_project_time_before_detection,
+        "individual_project_h100_years_before_detection": individual_project_h100_years_before_detection,
+        "project_h100_years_ccdfs": project_h100_years_ccdfs,
+        "p_project_exists": p_project_exists
     }
 
 @app.route('/download/nuclear_case_studies')

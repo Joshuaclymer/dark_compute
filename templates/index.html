@@ -761,6 +761,37 @@
             <h1 style="margin-top: 40px; margin-bottom: 10px; font-size: 32px; font-weight: bold; color: #333;">Dark Compute Model</h1>
             <p style="margin-bottom: 30px; font-size: 16px; color: #666;">A model of how much compute the PRC might covertly operate during an AI slowdown agreement.</p>
 
+            <!-- Dashboard and CCDF Side-by-Side -->
+            <div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-start;">
+                <!-- Dark Compute Dashboard -->
+                <div class="dashboard" style="flex: 0 0 auto; margin-bottom: 0;">
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardProject80thH100Years">--</div>
+                        <div class="dashboard-label">H100-Years of Computation Before Detection (80th %ile Outcome)</div>
+                        <div class="dashboard-sublabel">Detection = US estimates covert project has ≥5x higher odds than previously thought</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div style="display: flex; align-items: baseline; justify-content: center; gap: 15px;">
+                            <div class="dashboard-value" id="dashboardProject80thH100e">--</div>
+                            <div class="dashboard-value" id="dashboardProject80thEnergy" style="font-size: 24px; color: #666;">--</div>
+                        </div>
+                        <div class="dashboard-label">Operating Dark Compute Before Detection (80th %ile Outcome)</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardProject80thTime">--</div>
+                        <div class="dashboard-label">Years Operational Before Detection (80th %ile Outcome)</div>
+                    </div>
+                </div>
+
+                <!-- H100-Years CCDF Plot -->
+                <div style="flex: 1; min-width: 400px;">
+                    <div class="plot-container" style="margin-bottom: 0;">
+                        <div class="plot-title">H100-Years of Computation Before Detection</div>
+                        <div id="projectH100YearsCcdfPlot" class="plot" style="height: 350px;"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Dark Compute Stock Breakdown Section -->
             <div class="breakdown-section">
                 <div class="breakdown-title">Dark Compute Stock Breakdown</div>
@@ -1566,6 +1597,91 @@
             setTimeout(() => Plotly.Plots.resize('computeCcdfPlot'), 50);
         }
 
+        function plotProjectH100YearsCcdf(data) {
+            if (!data.project_h100_years_ccdfs) {
+                document.getElementById('projectH100YearsCcdfPlot').innerHTML = '<p>No detection data available</p>';
+                return;
+            }
+
+            // Get prior probability from the data
+            const priorProb = data.p_project_exists || 0.1;
+            const priorOdds = priorProb / (1 - priorProb);
+
+            // Use likelihood ratios from backend
+            const likelihoodRatios = data.likelihood_ratios || [1, 2, 5];
+            const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
+
+            const traces = [];
+            const thresholds = likelihoodRatios.map((lr, index) => {
+                const posteriorOdds = priorOdds * lr;
+                const posteriorProb = posteriorOdds / (1 + posteriorOdds);
+                return {
+                    value: posteriorProb,
+                    label: `>${lr}x update`,
+                    color: colors[index % colors.length]
+                };
+            });
+
+            console.log('Project H100-Years CCDF Debug:');
+            console.log('priorProb:', priorProb);
+            console.log('likelihoodRatios:', likelihoodRatios);
+            console.log('thresholds:', thresholds);
+            console.log('CCDF data keys:', Object.keys(data.project_h100_years_ccdfs));
+            console.log('CCDF data:', data.project_h100_years_ccdfs);
+
+            // Reverse thresholds for legend order (highest to lowest)
+            const thresholdsReversed = [...thresholds].reverse();
+
+            for (const threshold of thresholdsReversed) {
+                const ccdf = data.project_h100_years_ccdfs[threshold.value];
+                if (ccdf && ccdf.length > 0) {
+                    traces.push({
+                        x: ccdf.map(d => d.x),
+                        y: ccdf.map(d => d.y),
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: threshold.color, width: 2 },
+                        name: `"Detection" = ${threshold.label}`,
+                        hovertemplate: 'H100-years: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>'
+                    });
+                }
+            }
+
+            const layout = {
+                xaxis: {
+                    title: "H100-Years Before 'Detection'",
+                    titlefont: { size: 13 },
+                    tickfont: { size: 10 },
+                    type: 'log',
+                    automargin: true
+                },
+                yaxis: {
+                    title: 'P(H100-years > x)',
+                    titlefont: { size: 13 },
+                    tickfont: { size: 10 },
+                    range: [0, 1],
+                    automargin: true
+                },
+                showlegend: true,
+                legend: {
+                    x: 0.98,
+                    y: 0.98,
+                    xanchor: 'right',
+                    yanchor: 'top',
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#ccc',
+                    borderwidth: 1
+                },
+                hovermode: 'closest',
+                margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('projectH100YearsCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
+            setTimeout(() => Plotly.Plots.resize('projectH100YearsCcdfPlot'), 50);
+        }
+
         function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null) {
             // Create histogram/PDF from values
             console.log(`plotPDF called for ${divId}:`, values);
@@ -2000,6 +2116,67 @@
                 const highestLR = likelihoodRatios[likelihoodRatios.length - 1];
                 document.getElementById('dashboardDetectionLabel').textContent =
                     `Detection = US estimates covert fab has ≥${highestLR}x higher odds than previously thought`;
+            }
+
+            // Populate dark compute project dashboard
+            const projectH100eValues = data.individual_project_h100e_before_detection || [];
+            const projectEnergyValues = data.individual_project_energy_before_detection || [];
+            const projectTimeValues = data.individual_project_time_before_detection || [];
+            const projectH100YearsValues = data.individual_project_h100_years_before_detection || [];
+
+            if (projectH100eValues.length > 0) {
+                // Sort by H100-years and find 80th percentile simulation
+                const projectIndexed = projectH100YearsValues.map((h100years, idx) => ({ h100years, idx }));
+                projectIndexed.sort((a, b) => a.h100years - b.h100years);
+                const projectIdx80 = Math.floor(projectIndexed.length * 0.8);
+                const projectSim80th = projectIndexed[projectIdx80];
+
+                // Get all values from this same simulation
+                const projectH100Years80th = projectSim80th.h100years;
+                const projectH100e80th = projectH100eValues[projectSim80th.idx];
+                const projectEnergy80th = projectEnergyValues[projectSim80th.idx];
+                const projectTime80th = projectTimeValues[projectSim80th.idx];
+
+                // Display H100-years
+                const h100YearsRounded = Math.round(projectH100Years80th / 100000) * 100000;
+                if (h100YearsRounded >= 1000000) {
+                    document.getElementById('dashboardProject80thH100Years').textContent =
+                        `~${(h100YearsRounded / 1000000).toFixed(1)}M H100-years`;
+                } else if (h100YearsRounded >= 1000) {
+                    document.getElementById('dashboardProject80thH100Years').textContent =
+                        `~${(h100YearsRounded / 1000).toFixed(0)}K H100-years`;
+                } else {
+                    document.getElementById('dashboardProject80thH100Years').textContent =
+                        `~${h100YearsRounded.toFixed(0)} H100-years`;
+                }
+
+                // Display H100e
+                const projectRounded = Math.round(projectH100e80th / 100000) * 100000;
+                if (projectRounded >= 1000000) {
+                    document.getElementById('dashboardProject80thH100e').textContent =
+                        `~${(projectRounded / 1000000).toFixed(1)}M H100e`;
+                } else if (projectRounded >= 1000) {
+                    document.getElementById('dashboardProject80thH100e').textContent =
+                        `~${(projectRounded / 1000).toFixed(0)}K H100e`;
+                } else {
+                    document.getElementById('dashboardProject80thH100e').textContent =
+                        `~${projectRounded.toFixed(0)} H100e`;
+                }
+
+                // Display energy (GW)
+                if (projectEnergy80th >= 1) {
+                    document.getElementById('dashboardProject80thEnergy').textContent =
+                        `~${projectEnergy80th.toFixed(1)} GW`;
+                } else if (projectEnergy80th >= 0.001) {
+                    document.getElementById('dashboardProject80thEnergy').textContent =
+                        `~${(projectEnergy80th * 1000).toFixed(0)} MW`;
+                } else {
+                    document.getElementById('dashboardProject80thEnergy').textContent =
+                        `~${(projectEnergy80th * 1000).toFixed(1)} MW`;
+                }
+
+                // Display time
+                document.getElementById('dashboardProject80thTime').textContent = projectTime80th.toFixed(1);
             }
         }
 
@@ -2614,6 +2791,7 @@
                 plotTimeSeries(data);
                 plotComputeCcdf(data);
                 plotDatacenterCapacity(data);
+                plotProjectH100YearsCcdf(data);
 
                 // Force resize after a brief delay to ensure plots fill containers
                 setTimeout(() => {

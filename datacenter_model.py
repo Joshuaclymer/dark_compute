@@ -183,17 +183,13 @@ class CovertPRCDatacenters():
         self.construction_labor_per_GW_per_year = sample_construction_labor_per_GW_per_year()
         self.operating_labor_per_GW = sample_operating_labor_per_GW()
 
-        # COMMENTED OUT: Calculate total labor and sample detection time once
-        # This code is slow, so it's disabled for now
-        # # Use a representative time point (e.g., year 5) for labor calculation
-        # representative_capacity = self.GW_per_initial_datacenter * self.number_of_initial_datacenters + self.GW_per_year_of_concealed_datacenters * 5
-        # construction_labor = self.construction_labor_per_GW_per_year * self.GW_per_year_of_concealed_datacenters
-        # operating_labor = self.operating_labor_per_GW * representative_capacity
-        # total_labor = construction_labor + operating_labor
-        # self.time_of_detection = sample_time_of_detection_via_other_strategies(total_labor)
-
-        # Placeholder value since detection code is disabled
-        self.time_of_detection = float('inf')
+        # Calculate total labor and sample detection time once
+        # Use a representative time point (e.g., year 5) for labor calculation
+        representative_capacity = self.GW_per_initial_datacenter * self.number_of_initial_datacenters + self.GW_per_year_of_concealed_datacenters * 5
+        construction_labor = self.construction_labor_per_GW_per_year * self.GW_per_year_of_concealed_datacenters
+        operating_labor = self.operating_labor_per_GW * representative_capacity
+        total_labor = construction_labor + operating_labor
+        self.time_of_detection = sample_time_of_detection_via_other_strategies(total_labor)
 
         # Cache for operating labor calculation
         self.construction_labor = 0
@@ -207,12 +203,8 @@ class CovertPRCDatacenters():
         return self.operating_labor
 
     def lr_from_concealed_datacenters(self, year):
-        # COMMENTED OUT: Likelihood ratio calculation (slow)
-        # # Use pre-computed labor parameters and detection time
-        # construction_labor = self.construction_labor_per_GW_per_year * self.GW_per_year_of_concealed_datacenters
-        # operating_labor = self.get_operating_labor(year)
-        # total_labor = construction_labor + operating_labor
-        # return lr_from_other_strategies(year, self.time_of_detection, total_labor)
-
-        # Return 1.0 (neutral evidence) since detection code is disabled
-        return 1.0
+        # Use pre-computed labor parameters and detection time
+        construction_labor = self.construction_labor_per_GW_per_year * self.GW_per_year_of_concealed_datacenters
+        operating_labor = self.get_operating_labor(year)
+        total_labor = construction_labor + operating_labor
+        return lr_from_other_strategies(year, self.time_of_detection, total_labor)

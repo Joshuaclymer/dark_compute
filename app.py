@@ -482,8 +482,8 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
             dark_compute.append(surviving)
             dark_compute_objects.append(surviving_compute)  # Store Compute object for energy breakdown
 
-            # Get operational compute (limited by datacenter capacity)
-            operational_compute = dark_compute_stock.operational_dark_compute(year, capacity_gw)
+            # Get operational compute (limited by datacenter capacity) using CovertProject method
+            operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(year)
             operational = operational_compute.total_h100e_tpp()
             operational_dark_compute.append(operational)
 
@@ -500,56 +500,48 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
         datacenter_capacity_by_sim.append(datacenter_capacity_gw)
         lr_datacenters_by_sim.append(lr_datacenters_over_time)
 
-        # Extract likelihood ratio components
-        if covert_fab is not None:
-            # Use detection_updates which stores fab-specific detection LRs over time
-            detection_lr_over_time = []
-            lr_inventory_over_time = []
-            lr_procurement_over_time = []
-            lr_other_over_time = []
-            is_operational = []
-            wafer_starts = []
-            architecture_efficiency = []
-            compute_per_wafer_2022_arch = []
+        # Extract likelihood ratio components and fab properties using CovertProject methods
+        # These methods return appropriate default values (1.0 for LRs, 0.0 for operational) if no fab exists
+        lr_inventory_over_time = []
+        lr_procurement_over_time = []
+        lr_other_over_time = []
+        is_operational = []
+        wafer_starts = []
+        architecture_efficiency = []
+        compute_per_wafer_2022_arch = []
 
-            for year in years:
-                # Get the detection LR components from the fab's tracking dictionaries
-                if hasattr(covert_fab, 'lr_inventory_over_time') and year in covert_fab.lr_inventory_over_time:
-                    lr_inventory_over_time.append(covert_fab.lr_inventory_over_time[year])
-                    lr_procurement_over_time.append(covert_fab.lr_procurement_over_time[year])
-                    lr_other_over_time.append(covert_fab.lr_other_over_time[year])
-                    detection_lr_over_time.append(covert_fab.detection_updates[year])
-                else:
-                    lr_inventory_over_time.append(1.0)
-                    lr_procurement_over_time.append(1.0)
-                    lr_other_over_time.append(1.0)
-                    detection_lr_over_time.append(1.0)
+        for year in years:
+            # Get LR components from covert project (returns 1.0 if no fab)
+            lr_inventory_over_time.append(covert_projects["prc_covert_project"].get_fab_lr_inventory(year))
+            lr_procurement_over_time.append(covert_projects["prc_covert_project"].get_fab_lr_procurement(year))
+            lr_other_over_time.append(covert_projects["prc_covert_project"].get_fab_lr_other(year))
 
-                # Calculate compute factors
-                is_operational.append(1.0 if covert_fab.is_operational(year) else 0.0)
-                wafer_starts.append(covert_fab.wafer_starts_per_month)
+            # Get operational status (returns 0.0 if no fab)
+            is_operational.append(covert_projects["prc_covert_project"].get_fab_is_operational(year))
 
-                # Architecture efficiency and compute per wafer (2022 architectures)
-                from fab_model import estimate_architecture_efficiency_relative_to_h100
-                arch_efficiency = estimate_architecture_efficiency_relative_to_h100(year, agreement_year)
-                architecture_efficiency.append(arch_efficiency)
+            # Get fab properties (returns 0.0 or 1.0 if no fab)
+            wafer_starts.append(covert_projects["prc_covert_project"].get_fab_wafer_starts_per_month())
 
-                # Compute per wafer with 2022 architectures (without year-specific architecture improvements)
-                compute_per_wafer_2022_arch.append(
-                    covert_fab.h100_sized_chips_per_wafer *
-                    covert_fab.transistor_density_relative_to_h100
-                )
+            # Architecture efficiency and compute per wafer (2022 architectures)
+            from fab_model import estimate_architecture_efficiency_relative_to_h100
+            arch_efficiency = estimate_architecture_efficiency_relative_to_h100(year, agreement_year)
+            architecture_efficiency.append(arch_efficiency)
 
-            lr_inventory_by_sim.append(lr_inventory_over_time)
-            lr_procurement_by_sim.append(lr_procurement_over_time)
-            lr_other_by_sim.append(lr_other_over_time)
-            is_operational_by_sim.append(is_operational)
-            wafer_starts_by_sim.append(wafer_starts)
-            chips_per_wafer_by_sim.append([covert_fab.h100_sized_chips_per_wafer] * len(years))
-            architecture_efficiency_by_sim.append(architecture_efficiency)
-            compute_per_wafer_2022_arch_by_sim.append(compute_per_wafer_2022_arch)
-            transistor_density_by_sim.append([covert_fab.transistor_density_relative_to_h100] * len(years))
-            process_node_by_sim.append(covert_fab.process_node.value)  # Store the process node label (e.g., "130nm")
+            # Compute per wafer with 2022 architectures (uses defaults if no fab)
+            chips_per_wafer = covert_projects["prc_covert_project"].get_fab_h100_sized_chips_per_wafer()
+            transistor_density = covert_projects["prc_covert_project"].get_fab_transistor_density_relative_to_h100()
+            compute_per_wafer_2022_arch.append(chips_per_wafer * transistor_density)
+
+        lr_inventory_by_sim.append(lr_inventory_over_time)
+        lr_procurement_by_sim.append(lr_procurement_over_time)
+        lr_other_by_sim.append(lr_other_over_time)
+        is_operational_by_sim.append(is_operational)
+        wafer_starts_by_sim.append(wafer_starts)
+        chips_per_wafer_by_sim.append([covert_projects["prc_covert_project"].get_fab_h100_sized_chips_per_wafer()] * len(years))
+        architecture_efficiency_by_sim.append(architecture_efficiency)
+        compute_per_wafer_2022_arch_by_sim.append(compute_per_wafer_2022_arch)
+        transistor_density_by_sim.append([covert_projects["prc_covert_project"].get_fab_transistor_density_relative_to_h100()] * len(years))
+        process_node_by_sim.append(covert_projects["prc_covert_project"].get_fab_process_node())
 
     # Filter arrays to only include simulations where fab was built
     fab_built_mask = np.array(fab_built_in_sim)
@@ -952,14 +944,8 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
 
         # If detected, get operational dark compute at detection
         if detection_year is not None:
-            # Get datacenter capacity at detection year
-            capacity_gw = covert_datacenters.get_GW_capacity(detection_year - agreement_year)
-
             # Get operational dark compute (limited by capacity)
-            operational_compute = dark_compute_stock.operational_dark_compute(
-                detection_year - agreement_year,
-                capacity_gw
-            )
+            operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(detection_year)
             operational_h100e = operational_compute.total_h100e_tpp()
 
             # Calculate energy (GW) from H100e TPP
@@ -980,12 +966,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
                 time_increment = next_year - year
 
                 # Get operational H100e at this time
-                year_since_agreement = year - agreement_year
-                capacity_at_year = covert_datacenters.get_GW_capacity(year_since_agreement)
-                operational_at_year = dark_compute_stock.operational_dark_compute(
-                    year_since_agreement,
-                    capacity_at_year
-                )
+                operational_at_year = covert_projects["prc_covert_project"].operational_dark_compute(year)
                 h100e_at_year = operational_at_year.total_h100e_tpp()
 
                 # Add contribution: H100e * time_increment (in years)
@@ -998,11 +979,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
         else:
             # Never detected - use final year values
             final_year = max(years)
-            capacity_gw = covert_datacenters.get_GW_capacity(final_year - agreement_year)
-            operational_compute = dark_compute_stock.operational_dark_compute(
-                final_year - agreement_year,
-                capacity_gw
-            )
+            operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(final_year)
             operational_h100e = operational_compute.total_h100e_tpp()
 
             from stock_model import InitialPRCComputeStockParameters, H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
@@ -1020,12 +997,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
                 time_increment = next_year - year
 
                 # Get operational H100e at this time
-                year_since_agreement = year - agreement_year
-                capacity_at_year = covert_datacenters.get_GW_capacity(year_since_agreement)
-                operational_at_year = dark_compute_stock.operational_dark_compute(
-                    year_since_agreement,
-                    capacity_at_year
-                )
+                operational_at_year = covert_projects["prc_covert_project"].operational_dark_compute(year)
                 h100e_at_year = operational_at_year.total_h100e_tpp()
 
                 # Add contribution: H100e * time_increment (in years)
@@ -1082,12 +1054,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
                 time_increment = next_year - year
 
                 # Get operational H100e at this time
-                year_since_agreement = year - agreement_year
-                capacity_at_year = covert_datacenters.get_GW_capacity(year_since_agreement)
-                operational_at_year = dark_compute_stock.operational_dark_compute(
-                    year_since_agreement,
-                    capacity_at_year
-                )
+                operational_at_year = covert_projects["prc_covert_project"].operational_dark_compute(year)
                 h100e_at_year = operational_at_year.total_h100e_tpp()
 
                 # Add contribution: H100e * time_increment (in years)
@@ -1166,7 +1133,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
                 print(f"  CCDF smallest x value: {compute_ccdf[0]['x']:.2f} H100e", flush=True)
                 print(f"  CCDF at smallest x: P(compute > {compute_ccdf[0]['x']:.2f}) = {compute_ccdf[0]['y']:.4f}", flush=True)
 
-    # Calculate statistics for fab detection LR
+    # Calculate statistics for fab detection LR (now includes all simulations)
     lr_components = {}
     if lr_inventory_by_sim:
         lr_fab_detection_array = np.array(lr_inventory_by_sim)
@@ -1177,33 +1144,33 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
         num_lr_gte_10 = sum(1 for lr in lr_fab_detection_final if lr >= 10.0)
         num_lr_gt_2_5 = sum(1 for lr in lr_fab_detection_final if lr > 2.5)
         total_sims = len(lr_fab_detection_final)
-        print(f"FAB DETECTION LR ANALYSIS (final timestep):", flush=True)
+        print(f"FAB DETECTION LR ANALYSIS (final timestep, all sims):", flush=True)
         print(f"  Total simulations: {total_sims}", flush=True)
-        print(f"  LR ≈ 1.0: {num_lr_equals_1} ({100*num_lr_equals_1/total_sims:.1f}%)", flush=True)
+        print(f"  LR ≈ 1.0 (no fab or no detection): {num_lr_equals_1} ({100*num_lr_equals_1/total_sims:.1f}%)", flush=True)
         print(f"  LR > 2.5: {num_lr_gt_2_5} ({100*num_lr_gt_2_5/total_sims:.1f}%)", flush=True)
         print(f"  LR ≥ 10.0: {num_lr_gte_10} ({100*num_lr_gte_10/total_sims:.1f}%)", flush=True)
         print(f"  Other values: {total_sims - num_lr_equals_1 - num_lr_gte_10} ({100*(total_sims - num_lr_equals_1 - num_lr_gte_10)/total_sims:.1f}%)", flush=True)
 
-        # Calculate medians and prepare data for all three components
-        # Filter to only include simulations where fab was built
+        # Filter LR arrays to only include simulations where fab was built
         lr_inventory_with_fab = [sim for i, sim in enumerate(lr_inventory_by_sim) if fab_built_in_sim[i]]
         lr_procurement_with_fab = [sim for i, sim in enumerate(lr_procurement_by_sim) if fab_built_in_sim[i]]
         lr_other_with_fab = [sim for i, sim in enumerate(lr_other_by_sim) if fab_built_in_sim[i]]
 
+        # Calculate medians and prepare data for all three components (only simulations with fab)
         lr_inventory_array = np.array(lr_inventory_with_fab) if len(lr_inventory_with_fab) > 0 else np.array(lr_inventory_by_sim)
         lr_procurement_array = np.array(lr_procurement_with_fab) if len(lr_procurement_with_fab) > 0 else np.array(lr_procurement_by_sim)
         lr_other_array = np.array(lr_other_with_fab) if len(lr_other_with_fab) > 0 else np.array(lr_other_by_sim)
 
         lr_components = {
             "inventory_median": np.median(lr_inventory_array, axis=0).tolist(),
-            "inventory_individual": [list(sim) for sim in lr_inventory_with_fab] if len(lr_inventory_with_fab) > 0 else [list(sim) for sim in lr_inventory_by_sim],
+            "inventory_individual": [list(sim) for sim in lr_inventory_array],
             "procurement_median": np.median(lr_procurement_array, axis=0).tolist(),
-            "procurement_individual": [list(sim) for sim in lr_procurement_with_fab] if len(lr_procurement_with_fab) > 0 else [list(sim) for sim in lr_procurement_by_sim],
+            "procurement_individual": [list(sim) for sim in lr_procurement_array],
             "other_median": np.median(lr_other_array, axis=0).tolist(),
-            "other_individual": [list(sim) for sim in lr_other_with_fab] if len(lr_other_with_fab) > 0 else [list(sim) for sim in lr_other_by_sim]
+            "other_individual": [list(sim) for sim in lr_other_array]
         }
 
-    # Calculate statistics for compute factors
+    # Calculate statistics for compute factors (only simulations where fab was built)
     compute_factors = {}
     if is_operational_by_sim:
         # Filter to only include simulations where fab was built
@@ -1214,6 +1181,7 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
         compute_per_wafer_2022_arch_with_fab = [sim for i, sim in enumerate(compute_per_wafer_2022_arch_by_sim) if fab_built_in_sim[i]]
         transistor_density_with_fab = [sim for i, sim in enumerate(transistor_density_by_sim) if fab_built_in_sim[i]]
 
+        # Use filtered arrays if any fabs were built, otherwise use all simulations
         is_operational_array = np.array(is_operational_with_fab) if len(is_operational_with_fab) > 0 else np.array(is_operational_by_sim)
         wafer_starts_array = np.array(wafer_starts_with_fab) if len(wafer_starts_with_fab) > 0 else np.array(wafer_starts_by_sim)
         chips_per_wafer_array = np.array(chips_per_wafer_with_fab) if len(chips_per_wafer_with_fab) > 0 else np.array(chips_per_wafer_by_sim)
@@ -1278,31 +1246,76 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
                 sim_watts.append(watts_relative)
             watts_per_tpp_by_sim.append(sim_watts)
 
-        # Filter watts_per_tpp to only include simulations where fab was built
+        # Filter watts_per_tpp and process_node
         watts_per_tpp_with_fab = [sim for i, sim in enumerate(watts_per_tpp_by_sim) if fab_built_in_sim[i]]
+        process_node_with_fab = [sim for i, sim in enumerate(process_node_by_sim) if fab_built_in_sim[i]]
+
         watts_per_tpp_array = np.array(watts_per_tpp_with_fab) if len(watts_per_tpp_with_fab) > 0 else np.array(watts_per_tpp_by_sim)
 
         compute_factors = {
             "is_operational_median": np.mean(is_operational_array, axis=0).tolist(),
-            "is_operational_individual": [list(sim) for sim in is_operational_with_fab] if len(is_operational_with_fab) > 0 else [list(sim) for sim in is_operational_by_sim],
+            "is_operational_individual": [list(sim) for sim in is_operational_array],
             "wafer_starts_median": np.median(wafer_starts_array, axis=0).tolist(),
-            "wafer_starts_individual": [list(sim) for sim in wafer_starts_with_fab] if len(wafer_starts_with_fab) > 0 else [list(sim) for sim in wafer_starts_by_sim],
+            "wafer_starts_individual": [list(sim) for sim in wafer_starts_array],
             "chips_per_wafer_median": np.median(chips_per_wafer_array, axis=0).tolist(),
-            "chips_per_wafer_individual": [list(sim) for sim in chips_per_wafer_with_fab] if len(chips_per_wafer_with_fab) > 0 else [list(sim) for sim in chips_per_wafer_by_sim],
+            "chips_per_wafer_individual": [list(sim) for sim in chips_per_wafer_array],
             "architecture_efficiency_median": np.median(architecture_efficiency_array, axis=0).tolist(),
-            "architecture_efficiency_individual": [list(sim) for sim in architecture_efficiency_with_fab] if len(architecture_efficiency_with_fab) > 0 else [list(sim) for sim in architecture_efficiency_by_sim],
+            "architecture_efficiency_individual": [list(sim) for sim in architecture_efficiency_array],
             "compute_per_wafer_2022_arch_median": np.median(compute_per_wafer_2022_arch_array, axis=0).tolist(),
-            "compute_per_wafer_2022_arch_individual": [list(sim) for sim in compute_per_wafer_2022_arch_with_fab] if len(compute_per_wafer_2022_arch_with_fab) > 0 else [list(sim) for sim in compute_per_wafer_2022_arch_by_sim],
+            "compute_per_wafer_2022_arch_individual": [list(sim) for sim in compute_per_wafer_2022_arch_array],
             "transistor_density_median": np.median(transistor_density_array, axis=0).tolist(),
-            "transistor_density_individual": [list(sim) for sim in transistor_density_with_fab] if len(transistor_density_with_fab) > 0 else [list(sim) for sim in transistor_density_by_sim],
+            "transistor_density_individual": [list(sim) for sim in transistor_density_array],
             "watts_per_tpp_median": np.median(watts_per_tpp_array, axis=0).tolist(),
-            "watts_per_tpp_individual": [list(sim) for sim in watts_per_tpp_with_fab] if len(watts_per_tpp_with_fab) > 0 else [list(sim) for sim in watts_per_tpp_by_sim],
-            "process_node_by_sim": [node for i, node in enumerate(process_node_by_sim) if fab_built_in_sim[i]]
+            "watts_per_tpp_individual": [list(sim) for sim in watts_per_tpp_array],
+            "process_node_by_sim": process_node_with_fab if len(process_node_with_fab) > 0 else process_node_by_sim
         }
 
     # Calculate architecture efficiency at agreement year
     from fab_model import estimate_architecture_efficiency_relative_to_h100
     architecture_efficiency_at_agreement = estimate_architecture_efficiency_relative_to_h100(agreement_year, agreement_year)
+
+    # Calculate H100-years time series (cumulative H100-years at each time point)
+    # Use incremental calculation to avoid O(n²) complexity
+    h100_years_by_sim = []
+    cumulative_lr_by_sim = []
+    for sim_idx, (covert_projects, detectors) in enumerate(model.simulation_results):
+        h100_years_over_time = []
+        cumulative_lr_over_time = []
+        cumulative_h100_years = 0.0
+
+        for year_idx, year in enumerate(all_years):
+            # Incrementally add H100-years for this time step
+            if year_idx > 0:
+                prev_year = all_years[year_idx - 1]
+                time_increment = year - prev_year
+
+                # Get operational H100e at previous time point
+                operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(prev_year)
+                h100e_at_prev_year = operational_compute.total_h100e_tpp()
+
+                # Add contribution: H100e * time_increment
+                cumulative_h100_years += h100e_at_prev_year * time_increment
+
+            h100_years_over_time.append(cumulative_h100_years)
+
+            # Get cumulative likelihood ratio at this year
+            lr_results = covert_projects["prc_covert_project"].get_aggregated_likelihood_ratios(year)
+            cumulative_lr_over_time.append(lr_results['project_lr'])
+
+        h100_years_by_sim.append(h100_years_over_time)
+        cumulative_lr_by_sim.append(cumulative_lr_over_time)
+
+    # Calculate median and percentiles for H100-years
+    h100_years_array = np.array(h100_years_by_sim)
+    h100_years_median = np.median(h100_years_array, axis=0)
+    h100_years_p25 = np.percentile(h100_years_array, 25, axis=0)
+    h100_years_p75 = np.percentile(h100_years_array, 75, axis=0)
+
+    # Calculate median and percentiles for cumulative LR
+    cumulative_lr_array = np.array(cumulative_lr_by_sim)
+    cumulative_lr_median = np.median(cumulative_lr_array, axis=0)
+    cumulative_lr_p25 = np.percentile(cumulative_lr_array, 25, axis=0)
+    cumulative_lr_p75 = np.percentile(cumulative_lr_array, 75, axis=0)
 
     return {
         "time_series": {
@@ -1313,6 +1326,12 @@ def extract_plot_data(model, p_fab_exists, p_project_exists):
             "h100e_median": h100e_median.tolist(),
             "h100e_p25": h100e_p25.tolist(),
             "h100e_p75": h100e_p75.tolist(),
+            "h100_years_median": h100_years_median.tolist(),
+            "h100_years_p25": h100_years_p25.tolist(),
+            "h100_years_p75": h100_years_p75.tolist(),
+            "cumulative_lr_median": cumulative_lr_median.tolist(),
+            "cumulative_lr_p25": cumulative_lr_p25.tolist(),
+            "cumulative_lr_p75": cumulative_lr_p75.tolist(),
             "survival_rate_median": survival_rate_median.tolist(),
             "survival_rate_p25": survival_rate_p25.tolist(),
             "survival_rate_p75": survival_rate_p75.tolist(),

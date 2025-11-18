@@ -1,9 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
 from enum import Enum
-from fab_model import CovertFab, PRCCovertFab, ProcessNode, FabNotBuiltException
-from stock_model import PRCDarkComputeStock
-from datacenter_model import CovertPRCDatacenters
 import numpy as np
 from scipy import stats
 from scipy.optimize import curve_fit
@@ -27,59 +24,8 @@ class UpdateSource(Enum):
 # CLASSES
 # ============================================================================
 
-@dataclass
-class CovertProjectStrategy:
-    run_a_covert_project : bool
-    # Initial compute stock
-    proportion_of_initial_compute_stock_to_divert : Optional[float] = None
-
-    # Data centers
-    GW_per_initial_datacenter : float = 5
-    number_of_initial_datacenters : float = 0.1
-    GW_per_year_of_concealed_datacenters : float = 1
-
-    # Covert fab
-    build_a_covert_fab : bool = False
-    covert_fab_operating_labor : Optional[int] = None
-    covert_fab_construction_labor : Optional[int] = None
-    covert_fab_process_node : Optional[ProcessNode] = None
-    covert_fab_proportion_of_prc_lithography_scanners_devoted : Optional[float] = None
-
-@dataclass
-class CovertProject:
-    name : str
-    covert_project_strategy : CovertProjectStrategy
-    agreement_year : float
-    stock : Optional[PRCDarkComputeStock] = None
-    covert_fab : Optional[CovertFab] = None
-
-    def __post_init__(self):
-        # Initialize covert fab if strategy requires it and construction_start_year is set
-        self.dark_compute_stock = PRCDarkComputeStock(
-            agreement_year = self.agreement_year,
-            proportion_of_initial_compute_stock_to_divert = self.covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
-            optimal_proportion_of_initial_compute_stock_to_divert = best_prc_covert_project_strategy.proportion_of_initial_compute_stock_to_divert
-        )
-
-        self.covert_datacenters = CovertPRCDatacenters(
-            GW_per_initial_datacenter = self.covert_project_strategy.GW_per_initial_datacenter,
-            number_of_initial_datacenters = self.covert_project_strategy.number_of_initial_datacenters,
-            GW_per_year_of_concealed_datacenters = self.covert_project_strategy.GW_per_year_of_concealed_datacenters
-        )
-
-        if (self.covert_project_strategy.build_a_covert_fab):
-            try:
-                self.covert_fab = PRCCovertFab(
-                    construction_start_year = self.agreement_year,
-                    construction_labor = self.covert_project_strategy.covert_fab_construction_labor,
-                    process_node = self.covert_project_strategy.covert_fab_process_node,
-                    proportion_of_prc_lithography_scanners_devoted_to_fab = self.covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
-                    operation_labor = self.covert_project_strategy.covert_fab_operating_labor,
-                    agreement_year = self.agreement_year
-                )
-            except FabNotBuiltException:
-                # Fab not built because process node threshold not met
-                self.covert_fab = None
+# Import CovertProject and CovertProjectStrategy from covert_project module
+from covert_project import CovertProject, CovertProjectStrategy, best_prc_covert_project_strategy, default_prc_covert_project_strategy
 
 @dataclass
 class DetectorStrategy:
@@ -150,20 +96,6 @@ class Detector:
 default_us_detection_strategy = DetectorStrategy(
     placeholder = 0.0
 )
-default_prc_covert_project_strategy = CovertProjectStrategy(
-    run_a_covert_project = True,
-
-    proportion_of_initial_compute_stock_to_divert = 0.05,
-
-    # Covert fabs
-    build_a_covert_fab = True,
-    covert_fab_operating_labor = 550,
-    covert_fab_construction_labor = 250,
-    covert_fab_process_node = "best_indigenous",
-    covert_fab_proportion_of_prc_lithography_scanners_devoted = 0.1,
-)
-
-best_prc_covert_project_strategy = default_prc_covert_project_strategy
 
 # ============================================================================
 # SIMULATION: A simulation of a single rollout of a possible world
@@ -216,43 +148,7 @@ class Simulation:
         current_year = self.year_us_prc_agreement_goes_into_force + increment
         while current_year <= end_year:
             for project in self.covert_projects.values():
-                # ========== Update beliefs about covert project from dark compute stock accounting ==========
-                for detector_name, detector in self.detectors.items():
-                    # Update from PRC compute accounting
-                    prior_p_covert_project_exists = initial_priors[detector_name][project.name]['p_project_exists']
-                    lr_prc = project.dark_compute_stock.lr_from_prc_compute_accounting
-                    detector.beliefs_about_projects[project.name][current_year].update_p_project_exists(
-                        year=current_year,
-                        likelihood_ratio=lr_prc,
-                        prior_p=prior_p_covert_project_exists,
-                        source=UpdateSource.PRC_COMPUTE_ACCOUNTING
-                    )
-
-                    # Update from global compute production accounting
-                    # Use the updated prior (which incorporates PRC compute accounting)
-                    updated_prior_p = detector.beliefs_about_projects[project.name][current_year].p_project_exists
-                    lr_global = project.dark_compute_stock.lr_from_global_compute_production_accounting
-                    detector.beliefs_about_projects[project.name][current_year].update_p_project_exists(
-                        year=current_year,
-                        likelihood_ratio=lr_global,
-                        prior_p=updated_prior_p,
-                        source=UpdateSource.GLOBAL_COMPUTE_PRODUCTION_ACCOUNTING
-                    )
-                
-                # ========== Update beliefs about covert project from evidence of data centers ==========
-
-                for detector_name, detector in self.detectors.items():
-                    # Update from data center detection evidence
-                    prior_p_covert_project_exists = initial_priors[detector_name][project.name]['p_project_exists']
-                    lr_datacenters = project.covert_datacenters.lr_from_concealed_datacenters(current_year)
-                    detector.beliefs_about_projects[project.name][current_year].update_p_project_exists(
-                        year=current_year,
-                        likelihood_ratio=lr_datacenters,
-                        prior_p=prior_p_covert_project_exists,
-                        source=UpdateSource.DATACENTERS_CONCEALED
-                    )
-
-                # ========== Update beliefs about covert project from evidence of fab ==========
+                # ========== Add fab production to dark compute stock if fab exists ==========
                 if project.covert_fab is not None:
                     # compute_produced_per_month returns Compute object with monthly production, multiply by increment (in years) and months per year
                     compute_per_month = project.covert_fab.compute_produced_per_month(current_year)
@@ -265,72 +161,37 @@ class Simulation:
                     prev_total = project.covert_fab.dark_compute_over_time[max(prev_years)] if prev_years else 0
                     project.covert_fab.dark_compute_over_time[current_year] = prev_total + additional_dark_compute
 
-                    # Update detector beliefs about covert fab
-                    # detection_likelihood_ratio() automatically stores component LRs in the tracking dicts
-                    likelihood_ratio = project.covert_fab.detection_likelihood_ratio(year=current_year)
-                    project.covert_fab.detection_updates[current_year] = likelihood_ratio
+                    # Store detection updates for tracking (detection_likelihood_ratio is called inside get_aggregated_likelihood_ratios)
+                    # We'll call it here to ensure the tracking dict is populated
+                    project.covert_fab.detection_updates[current_year] = project.covert_fab.detection_likelihood_ratio(year=current_year)
 
-                    # Get the three component LRs that were just calculated
-                    lr_inventory = project.covert_fab.lr_inventory
-                    lr_procurement = project.covert_fab.lr_procurement
-                    lr_other = project.covert_fab.lr_other
+                # ========== Get aggregated likelihood ratios from project ==========
+                lr_results = project.get_aggregated_likelihood_ratios(current_year)
+                project_lr = lr_results['project_lr']
+                fab_lr = lr_results['fab_lr']
+                sources = lr_results['sources']
 
-                    for detector_name, detector in self.detectors.items():
-                        # Update probability that covert fab exists (three separate updates)
-                        prior_p_covert_fab_exists = initial_priors[detector_name][project.name]['p_covert_fab_exists']
+                # ========== Update detector beliefs with aggregated likelihood ratios ==========
+                for detector_name, detector in self.detectors.items():
+                    # Get initial priors for this detector
+                    prior_p_project = initial_priors[detector_name][project.name]['p_project_exists']
+                    prior_p_fab = initial_priors[detector_name][project.name]['p_covert_fab_exists']
 
-                        # Update 1: Inventory intelligence
+                    # Update project existence probability with aggregated LR
+                    detector.beliefs_about_projects[project.name][current_year].update_p_project_exists(
+                        year=current_year,
+                        likelihood_ratio=project_lr,
+                        prior_p=prior_p_project,
+                        source=UpdateSource.PRC_COMPUTE_ACCOUNTING  # Use first source as representative
+                    )
+
+                    # Update fab existence probability if fab exists
+                    if project.covert_fab is not None:
                         detector.beliefs_about_projects[project.name][current_year].update_p_covert_fab_exists(
                             year=current_year,
-                            likelihood_ratio=lr_inventory,
-                            prior_p=prior_p_covert_fab_exists,
-                            source=UpdateSource.FAB_INVENTORY_INTELLIGENCE
-                        )
-
-                        # Update 2: Procurement intelligence (use updated prior from inventory)
-                        updated_p_fab = detector.beliefs_about_projects[project.name][current_year].p_covert_fab_exists
-                        detector.beliefs_about_projects[project.name][current_year].update_p_covert_fab_exists(
-                            year=current_year,
-                            likelihood_ratio=lr_procurement,
-                            prior_p=updated_p_fab,
-                            source=UpdateSource.FAB_PROCUREMENT_INTELLIGENCE
-                        )
-
-                        # Update 3: Other intelligence (use updated prior from procurement)
-                        updated_p_fab = detector.beliefs_about_projects[project.name][current_year].p_covert_fab_exists
-                        detector.beliefs_about_projects[project.name][current_year].update_p_covert_fab_exists(
-                            year=current_year,
-                            likelihood_ratio=lr_other,
-                            prior_p=updated_p_fab,
-                            source=UpdateSource.FAB_OTHER_INTELLIGENCE
-                        )
-
-                        # Also update probability that covert project exists (fab evidence implies project)
-                        # Use the combined likelihood_ratio for project existence
-                        prior_p_covert_project_exists = initial_priors[detector_name][project.name]['p_project_exists']
-
-                        # Apply all three fab updates to project existence as well
-                        detector.beliefs_about_projects[project.name][current_year].update_p_project_exists(
-                            year=current_year,
-                            likelihood_ratio=lr_inventory,
-                            prior_p=prior_p_covert_project_exists,
-                            source=UpdateSource.FAB_INVENTORY_INTELLIGENCE
-                        )
-
-                        updated_p_project = detector.beliefs_about_projects[project.name][current_year].p_project_exists
-                        detector.beliefs_about_projects[project.name][current_year].update_p_project_exists(
-                            year=current_year,
-                            likelihood_ratio=lr_procurement,
-                            prior_p=updated_p_project,
-                            source=UpdateSource.FAB_PROCUREMENT_INTELLIGENCE
-                        )
-
-                        updated_p_project = detector.beliefs_about_projects[project.name][current_year].p_project_exists
-                        detector.beliefs_about_projects[project.name][current_year].update_p_project_exists(
-                            year=current_year,
-                            likelihood_ratio=lr_other,
-                            prior_p=updated_p_project,
-                            source=UpdateSource.FAB_OTHER_INTELLIGENCE
+                            likelihood_ratio=fab_lr,
+                            prior_p=prior_p_fab,
+                            source=UpdateSource.FAB_INVENTORY_INTELLIGENCE  # Use first fab source as representative
                         )
 
             current_year += increment

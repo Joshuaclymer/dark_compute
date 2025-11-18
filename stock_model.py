@@ -492,42 +492,14 @@ class PRCDarkComputeStock():
 
         return (initial_energy, fab_energy, initial_h100e, fab_h100e)
 
-    def operational_dark_compute(self, year: float, datacenter_capacity_gw: float):
-        """Calculate operational dark compute limited by datacenter energy capacity.
+    def combined_likelihood_ratio(self) -> float:
+        """Calculate combined likelihood ratio from PRC and global compute accounting.
 
-        This gets all surviving dark compute and scales it down if the energy requirements
-        exceed the available datacenter capacity.
-
-        Args:
-            year: The year to calculate operational compute for
-            datacenter_capacity_gw: Available datacenter energy capacity in GW
+        This multiplies the likelihood ratios from:
+        - PRC compute stock accounting (self.lr_from_prc_compute_accounting)
+        - Global compute production accounting (self.lr_from_global_compute_production_accounting)
 
         Returns:
-            Compute object containing chips that can be powered with available capacity
+            float: Combined likelihood ratio (product of individual LRs)
         """
-        # Get all surviving dark compute
-        all_dark_compute = self.dark_compute(year)
-
-        # Calculate total energy requirements
-        total_energy_required_gw = all_dark_compute.total_energy_requirements_GW()
-
-        # If energy requirements are within capacity, return all dark compute
-        if total_energy_required_gw <= datacenter_capacity_gw:
-            return all_dark_compute
-
-        # Otherwise, scale down chip counts proportionally to fit within capacity
-        scaling_factor = datacenter_capacity_gw / total_energy_required_gw
-
-        # Create new chip_counts with scaled values
-        operational_chip_counts = {
-            chip: count * scaling_factor
-            for chip, count in all_dark_compute.chip_counts.items()
-        }
-
-        operational_compute = Compute(chip_counts=operational_chip_counts)
-
-        print(f"DEBUG operational_dark_compute(year={year}): capacity={datacenter_capacity_gw:.2f}GW, "
-              f"required={total_energy_required_gw:.2f}GW, scaling_factor={scaling_factor:.4f}, "
-              f"operational_tpp={operational_compute.total_h100e_tpp():.2f}", flush=True)
-
-        return operational_compute
+        return self.lr_from_prc_compute_accounting * self.lr_from_global_compute_production_accounting

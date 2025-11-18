@@ -292,11 +292,11 @@
             max-width: 100% !important;
         }
 
-        #computeCcdfPlot, #timeSeriesPlot {
+        #computeCcdfPlot, #timeSeriesPlot, #h100YearsTimeSeriesPlot {
             border: none !important;
         }
 
-        #computeCcdfPlot > div, #timeSeriesPlot > div {
+        #computeCcdfPlot > div, #timeSeriesPlot > div, #h100YearsTimeSeriesPlot > div {
             border: none !important;
         }
 
@@ -851,6 +851,14 @@
                         <div class="plot-title">H100-Years of Computation Before Detection</div>
                         <div id="projectH100YearsCcdfPlot" class="plot" style="height: 350px;"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- H100-Years and Evidence Strength Over Time Plot -->
+            <div style="margin-bottom: 30px;">
+                <div class="plot-container">
+                    <div class="plot-title">H100-Years of Computation and Evidence Strength Over Time</div>
+                    <div id="h100YearsTimeSeriesPlot" class="plot" style="height: 400px;"></div>
                 </div>
             </div>
 
@@ -1589,6 +1597,105 @@
 
             Plotly.newPlot('datacenterCapacityPlot', traces, layout, {displayModeBar: false, responsive: true});
             setTimeout(() => Plotly.Plots.resize('datacenterCapacityPlot'), 50);
+        }
+
+        function plotH100YearsTimeSeries(data) {
+            const ts = data.time_series;
+
+            // Colors - use turquoise green for H100-years (like "other intelligence")
+            const h100YearsColor = '#5AA89B'; // Turquoise green
+            const lrColor = '#E57373'; // Red for likelihood ratio
+
+            // Use cumulative LR from backend (now correctly calculated)
+            const years = ts.years;
+
+            // Create traces - median lines with confidence intervals
+            const traces = [
+                // H100-years confidence interval
+                {
+                    x: ts.years.concat(ts.years.slice().reverse()),
+                    y: ts.h100_years_p75.concat(ts.h100_years_p25.slice().reverse()),
+                    fill: 'toself',
+                    fillcolor: 'rgba(90, 168, 155, 0.2)',
+                    line: { color: 'transparent' },
+                    showlegend: false,
+                    hoverinfo: 'skip',
+                    yaxis: 'y'
+                },
+                // H100-years median
+                {
+                    x: ts.years,
+                    y: ts.h100_years_median,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: h100YearsColor, width: 3 },
+                    name: 'H100-Years',
+                    yaxis: 'y',
+                    hovertemplate: 'H100-Years: %{y:.1f}<extra></extra>'
+                },
+                // Cumulative LR confidence interval
+                {
+                    x: years.concat(years.slice().reverse()),
+                    y: ts.cumulative_lr_p75.concat(ts.cumulative_lr_p25.slice().reverse()),
+                    fill: 'toself',
+                    fillcolor: 'rgba(229, 115, 115, 0.2)',
+                    line: { color: 'transparent' },
+                    showlegend: false,
+                    hoverinfo: 'skip',
+                    yaxis: 'y2'
+                },
+                // LR median
+                {
+                    x: years,
+                    y: ts.cumulative_lr_median,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: lrColor, width: 3 },
+                    name: 'Likelihood Ratio',
+                    yaxis: 'y2',
+                    hovertemplate: 'LR: %{y:.2f}<extra></extra>'
+                }
+            ];
+
+            const layout = {
+                xaxis: {
+                    title: 'Year',
+                    titlefont: { size: 13 },
+                    automargin: true
+                },
+                yaxis: {
+                    title: 'H100-Years of Computation',
+                    titlefont: { size: 13, color: h100YearsColor },
+                    tickfont: { size: 10, color: h100YearsColor },
+                    side: 'left',
+                    automargin: true
+                },
+                yaxis2: {
+                    title: 'Likelihood Ratio',
+                    titlefont: { size: 13, color: lrColor },
+                    tickfont: { size: 10, color: lrColor },
+                    overlaying: 'y',
+                    side: 'right',
+                    type: 'log',
+                    automargin: true
+                },
+                showlegend: true,
+                legend: {
+                    x: 0.02,
+                    y: -0.25,
+                    xanchor: 'left',
+                    yanchor: 'top',
+                    orientation: 'h',
+                    font: { size: 10 }
+                },
+                hovermode: 'x unified',
+                margin: { l: 50, r: 50, t: 10, b: 85, pad: 10 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('h100YearsTimeSeriesPlot', traces, layout, {displayModeBar: false, responsive: true});
+            setTimeout(() => Plotly.Plots.resize('h100YearsTimeSeriesPlot'), 50);
         }
 
         function plotComputeCcdf(data) {
@@ -2865,6 +2972,7 @@
 
                 // Plot main charts
                 plotTimeSeries(data);
+                plotH100YearsTimeSeries(data);
                 plotComputeCcdf(data);
                 plotDatacenterCapacity(data);
                 plotProjectH100YearsCcdf(data);
@@ -2883,6 +2991,7 @@
                     Plotly.Plots.resize('initialPrcStockPlot');
                     Plotly.Plots.resize('darkComputeResultPlot');
                     Plotly.Plots.resize('timeSeriesPlot');
+                    Plotly.Plots.resize('h100YearsTimeSeriesPlot');
                     Plotly.Plots.resize('computeCcdfPlot');
                     Plotly.Plots.resize('lrInitialStockPlot');
                     Plotly.Plots.resize('lrDivertedSMEPlot');
@@ -2934,7 +3043,7 @@
                         p25: lrOtherP25,
                         p75: lrOtherP75,
                         individual: data.lr_components.other_individual
-                    }, years, '#5B8DBE', 'Likelihood Ratio', null, true);
+                    }, years, '#5AA89B', 'Likelihood Ratio', null, true);
 
                     // Use backend-filtered array that only includes simulations where fab was built
                     plotMedianWithPercentiles('posteriorProbPlot', {
@@ -2981,7 +3090,7 @@
                         p25: lrOtherP25,
                         p75: lrOtherP75,
                         individual: data.lr_components.other_individual
-                    }, years, '#7CAE7A', 'Likelihood Ratio', null, true);
+                    }, years, '#5AA89B', 'Likelihood Ratio', null, true);
 
                     // 4. Posterior probability of covert project
                     // Calculate: Prior × LR_initial × LR_SME × LR_other for each simulation at each timestep

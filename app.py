@@ -26,10 +26,12 @@ def index():
 
 @app.route('/<path:filename>')
 def serve_html(filename):
-    """Serve HTML and JS files from the frontend directory."""
+    """Serve HTML, JS, and CSS files from the frontend directory."""
     if filename.endswith('.html') and filename != 'index.html':
         return send_file(f'frontend/{filename}')
     if filename.endswith('.js'):
+        return send_file(f'frontend/{filename}')
+    if filename.endswith('.css'):
         return send_file(f'frontend/{filename}')
     return '', 404
 

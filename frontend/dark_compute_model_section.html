@@ -2,10 +2,10 @@
             <h1 style="margin-top: 40px; margin-bottom: 10px; font-size: 32px; font-weight: bold; color: #333;">Dark Compute Model</h1>
             <p style="margin-bottom: 30px; font-size: 16px; color: #666;">A model of how much compute the PRC might covertly operate during an AI slowdown agreement.</p>
 
-            <!-- Dashboard and CCDF Side-by-Side -->
-            <div style="display: grid; grid-template-columns: minmax(250px, 300px) 1fr; gap: 20px; margin-bottom: 30px; align-items: stretch;">
+            <!-- Dashboard and Plots in Same Flex -->
+            <div style="display: flex; gap: 20px; margin-bottom: 30px; align-items: stretch;">
                 <!-- Dark Compute Dashboard -->
-                <div class="dashboard">
+                <div class="dashboard" style="min-width: 250px; max-width: 300px;">
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboardProject80thH100Years">--</div>
                         <div class="dashboard-label">H100-Years of Computation Before Detection (80th %ile Outcome)</div>
@@ -22,15 +22,13 @@
                 </div>
 
                 <!-- H100-Years CCDF Plot -->
-                <div class="plot-container">
+                <div class="plot-container" style="flex: 1; min-width: 0;">
                     <div class="plot-title">H100-Years of Computation Before Detection</div>
                     <div id="projectH100YearsCcdfPlot" class="plot"></div>
                 </div>
-            </div>
 
-            <!-- H100-Years and Evidence Strength Over Time Plot -->
-            <div style="margin-bottom: 30px;">
-                <div class="plot-container">
+                <!-- H100-Years and Evidence Strength Over Time Plot -->
+                <div class="plot-container" style="flex: 1; min-width: 0;">
                     <div class="plot-title">H100-Years of Computation and Evidence Strength Over Time</div>
                     <div id="h100YearsTimeSeriesPlot" class="plot" style="height: 400px;"></div>
                 </div>

@@ -5,6 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Covert Compute Production Model</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        // Function to send errors to backend
+        function logErrorToBackend(errorData) {
+            fetch('/log_client_error', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(errorData)
+            }).catch(err => console.error('Failed to log error to backend:', err));
+        }
+
+        // Global error handler to catch and display all JavaScript errors
+        window.addEventListener('error', function(event) {
+            const errorData = {
+                message: event.message,
+                source: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack || 'No stack trace available'
+            };
+
+            console.error('Global error caught:', event.error);
+            console.error('Error message:', event.message);
+            console.error('Error stack:', event.error?.stack);
+
+            // Send to backend
+            logErrorToBackend(errorData);
+
+            // Display error in UI
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position:fixed;top:20px;right:20px;background:#ff4444;color:white;padding:15px;border-radius:5px;max-width:400px;z-index:10000;font-family:monospace;font-size:12px;';
+            errorDiv.innerHTML = `<strong>JavaScript Error:</strong><br>${event.message}<br><small>${event.filename}:${event.lineno}</small>`;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 10000);
+        });
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(event) {
+            const errorData = {
+                message: 'Unhandled Promise Rejection',
+                reason: String(event.reason),
+                stack: event.reason?.stack || 'No stack trace available'
+            };
+
+            console.error('Unhandled promise rejection:', event.reason);
+
+            // Send to backend
+            logErrorToBackend(errorData);
+        });
+    </script>
     <style>
         * {
             margin: 0;
@@ -378,16 +429,7 @@
     <div id="globalTooltip"></div>
 
     <!-- Include the sidebar -->
-    <script>
-        // Load sidebar content
-        fetch('sidebar.html')
-            .then(response => response.text())
-            .then(html => {
-                const sidebarContainer = document.createElement('div');
-                sidebarContainer.innerHTML = html;
-                document.body.insertBefore(sidebarContainer.firstElementChild, document.body.firstChild.nextSibling);
-            });
-    </script>
+    {% include 'sidebar.html' %}
 
     <div class="main-content">
         <div class="loading active" id="loading">
@@ -397,52 +439,31 @@
 
         <div id="plots" style="display: none;">
             <!-- Dark Compute Model Section -->
-            <div id="darkComputeModelSection"></div>
-            <script>
-                fetch('dark_compute_model_section.html')
-                    .then(response => response.text())
-                    .then(html => {
-                        document.getElementById('darkComputeModelSection').innerHTML = html;
-                    });
-            </script>
+            {% include 'dark_compute_model_section.html' %}
 
             <!-- Initial Stock Section -->
-            <div id="initialStockSection"></div>
-            <script>
-                fetch('initial_stock_section.html')
-                    .then(response => response.text())
-                    .then(html => {
-                        document.getElementById('initialStockSection').innerHTML = html;
-                    });
-            </script>
+            {% include 'initial_stock_section.html' %}
 
             <!-- Covert Data Centers Section -->
-            <div id="covertDataCentersSection"></div>
-            <script>
-                fetch('covert_data_centers_section.html')
-                    .then(response => response.text())
-                    .then(html => {
-                        document.getElementById('covertDataCentersSection').innerHTML = html;
-                    });
-            </script>
+            {% include 'covert_data_centers_section.html' %}
 
             <!-- Covert Fab Section -->
-            <div id="covertFabSection"></div>
-            <script>
-                fetch('covert_fab_section.html')
-                    .then(response => response.text())
-                    .then(html => {
-                        document.getElementById('covertFabSection').innerHTML = html;
-                    });
-            </script>
-            </div>
+            {% include 'covert_fab_section.html' %}
         </div>
     </div>
 
     <script>
-        const runButton = document.getElementById('runSimulation');
-        const statusDiv = document.getElementById('status');
-        const loadingDiv = document.getElementById('loading');
+        // Wait for DOM to be ready and sidebar to be loaded
+        function initializeApp() {
+            const runButton = document.getElementById('runSimulation');
+            const statusDiv = document.getElementById('status');
+            const loadingDiv = document.getElementById('loading');
+
+            // If button doesn't exist yet, wait and try again
+            if (!runButton) {
+                setTimeout(initializeApp, 100);
+                return;
+            }
         const plotsDiv = document.getElementById('plots');
 
         function setStatus(message, type) {
@@ -466,7 +487,7 @@
                 proportion_of_initial_chip_stock_to_divert: parseFloat(document.getElementById('proportion_of_initial_chip_stock_to_divert').value),
                 GW_per_initial_datacenter: parseFloat(document.getElementById('GW_per_initial_datacenter').value),
                 number_of_initial_datacenters: parseFloat(document.getElementById('number_of_initial_datacenters').value),
-                GW_per_year_of_concealed_datacenters: parseFloat(document.getElementById('GW_per_year_of_concealed_datacenters').value),
+                datacenter_construction_labor: parseInt(document.getElementById('datacenter_construction_labor').value),
                 build_covert_fab: document.getElementById('build_covert_fab').checked,
                 operating_labor: parseInt(document.getElementById('operating_labor').value),
                 construction_labor: parseInt(document.getElementById('construction_labor').value),
@@ -532,29 +553,31 @@
         }
 
         function plotTimeSeries(data) {
-            const ts = data.time_series;
+            if (!data.dark_compute_model || !data.covert_fab) return;
+
+            const dcm = data.dark_compute_model;
+            const years = dcm.years;
 
             // Better color scheme
-            const probColor = '#5B8DBE'; // Muted blue
+            const lrColor = '#5B8DBE'; // Muted blue
             const computeColor = '#9B7BB3'; // Purple
 
             // Create traces for individual simulations (show first 100 for performance)
-            // Use backend-filtered arrays that only include simulations where fab was built
-            const individualsToShow = Math.min(100, ts.individual_us_probs_with_fab ? ts.individual_us_probs_with_fab.length : ts.individual_us_probs.length);
+            const individualsToShow = Math.min(100, data.covert_fab.lr_combined.individual ? data.covert_fab.lr_combined.individual.length : 0);
 
-            const individualUsProbs = (ts.individual_us_probs_with_fab || ts.individual_us_probs).slice(0, individualsToShow).map((probs, idx) => ({
-                x: ts.years,
-                y: probs,
+            const individualLRs = (data.covert_fab.lr_combined.individual || []).slice(0, individualsToShow).map((lrs, idx) => ({
+                x: years,
+                y: lrs,
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: probColor, width: 0.8 },
+                line: { color: lrColor, width: 0.8 },
                 opacity: 0.08,
                 showlegend: false,
                 hoverinfo: 'skip'
             }));
 
-            const individualH100e = (ts.individual_h100e_with_fab || ts.individual_h100e).slice(0, individualsToShow).map((h100e, idx) => ({
-                x: ts.years,
+            const individualH100e = (dcm.covert_fab_flow.individual || []).slice(0, individualsToShow).map((h100e, idx) => ({
+                x: years,
                 y: h100e,
                 type: 'scatter',
                 mode: 'lines',
@@ -567,10 +590,10 @@
 
             // Median and percentile traces
             const traces = [
-                ...individualUsProbs,
+                ...individualLRs,
                 {
-                    x: ts.years,
-                    y: ts.us_prob_p25,
+                    x: years,
+                    y: data.covert_fab.lr_combined.p25,
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: 'transparent' },
@@ -578,29 +601,29 @@
                     hoverinfo: 'skip'
                 },
                 {
-                    x: ts.years,
-                    y: ts.us_prob_p75,
+                    x: years,
+                    y: data.covert_fab.lr_combined.p75,
                     type: 'scatter',
                     mode: 'lines',
                     fill: 'tonexty',
-                    fillcolor: probColor + '30',
+                    fillcolor: lrColor + '30',
                     line: { color: 'transparent' },
-                    name: '25th-75th %ile (Prob)',
-                    hovertemplate: 'Prob: %{y:.3f}<extra></extra>'
+                    name: '25th-75th %ile (LR)',
+                    hovertemplate: 'LR: %{y:.2f}<extra></extra>'
                 },
                 {
-                    x: ts.years,
-                    y: ts.us_prob_median,
+                    x: years,
+                    y: data.covert_fab.lr_combined.median,
                     type: 'scatter',
                     mode: 'lines',
-                    line: { color: probColor, width: 3 },
-                    name: 'Median US Prob',
-                    hovertemplate: 'Prob: %{y:.3f}<extra></extra>'
+                    line: { color: lrColor, width: 3 },
+                    name: 'Median Evidence of Covert Fab',
+                    hovertemplate: 'LR: %{y:.2f}<extra></extra>'
                 },
                 ...individualH100e,
                 {
-                    x: ts.years,
-                    y: ts.h100e_p25,
+                    x: years,
+                    y: dcm.covert_fab_flow.p25,
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: 'transparent' },
@@ -609,28 +632,32 @@
                     yaxis: 'y2'
                 },
                 {
-                    x: ts.years,
-                    y: ts.h100e_p75,
+                    x: years,
+                    y: dcm.covert_fab_flow.p75,
                     type: 'scatter',
                     mode: 'lines',
                     fill: 'tonexty',
-                    fillcolor: computeColor + '30',
+                    fillcolor: computeColor + '60',
                     line: { color: 'transparent' },
                     name: '25th-75th %ile (H100e)',
                     yaxis: 'y2',
-                    hovertemplate: 'H100e: %{y:.1f}K<extra></extra>'
+                    hovertemplate: 'H100e: %{y:,.0f}<extra></extra>'
                 },
                 {
-                    x: ts.years,
-                    y: ts.h100e_median,
+                    x: years,
+                    y: dcm.covert_fab_flow.median,
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: computeColor, width: 3 },
                     name: 'Median H100e',
                     yaxis: 'y2',
-                    hovertemplate: 'H100e: %{y:.1f}K<extra></extra>'
+                    hovertemplate: 'H100e: %{y:,.0f}<extra></extra>'
                 }
             ];
+
+            // Calculate max value from 75th percentile for y-axis range
+            const maxP75 = Math.max(...dcm.covert_fab_flow.p75);
+            const yAxisMax = maxP75 * 1.5;
 
             const layout = {
                 xaxis: {
@@ -639,21 +666,22 @@
                     automargin: true
                 },
                 yaxis: {
-                    title: 'US Probability of Covert Fab',
+                    title: 'Evidence of Covert Fab (Likelihood Ratio)',
                     titlefont: { size: 13, color: '#000' },
-                    tickfont: { size: 10, color: probColor },
-                    range: [0, 1],
+                    tickfont: { size: 10, color: lrColor },
+                    type: 'log',
                     side: 'left',
                     automargin: true
                 },
                 yaxis2: {
-                    title: 'H100e Produced by Fab (thousands)',
+                    title: 'H100e Produced by Fab',
                     titlefont: { size: 13, color: '#000' },
                     tickfont: { size: 10, color: computeColor },
                     overlaying: 'y',
                     side: 'right',
-                    range: [0, 5000],
-                    automargin: true
+                    automargin: true,
+                    tickformat: '.2s',
+                    range: [0, yAxisMax]
                 },
                 showlegend: true,
                 legend: {
@@ -675,7 +703,10 @@
         }
 
         function plotDatacenterCapacity(data) {
-            const ts = data.time_series;
+            if (!data.dark_compute_model || !data.dark_compute_model.datacenter_capacity) return;
+
+            const dcm = data.dark_compute_model;
+            const years = dcm.years;
 
             // Colors
             const datacenterColor = '#5AA89B'; // Turquoise for capacity
@@ -684,8 +715,8 @@
             const traces = [
                 // Capacity
                 {
-                    x: ts.years,
-                    y: ts.datacenter_capacity_median,
+                    x: years,
+                    y: dcm.datacenter_capacity.median,
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: datacenterColor, width: 3 },
@@ -718,7 +749,10 @@
         }
 
         function plotDatacenterLR(data) {
-            const ts = data.time_series;
+            if (!data.covert_datacenters || !data.covert_datacenters.lr_datacenters) return;
+
+            const cd = data.covert_datacenters;
+            const years = cd.years;
 
             // Color for LR
             const lrColor = '#5B8DBE'; // Blue for likelihood ratio
@@ -727,8 +761,8 @@
             const traces = [
                 // 25th percentile (invisible, used for fill)
                 {
-                    x: ts.years,
-                    y: ts.lr_datacenters_p25,
+                    x: years,
+                    y: cd.lr_datacenters.p25,
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: 'transparent' },
@@ -737,8 +771,8 @@
                 },
                 // 75th percentile (fills to previous trace)
                 {
-                    x: ts.years,
-                    y: ts.lr_datacenters_p75,
+                    x: years,
+                    y: cd.lr_datacenters.p75,
                     type: 'scatter',
                     mode: 'lines',
                     fill: 'tonexty',
@@ -749,8 +783,8 @@
                 },
                 // Median line
                 {
-                    x: ts.years,
-                    y: ts.lr_datacenters_median,
+                    x: years,
+                    y: cd.lr_datacenters.median,
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: lrColor, width: 3 },
@@ -784,21 +818,21 @@
         }
 
         function plotH100YearsTimeSeries(data) {
-            const ts = data.time_series;
+            if (!data.dark_compute_model) return;
+
+            const dcm = data.dark_compute_model;
+            const years = dcm.years;
 
             // Colors - use turquoise green for H100-years (like "other intelligence")
             const h100YearsColor = '#5AA89B'; // Turquoise green
             const lrColor = '#E57373'; // Red for likelihood ratio
 
-            // Use cumulative LR from backend (now correctly calculated)
-            const years = ts.years;
-
             // Create traces - median lines with confidence intervals
             const traces = [
                 // H100-years confidence interval
                 {
-                    x: ts.years.concat(ts.years.slice().reverse()),
-                    y: ts.h100_years_p75.concat(ts.h100_years_p25.slice().reverse()),
+                    x: years.concat(years.slice().reverse()),
+                    y: dcm.h100_years.p75.concat(dcm.h100_years.p25.slice().reverse()),
                     fill: 'toself',
                     fillcolor: 'rgba(90, 168, 155, 0.2)',
                     line: { color: 'transparent' },
@@ -808,8 +842,8 @@
                 },
                 // H100-years median
                 {
-                    x: ts.years,
-                    y: ts.h100_years_median,
+                    x: years,
+                    y: dcm.h100_years.median,
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: h100YearsColor, width: 3 },
@@ -820,7 +854,7 @@
                 // Cumulative LR confidence interval
                 {
                     x: years.concat(years.slice().reverse()),
-                    y: ts.cumulative_lr_p75.concat(ts.cumulative_lr_p25.slice().reverse()),
+                    y: dcm.cumulative_lr.p75.concat(dcm.cumulative_lr.p25.slice().reverse()),
                     fill: 'toself',
                     fillcolor: 'rgba(229, 115, 115, 0.2)',
                     line: { color: 'transparent' },
@@ -831,7 +865,7 @@
                 // LR median
                 {
                     x: years,
-                    y: ts.cumulative_lr_median,
+                    y: dcm.cumulative_lr.median,
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: lrColor, width: 3 },
@@ -883,7 +917,7 @@
         }
 
         function plotComputeCcdf(data) {
-            if (!data.compute_ccdfs) {
+            if (!data.covert_fab || !data.covert_fab.compute_ccdfs) {
                 document.getElementById('computeCcdfPlot').innerHTML = '<p>No detection data available</p>';
                 return;
             }
@@ -911,7 +945,7 @@
             const thresholdsReversed = [...thresholds].reverse();
 
             for (const threshold of thresholdsReversed) {
-                const ccdf = data.compute_ccdfs[threshold.value];
+                const ccdf = data.covert_fab.compute_ccdfs[threshold.value];
                 if (ccdf && ccdf.length > 0) {
                     traces.push({
                         x: ccdf.map(d => d.x),
@@ -961,7 +995,7 @@
         }
 
         function plotProjectH100YearsCcdf(data) {
-            if (!data.project_h100_years_ccdfs) {
+            if (!data.dark_compute_model || !data.dark_compute_model.h100_years_ccdf) {
                 document.getElementById('projectH100YearsCcdfPlot').innerHTML = '<p>No detection data available</p>';
                 return;
             }
@@ -989,14 +1023,14 @@
             console.log('priorProb:', priorProb);
             console.log('likelihoodRatios:', likelihoodRatios);
             console.log('thresholds:', thresholds);
-            console.log('CCDF data keys:', Object.keys(data.project_h100_years_ccdfs));
-            console.log('CCDF data:', data.project_h100_years_ccdfs);
+            console.log('CCDF data keys:', Object.keys(data.dark_compute_model.h100_years_ccdf));
+            console.log('CCDF data:', data.dark_compute_model.h100_years_ccdf);
 
             // Reverse thresholds for legend order (highest to lowest)
             const thresholdsReversed = [...thresholds].reverse();
 
             for (const threshold of thresholdsReversed) {
-                const ccdf = data.project_h100_years_ccdfs[threshold.value];
+                const ccdf = data.dark_compute_model.h100_years_ccdf[threshold.value];
                 if (ccdf && ccdf.length > 0) {
                     traces.push({
                         x: ccdf.map(d => d.x),
@@ -1336,8 +1370,8 @@
         }
 
         function plotProportionOperational(divId, data, years, color, yAxisLabel = '') {
-            // Calculate proportion operational at each timestep
-            const proportions = data.median; // This is already the proportion since we're averaging 0s and 1s
+            // Use the proportion directly (proportion of simulations where fab is operational)
+            const proportions = data.proportion;
 
             const trace = {
                 x: years,
@@ -1565,6 +1599,12 @@
 
                 const data = await response.json();
 
+                // Log data structure for debugging
+                console.log('=== SIMULATION DATA RECEIVED ===');
+                console.log('Top-level keys:', Object.keys(data));
+                console.log('Full data structure:', data);
+                console.log('==============================');
+
                 if (data.error) {
                     throw new Error(data.error);
                 }
@@ -1576,18 +1616,18 @@
                 console.log('Plotting dark compute equation section...');
 
                 // Plot 1: Initial dark compute (histogram)
-                if (data.initial_compute_stock_samples) {
+                if (data.initial_stock && data.initial_stock.initial_compute_stock_samples) {
                     // Convert to thousands
-                    const samplesInThousands = data.initial_compute_stock_samples.map(v => v / 1000);
+                    const samplesInThousands = data.initial_stock.initial_compute_stock_samples.map(v => v / 1000);
                     plotPDF('initialDarkComputePlot', samplesInThousands, '#9B72B0', 'Thousands of H100 Equivalents');
                 }
 
                 // Plot 2: Flow from covert fab (line plot - cumulative production over time)
-                if (data.time_series) {
-                    const years = data.time_series.years;
-                    const h100e_median = data.time_series.h100e_median;
-                    const h100e_p25 = data.time_series.h100e_p25;
-                    const h100e_p75 = data.time_series.h100e_p75;
+                if (data.dark_compute_model && data.dark_compute_model.years) {
+                    const years = data.dark_compute_model.years;
+                    const h100e_median = data.dark_compute_model.h100_years.median;
+                    const h100e_p25 = data.dark_compute_model.h100_years.p25;
+                    const h100e_p75 = data.dark_compute_model.h100_years.p75;
 
                     // Create traces for the shaded region and median line
                     const traces = [
@@ -1655,11 +1695,11 @@
                 }
 
                 // Plot 3: Average compute survival rate
-                if (data.time_series) {
-                    const years = data.time_series.years;
-                    const survival_rate_median = data.time_series.survival_rate_median;
-                    const survival_rate_p25 = data.time_series.survival_rate_p25;
-                    const survival_rate_p75 = data.time_series.survival_rate_p75;
+                if (data.dark_compute_model && data.dark_compute_model.survival_rate) {
+                    const years = data.dark_compute_model.years;
+                    const survival_rate_median = data.dark_compute_model.survival_rate.median;
+                    const survival_rate_p25 = data.dark_compute_model.survival_rate.p25;
+                    const survival_rate_p75 = data.dark_compute_model.survival_rate.p75;
 
                     const traces = [
                         // Upper bound of shaded region (invisible line)
@@ -1718,11 +1758,11 @@
                 }
 
                 // Plot 4: Dark compute (surviving, not limited by capacity)
-                if (data.time_series) {
-                    const years = data.time_series.years;
-                    const dark_compute_median = data.time_series.dark_compute_median;
-                    const dark_compute_p25 = data.time_series.dark_compute_p25;
-                    const dark_compute_p75 = data.time_series.dark_compute_p75;
+                if (data.dark_compute_model && data.dark_compute_model.total_dark_compute) {
+                    const years = data.dark_compute_model.years;
+                    const dark_compute_median = data.dark_compute_model.total_dark_compute.median;
+                    const dark_compute_p25 = data.dark_compute_model.total_dark_compute.p25;
+                    const dark_compute_p75 = data.dark_compute_model.total_dark_compute.p75;
 
                     const traces = [
                         // Upper bound of shaded region (invisible line)
@@ -1781,11 +1821,11 @@
                 }
 
                 // Plot 5: Datacenter capacity (GW)
-                if (data.time_series) {
-                    const years = data.time_series.years;
-                    const capacity_median = data.time_series.datacenter_capacity_median;
-                    const capacity_p25 = data.time_series.datacenter_capacity_p25;
-                    const capacity_p75 = data.time_series.datacenter_capacity_p75;
+                if (data.dark_compute_model && data.dark_compute_model.datacenter_capacity) {
+                    const years = data.dark_compute_model.years;
+                    const capacity_median = data.dark_compute_model.datacenter_capacity.median;
+                    const capacity_p25 = data.dark_compute_model.datacenter_capacity.p25;
+                    const capacity_p75 = data.dark_compute_model.datacenter_capacity.p75;
 
                     const traces = [
                         // Upper bound of shaded region (invisible line)
@@ -1854,11 +1894,11 @@
 
                 // Energy Consumption Stacked Area Plot (for median simulation)
                 // Shows two sources: Initial Stock (bottom) and Fab-Produced (top)
-                if (data.time_series && data.time_series.energy_by_source) {
-                    const years = data.time_series.years;
-                    const energyData = data.time_series.energy_by_source;
-                    const sourceLabels = data.time_series.source_labels;
-                    const datacenterCapacity = data.time_series.datacenter_capacity_median;
+                if (data.dark_compute_model && data.dark_compute_model.dark_compute_energy) {
+                    const years = data.dark_compute_model.years;
+                    const energyData = data.dark_compute_model.dark_compute_energy;
+                    const sourceLabels = data.dark_compute_model.energy_source_labels;
+                    const datacenterCapacity = data.dark_compute_model.datacenter_capacity.median;
 
                     // Two colors: turquoise shades for initial stock (bottom) and fab-produced (top)
                     const colors = ['#4A9B8E', '#74B3A8'];  // Dark turquoise, light turquoise
@@ -1995,11 +2035,11 @@
                 }
 
                 // Plot 6: Operational dark compute (limited by capacity)
-                if (data.time_series) {
-                    const years = data.time_series.years;
-                    const operational_median = data.time_series.operational_dark_compute_median;
-                    const operational_p25 = data.time_series.operational_dark_compute_p25;
-                    const operational_p75 = data.time_series.operational_dark_compute_p75;
+                if (data.dark_compute_model && data.dark_compute_model.operational_dark_compute) {
+                    const years = data.dark_compute_model.years;
+                    const operational_median = data.dark_compute_model.operational_dark_compute.median;
+                    const operational_p25 = data.dark_compute_model.operational_dark_compute.p25;
+                    const operational_p75 = data.dark_compute_model.operational_dark_compute.p75;
 
                     const traces = [
                         // Upper bound of shaded region (invisible line)
@@ -2061,11 +2101,11 @@
                 }
 
                 // Plot detection probability bar chart and initial compute stock histogram
-                if (data.initial_dark_compute_detection_probs && data.initial_compute_stock_samples) {
+                if (data.initial_stock && data.initial_stock.initial_dark_compute_detection_probs && data.initial_stock.initial_compute_stock_samples) {
                     console.log('Plotting detection probability bar chart and initial compute stock...');
 
                     // Update dashboard with median values
-                    const sortedDarkCompute = [...data.initial_compute_stock_samples].sort((a, b) => a - b);
+                    const sortedDarkCompute = [...data.initial_stock.initial_compute_stock_samples].sort((a, b) => a - b);
                     const medianDarkCompute = sortedDarkCompute[Math.floor(sortedDarkCompute.length / 2)];
 
                     // Format H100e text
@@ -2096,8 +2136,8 @@
                         `${h100eText}<br><span style="font-size: 24px; color: #666;">${energyText}</span>`;
 
                     // Display probability of detection (P(LR ≥ 5x))
-                    if (data.initial_dark_compute_detection_probs && data.initial_dark_compute_detection_probs['5x'] !== undefined) {
-                        const probDetection = data.initial_dark_compute_detection_probs['5x'];
+                    if (data.initial_stock.initial_dark_compute_detection_probs && data.initial_stock.initial_dark_compute_detection_probs['5x'] !== undefined) {
+                        const probDetection = data.initial_stock.initial_dark_compute_detection_probs['5x'];
                         document.getElementById('dashboardMedianLR').textContent = (probDetection * 100).toFixed(1) + '%';
                     }
 
@@ -2106,7 +2146,7 @@
                     const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
                     const detectionProbs = likelihoodRatios.map((lr, idx) => ({
                         lr: lr,
-                        prob: data.initial_dark_compute_detection_probs[`${lr}x`] || 0,
+                        prob: data.initial_stock.initial_dark_compute_detection_probs[`${lr}x`] || 0,
                         color: colors[idx]
                     }));
 
@@ -2142,31 +2182,31 @@
                     Plotly.newPlot('initialDarkComputeDetectionPlot', [barTrace], barLayout, {displayModeBar: false, responsive: true});
 
                     // Histogram for initial compute stock
-                    plotPDF('initialComputeStockPlot', data.initial_compute_stock_samples, '#9B72B0', 'PRC Dark Compute Stock (H100e)', 30, false);
+                    plotPDF('initialComputeStockPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'PRC Dark Compute Stock (H100e)', 30, false);
                 } else {
                     console.log('No detection probability or compute stock data available');
                 }
 
                 // Plot LR breakdown histograms for initial compute reporting
-                if (data.lr_prc_accounting_samples && data.lr_global_accounting_samples && data.lr_combined_samples) {
+                if (data.initial_stock && data.initial_stock.lr_prc_accounting_samples && data.initial_stock.lr_global_accounting_samples && data.initial_stock.lr_combined_samples) {
                     console.log('Plotting LR breakdown histograms...');
                     // Use log scale with range 1/3 to 5, and blue color #5B8DBE
-                    plotPDF('lrPrcAccountingPlot', data.lr_prc_accounting_samples, '#5B8DBE', 'Likelihood Ratio from PRC Accounting', 12, true, 1/3, 5);
-                    plotPDF('lrGlobalAccountingPlot', data.lr_global_accounting_samples, '#5B8DBE', 'Likelihood Ratio from Global Production Accounting', 12, true, 1/3, 5);
-                    plotPDF('lrCombinedPlot', data.lr_combined_samples, '#5B8DBE', 'Combined LR', 12, true, 1/3, 5);
+                    plotPDF('lrPrcAccountingPlot', data.initial_stock.lr_prc_accounting_samples, '#5B8DBE', 'Likelihood Ratio from PRC Accounting', 12, true, 1/3, 5);
+                    plotPDF('lrGlobalAccountingPlot', data.initial_stock.lr_global_accounting_samples, '#5B8DBE', 'Likelihood Ratio from Global Production Accounting', 12, true, 1/3, 5);
+                    plotPDF('lrCombinedPlot', data.initial_stock.lr_combined_samples, '#5B8DBE', 'Combined LR', 12, true, 1/3, 5);
                 } else {
                     console.log('No LR samples in data');
                 }
 
                 // Plot initial dark compute stock breakdown
-                if (data.initial_prc_stock_samples && data.diversion_proportion && data.initial_compute_stock_samples) {
+                if (data.initial_stock && data.initial_stock.initial_prc_stock_samples && data.initial_stock.diversion_proportion && data.initial_stock.initial_compute_stock_samples) {
                     console.log('Plotting initial dark compute stock breakdown...');
 
                     // Plot initial PRC stock distribution - purple color #9B72B0
-                    plotPDF('initialPrcStockPlot', data.initial_prc_stock_samples, '#9B72B0', 'Initial PRC Compute Stock (H100e)', 30, false);
+                    plotPDF('initialPrcStockPlot', data.initial_stock.initial_prc_stock_samples, '#9B72B0', 'Initial PRC Compute Stock (H100e)', 30, false);
 
                     // Display the diversion proportion
-                    const diversionPercent = (data.diversion_proportion * 100).toFixed(0);
+                    const diversionPercent = (data.initial_stock.diversion_proportion * 100).toFixed(0);
                     document.getElementById('diversionProportionDisplay').innerHTML = `
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                             <div class="breakdown-box-inner">${diversionPercent}%</div>
@@ -2174,7 +2214,7 @@
                         </div>`;
 
                     // Plot the resulting dark compute stock - purple color #9B72B0
-                    plotPDF('darkComputeResultPlot', data.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100e)', 30, false);
+                    plotPDF('darkComputeResultPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100e)', 30, false);
                 } else {
                     console.log('No initial dark compute stock breakdown data available');
                 }
@@ -2210,11 +2250,11 @@
                 }, 100);
 
                 // Plot LR breakdown
-                if (data.lr_components && data.lr_components.inventory_median) {
-                    const years = data.time_series.years;
+                if (data.covert_fab && data.covert_fab.lr_inventory) {
+                    const years = data.covert_fab.years;
 
                     // LR Inventory - PDF of values across simulations at final timestep
-                    const lrInventoryFinal = data.lr_components.inventory_individual.map(sim => sim[sim.length - 1]);
+                    const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
                     console.log('LR Inventory values:', lrInventoryFinal);
                     console.log('LR Inventory length:', lrInventoryFinal.length);
                     console.log('LR Inventory min:', Math.min(...lrInventoryFinal), 'max:', Math.max(...lrInventoryFinal));
@@ -2224,14 +2264,14 @@
                     plotPDF('lrInventoryPlot', lrInventoryFinal, '#D97676', 'Likelihood Ratio', 10, true);
 
                     // LR Procurement - Categorical bar plot (1 or 10)
-                    const lrProcurementFinal = data.lr_components.procurement_individual.map(sim => sim[sim.length - 1]);
+                    const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
                     plotCategoricalFrequency('lrProcurementPlot', lrProcurementFinal, [
                         { value: 1, label: 'Likelihood Ratio = 1<br>(>90% localization)' },
                         { value: 10, label: 'Likelihood Ratio = 10<br>(≤90% localization)' }
                     ], '#6B9BD1');
 
                     // LR Other - Median over time with percentiles
-                    const lrOtherArray = data.lr_components.other_individual.map(sim => sim.map(v => v));
+                    const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
                     const lrOtherP25 = years.map((_, i) => {
                         const values = lrOtherArray.map(sim => sim[i]);
                         return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
@@ -2241,25 +2281,25 @@
                         return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
                     });
                     plotMedianWithPercentiles('lrOtherPlot', {
-                        median: data.lr_components.other_median,
+                        median: data.covert_fab.lr_other.median,
                         p25: lrOtherP25,
                         p75: lrOtherP75,
-                        individual: data.lr_components.other_individual
+                        individual: data.covert_fab.lr_other.individual
                     }, years, '#5AA89B', 'Likelihood Ratio', null, true);
 
-                    // Use backend-filtered array that only includes simulations where fab was built
+                    // Plot combined LR (product of inventory, procurement, and other intelligence)
                     plotMedianWithPercentiles('posteriorProbPlot', {
-                        median: data.time_series.us_prob_median,
-                        p25: data.time_series.us_prob_p25,
-                        p75: data.time_series.us_prob_p75,
-                        individual: data.time_series.individual_us_probs_with_fab || data.time_series.individual_us_probs
-                    }, data.time_series.years, '#5B8DBE', 'Posterior Probability');
+                        median: data.covert_fab.lr_combined.median,
+                        p25: data.covert_fab.lr_combined.p25,
+                        p75: data.covert_fab.lr_combined.p75,
+                        individual: data.covert_fab.lr_combined.individual
+                    }, data.covert_fab.years, '#5B8DBE', 'Likelihood Ratio', null, true);
                 }
 
                 // Plot "Strength of Evidence of Covert Project" section
-                if (data.lr_combined_samples && data.lr_components && data.time_series) {
+                if (data.initial_stock && data.initial_stock.lr_combined_samples && data.dark_compute_model) {
                     console.log('Plotting Strength of Evidence of Covert Project section...');
-                    const years = data.time_series.years;
+                    const years = data.dark_compute_model.years;
 
                     // Get prior probability from parameters and calculate prior odds
                     const priorProb = getParameters().p_fab_exists;
@@ -2274,16 +2314,16 @@
 
                     // 1. LR from initial stock (Combined LR from PRC and global accounting)
                     // Use the same data as lrCombinedPlot
-                    plotPDF('lrInitialStockPlot', data.lr_combined_samples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
+                    plotPDF('lrInitialStockPlot', data.initial_stock.lr_combined_samples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
 
                     // 2. LR from diverted SME (multiply inventory and procurement LRs)
-                    const lrInventoryFinal = data.lr_components.inventory_individual.map(sim => sim[sim.length - 1]);
-                    const lrProcurementFinal = data.lr_components.procurement_individual.map(sim => sim[sim.length - 1]);
+                    const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
+                    const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
                     const lrDivertedSME = lrInventoryFinal.map((inv, i) => inv * lrProcurementFinal[i]);
                     plotPDF('lrDivertedSMEPlot', lrDivertedSME, '#6B9BD1', 'Likelihood Ratio', 12, true, 1/3, 50);
 
                     // 3. LR from other intelligence sources (same as lrOtherPlot)
-                    const lrOtherArray = data.lr_components.other_individual.map(sim => sim.map(v => v));
+                    const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
                     const lrOtherP25 = years.map((_, i) => {
                         const values = lrOtherArray.map(sim => sim[i]);
                         return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
@@ -2293,16 +2333,16 @@
                         return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
                     });
                     plotMedianWithPercentiles('lrOtherIntelPlot', {
-                        median: data.lr_components.other_median,
+                        median: data.covert_fab.lr_other.median,
                         p25: lrOtherP25,
                         p75: lrOtherP75,
-                        individual: data.lr_components.other_individual
+                        individual: data.covert_fab.lr_other.individual
                     }, years, '#5AA89B', 'Likelihood Ratio', null, true);
 
                     // 4. Posterior probability of covert project
                     // Calculate: Prior × LR_initial × LR_SME × LR_other for each simulation at each timestep
-                    const posteriorProbProject_individual = data.lr_components.other_individual.map((other_sim, sim_idx) => {
-                        const lr_initial = data.lr_combined_samples[sim_idx];
+                    const posteriorProbProject_individual = data.covert_fab.lr_other.individual.map((other_sim, sim_idx) => {
+                        const lr_initial = data.initial_stock.lr_combined_samples[sim_idx];
                         const lr_sme = lrDivertedSME[sim_idx];
 
                         return other_sim.map((lr_other_t) => {
@@ -2338,20 +2378,20 @@
                 }
 
                 // Plot compute breakdown
-                if (data.compute_factors && data.compute_factors.is_operational_median) {
-                    const years = data.time_series.years;
+                if (data.covert_fab && data.covert_fab.is_operational) {
+                    const years = data.covert_fab.years;
 
                     // Proportion Operational - time series showing proportion
                     plotProportionOperational('isOperationalPlot', {
-                        median: data.compute_factors.is_operational_median
+                        proportion: data.covert_fab.is_operational.proportion
                     }, years, '#D4A574', 'Probability');
 
                     // Wafer Starts per Month - PDF
-                    const waferStartsFinal = data.compute_factors.wafer_starts_individual.map(sim => sim[sim.length - 1]);
+                    const waferStartsFinal = data.covert_fab.wafer_starts.individual.map(sim => sim[sim.length - 1]);
                     plotPDF('waferStartsPlot', waferStartsFinal, '#74B3A8', 'Wafers/Month');
 
                     // H100-sized Chips per Wafer - Display as a box (constant value)
-                    const chipsPerWaferValue = data.compute_factors.chips_per_wafer_individual[0][0]; // Same for all sims
+                    const chipsPerWaferValue = data.covert_fab.chips_per_wafer.individual[0][0]; // Same for all sims
                     document.getElementById('chipsPerWaferPlot').innerHTML = `
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                             <div class="breakdown-box-inner">${chipsPerWaferValue.toFixed(0)}</div>
@@ -2359,12 +2399,12 @@
                         </div>`;
 
                     // Transistor density relative to H100 - Bar plot at final timestep
-                    const transistorDensityFinal = data.compute_factors.transistor_density_individual.map(sim => sim[sim.length - 1]);
-                    const processNodes = data.compute_factors.process_node_by_sim;
+                    const transistorDensityFinal = data.covert_fab.transistor_density.individual.map(sim => sim[sim.length - 1]);
+                    const processNodes = data.covert_fab.process_node_by_sim;
                     plotBarByProcessNode('computePerChipPlot', transistorDensityFinal, processNodes, '#E8A863');
 
                     // Architecture Efficiency - Display as a box (constant value at agreement year)
-                    const archEffValue = data.architecture_efficiency_at_agreement;
+                    const archEffValue = data.covert_fab.architecture_efficiency_at_agreement;
                     document.getElementById('architectureEfficiencyDisplay').innerHTML = `
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                             <div class="breakdown-box-inner">${archEffValue.toFixed(2)}</div>
@@ -2372,11 +2412,11 @@
                         </div>`;
 
                     // Total compute - time series over all timesteps
-                    const totalComputeArray = data.compute_factors.is_operational_individual.map((opSim, simIdx) => {
+                    const totalComputeArray = data.covert_fab.is_operational.individual.map((opSim, simIdx) => {
                         return opSim.map((isOp, timeIdx) => {
-                            return (isOp * data.compute_factors.wafer_starts_individual[simIdx][timeIdx] *
-                                    data.compute_factors.architecture_efficiency_individual[simIdx][timeIdx] *
-                                    data.compute_factors.compute_per_wafer_2022_arch_individual[simIdx][timeIdx]);
+                            return (isOp * data.covert_fab.wafer_starts.individual[simIdx][timeIdx] *
+                                    data.covert_fab.architecture_efficiency.individual[simIdx][timeIdx] *
+                                    data.covert_fab.compute_per_wafer_2022_arch.individual[simIdx][timeIdx]);
                         });
                     });
 
@@ -2429,8 +2469,8 @@
                     const EXPONENT_AFTER_DENNARD = -0.909355;
 
                     // Use curve data from backend (calculated by Python)
-                    const densityRangeRelative = data.watts_per_tpp_curve.density_relative;
-                    const wattsPerTppCurve = data.watts_per_tpp_curve.watts_per_tpp_relative;
+                    const densityRangeRelative = data.covert_fab.watts_per_tpp_curve.density_relative;
+                    const wattsPerTppCurve = data.covert_fab.watts_per_tpp_curve.watts_per_tpp_relative;
                     const dennardDataX = 1.98 / 98.28;
 
                     const xMin = 0.001;  // From your range
@@ -2457,7 +2497,7 @@
                         },
                         {
                             x: transistorDensityFinal,
-                            y: data.compute_factors.watts_per_tpp_individual.map(sim => sim[sim.length - 1]),
+                            y: data.covert_fab.watts_per_tpp.individual.map(sim => sim[sim.length - 1]),
                             mode: 'markers',
                             type: 'scatter',
                             marker: {
@@ -2534,7 +2574,7 @@
                     // 5. Calculate and plot energy requirements per month (GW/month)
                     // Energy = H100e_per_month × watts_per_TPP_relative × H100_energy
                     // Note: transistor_density is already factored into H100e calculation, don't multiply again!
-                    const wattsPerTppBySimAndTime = data.compute_factors.watts_per_tpp_individual;
+                    const wattsPerTppBySimAndTime = data.covert_fab.watts_per_tpp.individual;
 
                     const energyPerMonthArray = totalComputeArray.map((simArray, simIdx) => {
                         return simArray.map((h100ePerMonth, timeIdx) => {
@@ -2794,6 +2834,14 @@
                 });
             }
         });
+        }  // End of initializeApp function
+
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
     </script>
 </body>
 </html>

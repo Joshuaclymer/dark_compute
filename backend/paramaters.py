@@ -12,6 +12,13 @@ class ProcessNode(Enum):
         """Extract the numeric nanometer value from the enum."""
         return int(self.value.replace("nm", ""))
 
+class ProcessNodeStrategy(Enum):
+    """Strategy for selecting process node for covert fab"""
+    BEST_INDIGENOUS = "best_indigenous"
+    BEST_INDIGENOUS_GTE_28NM = "best_indigenous_gte_28nm"
+    BEST_INDIGENOUS_GTE_14NM = "best_indigenous_gte_14nm"
+    BEST_INDIGENOUS_GTE_7NM = "best_indigenous_gte_7nm"
+
 @dataclass
 class SimulationSettings:
     start_year : int = 2030
@@ -29,13 +36,13 @@ class CovertProjectStrategy:
     # Data centers
     GW_per_initial_datacenter : float = 5
     number_of_initial_datacenters : float = 0.1
-    GW_per_year_of_concealed_datacenters : float = 1
+    datacenter_construction_labor : int = 500
 
     # Covert fab
     build_a_covert_fab : bool = True
     covert_fab_operating_labor : Optional[int] = 550
     covert_fab_construction_labor : Optional[int] = 250
-    covert_fab_process_node : Optional[ProcessNode] = "best_indigenous"
+    covert_fab_process_node : Optional[ProcessNodeStrategy] = ProcessNodeStrategy.BEST_INDIGENOUS_GTE_28NM
     covert_fab_proportion_of_prc_lithography_scanners_devoted : Optional[float] = 0.1
 
 @dataclass
@@ -100,12 +107,16 @@ class CovertFabParameters:
     labor_productivity_relative_sigma: float = 0.62
     wafers_per_month_per_lithography_scanner: float = 1000
     scanner_productivity_relative_sigma: float = 0.20
-    Probability_of_90p_PRC_localization_at_node: dict = field(default_factory=lambda: {
-        ProcessNode.nm130: [(2025, 0.80), (2031, 0.80)],
-        ProcessNode.nm28: [(2025, 0.0), (2031, 0.25)],
-        ProcessNode.nm14: [(2025, 0.0), (2031, 0.10)],
-        ProcessNode.nm7: [(2025, 0.0), (2031, 0.06)]
-    })
+
+    # Localization probabilities (individual fields instead of dict for easier serialization)
+    localization_130nm_2025: float = 0.80
+    localization_130nm_2031: float = 0.80
+    localization_28nm_2025: float = 0.0
+    localization_28nm_2031: float = 0.25
+    localization_14nm_2025: float = 0.0
+    localization_14nm_2031: float = 0.10
+    localization_7nm_2025: float = 0.0
+    localization_7nm_2031: float = 0.06
 
     # Compute Production Rate
     construction_time_for_5k_wafers_per_month: float = 1.40
@@ -123,6 +134,15 @@ class CovertFabParameters:
     watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended: float = -2.00
     watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended: float = -0.91
     transistor_density_at_end_of_dennard_scaling_m_per_mm2: float = 1.98
+
+    def get_probability_of_90p_prc_localization_at_node(self) -> dict:
+        """Convert individual localization fields back to dict format for code that needs it."""
+        return {
+            ProcessNode.nm130: [(2025, self.localization_130nm_2025), (2031, self.localization_130nm_2031)],
+            ProcessNode.nm28: [(2025, self.localization_28nm_2025), (2031, self.localization_28nm_2031)],
+            ProcessNode.nm14: [(2025, self.localization_14nm_2025), (2031, self.localization_14nm_2031)],
+            ProcessNode.nm7: [(2025, self.localization_7nm_2025), (2031, self.localization_7nm_2031)]
+        }
 
 @dataclass
 class CovertProjectParameters:
@@ -157,7 +177,7 @@ class Parameters:
         """
         for field_name, value in data.items():
             # Skip special cases handled below
-            if field_name.startswith('covert_project_strategy.covert_fab_process_node') or field_name.startswith('localization_'):
+            if field_name.startswith('covert_project_strategy.covert_fab_process_node'):
                 continue
 
             # Set the value using dot notation
@@ -183,17 +203,6 @@ class Parameters:
             }
             self.covert_project_strategy.covert_fab_process_node = process_node_map.get(data['covert_project_strategy.covert_fab_process_node'], data['covert_project_strategy.covert_fab_process_node'])
 
-        # Handle localization probabilities (special nested dict structure)
-        for node, enum_val in [('130nm', ProcessNode.nm130), ('28nm', ProcessNode.nm28),
-                                ('14nm', ProcessNode.nm14), ('7nm', ProcessNode.nm7)]:
-            key_2025 = f'localization_{node}_2025'
-            key_2031 = f'localization_{node}_2031'
-            if key_2025 in data and key_2031 in data:
-                self.covert_project_parameters.covert_fab_parameters.Probability_of_90p_PRC_localization_at_node[enum_val] = [
-                    (2025, float(data[key_2025])),
-                    (2031, float(data[key_2031]))
-                ]
-
     def to_dict(self):
         """
         Convert Parameters to a dictionary using dot notation for nested fields.
@@ -211,6 +220,9 @@ class Parameters:
                 # Skip dict fields (like Probability_of_90p_PRC_localization_at_node)
                 elif isinstance(field_value, dict):
                     continue
+                # Convert enums to their value
+                elif isinstance(field_value, Enum):
+                    result[full_key] = field_value.value
                 # Otherwise, add the value
                 else:
                     result[full_key] = field_value

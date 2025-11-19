@@ -7,7 +7,7 @@ from backend.paramaters import (
     Parameters
 )
 from backend.export_data_for_plots import extract_plot_data
-from backend.util import clear_metalog_cache
+from backend import util
 
 app = Flask(__name__, template_folder='frontend')
 
@@ -28,10 +28,45 @@ def index():
     defaults = app_params.to_dict()
     return render_template('index.html', defaults=defaults)
 
+@app.route('/<path:filename>')
+def serve_html(filename):
+    """Serve HTML section files from the frontend directory."""
+    if filename.endswith('.html') and filename != 'index.html':
+        return send_file(f'frontend/{filename}')
+    return '', 404
+
+@app.route('/log_client_error', methods=['POST'])
+def log_client_error():
+    """Log JavaScript errors from the client to the server console."""
+    try:
+        error_data = request.json
+        print(f"\n{'='*80}", flush=True)
+        print(f"JAVASCRIPT ERROR:", flush=True)
+        print(f"  Message: {error_data.get('message', 'No message')}", flush=True)
+        if 'source' in error_data:
+            print(f"  Source: {error_data.get('source')}:{error_data.get('lineno')}:{error_data.get('colno')}", flush=True)
+        if 'reason' in error_data:
+            print(f"  Reason: {error_data.get('reason')}", flush=True)
+        print(f"  Stack: {error_data.get('stack', 'No stack trace')}", flush=True)
+        print(f"{'='*80}\n", flush=True)
+        return jsonify({"status": "logged"}), 200
+    except Exception as e:
+        print(f"ERROR logging client error: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/run_simulation', methods=['POST'])
 def run_simulation():
+    try:
+        data = request.json
+    except Exception as e:
+        print(f"ERROR parsing request: {e}", flush=True)
+        return jsonify({"error": str(e)}), 400
+
     # Clear caches
-    clear_metalog_cache()
+    util._cache.clear()
+
+    # Update app_params with values from request
+    app_params.update_from_dict(data)
 
     try:
         # Create model with Parameters object
@@ -45,7 +80,7 @@ def run_simulation():
         results = extract_plot_data(model, app_params, LIKELIHOOD_RATIOS)
 
         return jsonify(results)
-    
+
     except Exception as e:
         print(f"ERROR running simulation: {e}", flush=True)
         import traceback

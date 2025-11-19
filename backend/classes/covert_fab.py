@@ -7,8 +7,8 @@ from typing import List, Dict, Optional
 import random
 from backend.util import sample_from_log_normal
 from backend.classes.dark_compute_stock import Chip, Compute
-from backend.util import lr_vs_num_workers
-from backend.paramaters import ProcessNode, CovertFabParameters, CovertProjectParameters
+from backend.util import lr_over_time_vs_num_workers
+from backend.paramaters import ProcessNode, ProcessNodeStrategy, CovertFabParameters, CovertProjectParameters
 
 """
 PRC Covert Semiconductor Fab Model
@@ -290,6 +290,7 @@ H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
 
 # PRC localization probabilities by process node (updated from parameters)
+# Default values - can be updated by calling set_localization_probabilities()
 PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE = {
     ProcessNode.nm130: [(2025, 0.80), (2031, 0.80)],
     ProcessNode.nm28: [(2025, 0.0), (2031, 0.25)],
@@ -297,12 +298,14 @@ PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE = {
     ProcessNode.nm7: [(2025, 0.0), (2031, 0.06)]
 }
 
-class ProcessNodeStrategy(Enum):
-    """Strategy for selecting process node for covert fab"""
-    BEST_INDIGENOUS = "best_indigenous"
-    BEST_INDIGENOUS_GTE_28NM = "best_indigenous_gte_28nm"
-    BEST_INDIGENOUS_GTE_14NM = "best_indigenous_gte_14nm"
-    BEST_INDIGENOUS_GTE_7NM = "best_indigenous_gte_7nm"
+def set_localization_probabilities(covert_fab_params):
+    """
+    Update the global PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE from CovertFabParameters.
+    This should be called before creating any CovertFab instances to ensure they use the correct parameters.
+    """
+    global PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE
+    PROBABILITY_OF_90P_PRC_LOCALIZATION_AT_NODE = covert_fab_params.get_probability_of_90p_prc_localization_at_node()
+
 
 # ============================================================================
 # Helper functions for estimating fab compute production
@@ -906,6 +909,7 @@ class PRCCovertFab(CovertFab):
             proportion_of_prc_lithography_scanners_devoted_to_fab : float,
             operation_labor : float,
             agreement_year : float,
+            years_since_agreement_start : list,
     ):
         # Sample all node localization years with consistency constraint (needed for strategy-based selection)
         all_localization_years = sample_all_node_localization_years()
@@ -998,6 +1002,9 @@ class PRCCovertFab(CovertFab):
         self.dark_compute_monthly_production_rate_history = {}
         self.detection_updates = {}
 
+        # Cache the chip object to ensure consistent chip identity across all time periods
+        self._cached_chip = None
+
         self.lr_inventory = lr_from_inventory_accounting(
             reported_prc_scanners= (1 - self.proportion_of_prc_lithography_scanners_devoted_to_fab) * self.total_prc_lithography_scanners_for_node,
             us_estimate_of_prc_scanners=self.us_estimate_of_prc_lithography_scanners,
@@ -1012,6 +1019,21 @@ class PRCCovertFab(CovertFab):
         )
 
         self.lr_other_over_time = {}
+
+        # Build labor_by_year mapping using years since construction start
+        years_since_construction = [year - (construction_start_year - agreement_year) for year in years_since_agreement_start]
+        labor_by_year = {
+            year: int(self.operation_labor + self.construction_labor)
+            for year in years_since_construction
+            if year >= 0  # Only include years after construction starts
+        }
+
+        self.lr_over_time_vs_num_workers = lr_over_time_vs_num_workers(
+            labor_by_year=labor_by_year,
+            mean_detection_time_100_workers=CovertProjectParameters.mean_detection_time_for_100_workers,
+            mean_detection_time_1000_workers=CovertProjectParameters.mean_detection_time_for_1000_workers,
+            variance_theta=CovertProjectParameters.variance_of_detection_time_given_num_workers
+        )
 
     def is_operational(self, year):
         if self.construction_start_year != None: # Construction start year can be none if the PRC never builds a covert fab
@@ -1030,7 +1052,8 @@ class PRCCovertFab(CovertFab):
             return Compute(chip_counts={})
 
         # Calculate H100-equivalent performance per chip
-        chip_architecture_efficiency_relative_to_h100 = estimate_architecture_efficiency_relative_to_h100(year, self.agreement_year)
+        # Use construction_start_year instead of current year to keep chip specs constant
+        chip_architecture_efficiency_relative_to_h100 = estimate_architecture_efficiency_relative_to_h100(self.construction_start_year, self.agreement_year)
         h100e_per_chip = self.transistor_density_relative_to_h100 * chip_architecture_efficiency_relative_to_h100
 
         # Convert process node to nm and calculate transistor density
@@ -1050,36 +1073,64 @@ class PRCCovertFab(CovertFab):
         # Calculate number of chips produced per month
         chips_per_month = self.wafer_starts_per_month * self.h100_sized_chips_per_wafer
 
-        # Create Chip object
-        chip = Chip(
-            h100e_tpp_per_chip=h100e_per_chip,
-            W_of_energy_consumed=watts_per_chip,
-            intra_chip_memory_bandwidth_tbps=8.0,  # Default H100-like bandwidth
-            inter_chip_memory_bandwidth_tbps=1.8   # Default H100-like bandwidth
-        )
+        # Create or reuse cached Chip object to ensure consistent identity
+        if self._cached_chip is None:
+            self._cached_chip = Chip(
+                h100e_tpp_per_chip=h100e_per_chip,
+                W_of_energy_consumed=watts_per_chip,
+                intra_chip_memory_bandwidth_tbps=8.0,  # Default H100-like bandwidth
+                inter_chip_memory_bandwidth_tbps=1.8   # Default H100-like bandwidth
+            )
+
+        chip = self._cached_chip
 
         compute_production_rate = Compute(chip_counts={chip: chips_per_month})
         self.dark_compute_monthly_production_rate_history[year] = Compute(chip_counts={chip: chips_per_month})
         return compute_production_rate
     
-    def get_cumulative_compute_production(self, year):
-        """Calculate cumulative compute production up to a given year.
+    def get_cumulative_compute_production_over_time(self):
+        """Calculate cumulative compute production over all recorded years.
 
         Returns:
-            Compute: Object containing cumulative chip specifications and counts
+            dict: Dictionary mapping year -> cumulative H100e production up to that year
         """
-        chip_type = self.dark_compute_monthly_production_rate_history[year].chip_counts.keys()[0]
-        cumulative_chip_count = 0
         years_recorded = sorted(self.dark_compute_monthly_production_rate_history.keys())
-        years_before_year = [yr for yr in years_recorded if yr < year]
-        for i, yr in enumerate(years_before_year):
-            assert len(self.dark_compute_monthly_production_rate_history[yr].chip_counts) == 1, "Expected only one chip type in production rate history"
-            assert chip_type == list(self.dark_compute_monthly_production_rate_history[yr].chip_counts.keys())[0], "Inconsistent chip types in production rate history"
-            monthly_chip_count_rate = self.dark_compute_monthly_production_rate_history[yr][chip_type]
-            year_increment = years_before_year[i + 1] - yr if i + 1 < len(years_before_year) else year - yr
+
+        # If no production history, return empty dict
+        if not years_recorded:
+            return {}
+
+        # Get chip type from first recorded year - should be consistent throughout
+        first_compute = self.dark_compute_monthly_production_rate_history[years_recorded[0]]
+        chip_type = list(first_compute.chip_counts.keys())[0]
+
+        cumulative_by_year = {}
+        cumulative_chip_count = 0
+
+        for i, yr in enumerate(years_recorded):
+            compute_at_year = self.dark_compute_monthly_production_rate_history[yr]
+
+            # Verify only one chip type and it's consistent
+            assert len(compute_at_year.chip_counts) == 1, f"Expected only one chip type in production rate history, got {len(compute_at_year.chip_counts)}"
+            assert chip_type == list(compute_at_year.chip_counts.keys())[0], f"Inconsistent chip types: expected {chip_type}, got {list(compute_at_year.chip_counts.keys())[0]}"
+
+            # Get monthly chip count rate from the Compute object
+            monthly_chip_count_rate = compute_at_year.chip_counts[chip_type]
+
+            # Calculate time increment to next year (or to current year if last)
+            if i + 1 < len(years_recorded):
+                year_increment = years_recorded[i + 1] - yr
+            else:
+                year_increment = 0  # Last recorded year, no increment
+
             months_rate_is_sustained = year_increment * 12
             cumulative_chip_count += months_rate_is_sustained * monthly_chip_count_rate
-        return Compute(chip_counts={chip_type: cumulative_chip_count})
+
+            # Convert to H100e TPP
+            cumulative_compute = Compute(chip_counts={chip_type: cumulative_chip_count})
+            cumulative_by_year[yr] = cumulative_compute.total_h100e_tpp()
+
+        return cumulative_by_year
 
     def energy_consumption_per_month_gw(self, year):
         """Calculate total energy consumption per month in gigawatts.
@@ -1114,14 +1165,9 @@ class PRCCovertFab(CovertFab):
         # Tracks whether domestic PRC lithography scanners are unaccounted for
 
         # Other: Leverage signals intelligence, human intelligence, and satellite imagery to detect a chip fab operation
-        # Uses Gamma distribution survival function for principled likelihood ratio
-        lr_other = lr_vs_num_workers(
-            years_since_start = year - self.construction_start_year,
-            total_labor=self.operation_labor + self.construction_labor,
-            mean_detection_time_100_workers=CovertProjectParameters.mean_detection_time_for_100_workers,
-            mean_detection_time_1000_workers=CovertProjectParameters.mean_detection_time_for_1000_workers,
-            variance_theta=CovertProjectParameters.variance_of_detection_time_given_num_workers
-        )
+        # Uses precomputed lr_over_time_vs_num_workers
+        year_since_construction = year - self.construction_start_year
+        lr_other = self.lr_over_time_vs_num_workers.get(year_since_construction, 1.0)
 
         # Store component LRs for tracking over time
         self.lr_other_over_time[year] = lr_other

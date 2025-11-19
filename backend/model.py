@@ -8,6 +8,7 @@ from copy import deepcopy
 
 # Import CovertProject and CovertProjectStrategy
 from backend.classes.covert_project import CovertProject
+from backend.classes.covert_fab import set_localization_probabilities
 from backend.paramaters import CovertProjectStrategy, Parameters
 
 @dataclass
@@ -141,12 +142,23 @@ class Model:
         Returns:
             dict: Dictionary of covert project names to CovertProject instances
         """
+        # Update covert fab localization probabilities from parameters
+        set_localization_probabilities(self.parameters.covert_project_parameters.covert_fab_parameters)
+
+        # Calculate years array from simulation settings
+        import numpy as np
+        start_year = self.parameters.simulation_settings.start_year
+        end_year = self.parameters.simulation_settings.end_year
+        time_step = self.parameters.simulation_settings.time_step_years
+        years = list(np.arange(start_year, end_year + time_step, time_step))
+
         # Use the actual PRC strategy (not the US's beliefs about it)
         return {
             "prc_covert_project" : CovertProject(
                 name = "prc_covert_project",
                 covert_project_strategy = self.parameters.covert_project_strategy,
                 agreement_year = self.parameters.simulation_settings.start_year,
+                years = years
             )
         }
 

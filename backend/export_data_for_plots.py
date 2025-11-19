@@ -96,10 +96,13 @@ def extract_fab_production_over_time(simulation_results, years):
     for covert_projects, detectors in simulation_results:
         covert_fab = covert_projects["prc_covert_project"].covert_fab
 
-        if covert_fab is not None and hasattr(covert_fab, 'dark_compute_over_time'):
-            h100e_counts = [covert_fab.dark_compute_over_time.get(year, 0.0) for year in years]
+        if covert_fab is not None:
+            # Get cumulative production for all recorded years
+            cumulative_by_year = covert_fab.get_cumulative_compute_production_over_time()
+            # Map to the requested years array
+            h100e_counts = [cumulative_by_year.get(year, 0.0) for year in years]
         else:
-            h100e_counts = [0.0 for year in years]
+            h100e_counts = [0.0 for _ in years]
 
         h100e_by_sim.append(h100e_counts)
 
@@ -267,6 +270,28 @@ def extract_project_lr_components_over_time(simulation_results, years):
     return lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim
 
 
+def extract_fab_combined_lr_over_time(simulation_results, years):
+    """Extract combined likelihood ratio from fab's detection_likelihood_ratio method."""
+    combined_lr_by_sim = []
+
+    for covert_projects, _ in simulation_results:
+        covert_fab = covert_projects["prc_covert_project"].covert_fab
+
+        if covert_fab is not None:
+            # Call the fab's detection_likelihood_ratio method for each year
+            combined_lr_over_time = [
+                covert_fab.detection_likelihood_ratio(year)
+                for year in years
+            ]
+        else:
+            # If no fab, LR is 1.0 (no evidence)
+            combined_lr_over_time = [1.0 for _ in years]
+
+        combined_lr_by_sim.append(combined_lr_over_time)
+
+    return combined_lr_by_sim
+
+
 # =============================================================================
 # FAB-SPECIFIC DATA EXTRACTION (only for simulations with fab)
 # =============================================================================
@@ -297,12 +322,56 @@ def extract_fab_lr_components_over_time(simulation_results, years):
         lr_procurement_by_sim.append(lr_procurement_over_time)
         lr_other_by_sim.append(lr_other_over_time)
 
+    # DEBUG: Log lr_other values
+    if lr_other_by_sim:
+        lr_other_array = np.array(lr_other_by_sim)
+        print(f"DEBUG: lr_other shape: {lr_other_array.shape}", flush=True)
+        print(f"DEBUG: lr_other first sim - ALL values: {lr_other_by_sim[0]}", flush=True)
+        print(f"DEBUG: lr_other second sim - ALL values: {lr_other_by_sim[1]}", flush=True)
+        print(f"DEBUG: lr_other median across sims - first 10 years: {np.median(lr_other_array[:, :10], axis=0).tolist()}", flush=True)
+        print(f"DEBUG: lr_other median across sims - last 10 years: {np.median(lr_other_array[:, -10:], axis=0).tolist()}", flush=True)
+        print(f"DEBUG: lr_other unique values in first sim: {sorted(set(lr_other_by_sim[0]))}[:20]", flush=True)
+
+        # Plot single simulation to visualize
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(12, 6))
+        plt.plot(years, lr_other_by_sim[0], 'b-', linewidth=2, label='Simulation 1')
+        if len(lr_other_by_sim) > 1:
+            plt.plot(years, lr_other_by_sim[1], 'r-', linewidth=2, label='Simulation 2', alpha=0.7)
+        plt.xlabel('Year')
+        plt.ylabel('LR (other intelligence)')
+        plt.title('Evidence from Other Intelligence Sources - Single Simulation Time Series')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.yscale('log')
+        plt.savefig('/tmp/lr_other_debug.png', dpi=150, bbox_inches='tight')
+        plt.close()
+        print(f"DEBUG: Saved plot to /tmp/lr_other_debug.png", flush=True)
+
     return lr_inventory_by_sim, lr_procurement_by_sim, lr_other_by_sim
 
 
 def extract_fab_operational_status_over_time(simulation_results, years):
-    """Extract fab operational status over time."""
+    """Extract fab operational status over time.
+
+    Returns the proportion of simulations (that built fabs) where construction
+    is complete at each time point.
+    """
     is_operational_by_sim = []
+
+    # DEBUG: Log construction finish times
+    construction_finish_times = []
+    for covert_projects, detectors in simulation_results:
+        fab = covert_projects["prc_covert_project"].covert_fab
+        if fab is not None:
+            finish_time = fab.construction_start_year + fab.construction_duration
+            construction_finish_times.append(finish_time)
+
+    if construction_finish_times:
+        print(f"DEBUG: Construction finish times - min: {min(construction_finish_times):.4f}, max: {max(construction_finish_times):.4f}, median: {np.median(construction_finish_times):.4f}", flush=True)
+        print(f"DEBUG: Number of fabs built: {len(construction_finish_times)} out of {len(simulation_results)} simulations", flush=True)
 
     for covert_projects, detectors in simulation_results:
         is_operational = []
@@ -817,6 +886,7 @@ def extract_plot_data(model, app_params, likelihood_ratios):
 
     # Extract fab-specific data
     lr_inventory_by_sim, lr_procurement_by_sim, lr_fab_other_by_sim = extract_fab_lr_components_over_time(model.simulation_results, years)
+    lr_fab_combined_by_sim = extract_fab_combined_lr_over_time(model.simulation_results, years)
     is_operational_by_sim = extract_fab_operational_status_over_time(model.simulation_results, years)
     fab_params = extract_fab_production_parameters(model.simulation_results, years, agreement_year)
     watts_per_tpp_by_sim = calculate_watts_per_tpp_by_sim(fab_params['transistor_density'])
@@ -892,7 +962,7 @@ def extract_plot_data(model, app_params, likelihood_ratios):
             # Dark Compute Stock Breakdown
             # -------------------------------------------------------------------
             "initial_dark_compute": fmt_pct(dark_compute_by_sim, convert_to_thousands),
-            "covert_fab_flow": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim) or h100e_by_sim, convert_to_thousands),
+            "covert_fab_flow": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim)),  # Keep in raw H100e units to match monthly production
             "survival_rate": fmt_pct(survival_rate_by_sim),
             "total_dark_compute": fmt_pct(dark_compute_by_sim, convert_to_thousands),
 
@@ -927,7 +997,7 @@ def extract_plot_data(model, app_params, likelihood_ratios):
         "initial_dark_compute": {
             "years": years_array.tolist(),
             # Covert fab production flow (cumulative over time)
-            "h100e": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim) or h100e_by_sim, convert_to_thousands),
+            "h100e": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim), convert_to_thousands),
             # Chip survival rate over time
             "survival_rate": fmt_pct(survival_rate_by_sim),
             # Total dark compute (surviving, not capacity-limited)
@@ -963,18 +1033,28 @@ def extract_plot_data(model, app_params, likelihood_ratios):
             "op_time_ccdfs": op_time_ccdfs,
             "likelihood_ratios": likelihood_ratios,
             # Detection - LR component breakdown (inventory, procurement, other)
-            "lr_inventory": fmt_pct(filter_to_with_fab(lr_inventory_by_sim, fab_built_in_sim) or lr_inventory_by_sim),
-            "lr_procurement": fmt_pct(filter_to_with_fab(lr_procurement_by_sim, fab_built_in_sim) or lr_procurement_by_sim),
-            "lr_other": fmt_pct(filter_to_with_fab(lr_fab_other_by_sim, fab_built_in_sim) or lr_fab_other_by_sim),
+            "lr_inventory": fmt_pct(filter_to_with_fab(lr_inventory_by_sim, fab_built_in_sim)),
+            "lr_procurement": fmt_pct(filter_to_with_fab(lr_procurement_by_sim, fab_built_in_sim)),
+            "lr_other": fmt_pct(filter_to_with_fab(lr_fab_other_by_sim, fab_built_in_sim)),
+            # Combined LR (product of inventory, procurement, and other) - from fab's detection_likelihood_ratio method
+            "lr_combined": fmt_pct(filter_to_with_fab(lr_fab_combined_by_sim, fab_built_in_sim)),
             # Production - Compute factors breakdown
-            "is_operational": fmt_pct(filter_to_with_fab(is_operational_by_sim, fab_built_in_sim) or is_operational_by_sim),
-            "wafer_starts": fmt_pct(filter_to_with_fab(fab_params['wafer_starts'], fab_built_in_sim) or fab_params['wafer_starts']),
-            "chips_per_wafer": fmt_pct(filter_to_with_fab(fab_params['chips_per_wafer'], fab_built_in_sim) or fab_params['chips_per_wafer']),
-            "architecture_efficiency": fmt_pct(filter_to_with_fab(fab_params['architecture_efficiency'], fab_built_in_sim) or fab_params['architecture_efficiency']),
-            "compute_per_wafer_2022_arch": fmt_pct(filter_to_with_fab(fab_params['compute_per_wafer_2022_arch'], fab_built_in_sim) or fab_params['compute_per_wafer_2022_arch']),
-            "transistor_density": fmt_pct(filter_to_with_fab(fab_params['transistor_density'], fab_built_in_sim) or fab_params['transistor_density']),
-            "watts_per_tpp": fmt_pct(filter_to_with_fab(watts_per_tpp_by_sim, fab_built_in_sim) or watts_per_tpp_by_sim),
-            "process_node_by_sim": filter_to_with_fab(fab_params['process_node'], fab_built_in_sim) or fab_params['process_node'],
+            # Calculate proportion operational (not percentiles)
+            "is_operational": (lambda: (
+                filtered := filter_to_with_fab(is_operational_by_sim, fab_built_in_sim),
+                proportion := np.mean(np.array(filtered), axis=0).tolist(),
+                {
+                    "proportion": proportion,
+                    "individual": [list(sim) for sim in filtered]
+                }
+            )[-1])(),
+            "wafer_starts": fmt_pct(filter_to_with_fab(fab_params['wafer_starts'], fab_built_in_sim)),
+            "chips_per_wafer": fmt_pct(filter_to_with_fab(fab_params['chips_per_wafer'], fab_built_in_sim)),
+            "architecture_efficiency": fmt_pct(filter_to_with_fab(fab_params['architecture_efficiency'], fab_built_in_sim)),
+            "compute_per_wafer_2022_arch": fmt_pct(filter_to_with_fab(fab_params['compute_per_wafer_2022_arch'], fab_built_in_sim)),
+            "transistor_density": fmt_pct(filter_to_with_fab(fab_params['transistor_density'], fab_built_in_sim)),
+            "watts_per_tpp": fmt_pct(filter_to_with_fab(watts_per_tpp_by_sim, fab_built_in_sim)),
+            "process_node_by_sim": filter_to_with_fab(fab_params['process_node'], fab_built_in_sim),
             # Architecture efficiency and watts per TPP
             "architecture_efficiency_at_agreement": estimate_architecture_efficiency_relative_to_h100(agreement_year, agreement_year),
             "watts_per_tpp_curve": PRCCovertFab.watts_per_tpp_relative_to_H100(),

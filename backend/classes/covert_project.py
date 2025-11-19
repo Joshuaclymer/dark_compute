@@ -3,7 +3,7 @@ from typing import Optional
 from backend.classes.covert_fab import CovertFab, PRCCovertFab, ProcessNode, FabNotBuiltException, Compute
 from backend.classes.dark_compute_stock import PRCDarkComputeStock
 from backend.classes.covert_datacenters import CovertPRCDatacenters
-from backend.util import lr_vs_num_workers
+from backend.util import lr_over_time_vs_num_workers
 from backend.paramaters import CovertProjectStrategy, CovertProjectParameters
 
 
@@ -12,6 +12,7 @@ class CovertProject:
     name : str
     covert_project_strategy : CovertProjectStrategy
     agreement_year : float
+    years : list
     stock : Optional[PRCDarkComputeStock] = None
     covert_fab : Optional[CovertFab] = None
     detection_time_via_other_strategies : Optional[float] = None
@@ -24,10 +25,14 @@ class CovertProject:
             optimal_proportion_of_initial_compute_stock_to_divert = CovertProjectStrategy().proportion_of_initial_compute_stock_to_divert
         )
 
+        # Convert absolute years to years since agreement start
+        years_since_agreement_start = [year - self.agreement_year for year in self.years]
+
         self.covert_datacenters = CovertPRCDatacenters(
             GW_per_initial_datacenter = self.covert_project_strategy.GW_per_initial_datacenter,
             number_of_initial_datacenters = self.covert_project_strategy.number_of_initial_datacenters,
-            GW_per_year_of_concealed_datacenters = self.covert_project_strategy.GW_per_year_of_concealed_datacenters
+            construction_labor = self.covert_project_strategy.datacenter_construction_labor,
+            years_since_agreement_start = years_since_agreement_start
         )
 
         if (self.covert_project_strategy.build_a_covert_fab):
@@ -38,11 +43,31 @@ class CovertProject:
                     process_node = self.covert_project_strategy.covert_fab_process_node,
                     proportion_of_prc_lithography_scanners_devoted_to_fab = self.covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
                     operation_labor = self.covert_project_strategy.covert_fab_operating_labor,
-                    agreement_year = self.agreement_year
+                    agreement_year = self.agreement_year,
+                    years_since_agreement_start = years_since_agreement_start
                 )
             except FabNotBuiltException:
                 # Fab not built because process node threshold not met
                 self.covert_fab = None
+
+        # Precompute lr_over_time_vs_num_workers for the total project
+        labor_by_year = {}
+        for year in years_since_agreement_start:
+            # Calculate total labor at this specific year
+            labor_at_year = self.covert_datacenters.construction_labor
+            labor_at_year += self.covert_datacenters.get_operating_labor(year)
+            # Add fab labor if it exists
+            if self.covert_fab is not None:
+                labor_at_year += self.covert_project_strategy.covert_fab_construction_labor
+                labor_at_year += self.covert_project_strategy.covert_fab_operating_labor
+            labor_by_year[year] = int(labor_at_year)
+
+        self.lr_over_time_vs_num_workers = lr_over_time_vs_num_workers(
+            labor_by_year=labor_by_year,
+            mean_detection_time_100_workers=CovertProjectParameters.mean_detection_time_for_100_workers,
+            mean_detection_time_1000_workers=CovertProjectParameters.mean_detection_time_for_1000_workers,
+            variance_theta=CovertProjectParameters.variance_of_detection_time_given_num_workers
+        )
         
     def operational_dark_compute(self, year: float):
         """Calculate operational dark compute limited by datacenter energy capacity.
@@ -174,19 +199,8 @@ class CovertProject:
         return 1.0
     
     def get_lr_other(self, year: float) -> float:
-        num_workers = 0
-        num_workers += self.covert_project_strategy.covert_fab_operating_labor if self.covert_fab is not None else 0
-        num_workers += self.covert_project_strategy.covert_fab_construction_labor if self.covert_fab is not None else 0
-        num_workers += self.covert_datacenters.get_operating_labor(year)
-        num_workers += self.covert_datacenters.get_construction_labor()
         years_since_agreement_start = year - self.agreement_year
-        return lr_vs_num_workers(
-            years_since_start = years_since_agreement_start,
-            total_labor = num_workers,
-            mean_detection_time_100_workers = CovertProjectParameters.mean_detection_time_for_100_workers,
-            mean_detection_time_1000_workers = CovertProjectParameters.mean_detection_time_for_1000_workers,
-            variance_theta = CovertProjectParameters.variance_of_detection_time_given_num_workers
-        )
+        return self.lr_over_time_vs_num_workers.get(years_since_agreement_start, 1.0)
     
     def get_cumulative_evidence_of_covert_project(self, year: float) -> dict:
         """
@@ -198,20 +212,23 @@ class CovertProject:
     # Fab methods (called by the app)
     def get_fab_lr_inventory(self, year: float) -> float:
         """Get fab inventory detection likelihood ratio. Returns 1.0 if no fab."""
-        if self.covert_fab is not None and hasattr(self.covert_fab, 'lr_inventory_over_time') and year in self.covert_fab.lr_inventory_over_time:
-            return self.covert_fab.lr_inventory_over_time[year]
+        if self.covert_fab is not None:
+            return self.covert_fab.lr_inventory
         return 1.0
 
     def get_fab_lr_procurement(self, year: float) -> float:
         """Get fab procurement detection likelihood ratio. Returns 1.0 if no fab."""
-        if self.covert_fab is not None and hasattr(self.covert_fab, 'lr_procurement_over_time') and year in self.covert_fab.lr_procurement_over_time:
-            return self.covert_fab.lr_procurement_over_time[year]
+        if self.covert_fab is not None:
+            return self.covert_fab.lr_procurement
         return 1.0
 
     def get_fab_lr_other(self, year: float) -> float:
         """Get fab other detection likelihood ratio. Returns 1.0 if no fab."""
-        if self.covert_fab is not None and hasattr(self.covert_fab, 'lr_other_over_time') and year in self.covert_fab.lr_other_over_time:
-            return self.covert_fab.lr_other_over_time[year]
+        if self.covert_fab is not None:
+            # Call detection_likelihood_ratio to populate lr_other_over_time
+            if year not in self.covert_fab.lr_other_over_time:
+                self.covert_fab.detection_likelihood_ratio(year)
+            return self.covert_fab.lr_other_over_time.get(year, 1.0)
         return 1.0
 
     def get_fab_is_operational(self, year: float) -> float:

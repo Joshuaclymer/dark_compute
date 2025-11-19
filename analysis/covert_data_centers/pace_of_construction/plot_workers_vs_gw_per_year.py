@@ -165,10 +165,10 @@ for idx, row in results_df.iterrows():
         y_offset = 3
 
     # Add marker (all blue circles, using color from app.py)
-    # X and Y are flipped: x is now MW/year, y is now workers
+    # X and Y are flipped: x is now workers, y is now MW/year
     fig.add_trace(go.Scatter(
-        x=[mw_per_year],
-        y=[workers],
+        x=[workers],
+        y=[mw_per_year],
         mode='markers',
         marker=dict(
             size=6,
@@ -176,16 +176,16 @@ for idx, row in results_df.iterrows():
             symbol='circle'
         ),
         hovertemplate='<b>' + datacenter + '</b><br>' +
-                      'MW/year: %{x:.1f}<br>' +
-                      'Workers: %{y:,.0f}<br>' +
+                      'Workers: %{x:,.0f}<br>' +
+                      'MW/year: %{y:.1f}<br>' +
                       '<extra></extra>',
         showlegend=False
     ))
 
     # Add text annotation with proper alignment
     fig.add_annotation(
-        x=mw_per_year,
-        y=workers,
+        x=workers,
+        y=mw_per_year,
         text=short_name,
         showarrow=False,
         xshift=x_offset,
@@ -198,28 +198,42 @@ for idx, row in results_df.iterrows():
 # Legend removed per user request
 
 # Calculate and add regression line (forcing through origin)
-# X and Y are flipped: X is now MW/year, Y is now workers
+# X and Y are flipped: X is now workers, Y is now MW/year
 if len(results_df) > 1:
-    X = results_df['MW per Year'].values  # Now MW/year is X
-    y = results_df['Workers'].values  # Now workers is Y
+    X = results_df['Workers'].values  # Now workers is X
+    y = results_df['MW per Year'].values  # Now MW/year is Y
 
     # Fit linear regression through origin (intercept = 0)
     # slope = sum(x*y) / sum(x^2)
     slope = np.sum(X * y) / np.sum(X ** 2)
     intercept = 0
 
-    # Calculate relative sigma as the coefficient of variation of individual ratios (y/x)
-    # For each datacenter, compute the ratio of workers per MW/year
-    ratios = y / X
+    # Calculate relative sigma for prediction intervals
+    # This combines both uncertainty in the slope and inherent scatter
 
-    # Mean of ratios (this will be close to but not exactly the regression slope)
-    mean_ratio = np.mean(ratios)
+    # 1. Calculate residuals from the fitted line
+    y_pred_points = slope * X
+    residuals = y - y_pred_points
 
-    # Standard deviation of ratios
-    std_ratio = np.std(ratios, ddof=1)  # ddof=1 for sample standard deviation
+    # 2. Calculate relative residuals (residual / predicted value)
+    relative_residuals = residuals / y_pred_points
 
-    # Relative sigma (coefficient of variation)
-    relative_sigma = std_ratio / mean_ratio
+    # 3. Standard deviation of relative residuals (inherent scatter)
+    relative_sigma_residuals = np.std(relative_residuals, ddof=1)
+
+    # 4. Standard error of the slope estimate
+    # For regression through origin: SE(slope) = σ / sqrt(Σx²)
+    # where σ is estimated from residuals
+    residual_std = np.std(residuals, ddof=1)
+    se_slope = residual_std / np.sqrt(np.sum(X ** 2))
+
+    # 5. For a prediction at x_new, the relative uncertainty combines:
+    #    - relative_sigma_residuals (inherent scatter, proportional to y)
+    #    - uncertainty from slope: (se_slope * x_new) / (slope * x_new) = se_slope / slope
+    relative_sigma_slope = se_slope / slope
+
+    # 6. Combined relative sigma for prediction interval (add in quadrature)
+    relative_sigma = np.sqrt(relative_sigma_residuals**2 + relative_sigma_slope**2)
 
     # Generate regression line from origin
     x_range = np.linspace(0, X.max(), 100)
@@ -237,23 +251,26 @@ if len(results_df) > 1:
         y=y_pred,
         mode='lines',
         line=dict(color='red', width=2, dash='dash'),
-        name=f'y = {slope:.2f}x<br>σ/m = {relative_sigma:.2f}',
+        name=f'y = {slope:.4f}x<br>σ/m = {relative_sigma:.2f}',
         showlegend=True
     ))
 
     print(f"\n\nRegression Results (through origin):")
-    print(f"Slope (m): {slope:.6f} workers per MW/year")
-    print(f"Mean of individual ratios: {mean_ratio:.6f} workers per MW/year")
-    print(f"Standard deviation of ratios: {std_ratio:.6f}")
-    print(f"Relative Sigma (σ/m): {relative_sigma:.4f} ({relative_sigma*100:.2f}%)")
-    print(f"Intercept: {intercept:.6f} workers (forced to 0)")
+    print(f"Slope (m): {slope:.6f} MW/year per worker")
+    print(f"Standard error of slope: {se_slope:.6f}")
+    print(f"Relative uncertainty in slope: {relative_sigma_slope:.4f} ({relative_sigma_slope*100:.2f}%)")
+    print(f"\nRelative residual scatter: {relative_sigma_residuals:.4f} ({relative_sigma_residuals*100:.2f}%)")
+    print(f"\nCombined Relative Sigma (for prediction intervals): {relative_sigma:.4f} ({relative_sigma*100:.2f}%)")
+    print(f"  - This is sqrt(residual_scatter² + slope_uncertainty²)")
+    print(f"\nSample size: {len(X)}")
+    print(f"Intercept: {intercept:.6f} MW/year (forced to 0)")
     print(f"R²: {r2:.4f}")
 
 # Update layout (6 inches x 3.5 inches at 100 DPI)
 # X and Y axes are flipped
 fig.update_layout(
-    xaxis_title='Build Rate (MW per Year)',
-    yaxis_title='Number of Concurrent Construction Workers',
+    xaxis_title='Number of Concurrent Construction Workers',
+    yaxis_title='Build Rate (MW per Year)',
     width=600,
     height=350,
     hovermode='closest',

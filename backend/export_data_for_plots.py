@@ -196,7 +196,7 @@ def extract_datacenter_lr_over_time(simulation_results, years, agreement_year):
 
         for year in years:
             relative_year = year - agreement_year
-            lr_datacenters = covert_datacenters.lr_from_concealed_datacenters(relative_year)
+            lr_datacenters = covert_datacenters.cumulative_lr_from_concealed_datacenters(relative_year)
             lr_datacenters_over_time.append(lr_datacenters)
 
         lr_datacenters_by_sim.append(lr_datacenters_over_time)
@@ -764,6 +764,105 @@ def extract_project_h100_years_ccdfs(simulation_results, years, agreement_year, 
     return project_h100_years_ccdfs
 
 
+def calculate_datacenter_detection_year(covert_datacenters, years, agreement_year, threshold):
+    """Calculate the year when datacenter is detected based on likelihood ratio threshold.
+
+    Detection occurs the first year the datacenter LR exceeds the threshold.
+    """
+    if covert_datacenters is None:
+        return None
+
+    for year in years:
+        relative_year = year - agreement_year
+        year_lr = covert_datacenters.cumulative_lr_from_concealed_datacenters(relative_year)
+
+        if year_lr >= threshold:
+            return year
+
+    return None
+
+
+def extract_datacenter_capacity_at_detection(simulation_results, years, agreement_year, threshold):
+    """Extract datacenter capacity (GW) at detection time."""
+    capacity_at_detection = []
+
+    for covert_projects, detectors in simulation_results:
+        covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+
+        # Use simulation years to calculate detection
+        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
+        sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
+                          if us_beliefs.p_project_exists_update_history else [])
+
+        detection_year = calculate_datacenter_detection_year(covert_datacenters, sim_years, agreement_year, threshold)
+
+        if detection_year is not None:
+            # Get capacity at detection year
+            relative_year = detection_year - agreement_year
+            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+        else:
+            # Never detected - use final year
+            final_year = years[-1]
+            relative_year = final_year - agreement_year
+            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+
+        capacity_at_detection.append(capacity_gw)
+
+    return capacity_at_detection
+
+
+def extract_datacenter_detection_statistics(simulation_results, years, agreement_year, detection_thresholds):
+    """Extract datacenter capacity CCDFs for multiple detection thresholds."""
+    capacity_ccdfs = {}
+
+    for threshold in detection_thresholds:
+        capacity_at_detection = extract_datacenter_capacity_at_detection(
+            simulation_results, years, agreement_year, threshold
+        )
+        capacity_ccdfs[threshold] = calculate_ccdf(capacity_at_detection)
+
+    return capacity_ccdfs
+
+
+def extract_individual_datacenter_detection_data(simulation_results, years, agreement_year, threshold):
+    """Extract individual datacenter detection data for dashboard display.
+
+    Returns capacity at detection and years operational before detection.
+    """
+    individual_capacity = []
+    individual_time = []
+
+    for covert_projects, detectors in simulation_results:
+        covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+
+        # Use simulation years to calculate detection
+        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
+        sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
+                          if us_beliefs.p_project_exists_update_history else [])
+
+        detection_year = calculate_datacenter_detection_year(covert_datacenters, sim_years, agreement_year, threshold)
+
+        if detection_year is not None:
+            # Get capacity at detection year
+            relative_year = detection_year - agreement_year
+            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+        else:
+            # Never detected - use final year
+            final_year = years[-1]
+            relative_year = final_year - agreement_year
+            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+            detection_year = final_year
+
+        # Calculate years operational before detection
+        # Datacenters start being built at agreement_year
+        years_operational = detection_year - agreement_year
+
+        individual_capacity.append(capacity_gw)
+        individual_time.append(years_operational)
+
+    return individual_capacity, individual_time
+
+
 def extract_individual_project_detection_data(simulation_results, agreement_year, threshold, app_params):
     """Extract individual project detection data for dashboard display."""
     individual_h100e = []
@@ -877,12 +976,18 @@ def extract_plot_data(model, app_params):
     compute_ccdfs, op_time_ccdfs = extract_fab_detection_statistics(
         model.simulation_results, years, likelihood_ratios, likelihood_ratios
     )
+    # For datacenter capacity, only use 1x threshold since detection is binary
+    datacenter_capacity_ccdfs = extract_datacenter_detection_statistics(
+        model.simulation_results, years, agreement_year, [1]
+    )
     # Use LR=5 as the dashboard threshold (matches default in frontend)
     dashboard_lr_threshold = 5
     individual_fab_h100e, individual_fab_time, individual_fab_process_nodes, individual_fab_energy = \
         extract_individual_fab_detection_data(model.simulation_results, years, dashboard_lr_threshold, app_params)
     individual_project_h100e, individual_project_energy, individual_project_time, individual_project_h100_years = \
         extract_individual_project_detection_data(model.simulation_results, agreement_year, dashboard_lr_threshold, app_params)
+    individual_datacenter_capacity, individual_datacenter_time = \
+        extract_individual_datacenter_detection_data(model.simulation_results, years, agreement_year, dashboard_lr_threshold)
 
     # Extract initial stock data
     diversion_proportion = app_params.covert_project_strategy.proportion_of_initial_compute_stock_to_divert
@@ -1002,6 +1107,12 @@ def extract_plot_data(model, app_params):
             # Datacenter detection
             "lr_datacenters": fmt_pct(lr_datacenters_by_sim),
             "datacenter_detection_prob": (np.mean(np.array(lr_datacenters_by_sim) >= 5.0, axis=0)).tolist(),
+            # Datacenter capacity CCDFs at detection
+            "capacity_ccdfs": datacenter_capacity_ccdfs,
+            "likelihood_ratios": likelihood_ratios,
+            # Dashboard - Individual simulation data
+            "individual_capacity_before_detection": individual_datacenter_capacity,
+            "individual_time_before_detection": individual_datacenter_time,
         },
 
         # =====================================================================

@@ -1,8 +1,8 @@
             <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 0; color: #333;">Initial stock</h1>
 
             <!-- Dashboard and Detection Probability -->
-            <div class="top-plots">
-                <div class="dashboard">
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 10px; align-items: flex-start;">
+                <div class="dashboard" style="flex: 0 0 auto; min-width: 250px; max-width: 300px; height: 243px;">
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboardMedianDarkComputeCombined">--</div>
                         <div class="dashboard-label">Median Initial PRC Dark Compute Stock</div>
@@ -13,11 +13,11 @@
                         <div class="dashboard-sublabel">Detection means a ≥5x likelihood ratio</div>
                     </div>
                 </div>
-                <div class="plot-container">
+                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px;">
                     <div class="plot-title">Detection Probability by Likelihood Ratio</div>
                     <div id="initialDarkComputeDetectionPlot" class="plot" style="height: 243px;"></div>
                 </div>
-                <div class="plot-container">
+                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px;">
                     <div class="plot-title">Initial PRC Dark Compute Distribution</div>
                     <div id="initialComputeStockPlot" class="plot" style="height: 243px;"></div>
                 </div>

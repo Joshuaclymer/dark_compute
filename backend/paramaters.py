@@ -83,8 +83,8 @@ class CovertDatacenterParameters:
     total_GW_of_PRC_energy_consumption: float = 1100
 
     # -- Detection evidence --
-    construction_labor_per_MW_per_year: float = 6.3
-    relative_sigma_construction_labor_per_MW_per_year: float = 0.4
+    MW_per_construction_worker_per_year: float = 0.2
+    relative_sigma_mw_per_construction_worker_per_year: float = 0.4
 
     operating_labor_per_MW: float = 1
     relative_sigma_operating_labor_per_MW: float = 0.4

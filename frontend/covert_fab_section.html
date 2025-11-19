@@ -5,8 +5,8 @@
             </div>
 
             <div id="plotsContent">
-            <div class="top-plots">
-                <div class="dashboard">
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 10px; align-items: flex-start;">
+                <div class="dashboard" style="flex: 0 0 auto; min-width: 250px; max-width: 300px;">
                     <div class="dashboard-item">
                         <div class="dashboard-value" id="dashboard80thCombined">--</div>
                         <div class="dashboard-label">Production before detection (Median)</div>
@@ -26,12 +26,12 @@
                     </div>
                 </div>
 
-                <div class="plot-container">
+                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px;">
                     <div class="plot-title">Covert Compute Produced Before Detection</div>
                     <div id="computeCcdfPlot" class="plot"></div>
                 </div>
 
-                <div class="plot-container">
+                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px;">
                     <div class="plot-title">Simulation Runs Where Fab Is Built</div>
                     <div id="timeSeriesPlot" class="plot"></div>
                 </div>
@@ -149,7 +149,7 @@
                     </div>
                     <div class="breakdown-item">
                         <div id="densityVsEfficiencyPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Watts per TPP relative to H100</div>
+                        <div class="breakdown-label">Watts per performance relative to H100</div>
                     </div>
                     <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
                         <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>

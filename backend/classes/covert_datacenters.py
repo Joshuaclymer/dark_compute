@@ -7,9 +7,9 @@ from backend.paramaters import CovertDatacenterParameters, CovertProjectParamete
 from typing import List, Dict
 
 def sample_GW_per_year_per_construction_labor():
-    median = CovertDatacenterParameters.construction_labor_per_MW_per_year * 1000
-    relative_sigma = CovertDatacenterParameters.relative_sigma_construction_labor_per_MW_per_year
-    return 1 / sample_from_log_normal(median, relative_sigma)
+    median = CovertDatacenterParameters.MW_per_construction_worker_per_year / 1000
+    relative_sigma = CovertDatacenterParameters.relative_sigma_mw_per_construction_worker_per_year
+    return sample_from_log_normal(median, relative_sigma)
 
 
 # class CovertDataCenters(ABC):
@@ -51,5 +51,6 @@ class CovertPRCDatacenters():
     def get_operating_labor(self, year):
         return self.operating_labor_per_GW * self.get_GW_capacity(year)
 
-    def lr_from_concealed_datacenters(self, year):
-        return self.lr_over_time_vs_num_workers[year]
+    def cumulative_lr_from_concealed_datacenters(self, year):
+        lr = self.lr_over_time_vs_num_workers.get(year, 1.0)
+        return lr

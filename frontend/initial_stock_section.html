@@ -1,0 +1,90 @@
+            <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 0; color: #333;">Initial stock</h1>
+
+            <!-- Dashboard and Detection Probability -->
+            <div class="top-plots">
+                <div class="dashboard">
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardMedianDarkComputeCombined">--</div>
+                        <div class="dashboard-label">Median Initial PRC Dark Compute Stock</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardMedianLR">--</div>
+                        <div class="dashboard-label">Probability of detection</div>
+                        <div class="dashboard-sublabel">Detection means a ≥5x likelihood ratio</div>
+                    </div>
+                </div>
+                <div class="plot-container">
+                    <div class="plot-title">Detection Probability by Likelihood Ratio</div>
+                    <div id="initialDarkComputeDetectionPlot" class="plot" style="height: 243px;"></div>
+                </div>
+                <div class="plot-container">
+                    <div class="plot-title">Initial PRC Dark Compute Distribution</div>
+                    <div id="initialComputeStockPlot" class="plot" style="height: 243px;"></div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Evidence Breakdown</div>
+                <div class="section-description">
+                    Combined LR = LR<sub>PRC accounting</sub> × LR<sub>global accounting</sub><br>
+                    Multiply likelihood ratios from PRC compute stock reporting and global compute production accounting to assess detection risk from initial stock discrepancies.
+                </div>
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item">
+                        <div id="lrPrcAccountingPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence from PRC compute stock accounting</div>
+                        <div class="breakdown-description">If the PRC reports less compute stock than U.S. intelligence estimates they possess, this is evidence for a covert project. Conversely, if the PRC reports the same or more compute than the U.S. estimates, this is evidence against a covert project.</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="lrGlobalAccountingPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence from global compute production accounting</div>
+                        <div class="breakdown-description">If the total amount of reported global compute is lower than U.S. intelligence estimates of total compute produced to date, this suggests unreported compute exists. Given that the PRC is the most likely actor to hold large quantities of unreported compute, a substantial discrepancy between reported and estimated production provides evidence of a PRC covert project.</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #666;">=</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="lrCombinedPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Combined likelihood ratio</div>
+                        <div class="breakdown-description">The product of the two independent evidence sources gives the overall likelihood ratio update from initial compute reporting. Higher values indicate stronger evidence for a covert project.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Compute Breakdown</div>
+                <div class="section-description">
+                    Dark Compute Stock = Initial PRC Compute Stock × Proportion Diverted<br>
+                    The dark compute stock is determined by the total PRC compute stock at time of agreement and the proportion diverted to the covert project.
+                </div>
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item">
+                        <div id="initialPrcStockPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Initial PRC compute stock</div>
+                        <div class="breakdown-description">The total compute stock owned by the PRC at the time the agreement goes into force, before any diversion to a covert project.</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div id="diversionProportionDisplay" class="breakdown-box">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <div>--</div>
+                                <div class="breakdown-label">Proportion diverted<br>to covert project</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #666;">=</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="darkComputeResultPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Initial PRC dark compute</div>
+                        <div class="breakdown-description">The resulting compute stock diverted to the covert project, which is hidden from international monitoring and accounting systems.</div>
+                    </div>
+                </div>
+            </div>
+

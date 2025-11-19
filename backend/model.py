@@ -1,20 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
-from enum import Enum
 from copy import deepcopy
-
-# ============================================================================
-# ENUMS
-# ============================================================================
-
-class UpdateSource(Enum):
-    """Sources of intelligence that can update beliefs about covert projects"""
-    PRC_COMPUTE_ACCOUNTING = "prc_compute_accounting"
-    GLOBAL_COMPUTE_PRODUCTION_ACCOUNTING = "global_compute_production_accounting"
-    DATACENTERS_CONCEALED = "datacenters_concealed"  # HUMINT, SIGINT, etc.
-    FAB_INVENTORY_INTELLIGENCE = "fab_inventory_intelligence"
-    FAB_PROCUREMENT_INTELLIGENCE = "fab_procurement_intelligence"
-    FAB_OTHER_INTELLIGENCE = "fab_other_intelligence"  # HUMINT, SIGINT, etc.
 
 # ============================================================================
 # CLASSES
@@ -22,7 +8,7 @@ class UpdateSource(Enum):
 
 # Import CovertProject and CovertProjectStrategy
 from backend.classes.covert_project import CovertProject
-from backend.paramaters import CovertProjectStrategy
+from backend.paramaters import CovertProjectStrategy, Parameters
 
 @dataclass
 class DetectorStrategy:
@@ -122,33 +108,22 @@ class Simulation:
 # ============================================================================
 
 class Model:
-    def __init__(
-            self,
-            year_us_prc_agreement_goes_into_force : float,
-            end_year : float,
-            increment: float,
-            prc_strategy: 'CovertProjectStrategy' = None,
-            p_project_exists: float = 0.2
-        ):
-        self.year_us_prc_agreement_goes_into_force = year_us_prc_agreement_goes_into_force
-        self.end_year = end_year
-        self.increment = increment
+    def __init__(self, params: 'Parameters'):
+        """Initialize Model with a Parameters object.
 
-        # Store the PRC's actual strategy (what they actually do)
-        # Default to CovertProjectStrategy() with defaults if not provided
-        self.prc_strategy = prc_strategy if prc_strategy is not None else CovertProjectStrategy()
-
+        Args:
+            params: Parameters object containing all simulation settings
+        """
+        # Extract values from params
+        self.parameters = params
         self.initial_detectors = {
             "us_intelligence" : Detector(
                 name = "us_intelligence",
                 strategy = default_us_detection_strategy,
                 beliefs_about_projects = {
                     "prc_covert_project" : BeliefsAboutProject(
-                        p_project_exists = p_project_exists,
-                        p_covert_fab_exists = 0.1,
-                        # US beliefs about PRC strategy use default CovertProjectStrategy
+                        p_project_exists = self.parameters.covert_project_parameters.p_project_exists,
                         project_strategy_conditional_on_existence = CovertProjectStrategy(),
-                        distribution_over_compute_operation = []
                     )
                 }
             )
@@ -156,7 +131,7 @@ class Model:
 
         self.simulation_results = []
 
-    def _create_fresh_covert_projects(self):
+    def _init_covert_projects(self):
         """Create a new set of covert projects with fresh random sampling.
 
         This method should be called for each simulation to ensure that
@@ -170,8 +145,8 @@ class Model:
         return {
             "prc_covert_project" : CovertProject(
                 name = "prc_covert_project",
-                covert_project_strategy = self.prc_strategy,
-                agreement_year = self.year_us_prc_agreement_goes_into_force,
+                covert_project_strategy = self.parameters.covert_project_strategy,
+                agreement_year = self.parameters.simulation_settings.start_year,
             )
         }
 
@@ -179,12 +154,12 @@ class Model:
 
         for _ in range(num_simulations):
             simulation = Simulation(
-                year_us_prc_agreement_goes_into_force = self.year_us_prc_agreement_goes_into_force,
-                covert_projects = self._create_fresh_covert_projects(),  # Create fresh projects with new random sampling
+                year_us_prc_agreement_goes_into_force = self.parameters.simulation_settings.start_year,
+                covert_projects = self._init_covert_projects(),  # Create fresh projects with new random sampling
                 detectors = deepcopy(self.initial_detectors)
             )
             covert_projects, detectors = simulation.run_simulation(
-                end_year = self.end_year,
-                increment = self.increment
+                end_year = self.parameters.simulation_settings.end_year,
+                increment = self.parameters.simulation_settings.time_step_years
             )
             self.simulation_results.append((covert_projects, detectors))

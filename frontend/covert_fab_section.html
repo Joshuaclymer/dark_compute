@@ -1,0 +1,181 @@
+            <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 40px; color: #333;">Covert fab</h1>
+
+            <div id="projectNotRun" style="display: none; padding: 40px; text-align: center;">
+                <p style="font-size: 18px; color: #666;">Project not run</p>
+            </div>
+
+            <div id="plotsContent">
+            <div class="top-plots">
+                <div class="dashboard">
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboard80thCombined">--</div>
+                        <div class="dashboard-label">Production before detection (Median)</div>
+                        <div class="dashboard-sublabel" id="dashboardDetectionLabel">Detection means ≥5x update</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value-small" id="dashboardProbFabBuilt">--</div>
+                        <div class="dashboard-label-light">Probability covert fab is built</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value-small" id="dashboard80thTime">--</div>
+                        <div class="dashboard-label-light">Years Operational Before Detection (Median)</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value-small" id="dashboard80thNode">--</div>
+                        <div class="dashboard-label-light">Process Node (Median)</div>
+                    </div>
+                </div>
+
+                <div class="plot-container">
+                    <div class="plot-title">Covert Compute Produced Before Detection</div>
+                    <div id="computeCcdfPlot" class="plot"></div>
+                </div>
+
+                <div class="plot-container">
+                    <div class="plot-title">Simulation Runs Where Fab Is Built</div>
+                    <div id="timeSeriesPlot" class="plot"></div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Evidence Breakdown</div>
+                <div class="section-description">
+                    Total Evidence = LR<sub>inventory</sub> × LR<sub>procurement</sub> × LR<sub>other</sub><br>
+                    Evidence from three independent intelligence sources to estimate detection likelihood.
+                </div>
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item">
+                        <div id="lrInventoryPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence from accounting for prior PRC SME stock</div>
+                        <div class="breakdown-description">If the PRC reports less SME than U.S. intelligence believes that it possesses, then this is evidence for a covert fab. Conversely, if the PRC reports the same or more equipment than the U.S. thinks it possesses, this is evidence against a covert fab.</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="lrProcurementPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence from tracing SME procurements</div>
+                        <div class="breakdown-description">We assume that if most of the SME used to build a covert fab is from Chinese sources (aka localization is > 90%), then U.S. intelligence doesn't obtain any evidence from procurement intelligence that the covert fab exists. Otherwise, U.S. intelligence obtains strong evidence that the fab exists (a 10x update).</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="lrOtherPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence from other intelligence sources</div>
+                        <div class="breakdown-description">Over time, U.S. intelligence is increasingly likely to identify information through human intelligence, signal intelligence, etc. that provides strong evidence of a covert fab. For every year they don't observe this information, the likelihood of a covert fab decreases.</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">=</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="posteriorProbPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence of<br>Covert Fab</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Compute Production Breakdown</div>
+                <div class="section-description">
+                    H100e per month = Construction has finished? × Wafers processed per Month × Working H100-sized chips per wafer × Transistor density relative to an H100 × Architecture efficiency<br>
+                    Architecture efficiency improves until the agreement year, then remains constant.
+                </div>
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item">
+                        <div id="isOperationalPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Probability construction has finished</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="waferStartsPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Production capacity (wafer starts per month)</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div id="chipsPerWaferPlot" class="breakdown-box">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <div></div>
+                                <div class="breakdown-label">Working H100-sized chips per wafer</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="computePerChipPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Transistor density relative to H100</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div id="architectureEfficiencyDisplay" class="breakdown-box">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <div>--</div>
+                                <div class="breakdown-label">Architecture Efficiency (relative to H100)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">=</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="totalComputePlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Compute produced per month (H100e / month)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Energy Requirements Breakdown</div>
+                <div class="section-description">
+                    Energy requirements (GW / month) = Compute produced per month × Transistor density relative to H100 × Energy efficiency relative to H100 × Energy requirements of H100<br>
+                    Shows how compute production translates to energy consumption based on chip characteristics.
+                </div>
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-item">
+                        <div id="energyTransistorDensityPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Transistor density relative to H100</div>
+                    </div>
+                    <div class="operator arrow-operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">Plug into</div>
+                        <div style="font-size: 20px; color: #666;">→</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="densityVsEfficiencyPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Watts per TPP relative to H100</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div id="h100EnergyDisplay" class="breakdown-box">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <div>--</div>
+                                <div class="breakdown-label">Energy requirements of H100</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="energyComputePerMonthPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Compute produced per month (H100e / month)</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">=</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="energyPerMonthPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Energy requirements per month (GW / month)</div>
+                    </div>
+                </div>
+            </div>
+            </div>

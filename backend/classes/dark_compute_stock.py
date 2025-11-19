@@ -82,7 +82,7 @@ def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion
 
 def sample_global_compute(year):
     """Sample global compute stock based on year"""
-    from backend_model.util import sample_from_log_normal
+    from backend.util import sample_from_log_normal
     params = InitialPRCDarkComputeParameters
     years_since_2025 = year - 2025
     median_total_stock = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** years_since_2025)
@@ -95,7 +95,7 @@ def sample_global_compute(year):
 def sample_reported_global_compute(prc_compute_stock_diverted, global_compute):
     def _sample_unreported_compute_owned_by_non_prc_actors():
         """Sample unreported compute owned by non-PRC actors based on year"""
-        from backend_model.util import sample_from_log_normal
+        from backend.util import sample_from_log_normal
         params = InitialPRCDarkComputeParameters
         median = params.median_unreported_compute_owned_by_non_prc_actors = 1e6
         relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors = 0.5
@@ -154,7 +154,7 @@ def sample_hazard_rate_multiplier() -> float:
     Returns a multiplier that will be applied to both initial_hazard_rate and
     increase_of_hazard_rate_per_year to create correlated uncertainty.
     """
-    from backend_model.util import sample_from_metalog_3term_semi_bounded
+    from backend.util import sample_from_metalog_3term_semi_bounded
     params = SurvivalRateParameters
 
     # Compute absolute percentiles from the ratios

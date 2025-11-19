@@ -1,0 +1,159 @@
+            <!-- Dark Compute Model Section -->
+            <h1 style="margin-top: 40px; margin-bottom: 10px; font-size: 32px; font-weight: bold; color: #333;">Dark Compute Model</h1>
+            <p style="margin-bottom: 30px; font-size: 16px; color: #666;">A model of how much compute the PRC might covertly operate during an AI slowdown agreement.</p>
+
+            <!-- Dashboard and CCDF Side-by-Side -->
+            <div style="display: grid; grid-template-columns: minmax(250px, 300px) 1fr; gap: 20px; margin-bottom: 30px; align-items: stretch;">
+                <!-- Dark Compute Dashboard -->
+                <div class="dashboard">
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardProject80thH100Years">--</div>
+                        <div class="dashboard-label">H100-Years of Computation Before Detection (80th %ile Outcome)</div>
+                        <div class="dashboard-sublabel">Detection = US estimates covert project has ≥5x higher odds than previously thought</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardProject80thH100eCombined">--</div>
+                        <div class="dashboard-label">Operating Dark Compute Before Detection (80th %ile Outcome)</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-value" id="dashboardProject80thTime">--</div>
+                        <div class="dashboard-label">Years Operational Before Detection (80th %ile Outcome)</div>
+                    </div>
+                </div>
+
+                <!-- H100-Years CCDF Plot -->
+                <div class="plot-container">
+                    <div class="plot-title">H100-Years of Computation Before Detection</div>
+                    <div id="projectH100YearsCcdfPlot" class="plot"></div>
+                </div>
+            </div>
+
+            <!-- H100-Years and Evidence Strength Over Time Plot -->
+            <div style="margin-bottom: 30px;">
+                <div class="plot-container">
+                    <div class="plot-title">H100-Years of Computation and Evidence Strength Over Time</div>
+                    <div id="h100YearsTimeSeriesPlot" class="plot" style="height: 400px;"></div>
+                </div>
+            </div>
+
+            <!-- Dark Compute Stock Breakdown Section -->
+            <div class="breakdown-section">
+                <div class="breakdown-title">Dark Compute Stock Breakdown</div>
+                <div class="section-description">
+                    Dark Compute = (Initial Dark Compute + Covert Fab Flow) × (Average Survival Rate of Compute)<br>
+                    The total stock of undeclared PRC compute is equal to the compute that the PRC initially stashes away, plus whatever compute it can obtain during the agreement. Finally, we need to factor in that some of this compute may start to burn out over time.
+                </div>
+
+                <!-- Dark Compute Equation Section -->
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">(</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="initialDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Initial Dark Compute</div>
+                        <div class="breakdown-description" style="text-align: center;">Chips diverted from PRC's existing inventory at the time the agreement goes into force.</div>
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">+</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="covertFabFlowPlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Compute Flow</div>
+                        <div class="breakdown-description" style="text-align: center;">Chips produced by the covert fab over time, accumulated as a flow.</div>
+                    </div>
+                    <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">)</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">×</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="chipSurvivalPlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Average Survival Rate</div>
+                        <div class="breakdown-description" style="text-align: center;">The fraction of chips that remain operational over time, accounting for degradation and failure.</div>
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="totalDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Dark Compute Stock</div>
+                        <div class="breakdown-description" style="text-align: center;">Total operational compute available to the covert project, combining initial stock and production flow adjusted for chip survival.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Center Capacity Breakdown Section -->
+            <div class="breakdown-section">
+                <div class="breakdown-title">Data Center Capacity Breakdown</div>
+                <div class="section-description">
+                    GW of Dark Compute = min(GW of Covert Datacenter Capacity, GW of Dark Compute Stock Energy Usage)<br>
+                    The amount of dark compute that can actually be operated is constrained by available datacenter capacity.
+                </div>
+
+                <!-- Operational Dark Compute Equation Section -->
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="datacenterCapacityPlot2" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Covert Datacenter Capacity</div>
+                        <div class="breakdown-description" style="text-align: center;">Energy capacity available in covert datacenters, measured in gigawatts.</div>
+                    </div>
+                    <div style="position: relative; flex: 0 0 30px; text-align: center;">
+                        <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 9px; text-align: center; color: #888; white-space: nowrap;">Limits</div>
+                        <div style="font-size: 20px; color: #666;">→</div>
+                    </div>
+                    <div style="flex: 1; min-width: 200px; overflow: hidden;">
+                        <div id="darkComputeEnergyPlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Dark Compute Energy Usage</div>
+                        <div class="breakdown-description" style="text-align: center;">Energy required to run all dark compute chips at full capacity.</div>
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="operationalDarkComputePlot" style="width: 100%; height: 250px;"></div>
+                        <div class="breakdown-label" style="text-align: center;">Dark Compute Operating in Datacenters</div>
+                        <div class="breakdown-description" style="text-align: center;">Actual dark compute that can be operated, constrained by available datacenter capacity.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="breakdown-section">
+                <div class="breakdown-title">Strength of Evidence Gathered by US Intelligence Breakdown</div>
+                <div class="section-description">
+                    Posterior = Prior × LR<sub>initial stock</sub> × LR<sub>diverted SME</sub> × LR<sub>other intel</sub><br>
+                    Multiply the prior probability with likelihood ratios from multiple independent sources of evidence to assess the overall probability of a PRC covert project.
+                </div>
+
+                <div class="breakdown-plots-row">
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div id="dashboardPriorProject" class="breakdown-box">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <div>--</div>
+                                <div class="breakdown-label">Prior Probability of<br>Covert Project</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="lrInitialStockPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence from initial chip diversion</div>
+                        <div class="breakdown-description">Combined likelihood ratio from PRC compute stock accounting and global compute production accounting.</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="lrDivertedSMEPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence from diverted SME</div>
+                        <div class="breakdown-description">Combined likelihood ratio from PRC SME stock accounting and SME procurement tracing.</div>
+                    </div>
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Evidence from other intelligence sources</div>
+                        <div class="breakdown-description">Likelihood ratio from HUMINT, SIGINT, and other intelligence sources over time.</div>
+                    </div>
+                    <div class="operator arrow-operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">Convert to<br>probability</div>
+                        <div style="font-size: 20px; color: #666;">→</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="posteriorProbProjectPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Posterior Probability of<br>Covert Project</div>
+                    </div>
+                </div>
+            </div>

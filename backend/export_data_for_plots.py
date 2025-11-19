@@ -29,6 +29,11 @@ def filter_simulations_with_fab(simulation_results):
     ]
 
 
+def filter_to_with_fab(data_by_sim, fab_built_mask):
+    """Filter simulation data to only include simulations where a fab was built."""
+    return [sim for i, sim in enumerate(data_by_sim) if fab_built_mask[i]]
+
+
 def get_years_from_simulation(simulation_results):
     """Extract the common years array from simulation results."""
     if not simulation_results:
@@ -58,16 +63,30 @@ def convert_to_thousands(value):
 # TIME SERIES DATA EXTRACTION
 # =============================================================================
 
-def extract_us_beliefs_over_time(simulation_results, years):
-    """Extract US probability beliefs over time for each simulation."""
-    us_probs_by_sim = []
+def extract_project_beliefs_over_time(simulation_results, years):
+    """Extract US beliefs about covert project existence over time."""
+    project_beliefs_by_sim = []
 
     for covert_projects, detectors in simulation_results:
         us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        us_probs = [us_beliefs.p_covert_fab_exists for _ in years] if years else []
-        us_probs_by_sim.append(us_probs)
 
-    return us_probs_by_sim
+        # Extract the final belief for each year from update history
+        beliefs_over_time = []
+        for year in years:
+            if year in us_beliefs.p_project_exists_update_history:
+                # Get the last update for this year
+                updates = us_beliefs.p_project_exists_update_history[year]
+                if updates:
+                    # Use the final posterior probability for this year
+                    beliefs_over_time.append(updates[-1]['current_p_project_exists'])
+                else:
+                    beliefs_over_time.append(us_beliefs.p_project_exists)
+            else:
+                beliefs_over_time.append(us_beliefs.p_project_exists)
+
+        project_beliefs_by_sim.append(beliefs_over_time)
+
+    return project_beliefs_by_sim
 
 
 def extract_fab_production_over_time(simulation_results, years):
@@ -217,6 +236,35 @@ def extract_cumulative_lr_over_time(simulation_results, years):
         cumulative_lr_by_sim.append(cumulative_lr_over_time)
 
     return cumulative_lr_by_sim
+
+
+def extract_project_lr_components_over_time(simulation_results, years):
+    """Extract likelihood ratio components for covert project detection (initial, SME, other intel)."""
+    lr_initial_by_sim = []
+    lr_sme_by_sim = []
+    lr_other_by_sim = []
+
+    for covert_projects, detectors in simulation_results:
+        # Initial stock LR is constant over time
+        lr_initial = covert_projects["prc_covert_project"].get_lr_initial()
+        lr_initial_over_time = [lr_initial for _ in years]
+
+        # SME LR (from fab procurement/inventory) is constant over time
+        lr_sme = covert_projects["prc_covert_project"].get_lr_sme()
+        lr_sme_over_time = [lr_sme for _ in years]
+
+        # Other intelligence (workers, etc.) varies over time
+        lr_other_over_time = []
+        for year in years:
+            lr_other_over_time.append(
+                covert_projects["prc_covert_project"].get_lr_other(year)
+            )
+
+        lr_initial_by_sim.append(lr_initial_over_time)
+        lr_sme_by_sim.append(lr_sme_over_time)
+        lr_other_by_sim.append(lr_other_over_time)
+
+    return lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim
 
 
 # =============================================================================
@@ -394,21 +442,75 @@ def extract_energy_breakdown_by_source(simulation_results, years):
 
 
 # =============================================================================
+# INITIAL DARK COMPUTE STOCK ANALYSIS
+# =============================================================================
+
+def extract_initial_stock_data(simulation_results, likelihood_ratios):
+    """Extract initial dark compute stock data from simulation results."""
+    initial_prc_stock_samples = []
+    initial_compute_samples = []
+    lr_prc_accounting_samples = []
+    lr_global_accounting_samples = []
+    lr_combined_samples = []
+
+    for covert_projects, detectors in simulation_results:
+        dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+
+        # Extract initial stock values
+        initial_prc_stock_samples.append(dark_compute_stock.initial_prc_stock)
+        initial_compute_samples.append(dark_compute_stock.initial_prc_dark_compute)
+
+        # Extract likelihood ratios
+        lr_prc = dark_compute_stock.lr_from_prc_compute_accounting
+        lr_global = dark_compute_stock.lr_from_global_compute_production_accounting
+        lr_prc_accounting_samples.append(lr_prc)
+        lr_global_accounting_samples.append(lr_global)
+
+        combined_lr = lr_prc * lr_global
+        lr_combined_samples.append(combined_lr)
+
+    # Calculate detection probabilities for each threshold
+    detection_probs = {}
+    for threshold in likelihood_ratios:
+        num_detected = sum(1 for lr in lr_combined_samples if lr >= threshold)
+        detection_probs[f"{threshold}x"] = num_detected / len(lr_combined_samples)
+
+    return {
+        'initial_prc_stock_samples': initial_prc_stock_samples,
+        'initial_compute_stock_samples': initial_compute_samples,
+        'lr_prc_accounting_samples': lr_prc_accounting_samples,
+        'lr_global_accounting_samples': lr_global_accounting_samples,
+        'lr_combined_samples': lr_combined_samples,
+        'initial_dark_compute_detection_probs': detection_probs
+    }
+
+
+# =============================================================================
 # DETECTION ANALYSIS
 # =============================================================================
 
-def calculate_fab_detection_year(covert_fab, us_beliefs, years, threshold):
-    """Calculate the year when fab is detected based on probability threshold."""
+def calculate_fab_detection_year(covert_fab, years, threshold):
+    """Calculate the year when fab is detected based on probability threshold.
+
+    Uses cumulative likelihood ratio from detection_updates to determine when
+    the posterior probability exceeds the threshold.
+    """
     if covert_fab is None:
         return None
 
-    initial_p_fab = us_beliefs.p_covert_fab_exists if us_beliefs.p_covert_fab_exists is not None else 0.1
-    prior_odds_fab = initial_p_fab / (1 - initial_p_fab) if initial_p_fab < 1.0 else 1e10
+    # Start with initial prior odds (assume 0.1 prior probability)
+    initial_p_fab = 0.1
+    cumulative_lr = 1.0
+    prior_odds_fab = initial_p_fab / (1 - initial_p_fab)
 
     for year in years:
         if hasattr(covert_fab, 'detection_updates') and year in covert_fab.detection_updates:
+            # Accumulate likelihood ratios
             fab_lr = covert_fab.detection_updates[year]
-            posterior_odds_fab = prior_odds_fab * fab_lr
+            cumulative_lr *= fab_lr
+
+            # Calculate posterior probability
+            posterior_odds_fab = prior_odds_fab * cumulative_lr
             p_fab_detected = posterior_odds_fab / (1 + posterior_odds_fab)
 
             if p_fab_detected >= threshold:
@@ -434,7 +536,7 @@ def extract_fab_compute_at_detection(simulation_results, years, threshold, total
         sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
                           if us_beliefs.p_project_exists_update_history else [])
 
-        detection_year = calculate_fab_detection_year(covert_fab, us_beliefs, sim_years, threshold)
+        detection_year = calculate_fab_detection_year(covert_fab, sim_years, threshold)
 
         if detection_year is not None:
             available_years = [y for y in h100e_over_time.keys() if y <= detection_year]
@@ -524,7 +626,7 @@ def extract_individual_fab_detection_data(simulation_results, years, threshold, 
         sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
                           if us_beliefs.p_project_exists_update_history else [])
 
-        detection_year = calculate_fab_detection_year(covert_fab, us_beliefs, sim_years, threshold)
+        detection_year = calculate_fab_detection_year(covert_fab, sim_years, threshold)
 
         if detection_year is not None:
             available_years = [y for y in h100e_over_time.keys() if y <= detection_year]
@@ -652,27 +754,48 @@ def extract_individual_project_detection_data(simulation_results, years, agreeme
 
 
 # =============================================================================
+# UTILITY - TYPE CONVERSION
+# =============================================================================
+
+def convert_numpy_types(obj):
+    """Convert numpy types to native Python types for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
+
+
+# =============================================================================
 # MAIN EXTRACTION FUNCTION
 # =============================================================================
 
-def extract_plot_data(model, p_project_exists, app_params, likelihood_ratios):
+def extract_plot_data(model, app_params, likelihood_ratios):
     """
     Extract all plot data from model simulation results.
 
     Args:
         model: Model instance with simulation results
-        p_project_exists: Prior probability that covert project exists
         app_params: Application parameters
         likelihood_ratios: List of likelihood ratio thresholds for detection plots
 
     Returns:
         Dictionary containing all plot data
     """
+    p_project_exists = app_params.covert_project_parameters.p_project_exists
     if not model.simulation_results:
         return {"error": "No simulation results"}
 
-    agreement_year = model.year_us_prc_agreement_goes_into_force
+    agreement_year = app_params.simulation_settings.start_year
     years = get_years_from_simulation(model.simulation_results)
+    years_array = np.array(years)
 
     # Track which simulations have fabs built
     fab_built_in_sim = [
@@ -680,8 +803,8 @@ def extract_plot_data(model, p_project_exists, app_params, likelihood_ratios):
         for cp, _ in model.simulation_results
     ]
 
-    # Extract time series data (all simulations)
-    us_probs_by_sim = extract_us_beliefs_over_time(model.simulation_results, years)
+    # Extract time series data (needed for calculations)
+    project_beliefs_by_sim = extract_project_beliefs_over_time(model.simulation_results, years)
     h100e_by_sim = extract_fab_production_over_time(model.simulation_results, years)
     survival_rate_by_sim = extract_survival_rates_over_time(model.simulation_results, years)
     dark_compute_by_sim = extract_dark_compute_over_time(model.simulation_results, years)
@@ -690,142 +813,57 @@ def extract_plot_data(model, p_project_exists, app_params, likelihood_ratios):
     lr_datacenters_by_sim = extract_datacenter_lr_over_time(model.simulation_results, years, agreement_year)
     h100_years_by_sim = extract_h100_years_over_time(model.simulation_results, years, agreement_year)
     cumulative_lr_by_sim = extract_cumulative_lr_over_time(model.simulation_results, years)
+    lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim = extract_project_lr_components_over_time(model.simulation_results, years)
 
-    # Extract fab-specific data (only simulations with fab)
-    simulations_with_fab = filter_simulations_with_fab(model.simulation_results)
-
-    lr_inventory_by_sim, lr_procurement_by_sim, lr_other_by_sim = \
-        extract_fab_lr_components_over_time(model.simulation_results, years)
-
+    # Extract fab-specific data
+    lr_inventory_by_sim, lr_procurement_by_sim, lr_fab_other_by_sim = extract_fab_lr_components_over_time(model.simulation_results, years)
     is_operational_by_sim = extract_fab_operational_status_over_time(model.simulation_results, years)
-
     fab_params = extract_fab_production_parameters(model.simulation_results, years, agreement_year)
-
     watts_per_tpp_by_sim = calculate_watts_per_tpp_by_sim(fab_params['transistor_density'])
-
-    # Energy breakdown
     energy_by_source_array, source_labels = extract_energy_breakdown_by_source(model.simulation_results, years)
 
-    # Filter arrays to only include simulations where fab was built
-    us_probs_with_fab = [sim for i, sim in enumerate(us_probs_by_sim) if fab_built_in_sim[i]]
-    h100e_with_fab = [sim for i, sim in enumerate(h100e_by_sim) if fab_built_in_sim[i]]
-
-    lr_inventory_with_fab = [sim for i, sim in enumerate(lr_inventory_by_sim) if fab_built_in_sim[i]]
-    lr_procurement_with_fab = [sim for i, sim in enumerate(lr_procurement_by_sim) if fab_built_in_sim[i]]
-    lr_other_with_fab = [sim for i, sim in enumerate(lr_other_by_sim) if fab_built_in_sim[i]]
-
-    is_operational_with_fab = [sim for i, sim in enumerate(is_operational_by_sim) if fab_built_in_sim[i]]
-    wafer_starts_with_fab = [sim for i, sim in enumerate(fab_params['wafer_starts']) if fab_built_in_sim[i]]
-    chips_per_wafer_with_fab = [sim for i, sim in enumerate(fab_params['chips_per_wafer']) if fab_built_in_sim[i]]
-    architecture_efficiency_with_fab = [sim for i, sim in enumerate(fab_params['architecture_efficiency']) if fab_built_in_sim[i]]
-    compute_per_wafer_2022_arch_with_fab = [sim for i, sim in enumerate(fab_params['compute_per_wafer_2022_arch']) if fab_built_in_sim[i]]
-    transistor_density_with_fab = [sim for i, sim in enumerate(fab_params['transistor_density']) if fab_built_in_sim[i]]
-    watts_per_tpp_with_fab = [sim for i, sim in enumerate(watts_per_tpp_by_sim) if fab_built_in_sim[i]]
-    process_node_with_fab = [sim for i, sim in enumerate(fab_params['process_node']) if fab_built_in_sim[i]]
-
-    # Calculate statistics using filtered data where appropriate
-    years_array = np.array(years)
-
-    # Calculate percentiles for all time series
-    us_probs_percentiles = calculate_percentiles(np.array(us_probs_with_fab) if len(us_probs_with_fab) > 0 else np.array(us_probs_by_sim))
-    h100e_percentiles = calculate_percentiles(np.array(h100e_with_fab) if len(h100e_with_fab) > 0 else np.array(h100e_by_sim))
-    survival_rate_percentiles = calculate_percentiles(np.array(survival_rate_by_sim))
-    dark_compute_percentiles = calculate_percentiles(np.array(dark_compute_by_sim))
-    operational_dark_compute_percentiles = calculate_percentiles(np.array(operational_dark_compute_by_sim))
-    datacenter_capacity_percentiles = calculate_percentiles(np.array(datacenter_capacity_by_sim))
-    lr_datacenters_array = np.array(lr_datacenters_by_sim)
-    lr_datacenters_percentiles = calculate_percentiles(lr_datacenters_array)
-    h100_years_percentiles = calculate_percentiles(np.array(h100_years_by_sim))
-    cumulative_lr_percentiles = calculate_percentiles(np.array(cumulative_lr_by_sim))
-
-    # Detection statistics
-    detection_thresholds = [0.5]
-    dashboard_threshold = detection_thresholds[-1]
-
-    total_simulations_with_fab = sum(fab_built_in_sim)
-
+    # Detection data
+    dashboard_threshold = 0.5
     compute_ccdfs, op_time_ccdfs = extract_fab_detection_statistics(
-        model.simulation_results, years, detection_thresholds, likelihood_ratios
+        model.simulation_results, years, [dashboard_threshold], likelihood_ratios
     )
-
-    individual_h100e, individual_time, individual_process_nodes, individual_energy = \
+    individual_fab_h100e, individual_fab_time, individual_fab_process_nodes, individual_fab_energy = \
         extract_individual_fab_detection_data(model.simulation_results, years, dashboard_threshold, app_params)
-
-    project_h100_years_ccdfs = extract_project_h100_years_ccdfs(
-        model.simulation_results, years, agreement_year, likelihood_ratios, p_project_exists
-    )
-
     individual_project_h100e, individual_project_energy, individual_project_time, individual_project_h100_years = \
-        extract_individual_project_detection_data(model.simulation_results, years, agreement_year,
-                                                 dashboard_threshold, app_params)
+        extract_individual_project_detection_data(model.simulation_results, years, agreement_year, dashboard_threshold, app_params)
 
-    # Calculate detection probability for datacenters
-    detection_threshold = 5.0
-    datacenter_detection_prob = np.mean(lr_datacenters_array >= detection_threshold, axis=0)
+    # Extract initial stock data
+    initial_stock_data = extract_initial_stock_data(model.simulation_results, likelihood_ratios)
 
-    # LR components for fab detection (only for simulations with fab)
-    lr_inventory_array = np.array(lr_inventory_with_fab) if len(lr_inventory_with_fab) > 0 else np.array(lr_inventory_by_sim)
-    lr_procurement_array = np.array(lr_procurement_with_fab) if len(lr_procurement_with_fab) > 0 else np.array(lr_procurement_by_sim)
-    lr_other_array = np.array(lr_other_with_fab) if len(lr_other_with_fab) > 0 else np.array(lr_other_by_sim)
-
-    lr_components = {
-        "inventory_median": np.median(lr_inventory_array, axis=0).tolist(),
-        "inventory_individual": [list(sim) for sim in lr_inventory_array],
-        "procurement_median": np.median(lr_procurement_array, axis=0).tolist(),
-        "procurement_individual": [list(sim) for sim in lr_procurement_array],
-        "other_median": np.median(lr_other_array, axis=0).tolist(),
-        "other_individual": [list(sim) for sim in lr_other_array]
-    }
-
-    # Compute factors (only for simulations with fab)
-    is_operational_array = np.array(is_operational_with_fab) if len(is_operational_with_fab) > 0 else np.array(is_operational_by_sim)
-    wafer_starts_array = np.array(wafer_starts_with_fab) if len(wafer_starts_with_fab) > 0 else np.array(fab_params['wafer_starts'])
-    chips_per_wafer_array = np.array(chips_per_wafer_with_fab) if len(chips_per_wafer_with_fab) > 0 else np.array(fab_params['chips_per_wafer'])
-    architecture_efficiency_array = np.array(architecture_efficiency_with_fab) if len(architecture_efficiency_with_fab) > 0 else np.array(fab_params['architecture_efficiency'])
-    compute_per_wafer_2022_arch_array = np.array(compute_per_wafer_2022_arch_with_fab) if len(compute_per_wafer_2022_arch_with_fab) > 0 else np.array(fab_params['compute_per_wafer_2022_arch'])
-    transistor_density_array = np.array(transistor_density_with_fab) if len(transistor_density_with_fab) > 0 else np.array(fab_params['transistor_density'])
-    watts_per_tpp_array = np.array(watts_per_tpp_with_fab) if len(watts_per_tpp_with_fab) > 0 else np.array(watts_per_tpp_by_sim)
-
-    compute_factors = {
-        "is_operational_median": np.mean(is_operational_array, axis=0).tolist(),
-        "is_operational_individual": [list(sim) for sim in is_operational_array],
-        "wafer_starts_median": np.median(wafer_starts_array, axis=0).tolist(),
-        "wafer_starts_individual": [list(sim) for sim in wafer_starts_array],
-        "chips_per_wafer_median": np.median(chips_per_wafer_array, axis=0).tolist(),
-        "chips_per_wafer_individual": [list(sim) for sim in chips_per_wafer_array],
-        "architecture_efficiency_median": np.median(architecture_efficiency_array, axis=0).tolist(),
-        "architecture_efficiency_individual": [list(sim) for sim in architecture_efficiency_array],
-        "compute_per_wafer_2022_arch_median": np.median(compute_per_wafer_2022_arch_array, axis=0).tolist(),
-        "compute_per_wafer_2022_arch_individual": [list(sim) for sim in compute_per_wafer_2022_arch_array],
-        "transistor_density_median": np.median(transistor_density_array, axis=0).tolist(),
-        "transistor_density_individual": [list(sim) for sim in transistor_density_array],
-        "watts_per_tpp_median": np.median(watts_per_tpp_array, axis=0).tolist(),
-        "watts_per_tpp_individual": [list(sim) for sim in watts_per_tpp_array],
-        "process_node_by_sim": process_node_with_fab if len(process_node_with_fab) > 0 else fab_params['process_node']
-    }
-
-    # Calculate architecture efficiency at agreement year
-    architecture_efficiency_at_agreement = estimate_architecture_efficiency_relative_to_h100(agreement_year, agreement_year)
-
-    # Helper to format percentiles for output (p25, median, p75)
-    def format_percentiles(percentiles, scale_fn=None):
-        p25, median, p75 = percentiles
+    # Helper to format percentiles for output (p25, median, p75, individual)
+    def fmt_pct(data, scale_fn=None):
+        """Calculate and format percentiles plus individual simulation data."""
+        p = calculate_percentiles(np.array(data))
         if scale_fn:
             return {
-                "p25": scale_fn(p25).tolist(),
-                "median": scale_fn(median).tolist(),
-                "p75": scale_fn(p75).tolist()
+                "p25": scale_fn(p[0]).tolist(),
+                "median": scale_fn(p[1]).tolist(),
+                "p75": scale_fn(p[2]).tolist(),
+                "individual": [list(scale_fn(np.array(sim))) for sim in data]
             }
         return {
-            "p25": p25.tolist(),
-            "median": median.tolist(),
-            "p75": p75.tolist()
+            "p25": p[0].tolist(),
+            "median": p[1].tolist(),
+            "p75": p[2].tolist(),
+            "individual": [list(sim) for sim in data]
         }
 
-    # Return results structured by page sections
-    return {
+    # Build results dictionary with structure for main sections
+    results = {
         # =====================================================================
-        # DARK COMPUTE MODEL
+        # GLOBAL SIMULATION PARAMETERS
+        # =====================================================================
+        "num_simulations": len(model.simulation_results),
+        "prob_fab_built": sum(fab_built_in_sim) / len(fab_built_in_sim) if len(fab_built_in_sim) > 0 else 0.0,
+        "p_project_exists": p_project_exists,
+
+        # =====================================================================
+        # DARK COMPUTE MODEL (main page overview)
         # =====================================================================
         "dark_compute_model": {
             "years": years_array.tolist(),
@@ -840,95 +878,119 @@ def extract_plot_data(model, p_project_exists, app_params, likelihood_ratios):
             # -------------------------------------------------------------------
             # H100-Years CCDF Plot
             # -------------------------------------------------------------------
-            "h100_years_ccdf": project_h100_years_ccdfs,
+            "h100_years_ccdf": extract_project_h100_years_ccdfs(
+                model.simulation_results, years, agreement_year, likelihood_ratios, p_project_exists
+            ),
 
             # -------------------------------------------------------------------
             # H100-Years and Evidence Over Time Plot
             # -------------------------------------------------------------------
-            "h100_years": format_percentiles(h100_years_percentiles),
-            "cumulative_lr": format_percentiles(cumulative_lr_percentiles),
+            "h100_years": fmt_pct(h100_years_by_sim),
+            "cumulative_lr": fmt_pct(cumulative_lr_by_sim),
 
             # -------------------------------------------------------------------
             # Dark Compute Stock Breakdown
             # -------------------------------------------------------------------
-            "initial_dark_compute": format_percentiles(dark_compute_percentiles, convert_to_thousands),  # Initial stock portion
-            "covert_fab_flow": format_percentiles(h100e_percentiles, convert_to_thousands),  # Fab production flow
-            "survival_rate": format_percentiles(survival_rate_percentiles),  # Chip survival rate
-            "total_dark_compute": format_percentiles(dark_compute_percentiles, convert_to_thousands),  # Combined result
+            "initial_dark_compute": fmt_pct(dark_compute_by_sim, convert_to_thousands),
+            "covert_fab_flow": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim) or h100e_by_sim, convert_to_thousands),
+            "survival_rate": fmt_pct(survival_rate_by_sim),
+            "total_dark_compute": fmt_pct(dark_compute_by_sim, convert_to_thousands),
 
             # -------------------------------------------------------------------
             # Data Center Capacity Breakdown
             # -------------------------------------------------------------------
-            "datacenter_capacity": format_percentiles(datacenter_capacity_percentiles),
+            "datacenter_capacity": fmt_pct(datacenter_capacity_by_sim),
             "dark_compute_energy": energy_by_source_array.tolist(),
             "energy_source_labels": source_labels,
-            "operational_dark_compute": format_percentiles(operational_dark_compute_percentiles, convert_to_thousands),
+            "operational_dark_compute": fmt_pct(operational_dark_compute_by_sim, convert_to_thousands),
 
             # -------------------------------------------------------------------
             # Strength of Evidence Breakdown
             # -------------------------------------------------------------------
-            # TODO: Add LR components for initial stock, diverted SME, other intel
-            "posterior_prob_project": format_percentiles(us_probs_percentiles),
+            "lr_initial_stock": fmt_pct(lr_initial_by_sim),
+            "lr_diverted_sme": fmt_pct(lr_sme_by_sim),
+            "lr_other_intel": fmt_pct(lr_other_by_sim),
+            "posterior_prob_project": fmt_pct(project_beliefs_by_sim),
+
+            # -------------------------------------------------------------------
+            # Covert Project Dashboard - Individual simulation data
+            # -------------------------------------------------------------------
+            "individual_project_h100e_before_detection": individual_project_h100e,
+            "individual_project_energy_before_detection": individual_project_energy,
+            "individual_project_time_before_detection": individual_project_time,
+            "individual_project_h100_years_before_detection": individual_project_h100_years,
         },
 
-        # Legacy time_series for backward compatibility (can be removed later)
-        "time_series": {
+        # =====================================================================
+        # INITIAL DARK COMPUTE (diverted chips section)
+        # =====================================================================
+        "initial_dark_compute": {
             "years": years_array.tolist(),
-            "us_prob_median": us_probs_percentiles[1].tolist(),
-            "us_prob_p25": us_probs_percentiles[0].tolist(),
-            "us_prob_p75": us_probs_percentiles[2].tolist(),
-            "h100e_median": convert_to_thousands(h100e_percentiles[1]).tolist(),
-            "h100e_p25": convert_to_thousands(h100e_percentiles[0]).tolist(),
-            "h100e_p75": convert_to_thousands(h100e_percentiles[2]).tolist(),
-            "h100_years_median": h100_years_percentiles[1].tolist(),
-            "h100_years_p25": h100_years_percentiles[0].tolist(),
-            "h100_years_p75": h100_years_percentiles[2].tolist(),
-            "cumulative_lr_median": cumulative_lr_percentiles[1].tolist(),
-            "cumulative_lr_p25": cumulative_lr_percentiles[0].tolist(),
-            "cumulative_lr_p75": cumulative_lr_percentiles[2].tolist(),
-            "survival_rate_median": survival_rate_percentiles[1].tolist(),
-            "survival_rate_p25": survival_rate_percentiles[0].tolist(),
-            "survival_rate_p75": survival_rate_percentiles[2].tolist(),
-            "dark_compute_median": convert_to_thousands(dark_compute_percentiles[1]).tolist(),
-            "dark_compute_p25": convert_to_thousands(dark_compute_percentiles[0]).tolist(),
-            "dark_compute_p75": convert_to_thousands(dark_compute_percentiles[2]).tolist(),
-            "operational_dark_compute_median": convert_to_thousands(operational_dark_compute_percentiles[1]).tolist(),
-            "operational_dark_compute_p25": convert_to_thousands(operational_dark_compute_percentiles[0]).tolist(),
-            "operational_dark_compute_p75": convert_to_thousands(operational_dark_compute_percentiles[2]).tolist(),
-            "datacenter_capacity_median": datacenter_capacity_percentiles[1].tolist(),
-            "datacenter_capacity_p25": datacenter_capacity_percentiles[0].tolist(),
-            "datacenter_capacity_p75": datacenter_capacity_percentiles[2].tolist(),
-            "lr_datacenters_median": lr_datacenters_percentiles[1].tolist(),
-            "lr_datacenters_p25": lr_datacenters_percentiles[0].tolist(),
-            "lr_datacenters_p75": lr_datacenters_percentiles[2].tolist(),
-            "datacenter_detection_prob": datacenter_detection_prob.tolist(),
+            # Covert fab production flow (cumulative over time)
+            "h100e": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim) or h100e_by_sim, convert_to_thousands),
+            # Chip survival rate over time
+            "survival_rate": fmt_pct(survival_rate_by_sim),
+            # Total dark compute (surviving, not capacity-limited)
+            "dark_compute": fmt_pct(dark_compute_by_sim, convert_to_thousands),
+        },
+
+        # =====================================================================
+        # COVERT DATA CENTERS
+        # =====================================================================
+        "covert_datacenters": {
+            "years": years_array.tolist(),
+            # Datacenter capacity (GW)
+            "datacenter_capacity": fmt_pct(datacenter_capacity_by_sim),
+            # Energy consumption by source (stacked area plot)
             "energy_by_source": energy_by_source_array.tolist(),
             "source_labels": source_labels,
-            "individual_us_probs": [list(sim) for sim in us_probs_by_sim],
-            "individual_h100e": [list(convert_to_thousands(np.array(sim))) for sim in h100e_by_sim],
-            "individual_us_probs_with_fab": [list(sim) for sim in us_probs_with_fab],
-            "individual_h100e_with_fab": [list(convert_to_thousands(np.array(sim))) for sim in h100e_with_fab],
-            "fab_built": fab_built_in_sim
+            # Operational dark compute (capacity-limited)
+            "operational_dark_compute": fmt_pct(operational_dark_compute_by_sim, convert_to_thousands),
+            # Datacenter detection
+            "lr_datacenters": fmt_pct(lr_datacenters_by_sim),
+            "datacenter_detection_prob": (np.mean(np.array(lr_datacenters_by_sim) >= 5.0, axis=0)).tolist(),
         },
-        "compute_ccdf": compute_ccdfs.get(dashboard_threshold, []),
-        "compute_ccdfs": compute_ccdfs,
-        "op_time_ccdf": op_time_ccdfs.get(dashboard_threshold, []),
-        "op_time_ccdfs": op_time_ccdfs,
-        "likelihood_ratios": likelihood_ratios,
-        "lr_components": lr_components,
-        "compute_factors": compute_factors,
-        "architecture_efficiency_at_agreement": architecture_efficiency_at_agreement,
-        "num_simulations": len(model.simulation_results),
-        "prob_fab_built": sum(fab_built_in_sim) / len(fab_built_in_sim) if len(fab_built_in_sim) > 0 else 0.0,
-        "individual_h100e_before_detection": individual_h100e,
-        "individual_time_before_detection": individual_time,
-        "individual_process_node": individual_process_nodes,
-        "individual_energy_before_detection": individual_energy,
-        "watts_per_tpp_curve": PRCCovertFab.watts_per_tpp_relative_to_H100(),
-        "individual_project_h100e_before_detection": individual_project_h100e,
-        "individual_project_energy_before_detection": individual_project_energy,
-        "individual_project_time_before_detection": individual_project_time,
-        "individual_project_h100_years_before_detection": individual_project_h100_years,
-        "project_h100_years_ccdfs": project_h100_years_ccdfs,
-        "p_project_exists": p_project_exists
+
+        # =====================================================================
+        # COVERT FAB
+        # =====================================================================
+        "covert_fab": {
+            "years": years_array.tolist(),
+            # Detection - CCDF plots and thresholds
+            "compute_ccdf": compute_ccdfs.get(dashboard_threshold, []),
+            "compute_ccdfs": compute_ccdfs,
+            "op_time_ccdf": op_time_ccdfs.get(dashboard_threshold, []),
+            "op_time_ccdfs": op_time_ccdfs,
+            "likelihood_ratios": likelihood_ratios,
+            # Detection - LR component breakdown (inventory, procurement, other)
+            "lr_inventory": fmt_pct(filter_to_with_fab(lr_inventory_by_sim, fab_built_in_sim) or lr_inventory_by_sim),
+            "lr_procurement": fmt_pct(filter_to_with_fab(lr_procurement_by_sim, fab_built_in_sim) or lr_procurement_by_sim),
+            "lr_other": fmt_pct(filter_to_with_fab(lr_fab_other_by_sim, fab_built_in_sim) or lr_fab_other_by_sim),
+            # Production - Compute factors breakdown
+            "is_operational": fmt_pct(filter_to_with_fab(is_operational_by_sim, fab_built_in_sim) or is_operational_by_sim),
+            "wafer_starts": fmt_pct(filter_to_with_fab(fab_params['wafer_starts'], fab_built_in_sim) or fab_params['wafer_starts']),
+            "chips_per_wafer": fmt_pct(filter_to_with_fab(fab_params['chips_per_wafer'], fab_built_in_sim) or fab_params['chips_per_wafer']),
+            "architecture_efficiency": fmt_pct(filter_to_with_fab(fab_params['architecture_efficiency'], fab_built_in_sim) or fab_params['architecture_efficiency']),
+            "compute_per_wafer_2022_arch": fmt_pct(filter_to_with_fab(fab_params['compute_per_wafer_2022_arch'], fab_built_in_sim) or fab_params['compute_per_wafer_2022_arch']),
+            "transistor_density": fmt_pct(filter_to_with_fab(fab_params['transistor_density'], fab_built_in_sim) or fab_params['transistor_density']),
+            "watts_per_tpp": fmt_pct(filter_to_with_fab(watts_per_tpp_by_sim, fab_built_in_sim) or watts_per_tpp_by_sim),
+            "process_node_by_sim": filter_to_with_fab(fab_params['process_node'], fab_built_in_sim) or fab_params['process_node'],
+            # Architecture efficiency and watts per TPP
+            "architecture_efficiency_at_agreement": estimate_architecture_efficiency_relative_to_h100(agreement_year, agreement_year),
+            "watts_per_tpp_curve": PRCCovertFab.watts_per_tpp_relative_to_H100(),
+            # Dashboard - Individual simulation data
+            "individual_h100e_before_detection": individual_fab_h100e,
+            "individual_time_before_detection": individual_fab_time,
+            "individual_process_node": individual_fab_process_nodes,
+            "individual_energy_before_detection": individual_fab_energy,
+            "fab_built": fab_built_in_sim,
+        },
+
+        # =====================================================================
+        # INITIAL DARK COMPUTE STOCK (diverted chips)
+        # =====================================================================
+        "initial_stock": initial_stock_data,
     }
+
+    # Convert numpy types to native Python types for JSON serialization
+    return convert_numpy_types(results)

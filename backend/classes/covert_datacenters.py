@@ -46,7 +46,9 @@ class CovertPRCDatacenters():
         )
 
     def get_GW_capacity(self, year):
-        return self.GW_per_initial_datacenter * self.number_of_initial_datacenters + self.GW_per_year_of_concealed_datacenters * year
+        constructable_datacenters = self.GW_per_initial_datacenter * self.number_of_initial_datacenters + self.GW_per_year_of_concealed_datacenters * year
+        max_energy_allocatable = CovertDatacenterParameters.max_proportion_of_PRC_energy_consumption * CovertDatacenterParameters.total_GW_of_PRC_energy_consumption 
+        return min(constructable_datacenters, max_energy_allocatable)
 
     def get_operating_labor(self, year):
         return self.operating_labor_per_GW * self.get_GW_capacity(year)

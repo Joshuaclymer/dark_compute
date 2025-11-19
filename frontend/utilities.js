@@ -94,6 +94,9 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
         xaxisConfig.ticktext = ['0.1', '0.2', '0.5', '1', '2', maxTickText];
         // Don't force range - let it adjust based on data
         xaxisConfig.autorange = true;
+    } else {
+        // Use k/M formatting for non-log scale plots
+        xaxisConfig.tickformat = '.2s';
     }
 
     const layout = {

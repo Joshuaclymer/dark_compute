@@ -1039,10 +1039,11 @@ def extract_plot_data(model, app_params):
             # -------------------------------------------------------------------
             # Dark Compute Stock Breakdown
             # -------------------------------------------------------------------
-            "initial_dark_compute": fmt_pct(dark_compute_by_sim, convert_to_thousands),
-            "covert_fab_flow": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim)),  # Keep in raw H100e units to match monthly production
+            "initial_dark_compute": fmt_pct(dark_compute_by_sim),  # Keep in raw H100e units with k/M formatting
+            "covert_fab_flow": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim)),  # Filtered - for Covert fab section plots
+            "covert_fab_flow_all_sims": fmt_pct(h100e_by_sim),  # All simulations - for Dark Compute Stock Breakdown
             "survival_rate": fmt_pct(survival_rate_by_sim),
-            "total_dark_compute": fmt_pct(dark_compute_by_sim, convert_to_thousands),
+            "total_dark_compute": fmt_pct(dark_compute_by_sim),  # Keep in raw H100e units with k/M formatting
 
             # -------------------------------------------------------------------
             # Data Center Capacity Breakdown
@@ -1050,7 +1051,7 @@ def extract_plot_data(model, app_params):
             "datacenter_capacity": fmt_pct(datacenter_capacity_by_sim),
             "dark_compute_energy": energy_by_source_array.tolist(),
             "energy_source_labels": source_labels,
-            "operational_dark_compute": fmt_pct(operational_dark_compute_by_sim, convert_to_thousands),
+            "operational_dark_compute": fmt_pct(operational_dark_compute_by_sim),  # Keep in raw H100e units with k/M formatting
 
             # -------------------------------------------------------------------
             # Strength of Evidence Breakdown

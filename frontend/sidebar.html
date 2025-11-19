@@ -321,11 +321,15 @@
         <label for="total_GW_of_PRC_energy_consumption">Total GW of PRC energy consumption</label>
         <input type="number" id="total_GW_of_PRC_energy_consumption" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.total_GW_of_PRC_energy_consumption'] }}" step="10">
     </div>
-    <div class="param-group">
+    <div class="param-group has-tooltip"
+         data-tooltip="<strong>MW per Year per Construction Worker</strong><br><br>This parameter represents the data center capacity (in megawatts) that can be built per construction worker per year. We estimated this parameter using examples of datacenter construction progress.<br><br><img src='/static/workers_vs_gw_per_year.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction workers vs GW per year'><br><br>You can download the data used to make this plot, along with its sources, by clicking on the link below.<br><br>Most of our data came from Epoch's Frontier Data Centers dataset (<a href='https://epoch.ai/data/data-centers' target='_blank' style='color: #007bff;'>https://epoch.ai/data/data-centers</a>)."
+         data-download="/download/data_center_workers_vs_build_rate">
         <label for="MW_per_construction_worker_per_year">MW per year per construction worker</label>
         <input type="number" id="MW_per_construction_worker_per_year" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.MW_per_construction_worker_per_year'] }}" step="0.1">
     </div>
-    <div class="param-group">
+    <div class="param-group has-tooltip"
+         data-tooltip="<strong>Relative Sigma MW per Year per Construction Worker</strong><br><br>This parameter represents the data center capacity (in megawatts) that can be built per construction worker per year. We estimated this parameter using examples of datacenter construction progress.<br><br><img src='/static/workers_vs_gw_per_year.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction workers vs GW per year'><br><br>You can download the data used to make this plot, along with its sources, by clicking on the link below.<br><br>Most of our data came from Epoch's Frontier Data Centers dataset (<a href='https://epoch.ai/data/data-centers' target='_blank' style='color: #007bff;'>https://epoch.ai/data/data-centers</a>)."
+         data-download="/download/data_center_workers_vs_build_rate">
         <label for="relative_sigma_mw_per_construction_worker_per_year">Relative sigma MW per year per construction worker</label>
         <input type="number" id="relative_sigma_mw_per_construction_worker_per_year" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.relative_sigma_mw_per_construction_worker_per_year'] }}" step="0.1">
     </div>

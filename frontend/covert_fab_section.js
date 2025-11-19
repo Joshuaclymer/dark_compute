@@ -156,44 +156,22 @@ function plotH100YearsTimeSeries(data) {
     const dcm = data.dark_compute_model;
     const years = dcm.years;
 
-    // Colors - use turquoise green for H100-years (like "other intelligence")
-    const h100YearsColor = '#5AA89B'; // Turquoise green
-    const lrColor = '#E57373'; // Red for likelihood ratio
+    // Colors - use blue for LR (same as "Posterior Probability of Covert Project")
+    const lrColor = '#5B8DBE'; // Blue for likelihood ratio
+    const h100YearsColor = '#5AA89B'; // Turquoise green for H100-years
 
     // Create traces - median lines with confidence intervals
     const traces = [
-        // H100-years confidence interval
-        {
-            x: years.concat(years.slice().reverse()),
-            y: dcm.h100_years.p75.concat(dcm.h100_years.p25.slice().reverse()),
-            fill: 'toself',
-            fillcolor: 'rgba(90, 168, 155, 0.2)',
-            line: { color: 'transparent' },
-            showlegend: false,
-            hoverinfo: 'skip',
-            yaxis: 'y'
-        },
-        // H100-years median
-        {
-            x: years,
-            y: dcm.h100_years.median,
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: h100YearsColor, width: 3 },
-            name: 'H100-Years',
-            yaxis: 'y',
-            hovertemplate: 'H100-Years: %{y:.1f}<extra></extra>'
-        },
         // Cumulative LR confidence interval
         {
             x: years.concat(years.slice().reverse()),
             y: dcm.cumulative_lr.p75.concat(dcm.cumulative_lr.p25.slice().reverse()),
             fill: 'toself',
-            fillcolor: 'rgba(229, 115, 115, 0.2)',
+            fillcolor: 'rgba(91, 141, 190, 0.2)',
             line: { color: 'transparent' },
             showlegend: false,
             hoverinfo: 'skip',
-            yaxis: 'y2'
+            yaxis: 'y'
         },
         // LR median
         {
@@ -203,8 +181,30 @@ function plotH100YearsTimeSeries(data) {
             mode: 'lines',
             line: { color: lrColor, width: 3 },
             name: 'Likelihood Ratio',
-            yaxis: 'y2',
+            yaxis: 'y',
             hovertemplate: 'LR: %{y:.2f}<extra></extra>'
+        },
+        // H100-years confidence interval
+        {
+            x: years.concat(years.slice().reverse()),
+            y: dcm.h100_years.p75.concat(dcm.h100_years.p25.slice().reverse()),
+            fill: 'toself',
+            fillcolor: 'rgba(90, 168, 155, 0.2)',
+            line: { color: 'transparent' },
+            showlegend: false,
+            hoverinfo: 'skip',
+            yaxis: 'y2'
+        },
+        // H100-years median
+        {
+            x: years,
+            y: dcm.h100_years.median,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: h100YearsColor, width: 3 },
+            name: 'H100-Years',
+            yaxis: 'y2',
+            hovertemplate: 'H100-Years: %{y:.1f}<extra></extra>'
         }
     ];
 
@@ -215,19 +215,19 @@ function plotH100YearsTimeSeries(data) {
             automargin: true
         },
         yaxis: {
-            title: 'H100-Years of Computation',
-            titlefont: { size: 13, color: h100YearsColor },
-            tickfont: { size: 10, color: h100YearsColor },
-            side: 'left',
-            automargin: true
-        },
-        yaxis2: {
             title: 'Likelihood Ratio',
             titlefont: { size: 13, color: lrColor },
             tickfont: { size: 10, color: lrColor },
+            side: 'left',
+            type: 'log',
+            automargin: true
+        },
+        yaxis2: {
+            title: 'H100-Years',
+            titlefont: { size: 13, color: h100YearsColor },
+            tickfont: { size: 10, color: h100YearsColor },
             overlaying: 'y',
             side: 'right',
-            type: 'log',
             automargin: true
         },
         showlegend: true,
@@ -328,7 +328,7 @@ function plotProjectH100YearsCcdf(data) {
     }
 
     // Use likelihood ratios from backend
-    const likelihoodRatios = data.likelihood_ratios || [1, 2, 5];
+    const likelihoodRatios = data.dark_compute_model.likelihood_ratios || [1, 3, 5];
     const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
 
     const traces = [];

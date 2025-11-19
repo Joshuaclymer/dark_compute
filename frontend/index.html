@@ -267,14 +267,14 @@
                     // LR Inventory - PDF of values across simulations at final timestep
                     const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
                     // Use log scale x-axis but show actual LR values (not log values)
-                    plotPDF('lrInventoryPlot', lrInventoryFinal, '#D97676', 'Likelihood Ratio', 10, true);
+                    plotPDF('lrInventoryPlot', lrInventoryFinal, '#5B8DBE', 'Likelihood Ratio', 10, true);
 
                     // LR Procurement - Categorical bar plot (1 or 10)
                     const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
                     plotCategoricalFrequency('lrProcurementPlot', lrProcurementFinal, [
                         { value: 1, label: 'Likelihood Ratio = 1<br>(>90% localization)' },
                         { value: 10, label: 'Likelihood Ratio = 10<br>(≤90% localization)' }
-                    ], '#6B9BD1');
+                    ], '#5B8DBE');
 
                     // LR Other - Median over time with percentiles
                     const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
@@ -291,7 +291,7 @@
                         p25: lrOtherP25,
                         p75: lrOtherP75,
                         individual: data.covert_fab.lr_other.individual
-                    }, years, '#5AA89B', 'Likelihood Ratio', null, true, true);
+                    }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
 
                     // Plot combined LR (product of inventory, procurement, and other intelligence)
                     plotMedianWithPercentiles('posteriorProbPlot', {
@@ -325,7 +325,7 @@
                     const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
                     const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
                     const lrDivertedSME = lrInventoryFinal.map((inv, i) => inv * lrProcurementFinal[i]);
-                    plotPDF('lrDivertedSMEPlot', lrDivertedSME, '#6B9BD1', 'Likelihood Ratio', 12, true, 1/3, 50);
+                    plotPDF('lrDivertedSMEPlot', lrDivertedSME, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 50);
 
                     // 3. LR from other intelligence sources (same as lrOtherPlot)
                     const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
@@ -342,7 +342,7 @@
                         p25: lrOtherP25,
                         p75: lrOtherP75,
                         individual: data.covert_fab.lr_other.individual
-                    }, years, '#5AA89B', 'Likelihood Ratio', null, true, true);
+                    }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
 
                     // 4. Posterior probability of covert project
                     // Calculate: Prior × LR_initial × LR_SME × LR_other for each simulation at each timestep

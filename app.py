@@ -152,6 +152,13 @@ def download_construction_time_vs_fab_capacity():
     file_path = os.path.join(os.path.dirname(__file__), 'data', 'construction_time_vs_fab_capacity.csv')
     return send_file(file_path, as_attachment=True, download_name='construction_time_vs_fab_capacity.csv')
 
+@app.route('/download/data_center_workers_vs_build_rate')
+def download_data_center_workers_vs_build_rate():
+    """Download the data center workers vs build rate CSV file."""
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), 'data', 'data_center_workers_vs_build_rate.csv')
+    return send_file(file_path, as_attachment=True, download_name='data_center_workers_vs_build_rate.csv')
+
 if __name__ == '__main__':
     import sys
     import os

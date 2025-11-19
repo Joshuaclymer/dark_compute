@@ -178,11 +178,19 @@
             max-width: 100% !important;
         }
 
-        #computeCcdfPlot, #timeSeriesPlot, #h100YearsTimeSeriesPlot {
+        #computeCcdfPlot, #timeSeriesPlot, #h100YearsTimeSeriesPlot, #projectH100YearsCcdfPlot,
+        #datacenterCapacityCcdfPlot, #datacenterCombinedPlot,
+        #initialDarkComputeDetectionPlot, #initialComputeStockPlot,
+        #initialDarkComputePlot, #covertFabFlowPlot, #chipSurvivalPlot, #totalDarkComputePlot,
+        #darkComputeEnergyPlot, #operationalDarkComputePlot, #datacenterCapacityPlot2 {
             border: none !important;
         }
 
-        #computeCcdfPlot > div, #timeSeriesPlot > div, #h100YearsTimeSeriesPlot > div {
+        #computeCcdfPlot > div, #timeSeriesPlot > div, #h100YearsTimeSeriesPlot > div, #projectH100YearsCcdfPlot > div,
+        #datacenterCapacityCcdfPlot > div, #datacenterCombinedPlot > div,
+        #initialDarkComputeDetectionPlot > div, #initialComputeStockPlot > div,
+        #initialDarkComputePlot > div, #covertFabFlowPlot > div, #chipSurvivalPlot > div, #totalDarkComputePlot > div,
+        #darkComputeEnergyPlot > div, #operationalDarkComputePlot > div, #datacenterCapacityPlot2 > div {
             border: none !important;
         }
 

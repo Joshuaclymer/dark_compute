@@ -5,18 +5,18 @@ function plotDarkComputeModel(data) {
 
     // Plot 1: Initial dark compute (histogram)
     if (data.initial_stock && data.initial_stock.initial_compute_stock_samples) {
-        // Convert to thousands
-        const samplesInThousands = data.initial_stock.initial_compute_stock_samples.map(v => v / 1000);
-        plotPDF('initialDarkComputePlot', samplesInThousands, '#9B72B0', 'Thousands of H100 Equivalents');
+        // Use raw numbers with k/M formatting
+        const samples = data.initial_stock.initial_compute_stock_samples;
+        plotPDF('initialDarkComputePlot', samples, '#9B72B0', 'H100 Equivalents');
     }
 
     // Plot 2: Flow from covert fab (line plot - cumulative production over time)
     if (data.dark_compute_model && data.dark_compute_model.years) {
         const years = data.dark_compute_model.years;
-        // Convert to thousands to match y-axis label
-        const h100e_median = data.dark_compute_model.covert_fab_flow.median.map(v => v / 1000);
-        const h100e_p25 = data.dark_compute_model.covert_fab_flow.p25.map(v => v / 1000);
-        const h100e_p75 = data.dark_compute_model.covert_fab_flow.p75.map(v => v / 1000);
+        // Use raw numbers with k/M formatting - includes ALL simulations (not just where fab is built)
+        const h100e_median = data.dark_compute_model.covert_fab_flow_all_sims.median;
+        const h100e_p25 = data.dark_compute_model.covert_fab_flow_all_sims.p25;
+        const h100e_p75 = data.dark_compute_model.covert_fab_flow_all_sims.p75;
 
         // Create traces for the shaded region and median line
         const traces = [
@@ -62,9 +62,10 @@ function plotDarkComputeModel(data) {
                 range: [years[0], 2037]
             },
             yaxis: {
-                title: 'H100e (thousands)',
+                title: 'H100e',
                 titlefont: { size: 10 },
-                tickfont: { size: 9 }
+                tickfont: { size: 9 },
+                tickformat: '.2s'
             },
             margin: { l: 50, r: 20, t: 35, b: 40 },
             height: 250,
@@ -195,9 +196,10 @@ function plotDarkComputeModel(data) {
                 tickfont: { size: 9 }
             },
             yaxis: {
-                title: 'H100e (thousands)',
+                title: 'H100e',
                 titlefont: { size: 10 },
-                tickfont: { size: 9 }
+                tickfont: { size: 9 },
+                tickformat: '.2s'
             },
             margin: { l: 50, r: 20, t: 10, b: 40 },
             height: 250,
@@ -489,10 +491,11 @@ function plotDarkComputeModel(data) {
                 automargin: true
             },
             yaxis: {
-                title: 'H100e (thousands)',
+                title: 'H100e',
                 titlefont: { size: 10 },
                 tickfont: { size: 9 },
-                automargin: true
+                automargin: true,
+                tickformat: '.2s'
             },
             margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
             height: 250,

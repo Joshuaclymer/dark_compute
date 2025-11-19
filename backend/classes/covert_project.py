@@ -144,42 +144,6 @@ class CovertProject:
 
         return h100_years
 
-    def h100_years_before_detection(self, years: list[float], detection_year: float = None) -> float: # TODO: fix this
-        """Calculate total H100-years of computation before detection.
-
-        This integrates operational H100e over time from agreement start until detection
-        (or end of simulation if never detected).
-
-        Args:
-            years: List of simulation years
-            detection_year: Year when project is detected (None if never detected)
-
-        Returns:
-            Total H100-years of computation (H100e * years)
-        """
-        # Filter years up to detection (or all years if never detected)
-        if detection_year is not None:
-            years_to_integrate = [y for y in years if self.agreement_year <= y <= detection_year]
-        else:
-            years_to_integrate = [y for y in years if self.agreement_year <= y]
-
-        h100_years = 0.0
-
-        # Integrate operational H100e over time intervals
-        for i in range(len(years_to_integrate) - 1):
-            year = years_to_integrate[i]
-            next_year = years_to_integrate[i + 1]
-            time_increment = next_year - year
-
-            # Get operational H100e at this time using our operational_dark_compute method
-            operational_at_year = self.operational_dark_compute(year)
-            h100e_at_year = operational_at_year.total_h100e_tpp()
-
-            # Add contribution: H100e * time_increment (in years)
-            h100_years += h100e_at_year * time_increment
-
-        return h100_years
-
     def get_lr_initial(self) -> float:
         """Get initial stock likelihood ratio (constant over time)."""
         lr_prc = self.dark_compute_stock.lr_from_prc_compute_accounting

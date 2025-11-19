@@ -13,9 +13,10 @@ function plotDarkComputeModel(data) {
     // Plot 2: Flow from covert fab (line plot - cumulative production over time)
     if (data.dark_compute_model && data.dark_compute_model.years) {
         const years = data.dark_compute_model.years;
-        const h100e_median = data.dark_compute_model.h100_years.median;
-        const h100e_p25 = data.dark_compute_model.h100_years.p25;
-        const h100e_p75 = data.dark_compute_model.h100_years.p75;
+        // Convert to thousands to match y-axis label
+        const h100e_median = data.dark_compute_model.covert_fab_flow.median.map(v => v / 1000);
+        const h100e_p25 = data.dark_compute_model.covert_fab_flow.p25.map(v => v / 1000);
+        const h100e_p75 = data.dark_compute_model.covert_fab_flow.p75.map(v => v / 1000);
 
         // Create traces for the shaded region and median line
         const traces = [
@@ -208,6 +209,26 @@ function plotDarkComputeModel(data) {
         Plotly.newPlot('totalDarkComputePlot', traces, layout, {responsive: true});
     }
 
+    // Calculate shared Y-axis range for both datacenter capacity and energy plots
+    let sharedYMax = 0;
+    if (data.dark_compute_model && data.dark_compute_model.datacenter_capacity && data.dark_compute_model.dark_compute_energy) {
+        const capacity_p75 = data.dark_compute_model.datacenter_capacity.p75;
+        const capacity_median = data.dark_compute_model.datacenter_capacity.median;
+        const capacity_p25 = data.dark_compute_model.datacenter_capacity.p25;
+        const energyData = data.dark_compute_model.dark_compute_energy;
+        const datacenterCapacity = data.dark_compute_model.datacenter_capacity.median;
+
+        // Calculate total energy at each time point
+        const totalEnergy = energyData.map(yearData => yearData[0] + yearData[1]);
+
+        // Find max across both datasets
+        const capacityYValues = [...capacity_p75, ...capacity_median, ...capacity_p25];
+        const energyYValues = [...totalEnergy, ...datacenterCapacity];
+        const allYValues = [...capacityYValues, ...energyYValues];
+        const maxY = Math.max(...allYValues);
+        sharedYMax = maxY * 1.8;
+    }
+
     // Plot 5: Datacenter capacity (GW)
     if (data.dark_compute_model && data.dark_compute_model.datacenter_capacity) {
         const years = data.dark_compute_model.years;
@@ -250,10 +271,8 @@ function plotDarkComputeModel(data) {
             }
         ];
 
-        // Calculate Y-axis range (1.8x max value to match darkComputeEnergyPlot)
-        const allYValues = [...capacity_p75, ...capacity_median, ...capacity_p25];
-        const maxY = Math.max(...allYValues);
-        const yMax = maxY * 1.8;
+        // Use shared Y-axis range
+        const yMax = sharedYMax;
 
         const layout = {
             xaxis: {
@@ -380,10 +399,8 @@ function plotDarkComputeModel(data) {
 
         // Datacenter capacity line already added above
 
-        // Calculate max y value to set range to 1.8x
-        const allYValues = [...totalEnergy, ...datacenterCapacity];
-        const maxY = Math.max(...allYValues);
-        const yMax = maxY * 1.8;
+        // Use shared Y-axis range
+        const yMax = sharedYMax;
 
         const layout = {
             xaxis: {

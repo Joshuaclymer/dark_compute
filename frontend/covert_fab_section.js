@@ -327,25 +327,18 @@ function plotProjectH100YearsCcdf(data) {
         return;
     }
 
-    // Get prior probability from the data
-    const priorProb = data.p_project_exists || 0.1;
-    const priorOdds = priorProb / (1 - priorProb);
-
     // Use likelihood ratios from backend
     const likelihoodRatios = data.likelihood_ratios || [1, 2, 5];
     const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
 
     const traces = [];
     const thresholds = likelihoodRatios.map((lr, index) => {
-        const posteriorOdds = priorOdds * lr;
-        const posteriorProb = posteriorOdds / (1 + posteriorOdds);
         return {
-            value: posteriorProb,
+            value: lr,  // Use LR directly as the key
             label: `>${lr}x update`,
             color: colors[index % colors.length]
         };
     });
-
 
     // Reverse thresholds for legend order (highest to lowest)
     const thresholdsReversed = [...thresholds].reverse();

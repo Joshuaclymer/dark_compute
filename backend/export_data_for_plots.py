@@ -703,42 +703,32 @@ def extract_individual_fab_detection_data(simulation_results, years, threshold, 
     return individual_h100e, individual_time, individual_process_nodes, individual_energy
 
 
-def calculate_project_detection_year(us_beliefs, years, likelihood_ratio, p_project_exists):
-    """Calculate detection year for covert project based on likelihood ratio threshold."""
+def calculate_project_detection_year(covert_project, years, likelihood_ratio):
+    """Calculate detection year for covert project based on likelihood ratio threshold.
+
+    Uses get_cumulative_evidence_of_covert_project method from CovertProject class.
+    """
     if not years:
         return None
 
-    initial_p_project = us_beliefs.p_project_exists_update_history[min(years)][-1]['current_p_project_exists'] \
-        if years else (us_beliefs.p_project_exists if us_beliefs.p_project_exists is not None else 0.2)
-
-    prior_odds_project = initial_p_project / (1 - initial_p_project) if initial_p_project < 1.0 else 1e10
-
     for year in years:
-        p_project = us_beliefs.p_project_exists_update_history[year][-1]['current_p_project_exists']
-        current_odds = p_project / (1 - p_project) if p_project < 1.0 else 1e10
-        odds_ratio = current_odds / prior_odds_project
+        cumulative_lr = covert_project.get_cumulative_evidence_of_covert_project(year)
 
-        if odds_ratio >= likelihood_ratio:
+        if cumulative_lr >= likelihood_ratio:
             return year
 
     return None
 
 
-def calculate_h100_years_until_detection(covert_projects, years, agreement_year, detection_year):
-    """Calculate cumulative H100-years until detection (or end of simulation)."""
+def calculate_h100_years_until_detection(covert_project, years, detection_year):
+    """Calculate cumulative H100-years until detection (or end of simulation).
+
+    Uses h100_years_to_date method from CovertProject class.
+    """
     end_year = detection_year if detection_year is not None else max(years)
-    h100_years = 0.0
-    years_to_integrate = [y for y in years if agreement_year <= y <= end_year]
 
-    for i in range(len(years_to_integrate) - 1):
-        year = years_to_integrate[i]
-        next_year = years_to_integrate[i + 1]
-        time_increment = next_year - year
-
-        operational_at_year = covert_projects["prc_covert_project"].operational_dark_compute(year)
-        h100e_at_year = operational_at_year.total_h100e_tpp()
-
-        h100_years += h100e_at_year * time_increment
+    # Use the CovertProject's h100_years_to_date method
+    h100_years = covert_project.h100_years_to_date(end_year, years)
 
     return h100_years
 
@@ -751,12 +741,13 @@ def extract_project_h100_years_ccdfs(simulation_results, years, agreement_year, 
         h100_years_at_threshold = []
 
         for covert_projects, detectors in simulation_results:
-            us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-            sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
-                             if us_beliefs.p_project_exists_update_history else [])
+            covert_project = covert_projects["prc_covert_project"]
 
-            detection_year = calculate_project_detection_year(us_beliefs, sim_years, lr, p_project_exists)
-            h100_years = calculate_h100_years_until_detection(covert_projects, sim_years, agreement_year, detection_year)
+            # Use the covert project's years list
+            sim_years = covert_project.years
+
+            detection_year = calculate_project_detection_year(covert_project, sim_years, lr)
+            h100_years = calculate_h100_years_until_detection(covert_project, sim_years, detection_year)
             h100_years_at_threshold.append(h100_years)
 
         project_h100_years_ccdfs[lr] = calculate_ccdf(h100_years_at_threshold)
@@ -871,18 +862,16 @@ def extract_individual_project_detection_data(simulation_results, agreement_year
     individual_h100_years = []
 
     for covert_projects, detectors in simulation_results:
-        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
-                          if us_beliefs.p_project_exists_update_history else [])
+        covert_project = covert_projects["prc_covert_project"]
+        sim_years = covert_project.years
 
-        detection_year = calculate_project_detection_year(us_beliefs, sim_years, threshold,
-                                                          app_params.covert_project_parameters.p_project_exists)
+        detection_year = calculate_project_detection_year(covert_project, sim_years, threshold)
 
         if detection_year is not None:
-            operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(detection_year)
+            operational_compute = covert_project.operational_dark_compute(detection_year)
         else:
             final_year = max(sim_years)
-            operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(final_year)
+            operational_compute = covert_project.operational_dark_compute(final_year)
             detection_year = final_year
 
         operational_h100e = operational_compute.total_h100e_tpp()
@@ -891,7 +880,7 @@ def extract_individual_project_detection_data(simulation_results, agreement_year
                     app_params.covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100 / 1e9)
 
         time_operational = detection_year - agreement_year
-        h100_years = calculate_h100_years_until_detection(covert_projects, sim_years, agreement_year, detection_year)
+        h100_years = calculate_h100_years_until_detection(covert_project, sim_years, detection_year)
 
         individual_h100e.append(operational_h100e)
         individual_energy.append(energy_gw)
@@ -1039,6 +1028,7 @@ def extract_plot_data(model, app_params):
             "h100_years_ccdf": extract_project_h100_years_ccdfs(
                 model.simulation_results, years, agreement_year, likelihood_ratios, p_project_exists
             ),
+            "likelihood_ratios": likelihood_ratios,
 
             # -------------------------------------------------------------------
             # H100-Years and Evidence Over Time Plot
@@ -1175,6 +1165,18 @@ def extract_plot_data(model, app_params):
     print(f"Likelihood ratios: {converted_results['covert_fab']['likelihood_ratios']}")
     print(f"Compute CCDFs keys: {list(converted_results['covert_fab']['compute_ccdfs'].keys())}")
     for lr, ccdf_data in converted_results['covert_fab']['compute_ccdfs'].items():
+        print(f"\nLR={lr}: {len(ccdf_data)} data points")
+        if ccdf_data:
+            print(f"  First 3 points: {ccdf_data[:3]}")
+            print(f"  Last 3 points: {ccdf_data[-3:]}")
+    print("="*80 + "\n")
+
+    # Debug: Print project H100-years CCDF data
+    print("\n" + "="*80)
+    print("PROJECT H100-YEARS CCDFs:")
+    print(f"Likelihood ratios: {converted_results['dark_compute_model']['likelihood_ratios']}")
+    print(f"H100-years CCDFs keys: {list(converted_results['dark_compute_model']['h100_years_ccdf'].keys())}")
+    for lr, ccdf_data in converted_results['dark_compute_model']['h100_years_ccdf'].items():
         print(f"\nLR={lr}: {len(ccdf_data)} data points")
         if ccdf_data:
             print(f"  First 3 points: {ccdf_data[:3]}")

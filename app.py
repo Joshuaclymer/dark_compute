@@ -11,10 +11,6 @@ from backend import util
 
 app = Flask(__name__, template_folder='frontend')
 
-# Configure likelihood ratio thresholds for detection plots
-# Update this list to change all plots automatically
-LIKELIHOOD_RATIOS = [1, 3, 5]
-
 # Create a global Parameters instance that stays synchronized with the sidebar
 app_params = Parameters(
     simulation_settings=SimulationSettings(),
@@ -65,19 +61,34 @@ def run_simulation():
     # Clear caches
     util._cache.clear()
 
+    # Debug: Log received parameters
+    print(f"\n{'='*80}", flush=True)
+    print(f"RECEIVED PARAMETERS:", flush=True)
+    print(f"  num_simulations: {data.get('simulation_settings.num_simulations', 'NOT PROVIDED')}", flush=True)
+    print(f"  start_year: {data.get('simulation_settings.start_year', 'NOT PROVIDED')}", flush=True)
+    print(f"  end_year: {data.get('simulation_settings.end_year', 'NOT PROVIDED')}", flush=True)
+    print(f"{'='*80}\n", flush=True)
+
     # Update app_params with values from request
     app_params.update_from_dict(data)
+
+    # Debug: Log parameters after update
+    print(f"\n{'='*80}", flush=True)
+    print(f"PARAMETERS AFTER UPDATE:", flush=True)
+    print(f"  num_simulations: {app_params.simulation_settings.num_simulations}", flush=True)
+    print(f"  start_year: {app_params.simulation_settings.start_year}", flush=True)
+    print(f"  end_year: {app_params.simulation_settings.end_year}", flush=True)
+    print(f"{'='*80}\n", flush=True)
 
     try:
         # Create model with Parameters object
         model = Model(app_params)
 
         # Run simulations
-        print(f"DEBUG: Running simulations...", flush=True)
         model.run_simulations(num_simulations=app_params.simulation_settings.num_simulations)
 
         # Extract data for plots (includes initial stock data and type conversion)
-        results = extract_plot_data(model, app_params, LIKELIHOOD_RATIOS)
+        results = extract_plot_data(model, app_params)
 
         return jsonify(results)
 

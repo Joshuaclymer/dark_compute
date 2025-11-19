@@ -84,8 +84,8 @@ class Simulation:
 
                 # ========== Add fab production to dark compute stock if fab exists ==========
                 if project.covert_fab is not None:
-                    # compute_produced_per_month returns Compute object with monthly production, multiply by increment (in years) and months per year
-                    compute_per_month = project.covert_fab.compute_produced_per_month(current_year)
+                    # get_monthly_production_rate returns Compute object with monthly production rate, multiply by increment (in years) and months per year
+                    compute_per_month = project.covert_fab.get_monthly_production_rate(current_year)
                     additional_dark_compute = compute_per_month.total_h100e_tpp() * 12 * increment
                     project.dark_compute_stock.add_dark_compute(current_year, additional_dark_compute)
 

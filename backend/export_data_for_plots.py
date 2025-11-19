@@ -15,6 +15,10 @@ from backend.classes.covert_fab import (
     PRCCovertFab
 )
 
+# Configure likelihood ratio thresholds for detection plots
+# Update this list to change all plots automatically
+LIKELIHOOD_RATIOS = [1, 3, 5]
+
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -271,16 +275,16 @@ def extract_project_lr_components_over_time(simulation_results, years):
 
 
 def extract_fab_combined_lr_over_time(simulation_results, years):
-    """Extract combined likelihood ratio from fab's detection_likelihood_ratio method."""
+    """Extract cumulative combined likelihood ratio from fab's cumulative_detection_likelihood_ratio method."""
     combined_lr_by_sim = []
 
     for covert_projects, _ in simulation_results:
         covert_fab = covert_projects["prc_covert_project"].covert_fab
 
         if covert_fab is not None:
-            # Call the fab's detection_likelihood_ratio method for each year
+            # Call the fab's cumulative_detection_likelihood_ratio method for each year
             combined_lr_over_time = [
-                covert_fab.detection_likelihood_ratio(year)
+                covert_fab.cumulative_detection_likelihood_ratio(year)
                 for year in years
             ]
         else:
@@ -325,12 +329,6 @@ def extract_fab_lr_components_over_time(simulation_results, years):
     # DEBUG: Log lr_other values
     if lr_other_by_sim:
         lr_other_array = np.array(lr_other_by_sim)
-        print(f"DEBUG: lr_other shape: {lr_other_array.shape}", flush=True)
-        print(f"DEBUG: lr_other first sim - ALL values: {lr_other_by_sim[0]}", flush=True)
-        print(f"DEBUG: lr_other second sim - ALL values: {lr_other_by_sim[1]}", flush=True)
-        print(f"DEBUG: lr_other median across sims - first 10 years: {np.median(lr_other_array[:, :10], axis=0).tolist()}", flush=True)
-        print(f"DEBUG: lr_other median across sims - last 10 years: {np.median(lr_other_array[:, -10:], axis=0).tolist()}", flush=True)
-        print(f"DEBUG: lr_other unique values in first sim: {sorted(set(lr_other_by_sim[0]))}[:20]", flush=True)
 
         # Plot single simulation to visualize
         import matplotlib
@@ -348,7 +346,6 @@ def extract_fab_lr_components_over_time(simulation_results, years):
         plt.yscale('log')
         plt.savefig('/tmp/lr_other_debug.png', dpi=150, bbox_inches='tight')
         plt.close()
-        print(f"DEBUG: Saved plot to /tmp/lr_other_debug.png", flush=True)
 
     return lr_inventory_by_sim, lr_procurement_by_sim, lr_other_by_sim
 
@@ -360,18 +357,6 @@ def extract_fab_operational_status_over_time(simulation_results, years):
     is complete at each time point.
     """
     is_operational_by_sim = []
-
-    # DEBUG: Log construction finish times
-    construction_finish_times = []
-    for covert_projects, detectors in simulation_results:
-        fab = covert_projects["prc_covert_project"].covert_fab
-        if fab is not None:
-            finish_time = fab.construction_start_year + fab.construction_duration
-            construction_finish_times.append(finish_time)
-
-    if construction_finish_times:
-        print(f"DEBUG: Construction finish times - min: {min(construction_finish_times):.4f}, max: {max(construction_finish_times):.4f}, median: {np.median(construction_finish_times):.4f}", flush=True)
-        print(f"DEBUG: Number of fabs built: {len(construction_finish_times)} out of {len(simulation_results)} simulations", flush=True)
 
     for covert_projects, detectors in simulation_results:
         is_operational = []
@@ -514,7 +499,7 @@ def extract_energy_breakdown_by_source(simulation_results, years):
 # INITIAL DARK COMPUTE STOCK ANALYSIS
 # =============================================================================
 
-def extract_initial_stock_data(simulation_results, likelihood_ratios):
+def extract_initial_stock_data(simulation_results, likelihood_ratios, diversion_proportion):
     """Extract initial dark compute stock data from simulation results."""
     initial_prc_stock_samples = []
     initial_compute_samples = []
@@ -547,6 +532,7 @@ def extract_initial_stock_data(simulation_results, likelihood_ratios):
     return {
         'initial_prc_stock_samples': initial_prc_stock_samples,
         'initial_compute_stock_samples': initial_compute_samples,
+        'diversion_proportion': diversion_proportion,
         'lr_prc_accounting_samples': lr_prc_accounting_samples,
         'lr_global_accounting_samples': lr_global_accounting_samples,
         'lr_combined_samples': lr_combined_samples,
@@ -559,37 +545,34 @@ def extract_initial_stock_data(simulation_results, likelihood_ratios):
 # =============================================================================
 
 def calculate_fab_detection_year(covert_fab, years, threshold):
-    """Calculate the year when fab is detected based on probability threshold.
+    """Calculate the year when fab is detected based on likelihood ratio threshold.
 
-    Uses cumulative likelihood ratio from detection_updates to determine when
-    the posterior probability exceeds the threshold.
+    Uses the fab's cumulative_detection_likelihood_ratio method which combines:
+    - inventory accounting (constant)
+    - procurement accounting (constant)
+    - other intelligence (grows over time with workers)
+
+    Detection occurs the first year the cumulative LR exceeds the threshold.
     """
     if covert_fab is None:
         return None
 
-    # Start with initial prior odds (assume 0.1 prior probability)
-    initial_p_fab = 0.1
-    cumulative_lr = 1.0
-    prior_odds_fab = initial_p_fab / (1 - initial_p_fab)
-
     for year in years:
-        if hasattr(covert_fab, 'detection_updates') and year in covert_fab.detection_updates:
-            # Accumulate likelihood ratios
-            fab_lr = covert_fab.detection_updates[year]
-            cumulative_lr *= fab_lr
+        # Get the fab's cumulative LR (inventory × procurement × other) for this year
+        year_lr = covert_fab.cumulative_detection_likelihood_ratio(year)
 
-            # Calculate posterior probability
-            posterior_odds_fab = prior_odds_fab * cumulative_lr
-            p_fab_detected = posterior_odds_fab / (1 + posterior_odds_fab)
-
-            if p_fab_detected >= threshold:
-                return year
+        # Check if LR exceeds threshold
+        if year_lr >= threshold:
+            return year
 
     return None
 
 
-def extract_fab_compute_at_detection(simulation_results, years, threshold, total_simulations_with_fab):
-    """Extract compute produced by fab at detection time."""
+def extract_fab_compute_at_detection(simulation_results, years, threshold):
+    """Extract compute produced by fab at detection time.
+
+    Only includes simulations where a covert fab was built.
+    """
     compute_at_detection = []
     operational_time_at_detection = []
 
@@ -599,22 +582,23 @@ def extract_fab_compute_at_detection(simulation_results, years, threshold, total
         if covert_fab is None:
             continue
 
-        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        h100e_over_time = covert_fab.dark_compute_over_time if hasattr(covert_fab, 'dark_compute_over_time') else {}
+        # Get cumulative compute production from the fab over time
+        h100e_over_time = covert_fab.get_cumulative_compute_production_over_time()
 
+        # Use simulation years to calculate detection
+        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
         sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
                           if us_beliefs.p_project_exists_update_history else [])
 
         detection_year = calculate_fab_detection_year(covert_fab, sim_years, threshold)
 
         if detection_year is not None:
-            available_years = [y for y in h100e_over_time.keys() if y <= detection_year]
-            h100e_at_detection = h100e_over_time[max(available_years)] if available_years else 0.0
+            # Get compute at detection year
+            h100e_at_detection = h100e_over_time.get(detection_year, 0.0)
         else:
             # Never detected - use final year
             final_year = years[-1]
-            available_years = [y for y in h100e_over_time.keys() if y <= final_year]
-            h100e_at_detection = h100e_over_time[max(available_years)] if available_years else 0.0
+            h100e_at_detection = h100e_over_time.get(final_year, 0.0)
             detection_year = final_year
 
         compute_at_detection.append(h100e_at_detection)
@@ -629,49 +613,44 @@ def extract_fab_compute_at_detection(simulation_results, years, threshold, total
     return compute_at_detection, operational_time_at_detection
 
 
-def calculate_ccdf(values, total_count):
-    """Calculate complementary cumulative distribution function (CCDF)."""
+def calculate_ccdf(values):
+    """Calculate complementary cumulative distribution function (CCDF).
+
+    Creates one point for every simulation where the fab was built.
+    """
     if not values:
         return []
 
     values_sorted = np.sort(values)
-    unique_x = []
+    total_count = len(values_sorted)
+    x_values = []
     ccdf_y = []
-    seen_values = set()
 
     for i, x in enumerate(values_sorted):
-        if x not in seen_values:
-            seen_values.add(x)
-            # Find last occurrence of this x value
-            last_idx = i
-            while last_idx + 1 < len(values_sorted) and values_sorted[last_idx + 1] == x:
-                last_idx += 1
-            # CCDF at x = (number of values > x) / total
-            num_greater = total_count - (last_idx + 1)
-            ccdf = num_greater / total_count
-            unique_x.append(float(x))
-            ccdf_y.append(float(ccdf))
+        # CCDF at x = (number of values > x) / total
+        num_greater = total_count - (i + 1)
+        ccdf = num_greater / total_count
+        x_values.append(float(x))
+        ccdf_y.append(float(ccdf))
 
-    return [{"x": x, "y": y} for x, y in zip(unique_x, ccdf_y)]
+    return [{"x": x, "y": y} for x, y in zip(x_values, ccdf_y)]
 
 
 def extract_fab_detection_statistics(simulation_results, years, detection_thresholds, likelihood_ratios):
-    """Extract comprehensive fab detection statistics for multiple thresholds."""
-    total_simulations_with_fab = sum(
-        1 for cp, _ in simulation_results
-        if cp["prc_covert_project"].covert_fab is not None
-    )
+    """Extract comprehensive fab detection statistics for multiple thresholds.
 
+    Only includes simulations where a covert fab was built.
+    """
     compute_ccdfs = {}
     op_time_ccdfs = {}
 
     for threshold in detection_thresholds:
         compute_at_detection, operational_time_at_detection = extract_fab_compute_at_detection(
-            simulation_results, years, threshold, total_simulations_with_fab
+            simulation_results, years, threshold
         )
-
-        compute_ccdfs[threshold] = calculate_ccdf(compute_at_detection, total_simulations_with_fab)
-        op_time_ccdfs[threshold] = calculate_ccdf(operational_time_at_detection, total_simulations_with_fab)
+        # Calculate CCDFs - values list is already filtered to only sims with fab
+        compute_ccdfs[threshold] = calculate_ccdf(compute_at_detection)
+        op_time_ccdfs[threshold] = calculate_ccdf(operational_time_at_detection)
 
     return compute_ccdfs, op_time_ccdfs
 
@@ -689,21 +668,23 @@ def extract_individual_fab_detection_data(simulation_results, years, threshold, 
         if covert_fab is None:
             continue
 
-        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        h100e_over_time = covert_fab.dark_compute_over_time if hasattr(covert_fab, 'dark_compute_over_time') else {}
+        # Get cumulative compute production from the fab over time
+        h100e_over_time = covert_fab.get_cumulative_compute_production_over_time()
 
+        # Use simulation years to calculate detection
+        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
         sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
                           if us_beliefs.p_project_exists_update_history else [])
 
         detection_year = calculate_fab_detection_year(covert_fab, sim_years, threshold)
 
         if detection_year is not None:
-            available_years = [y for y in h100e_over_time.keys() if y <= detection_year]
-            h100e_at_detection = h100e_over_time[max(available_years)] if available_years else 0.0
+            # Get compute at detection year
+            h100e_at_detection = h100e_over_time.get(detection_year, 0.0)
         else:
+            # Never detected - use final year
             final_year = years[-1]
-            available_years = [y for y in h100e_over_time.keys() if y <= final_year]
-            h100e_at_detection = h100e_over_time[max(available_years)] if available_years else 0.0
+            h100e_at_detection = h100e_over_time.get(final_year, 0.0)
             detection_year = final_year
 
         construction_start = covert_fab.construction_start_year
@@ -765,7 +746,6 @@ def calculate_h100_years_until_detection(covert_projects, years, agreement_year,
 def extract_project_h100_years_ccdfs(simulation_results, years, agreement_year, likelihood_ratios, p_project_exists):
     """Calculate CCDFs for H100-years at different detection thresholds for the covert project."""
     project_h100_years_ccdfs = {}
-    total_simulations = len(simulation_results)
 
     for lr in likelihood_ratios:
         h100_years_at_threshold = []
@@ -779,12 +759,12 @@ def extract_project_h100_years_ccdfs(simulation_results, years, agreement_year, 
             h100_years = calculate_h100_years_until_detection(covert_projects, sim_years, agreement_year, detection_year)
             h100_years_at_threshold.append(h100_years)
 
-        project_h100_years_ccdfs[lr] = calculate_ccdf(h100_years_at_threshold, total_simulations)
+        project_h100_years_ccdfs[lr] = calculate_ccdf(h100_years_at_threshold)
 
     return project_h100_years_ccdfs
 
 
-def extract_individual_project_detection_data(simulation_results, years, agreement_year, threshold, app_params):
+def extract_individual_project_detection_data(simulation_results, agreement_year, threshold, app_params):
     """Extract individual project detection data for dashboard display."""
     individual_h100e = []
     individual_energy = []
@@ -846,18 +826,18 @@ def convert_numpy_types(obj):
 # MAIN EXTRACTION FUNCTION
 # =============================================================================
 
-def extract_plot_data(model, app_params, likelihood_ratios):
+def extract_plot_data(model, app_params):
     """
     Extract all plot data from model simulation results.
 
     Args:
         model: Model instance with simulation results
         app_params: Application parameters
-        likelihood_ratios: List of likelihood ratio thresholds for detection plots
 
     Returns:
         Dictionary containing all plot data
     """
+    likelihood_ratios = LIKELIHOOD_RATIOS
     p_project_exists = app_params.covert_project_parameters.p_project_exists
     if not model.simulation_results:
         return {"error": "No simulation results"}
@@ -893,17 +873,20 @@ def extract_plot_data(model, app_params, likelihood_ratios):
     energy_by_source_array, source_labels = extract_energy_breakdown_by_source(model.simulation_results, years)
 
     # Detection data
-    dashboard_threshold = 0.5
+    # Use likelihood ratios as detection thresholds
     compute_ccdfs, op_time_ccdfs = extract_fab_detection_statistics(
-        model.simulation_results, years, [dashboard_threshold], likelihood_ratios
+        model.simulation_results, years, likelihood_ratios, likelihood_ratios
     )
+    # Use LR=5 as the dashboard threshold (matches default in frontend)
+    dashboard_lr_threshold = 5
     individual_fab_h100e, individual_fab_time, individual_fab_process_nodes, individual_fab_energy = \
-        extract_individual_fab_detection_data(model.simulation_results, years, dashboard_threshold, app_params)
+        extract_individual_fab_detection_data(model.simulation_results, years, dashboard_lr_threshold, app_params)
     individual_project_h100e, individual_project_energy, individual_project_time, individual_project_h100_years = \
-        extract_individual_project_detection_data(model.simulation_results, years, agreement_year, dashboard_threshold, app_params)
+        extract_individual_project_detection_data(model.simulation_results, agreement_year, dashboard_lr_threshold, app_params)
 
     # Extract initial stock data
-    initial_stock_data = extract_initial_stock_data(model.simulation_results, likelihood_ratios)
+    diversion_proportion = app_params.covert_project_strategy.proportion_of_initial_compute_stock_to_divert
+    initial_stock_data = extract_initial_stock_data(model.simulation_results, likelihood_ratios, diversion_proportion)
 
     # Helper to format percentiles for output (p25, median, p75, individual)
     def fmt_pct(data, scale_fn=None):
@@ -1027,16 +1010,16 @@ def extract_plot_data(model, app_params, likelihood_ratios):
         "covert_fab": {
             "years": years_array.tolist(),
             # Detection - CCDF plots and thresholds
-            "compute_ccdf": compute_ccdfs.get(dashboard_threshold, []),
+            "compute_ccdf": compute_ccdfs.get(dashboard_lr_threshold, []),
             "compute_ccdfs": compute_ccdfs,
-            "op_time_ccdf": op_time_ccdfs.get(dashboard_threshold, []),
+            "op_time_ccdf": op_time_ccdfs.get(dashboard_lr_threshold, []),
             "op_time_ccdfs": op_time_ccdfs,
             "likelihood_ratios": likelihood_ratios,
             # Detection - LR component breakdown (inventory, procurement, other)
             "lr_inventory": fmt_pct(filter_to_with_fab(lr_inventory_by_sim, fab_built_in_sim)),
             "lr_procurement": fmt_pct(filter_to_with_fab(lr_procurement_by_sim, fab_built_in_sim)),
             "lr_other": fmt_pct(filter_to_with_fab(lr_fab_other_by_sim, fab_built_in_sim)),
-            # Combined LR (product of inventory, procurement, and other) - from fab's detection_likelihood_ratio method
+            # Combined LR (product of inventory, procurement, and other) - from fab's cumulative_detection_likelihood_ratio method
             "lr_combined": fmt_pct(filter_to_with_fab(lr_fab_combined_by_sim, fab_built_in_sim)),
             # Production - Compute factors breakdown
             # Calculate proportion operational (not percentiles)
@@ -1073,4 +1056,18 @@ def extract_plot_data(model, app_params, likelihood_ratios):
     }
 
     # Convert numpy types to native Python types for JSON serialization
-    return convert_numpy_types(results)
+    converted_results = convert_numpy_types(results)
+
+    # Debug: Print covert fab CCDF data
+    print("\n" + "="*80)
+    print("COVERT FAB COMPUTE CCDFs:")
+    print(f"Likelihood ratios: {converted_results['covert_fab']['likelihood_ratios']}")
+    print(f"Compute CCDFs keys: {list(converted_results['covert_fab']['compute_ccdfs'].keys())}")
+    for lr, ccdf_data in converted_results['covert_fab']['compute_ccdfs'].items():
+        print(f"\nLR={lr}: {len(ccdf_data)} data points")
+        if ccdf_data:
+            print(f"  First 3 points: {ccdf_data[:3]}")
+            print(f"  Last 3 points: {ccdf_data[-3:]}")
+    print("="*80 + "\n")
+
+    return converted_results

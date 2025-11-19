@@ -108,8 +108,6 @@ def sample_reported_global_compute(prc_compute_stock_diverted, global_compute):
 
     reported_global_compute = global_compute - unreported_compute_owned_by_non_prc_actors - prc_compute_stock_diverted
 
-    print(f"DEBUG: global_compute unreported by non PRC actors: {unreported_compute_owned_by_non_prc_actors}", flush=True)
-    print(f"DEBUG: global_compute unreported by PRC: {prc_compute_stock_diverted}", flush=True)
     return reported_global_compute
 
 def get_reported_global_compute_production(year, prc_compute_stock_diverted):
@@ -270,10 +268,8 @@ class PRCDarkComputeStock():
             us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock
         )
         self.global_compute = sample_global_compute(agreement_year)
-        print(f"DEBUG: global compute: {self.global_compute}", flush=True)
 
         self.reported_global_compute = sample_reported_global_compute(self.initial_prc_dark_compute, self.global_compute)
-        print(f"DEBUG: reported global compute: {self.reported_global_compute}", flush=True)
 
         self.reported_historical_global_compute_production = get_reported_global_compute_production(agreement_year, self.initial_prc_dark_compute)
         self.lr_from_global_compute_production_accounting = lr_from_global_compute_production_accounting(
@@ -340,8 +336,6 @@ class PRCDarkComputeStock():
                     chip_counts[chip] = chip_counts.get(chip, 0) + chip_data['count']
 
         compute = Compute(chip_counts=chip_counts)
-        total_h100e = compute.total_h100e_tpp()
-        print(f"DEBUG dark_compute_dead_and_alive(year={year}): total_h100e={total_h100e}, num_chip_types={len(chip_counts)}", flush=True)
         return compute
 
     def annual_hazard_rate_after_years_of_life(self, years_of_life: float) -> float:
@@ -403,10 +397,6 @@ class PRCDarkComputeStock():
                 debug_info.append(f"y={y}, years_of_life={years_of_life:.2f}, cumulative_hazard={cumulative_hazard:.4f}, survival_rate={survival_rate:.4f}, surviving_compute={surviving_compute_from_year_y:.2f}, compute_added={year_total_compute:.2f}")
 
         compute = Compute(chip_counts=chip_counts)
-        if debug_info:
-            print(f"DEBUG dark_compute(year={year}): total_surviving={total_surviving_compute:.4f}, num_chip_types={len(chip_counts)}, initial_hazard={self.initial_hazard_rate}, increase_per_year={self.increase_in_hazard_rate_per_year:.4f}", flush=True)
-            for info in debug_info:
-                print(f"  {info}", flush=True)
         return compute
 
     def dark_compute_energy_by_source(self, year: float) -> tuple[float, float, float, float]:

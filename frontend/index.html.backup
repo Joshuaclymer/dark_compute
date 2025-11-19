@@ -473,91 +473,82 @@
 
         function getParameters() {
             return {
-                // Simulation settings (using dot notation for nested Parameters structure)
-                'simulation_settings.start_year': parseFloat(document.getElementById('agreement_year').value),
-                'simulation_settings.end_year': parseFloat(document.getElementById('end_year').value),
-                'simulation_settings.time_step_years': parseFloat(document.getElementById('increment').value),
-                'simulation_settings.num_simulations': parseInt(document.getElementById('num_simulations').value),
-
-                // Covert project strategy
-                'covert_project_strategy.run_a_covert_project': document.getElementById('run_covert_project').checked,
-                'covert_project_strategy.proportion_of_initial_compute_stock_to_divert': parseFloat(document.getElementById('proportion_of_initial_chip_stock_to_divert').value),
-                'covert_project_strategy.GW_per_initial_datacenter': parseFloat(document.getElementById('GW_per_initial_datacenter').value),
-                'covert_project_strategy.number_of_initial_datacenters': parseFloat(document.getElementById('number_of_initial_datacenters').value),
-                'covert_project_strategy.datacenter_construction_labor': parseInt(document.getElementById('datacenter_construction_labor').value),
-                'covert_project_strategy.build_a_covert_fab': document.getElementById('build_covert_fab').checked,
-                'covert_project_strategy.covert_fab_operating_labor': parseInt(document.getElementById('operating_labor').value),
-                'covert_project_strategy.covert_fab_construction_labor': parseInt(document.getElementById('construction_labor').value),
-                'covert_project_strategy.covert_fab_process_node': document.getElementById('process_node').value,
-                'covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted': parseFloat(document.getElementById('scanner_proportion').value),
-
-                // Covert project parameters - detection
-                'covert_project_parameters.p_project_exists': parseFloat(document.getElementById('p_fab_exists').value),
-                'covert_project_parameters.mean_detection_time_for_100_workers': parseFloat(document.getElementById('mean_detection_time_100').value),
-                'covert_project_parameters.mean_detection_time_for_1000_workers': parseFloat(document.getElementById('mean_detection_time_1000').value),
-                'covert_project_parameters.variance_of_detection_time_given_num_workers': parseFloat(document.getElementById('variance_detection_time').value),
-
+                agreement_year: parseFloat(document.getElementById('agreement_year').value),
+                end_year: parseFloat(document.getElementById('end_year').value),
+                increment: parseFloat(document.getElementById('increment').value),
+                num_simulations: parseInt(document.getElementById('num_simulations').value),
                 // Initial PRC compute stock parameters
-                'covert_project_parameters.initial_compute_stock_parameters.total_prc_compute_stock_in_2025': parseFloat(document.getElementById('total_prc_compute_stock_in_2025').value) * 1e6,
-                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock').value),
-                'covert_project_parameters.initial_compute_stock_parameters.relative_sigma_of_prc_compute_stock': parseFloat(document.getElementById('relative_sigma_of_prc_compute_stock').value),
-                'covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock': parseFloat(document.getElementById('us_intelligence_median_error_in_estimate_of_prc_compute_stock').value),
-                'covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100': parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value),
-                'covert_project_parameters.initial_compute_stock_parameters.h100_power_watts': parseFloat(document.getElementById('h100_power_watts').value),
-
+                total_prc_compute_stock_in_2025: parseFloat(document.getElementById('total_prc_compute_stock_in_2025').value) * 1e6,
+                annual_growth_rate_of_prc_compute_stock: parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock').value),
+                relative_sigma_of_prc_compute_stock: parseFloat(document.getElementById('relative_sigma_of_prc_compute_stock').value),
+                us_intelligence_median_error_in_estimate_of_prc_compute_stock: parseFloat(document.getElementById('us_intelligence_median_error_in_estimate_of_prc_compute_stock').value),
+                energy_efficiency_relative_to_h100: parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value),
+                run_covert_project: document.getElementById('run_covert_project').checked,
+                proportion_of_initial_chip_stock_to_divert: parseFloat(document.getElementById('proportion_of_initial_chip_stock_to_divert').value),
+                GW_per_initial_datacenter: parseFloat(document.getElementById('GW_per_initial_datacenter').value),
+                number_of_initial_datacenters: parseFloat(document.getElementById('number_of_initial_datacenters').value),
+                datacenter_construction_labor: parseInt(document.getElementById('datacenter_construction_labor').value),
+                build_covert_fab: document.getElementById('build_covert_fab').checked,
+                operating_labor: parseInt(document.getElementById('operating_labor').value),
+                construction_labor: parseInt(document.getElementById('construction_labor').value),
+                process_node: document.getElementById('process_node').value,
+                scanner_proportion: parseFloat(document.getElementById('scanner_proportion').value),
+                p_fab_exists: parseFloat(document.getElementById('p_fab_exists').value),
+                // Detection parameters
+                median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock: parseFloat(document.getElementById('proportion_diverted_sme').value),
+                mean_detection_time_for_100_workers: parseFloat(document.getElementById('mean_detection_time_100').value),
+                mean_detection_time_for_1000_workers: parseFloat(document.getElementById('mean_detection_time_1000').value),
+                variance_of_detection_time_given_num_workers: parseFloat(document.getElementById('variance_detection_time').value),
+                // Production capacity
+                wafers_per_month_per_worker: parseFloat(document.getElementById('wafers_per_month_per_worker').value),
+                labor_productivity_relative_sigma: parseFloat(document.getElementById('labor_productivity_sigma').value),
+                wafers_per_month_per_lithography_scanner: parseFloat(document.getElementById('wafers_per_month_per_scanner').value),
+                scanner_productivity_relative_sigma: parseFloat(document.getElementById('scanner_productivity_sigma').value),
+                // Construction time
+                construction_time_for_5k_wafers_per_month: parseFloat(document.getElementById('construction_time_5k').value),
+                construction_time_for_100k_wafers_per_month: parseFloat(document.getElementById('construction_time_100k').value),
+                construction_time_relative_sigma: parseFloat(document.getElementById('construction_time_sigma').value),
+                construction_workers_per_1000_wafers_per_month: parseFloat(document.getElementById('construction_workers_per_1000').value),
+                // Chip production
+                h100_sized_chips_per_wafer: parseFloat(document.getElementById('chips_per_wafer').value),
+                transistor_density_scaling_exponent: parseFloat(document.getElementById('transistor_density_exponent').value),
+                architecture_efficiency_improvement_per_year: parseFloat(document.getElementById('architecture_efficiency').value),
+                // H100 reference specifications
+                h100_transistor_density_m_per_mm2: 98.28,
+                h100_power_watts: parseFloat(document.getElementById('h100_power_watts').value),
+                h100_watts_per_tpp: parseFloat(document.getElementById('h100_power_watts').value) / 2144.0,
+                // Energy efficiency scaling parameters
+                watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended: parseFloat(document.getElementById('watts_per_tpp_exponent_before_dennard').value),
+                watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended: parseFloat(document.getElementById('watts_per_tpp_exponent_after_dennard').value),
+                transistor_density_at_end_of_dennard_scaling_m_per_mm2: parseFloat(document.getElementById('transistor_density_at_dennard_end').value),
+                // PRC scanner production
+                prc_lithography_scanners_produced_in_first_year: parseFloat(document.getElementById('prc_scanners_first_year').value),
+                prc_additional_lithography_scanners_produced_per_year: parseFloat(document.getElementById('prc_scanners_per_year').value),
+                prc_scanner_production_relative_sigma: parseFloat(document.getElementById('prc_scanner_production_sigma').value),
+                // Localization probabilities
+                localization_130nm_2025: parseFloat(document.getElementById('localization_130nm_2025').value),
+                localization_130nm_2031: parseFloat(document.getElementById('localization_130nm_2031').value),
+                localization_28nm_2025: parseFloat(document.getElementById('localization_28nm_2025').value),
+                localization_28nm_2031: parseFloat(document.getElementById('localization_28nm_2031').value),
+                localization_14nm_2025: parseFloat(document.getElementById('localization_14nm_2025').value),
+                localization_14nm_2031: parseFloat(document.getElementById('localization_14nm_2031').value),
+                localization_7nm_2025: parseFloat(document.getElementById('localization_7nm_2025').value),
+                localization_7nm_2031: parseFloat(document.getElementById('localization_7nm_2031').value),
                 // Survival rate parameters
-                'covert_project_parameters.survival_rate_parameters.initial_hazard_rate_p50': parseFloat(document.getElementById('initial_hazard_rate_p50').value),
-                'covert_project_parameters.survival_rate_parameters.increase_of_hazard_rate_per_year_p50': parseFloat(document.getElementById('increase_of_hazard_rate_per_year_p50').value),
-                'covert_project_parameters.survival_rate_parameters.hazard_rate_p25_relative_to_p50': parseFloat(document.getElementById('hazard_rate_p25_relative_to_p50').value),
-                'covert_project_parameters.survival_rate_parameters.hazard_rate_p75_relative_to_p50': parseFloat(document.getElementById('hazard_rate_p75_relative_to_p50').value),
-
+                initial_hazard_rate_p50: parseFloat(document.getElementById('initial_hazard_rate_p50').value),
+                increase_of_hazard_rate_per_year_p50: parseFloat(document.getElementById('increase_of_hazard_rate_per_year_p50').value),
+                hazard_rate_p25_relative_to_p50: parseFloat(document.getElementById('hazard_rate_p25_relative_to_p50').value),
+                hazard_rate_p75_relative_to_p50: parseFloat(document.getElementById('hazard_rate_p75_relative_to_p50').value),
                 // Covert datacenter parameters
-                'covert_project_parameters.datacenter_model_parameters.max_proportion_of_PRC_energy_consumption': parseFloat(document.getElementById('max_proportion_of_PRC_energy_consumption').value),
-                'covert_project_parameters.datacenter_model_parameters.total_GW_of_PRC_energy_consumption': parseFloat(document.getElementById('total_GW_of_PRC_energy_consumption').value),
-                'covert_project_parameters.datacenter_model_parameters.construction_labor_per_MW_per_year': parseFloat(document.getElementById('construction_labor_per_MW_per_year').value),
-                'covert_project_parameters.datacenter_model_parameters.relative_sigma_construction_labor_per_MW_per_year': parseFloat(document.getElementById('relative_sigma_construction_labor_per_MW_per_year').value),
-                'covert_project_parameters.datacenter_model_parameters.operating_labor_per_MW': parseFloat(document.getElementById('operating_labor_per_MW').value),
-                'covert_project_parameters.datacenter_model_parameters.relative_sigma_operating_labor_per_MW': parseFloat(document.getElementById('relative_sigma_operating_labor_per_MW').value),
-
-                // Covert fab parameters - detection
-                'covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock': parseFloat(document.getElementById('proportion_diverted_sme').value),
-
-                // Covert fab parameters - production capacity
-                'covert_project_parameters.covert_fab_parameters.wafers_per_month_per_worker': parseFloat(document.getElementById('wafers_per_month_per_worker').value),
-                'covert_project_parameters.covert_fab_parameters.labor_productivity_relative_sigma': parseFloat(document.getElementById('labor_productivity_sigma').value),
-                'covert_project_parameters.covert_fab_parameters.wafers_per_month_per_lithography_scanner': parseFloat(document.getElementById('wafers_per_month_per_scanner').value),
-                'covert_project_parameters.covert_fab_parameters.scanner_productivity_relative_sigma': parseFloat(document.getElementById('scanner_productivity_sigma').value),
-
-                // Covert fab parameters - construction time
-                'covert_project_parameters.covert_fab_parameters.construction_time_for_5k_wafers_per_month': parseFloat(document.getElementById('construction_time_5k').value),
-                'covert_project_parameters.covert_fab_parameters.construction_time_for_100k_wafers_per_month': parseFloat(document.getElementById('construction_time_100k').value),
-                'covert_project_parameters.covert_fab_parameters.construction_time_relative_sigma': parseFloat(document.getElementById('construction_time_sigma').value),
-                'covert_project_parameters.covert_fab_parameters.construction_workers_per_1000_wafers_per_month': parseFloat(document.getElementById('construction_workers_per_1000').value),
-
-                // Covert fab parameters - chip production
-                'covert_project_parameters.covert_fab_parameters.h100_sized_chips_per_wafer': parseFloat(document.getElementById('chips_per_wafer').value),
-                'covert_project_parameters.covert_fab_parameters.transistor_density_scaling_exponent': parseFloat(document.getElementById('transistor_density_exponent').value),
-                'covert_project_parameters.covert_fab_parameters.architecture_efficiency_improvement_per_year': parseFloat(document.getElementById('architecture_efficiency').value),
-
-                // Covert fab parameters - energy efficiency scaling
-                'covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended': parseFloat(document.getElementById('watts_per_tpp_exponent_before_dennard').value),
-                'covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended': parseFloat(document.getElementById('watts_per_tpp_exponent_after_dennard').value),
-                'covert_project_parameters.covert_fab_parameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2': parseFloat(document.getElementById('transistor_density_at_dennard_end').value),
-
-                // Covert fab parameters - PRC scanner production
-                'covert_project_parameters.covert_fab_parameters.prc_lithography_scanners_produced_in_first_year': parseFloat(document.getElementById('prc_scanners_first_year').value),
-                'covert_project_parameters.covert_fab_parameters.prc_additional_lithography_scanners_produced_per_year': parseFloat(document.getElementById('prc_scanners_per_year').value),
-                'covert_project_parameters.covert_fab_parameters.prc_scanner_production_relative_sigma': parseFloat(document.getElementById('prc_scanner_production_sigma').value),
-
-                // Covert fab parameters - localization probabilities
-                'covert_project_parameters.covert_fab_parameters.localization_130nm_2025': parseFloat(document.getElementById('localization_130nm_2025').value),
-                'covert_project_parameters.covert_fab_parameters.localization_130nm_2031': parseFloat(document.getElementById('localization_130nm_2031').value),
-                'covert_project_parameters.covert_fab_parameters.localization_28nm_2025': parseFloat(document.getElementById('localization_28nm_2025').value),
-                'covert_project_parameters.covert_fab_parameters.localization_28nm_2031': parseFloat(document.getElementById('localization_28nm_2031').value),
-                'covert_project_parameters.covert_fab_parameters.localization_14nm_2025': parseFloat(document.getElementById('localization_14nm_2025').value),
-                'covert_project_parameters.covert_fab_parameters.localization_14nm_2031': parseFloat(document.getElementById('localization_14nm_2031').value),
-                'covert_project_parameters.covert_fab_parameters.localization_7nm_2025': parseFloat(document.getElementById('localization_7nm_2025').value),
-                'covert_project_parameters.covert_fab_parameters.localization_7nm_2031': parseFloat(document.getElementById('localization_7nm_2031').value)
+                max_proportion_of_PRC_energy_consumption: parseFloat(document.getElementById('max_proportion_of_PRC_energy_consumption').value),
+                total_GW_of_PRC_energy_consumption: parseFloat(document.getElementById('total_GW_of_PRC_energy_consumption').value),
+                construction_labor_per_MW_per_year: parseFloat(document.getElementById('construction_labor_per_MW_per_year').value),
+                relative_sigma_construction_labor_per_MW_per_year: parseFloat(document.getElementById('relative_sigma_construction_labor_per_MW_per_year').value),
+                operating_labor_per_MW: parseFloat(document.getElementById('operating_labor_per_MW').value),
+                relative_sigma_operating_labor_per_MW: parseFloat(document.getElementById('relative_sigma_operating_labor_per_MW').value),
+                mean_detection_time_of_covert_site_for_100_workers: parseFloat(document.getElementById('mean_detection_time_100').value),
+                mean_detection_time_of_covert_site_for_1000_workers: parseFloat(document.getElementById('mean_detection_time_1000').value),
+                variance_of_detection_time_given_num_workers: parseFloat(document.getElementById('variance_detection_time').value)
             };
         }
 
@@ -1022,6 +1013,12 @@
                 };
             });
 
+            console.log('Project H100-Years CCDF Debug:');
+            console.log('priorProb:', priorProb);
+            console.log('likelihoodRatios:', likelihoodRatios);
+            console.log('thresholds:', thresholds);
+            console.log('CCDF data keys:', Object.keys(data.dark_compute_model.h100_years_ccdf));
+            console.log('CCDF data:', data.dark_compute_model.h100_years_ccdf);
 
             // Reverse thresholds for legend order (highest to lowest)
             const thresholdsReversed = [...thresholds].reverse();
@@ -1078,6 +1075,8 @@
 
         function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null) {
             // Create histogram/PDF from values
+            console.log(`plotPDF called for ${divId}:`, values);
+            console.log(`plotPDF ${divId} - min: ${Math.min(...values)}, max: ${Math.max(...values)}, count: ${values.length}`);
 
             const marker = { color: color, line: { width: 0.5, color: 'white' } };
 
@@ -1135,6 +1134,9 @@
                 // Using probability instead of density makes the bar height proportional to the actual probability mass
                 const probabilities = binCounts.map(count => count / values.length);
 
+                console.log(`Bin edges: ${binEdges}`);
+                console.log(`Bin counts: ${binCounts}`);
+                console.log(`Probabilities: ${probabilities}`);
 
                 // Create bar trace instead of histogram
                 trace.type = 'bar';
@@ -1451,10 +1453,10 @@
 
         function updateDashboard(data) {
             // Find the median simulation by H100e production
-            const h100eValues = data.covert_fab?.individual_h100e_before_detection || [];
-            const timeValues = data.covert_fab?.individual_time_before_detection || [];
-            const nodeValues = data.covert_fab?.individual_process_node || [];
-            const energyValues = data.covert_fab?.individual_energy_before_detection || [];
+            const h100eValues = data.individual_h100e_before_detection || [];
+            const timeValues = data.individual_time_before_detection || [];
+            const nodeValues = data.individual_process_node || [];
+            const energyValues = data.individual_energy_before_detection || [];
 
             if (h100eValues.length > 0) {
                 // Sort by H100e and find median simulation
@@ -1510,10 +1512,10 @@
             }
 
             // Populate dark compute project dashboard
-            const projectH100eValues = data.dark_compute_model?.individual_project_h100e_before_detection || [];
-            const projectEnergyValues = data.dark_compute_model?.individual_project_energy_before_detection || [];
-            const projectTimeValues = data.dark_compute_model?.individual_project_time_before_detection || [];
-            const projectH100YearsValues = data.dark_compute_model?.individual_project_h100_years_before_detection || [];
+            const projectH100eValues = data.individual_project_h100e_before_detection || [];
+            const projectEnergyValues = data.individual_project_energy_before_detection || [];
+            const projectTimeValues = data.individual_project_time_before_detection || [];
+            const projectH100YearsValues = data.individual_project_h100_years_before_detection || [];
 
             if (projectH100eValues.length > 0) {
                 // Sort by H100-years and find 80th percentile simulation
@@ -1592,18 +1594,10 @@
                 const data = await response.json();
 
                 // Log data structure for debugging
-                console.log("=".repeat(80));
-                console.log("COVERT FAB COMPUTE CCDFs (Frontend):");
-                console.log("Likelihood ratios:", data.covert_fab?.likelihood_ratios);
-                console.log("Compute CCDFs keys:", Object.keys(data.covert_fab?.compute_ccdfs || {}));
-                for (const [lr, ccdfs] of Object.entries(data.covert_fab?.compute_ccdfs || {})) {
-                    console.log(`\nLR=${lr}: ${ccdfs.length} data points`);
-                    if (ccdfs.length > 0) {
-                        console.log(`  First 3 points:`, ccdfs.slice(0, 3));
-                        console.log(`  Last 3 points:`, ccdfs.slice(-3));
-                    }
-                }
-                console.log("=".repeat(80));
+                console.log('=== SIMULATION DATA RECEIVED ===');
+                console.log('Top-level keys:', Object.keys(data));
+                console.log('Full data structure:', data);
+                console.log('==============================');
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -1613,6 +1607,7 @@
                 updateDashboard(data);
 
                 // Plot dark compute equation section
+                console.log('Plotting dark compute equation section...');
 
                 // Plot 1: Initial dark compute (histogram)
                 if (data.initial_stock && data.initial_stock.initial_compute_stock_samples) {
@@ -2101,6 +2096,7 @@
 
                 // Plot detection probability bar chart and initial compute stock histogram
                 if (data.initial_stock && data.initial_stock.initial_dark_compute_detection_probs && data.initial_stock.initial_compute_stock_samples) {
+                    console.log('Plotting detection probability bar chart and initial compute stock...');
 
                     // Update dashboard with median values
                     const sortedDarkCompute = [...data.initial_stock.initial_compute_stock_samples].sort((a, b) => a - b);
@@ -2182,19 +2178,23 @@
                     // Histogram for initial compute stock
                     plotPDF('initialComputeStockPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'PRC Dark Compute Stock (H100e)', 30, false);
                 } else {
+                    console.log('No detection probability or compute stock data available');
                 }
 
                 // Plot LR breakdown histograms for initial compute reporting
                 if (data.initial_stock && data.initial_stock.lr_prc_accounting_samples && data.initial_stock.lr_global_accounting_samples && data.initial_stock.lr_combined_samples) {
+                    console.log('Plotting LR breakdown histograms...');
                     // Use log scale with range 1/3 to 5, and blue color #5B8DBE
                     plotPDF('lrPrcAccountingPlot', data.initial_stock.lr_prc_accounting_samples, '#5B8DBE', 'Likelihood Ratio from PRC Accounting', 12, true, 1/3, 5);
                     plotPDF('lrGlobalAccountingPlot', data.initial_stock.lr_global_accounting_samples, '#5B8DBE', 'Likelihood Ratio from Global Production Accounting', 12, true, 1/3, 5);
                     plotPDF('lrCombinedPlot', data.initial_stock.lr_combined_samples, '#5B8DBE', 'Combined LR', 12, true, 1/3, 5);
                 } else {
+                    console.log('No LR samples in data');
                 }
 
                 // Plot initial dark compute stock breakdown
                 if (data.initial_stock && data.initial_stock.initial_prc_stock_samples && data.initial_stock.diversion_proportion && data.initial_stock.initial_compute_stock_samples) {
+                    console.log('Plotting initial dark compute stock breakdown...');
 
                     // Plot initial PRC stock distribution - purple color #9B72B0
                     plotPDF('initialPrcStockPlot', data.initial_stock.initial_prc_stock_samples, '#9B72B0', 'Initial PRC Compute Stock (H100e)', 30, false);
@@ -2210,6 +2210,7 @@
                     // Plot the resulting dark compute stock - purple color #9B72B0
                     plotPDF('darkComputeResultPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100e)', 30, false);
                 } else {
+                    console.log('No initial dark compute stock breakdown data available');
                 }
 
                 // Plot main charts
@@ -2248,6 +2249,11 @@
 
                     // LR Inventory - PDF of values across simulations at final timestep
                     const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
+                    console.log('LR Inventory values:', lrInventoryFinal);
+                    console.log('LR Inventory length:', lrInventoryFinal.length);
+                    console.log('LR Inventory min:', Math.min(...lrInventoryFinal), 'max:', Math.max(...lrInventoryFinal));
+                    console.log('Values below 1:', lrInventoryFinal.filter(v => v < 1));
+                    console.log('Values at or above 1:', lrInventoryFinal.filter(v => v >= 1));
                     // Use log scale x-axis but show actual LR values (not log values)
                     plotPDF('lrInventoryPlot', lrInventoryFinal, '#D97676', 'Likelihood Ratio', 10, true);
 
@@ -2286,6 +2292,7 @@
 
                 // Plot "Strength of Evidence of Covert Project" section
                 if (data.initial_stock && data.initial_stock.lr_combined_samples && data.dark_compute_model) {
+                    console.log('Plotting Strength of Evidence of Covert Project section...');
                     const years = data.dark_compute_model.years;
 
                     // Get prior probability from parameters and calculate prior odds

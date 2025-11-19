@@ -42,12 +42,12 @@ MODEL OUTPUTS
 -------------
 Given a specific year, the model provides two key outputs:
 
-1. compute_produced_per_month(year) -> Compute
-   - Compute object containing chip specifications and monthly production count
+1. get_monthly_production_rate(year) -> Compute
+   - Compute object containing chip specifications and monthly production rate
    - Returns empty Compute object if fab not yet operational
 
-2. likelihood_ratio_from_evidence(year) -> float
-   - Likelihood ratio from intelligence evidence about the fab at the specified year
+2. cumulative_detection_likelihood_ratio(year) -> float
+   - Cumulative likelihood ratio from intelligence evidence about the fab at the specified year
    - Multiplies three independent likelihood ratios from different intelligence sources
    - Can be combined with a prior to estimate detection probability
 
@@ -269,7 +269,7 @@ Instantiate PRCCovertFab with construction parameters:
     )
 
 Then query compute production and likelihood ratio:
-    compute_per_month = fab.compute_produced_per_month(year=2030)
+    compute_per_month = fab.get_monthly_production_rate(year=2030)
     likelihood_ratio = fab.likelihood_ratio_from_evidence(year=2030)
 """
 
@@ -872,12 +872,12 @@ class CovertFab(ABC):
         return None
 
     @abstractmethod
-    def compute_produced_per_month(self, year):
-        """Return Compute object representing monthly production."""
+    def get_monthly_production_rate(self, year):
+        """Return Compute object representing monthly production rate."""
         return None
 
     @abstractmethod
-    def detection_likelihood_ratio(self, year):
+    def cumulative_detection_likelihood_ratio(self, year):
         return None
 
 @dataclass
@@ -1041,11 +1041,11 @@ class PRCCovertFab(CovertFab):
         else:
             return False
 
-    def compute_produced_per_month(self, year):
-        """Calculate monthly compute production as a Compute object.
+    def get_monthly_production_rate(self, year):
+        """Calculate monthly compute production rate as a Compute object.
 
         Returns:
-            Compute: Object containing chip specifications and counts
+            Compute: Object containing chip specifications and monthly production rate (chips/month)
         """
         if not self.is_operational(year):
             # Return empty Compute object if not operational
@@ -1138,28 +1138,28 @@ class PRCCovertFab(CovertFab):
         Returns:
             float: Energy consumption in GW per month
         """
-        compute = self.compute_produced_per_month(year)
+        compute = self.get_monthly_production_rate(year)
         return compute.total_energy_requirements_GW()
 
-    def detection_likelihood_ratio(self, year):
+    def cumulative_detection_likelihood_ratio(self, year):
         """
-        Overall likelihood ratio from intelligence evidence about the fab.
+        Cumulative likelihood ratio from all intelligence evidence about the fab at a given year.
 
         Combines three independent intelligence sources:
-        1. Inventory accounting (missing domestic SME)
-        2. Procurement accounting (foreign SME purchases)
-        3. Other strategies (HUMINT, SIGINT based on workers and time)
+        1. Inventory accounting (missing domestic SME) - constant over time
+        2. Procurement accounting (foreign SME purchases) - constant over time
+        3. Other strategies (HUMINT, SIGINT based on workers and time) - grows over time
 
-        Multiplies likelihood ratios: LR_total = LR_inventory × LR_procurement × LR_other
+        Multiplies likelihood ratios: LR_cumulative = LR_inventory × LR_procurement × LR_other(year)
 
-        This likelihood ratio can be combined with a prior using Bayes' theorem:
-        posterior_odds = prior_odds × LR_total
+        This cumulative likelihood ratio represents the total evidence accumulated up to this year.
+        It can be combined with a prior using Bayes' theorem: posterior_odds = prior_odds × LR_cumulative
 
         Args:
-            year: Current year to evaluate likelihood ratio
+            year: Current year to evaluate cumulative likelihood ratio
 
         Returns:
-            float: Overall likelihood ratio from all intelligence sources
+            float: Cumulative likelihood ratio from all intelligence sources
         """
         # Inventory accounting: Determine whether Chinese SME has gone missing
         # Tracks whether domestic PRC lithography scanners are unaccounted for

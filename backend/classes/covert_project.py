@@ -106,10 +106,6 @@ class CovertProject:
 
         operational_compute = Compute(chip_counts=operational_chip_counts)
 
-        print(f"DEBUG operational_dark_compute(year={year}): capacity={datacenter_capacity_gw:.2f}GW, "
-              f"required={total_energy_required_gw:.2f}GW, scaling_factor={scaling_factor:.4f}, "
-              f"operational_tpp={operational_compute.total_h100e_tpp():.2f}", flush=True)
-
         return operational_compute
 
     def h100_years_to_date(self, current_year: float, years_list: list[float]) -> float:
@@ -225,9 +221,9 @@ class CovertProject:
     def get_fab_lr_other(self, year: float) -> float:
         """Get fab other detection likelihood ratio. Returns 1.0 if no fab."""
         if self.covert_fab is not None:
-            # Call detection_likelihood_ratio to populate lr_other_over_time
+            # Call cumulative_detection_likelihood_ratio to populate lr_other_over_time
             if year not in self.covert_fab.lr_other_over_time:
-                self.covert_fab.detection_likelihood_ratio(year)
+                self.covert_fab.cumulative_detection_likelihood_ratio(year)
             return self.covert_fab.lr_other_over_time.get(year, 1.0)
         return 1.0
 

@@ -92,11 +92,50 @@
     </div>
 
     <script>
+        // Mobile menu toggle functionality
+        function initializeMobileMenu() {
+            const mobileTopBar = document.getElementById('mobileTopBar');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (mobileTopBar && sidebar) {
+                // Toggle sidebar on top bar click
+                mobileTopBar.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('open');
+                    document.body.classList.toggle('sidebar-open');
+                });
+
+                // Close sidebar when clicking on overlay
+                document.addEventListener('click', (e) => {
+                    if (sidebar.classList.contains('open') &&
+                        !sidebar.contains(e.target) &&
+                        !mobileTopBar.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                        document.body.classList.remove('sidebar-open');
+                    }
+                });
+
+                // Close sidebar when an input triggers simulation (Enter key on mobile)
+                const sidebarInputs = document.querySelectorAll('.sidebar input, .sidebar select');
+                sidebarInputs.forEach(input => {
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter' && window.innerWidth <= 768) {
+                            sidebar.classList.remove('open');
+                            document.body.classList.remove('sidebar-open');
+                        }
+                    });
+                });
+            }
+        }
+
         // Wait for DOM to be ready and sidebar to be loaded
         function initializeApp() {
             const runButton = document.getElementById('runSimulation');
             const statusDiv = document.getElementById('status');
             const loadingDiv = document.getElementById('loading');
+
+            // Initialize mobile menu
+            initializeMobileMenu();
 
             // If button doesn't exist yet, wait and try again
             if (!runButton) {
@@ -106,8 +145,10 @@
         const plotsDiv = document.getElementById('plots');
 
         function setStatus(message, type) {
-            statusDiv.textContent = message;
-            statusDiv.className = 'status ' + type;
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'status ' + type;
+            }
         }
 
         function getParameters() {
@@ -345,40 +386,12 @@
                     }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
 
                     // 4. Posterior probability of covert project
-                    // Calculate: Prior × LR_initial × LR_SME × LR_other for each simulation at each timestep
-                    const posteriorProbProject_individual = data.covert_fab.lr_other.individual.map((other_sim, sim_idx) => {
-                        const lr_initial = data.initial_stock.lr_combined_samples[sim_idx];
-                        const lr_sme = lrDivertedSME[sim_idx];
-
-                        return other_sim.map((lr_other_t) => {
-                            // Calculate posterior odds
-                            const priorOdds = priorProb / (1 - priorProb);
-                            const posteriorOdds = priorOdds * lr_initial * lr_sme * lr_other_t;
-                            // Convert to probability
-                            const posteriorProb = posteriorOdds / (1 + posteriorOdds);
-                            return posteriorProb;
-                        });
-                    });
-
-                    // Calculate median and percentiles
-                    const posteriorProbProject_median = years.map((_, i) => {
-                        const values = posteriorProbProject_individual.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.5)];
-                    });
-                    const posteriorProbProject_p25 = years.map((_, i) => {
-                        const values = posteriorProbProject_individual.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
-                    });
-                    const posteriorProbProject_p75 = years.map((_, i) => {
-                        const values = posteriorProbProject_individual.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
-                    });
-
+                    // Use backend data from US intelligence beliefs (same as Simulation Runs plot)
                     plotMedianWithPercentiles('posteriorProbProjectPlot', {
-                        median: posteriorProbProject_median,
-                        p25: posteriorProbProject_p25,
-                        p75: posteriorProbProject_p75,
-                        individual: posteriorProbProject_individual
+                        median: data.dark_compute_model.posterior_prob_project.median,
+                        p25: data.dark_compute_model.posterior_prob_project.p25,
+                        p75: data.dark_compute_model.posterior_prob_project.p75,
+                        individual: data.dark_compute_model.posterior_prob_project.individual
                     }, years, '#5B8DBE', 'Posterior Probability');
                 }
 
@@ -393,7 +406,7 @@
 
                     // Wafer Starts per Month - PDF
                     const waferStartsFinal = data.covert_fab.wafer_starts.individual.map(sim => sim[sim.length - 1]);
-                    plotPDF('waferStartsPlot', waferStartsFinal, '#74B3A8', 'Wafers/Month');
+                    plotPDF('waferStartsPlot', waferStartsFinal, '#9B72B0', 'Wafers/Month');
 
                     // H100-sized Chips per Wafer - Display as a box (constant value)
                     const chipsPerWaferValue = data.covert_fab.chips_per_wafer.individual[0][0]; // Same for all sims
@@ -798,13 +811,13 @@
 
         // Make breakdown plots clickable and link to sidebar inputs
         const plotToInputMapping = {
-            // Section 2: US Bayesian Inference plots
+            // Covert Fab Section - US Bayesian Inference plots
             'lrInventoryPlot': 'proportion_diverted_sme', // Median absolute relative error of US intelligence estimate of PRC SME stock
             'lrProcurementPlot': 'localization_130nm_2025', // Probability PRC achieves >90% indigenization
             'lrOtherPlot': 'mean_detection_time_100', // Detection time
             'posteriorProbPlot': null, // Output, not an input
 
-            // Section 3: Compute Production Rate plots
+            // Covert Fab Section - Compute Production Rate plots
             'isOperationalPlot': 'construction_time_5k', // First construction time param
             'waferStartsPlot': 'wafers_per_month_per_worker', // Operating labor productivity
             'chipsPerWaferPlot': 'chips_per_wafer',
@@ -812,29 +825,86 @@
             'architectureEfficiencyDisplay': 'architecture_efficiency',
             'totalComputePlot': null, // Output, not an input
 
-            // Section 4: Energy Requirements plots
+            // Covert Fab Section - Energy Requirements plots
             'energyTransistorDensityPlot': 'transistor_density_exponent',
             'densityVsEfficiencyPlot': 'watts_per_tpp_exponent_before_dennard',
             'h100EnergyDisplay': 'h100_power_watts',
             'energyComputePerMonthPlot': null, // This shows compute per month, not an input
-            'energyPerMonthPlot': null // Output, not an input
+            'energyPerMonthPlot': null, // Output, not an input
+
+            // Dark Compute Model Section - Dark Compute Stock Breakdown
+            'initialDarkComputePlot': 'proportion_of_initial_chip_stock_to_divert',
+            'covertFabFlowPlot': '#covertFabComputeProductionBreakdown', // Scroll to section instead of input
+            'chipSurvivalPlot': 'increase_of_hazard_rate_per_year_p50',
+            'totalDarkComputePlot': null, // Output, not an input
+
+            // Dark Compute Model Section - Data Center Capacity Breakdown
+            'datacenterCapacityPlot2': 'GW_per_initial_datacenter',
+            'darkComputeEnergyPlot': 'h100_power_watts',
+            'operationalDarkComputePlot': null, // Output, not an input
+
+            // Dark Compute Model Section - US Estimated Likelihood of PRC Covert Project
+            'dashboardPriorProject': 'covert_project_parameters.p_project_exists',
+            'lrInitialStockPlot': '#initialStockIntelligenceBreakdown', // Scroll to section instead of input
+            'lrDivertedSMEPlot': 'proportion_diverted_sme',
+            'lrOtherIntelPlot': 'mean_detection_time_100',
+            'posteriorProbProjectPlot': null, // Output, not an input
+
+            // Initial Stock Section - Compute Breakdown
+            'initialPrcStockPlot': 'total_prc_compute_stock_in_2025',
+            'darkComputeResultPlot': null, // Output, not an input
+
+            // Initial Stock Section - Intelligence Evidence Breakdown
+            'lrPrcAccountingPlot': 'us_intelligence_median_error_in_estimate_of_prc_compute_stock',
+            'lrGlobalAccountingPlot': 'median_unreported_compute_owned_by_non_prc_actors',
+            'lrCombinedPlot': null // Output, not an input
         };
 
         // Add clickable class and click handlers to plots with associated inputs
         Object.entries(plotToInputMapping).forEach(([plotId, inputId]) => {
             const plotElement = document.getElementById(plotId);
             if (plotElement && inputId) {
-                plotElement.classList.add('clickable');
+                // For boxes, add cursor pointer style (they already have hover effects via .breakdown-box-inner)
+                if (plotElement.classList.contains('breakdown-box')) {
+                    plotElement.style.cursor = 'pointer';
+                } else {
+                    // For all other plots, add consistent inline hover styles
+                    plotElement.style.cursor = 'pointer';
+                    plotElement.style.transition = 'all 0.2s ease';
+
+                    // Add hover effect via event listeners
+                    plotElement.addEventListener('mouseenter', () => {
+                        plotElement.style.borderColor = '#007bff';
+                        plotElement.style.boxShadow = '0 0 8px rgba(0, 123, 255, 0.3)';
+                        plotElement.style.transform = 'scale(1.02)';
+                    });
+                    plotElement.addEventListener('mouseleave', () => {
+                        plotElement.style.borderColor = '#ddd';
+                        plotElement.style.boxShadow = '';
+                        plotElement.style.transform = '';
+                    });
+                }
+                // Add click handler
                 plotElement.addEventListener('click', () => {
-                    const inputElement = document.getElementById(inputId);
-                    if (inputElement) {
-                        // Scroll input into view
-                        inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        // Focus and select the input
-                        setTimeout(() => {
-                            inputElement.focus();
-                            inputElement.select();
-                        }, 300);
+                    // Check if inputId is a section (starts with #) or an input field
+                    if (inputId.startsWith('#')) {
+                        // Scroll to section
+                        const sectionElement = document.getElementById(inputId.substring(1));
+                        if (sectionElement) {
+                            sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    } else {
+                        // Focus on input field
+                        const inputElement = document.getElementById(inputId);
+                        if (inputElement) {
+                            // Scroll input into view
+                            inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // Focus and select the input
+                            setTimeout(() => {
+                                inputElement.focus();
+                                inputElement.select();
+                            }, 300);
+                        }
                     }
                 });
             }

@@ -910,6 +910,7 @@ class PRCCovertFab(CovertFab):
             operation_labor : float,
             agreement_year : float,
             years_since_agreement_start : list,
+            project_parameters,
     ):
         # Sample all node localization years with consistency constraint (needed for strategy-based selection)
         all_localization_years = sample_all_node_localization_years()
@@ -1030,9 +1031,9 @@ class PRCCovertFab(CovertFab):
 
         self.lr_over_time_vs_num_workers = lr_over_time_vs_num_workers(
             labor_by_year=labor_by_year,
-            mean_detection_time_100_workers=CovertProjectParameters.mean_detection_time_for_100_workers,
-            mean_detection_time_1000_workers=CovertProjectParameters.mean_detection_time_for_1000_workers,
-            variance_theta=CovertProjectParameters.variance_of_detection_time_given_num_workers
+            mean_detection_time_100_workers=project_parameters.mean_detection_time_for_100_workers,
+            mean_detection_time_1000_workers=project_parameters.mean_detection_time_for_1000_workers,
+            variance_theta=project_parameters.variance_of_detection_time_given_num_workers
         )
 
     def is_operational(self, year):

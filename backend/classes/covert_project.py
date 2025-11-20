@@ -13,6 +13,7 @@ class CovertProject:
     covert_project_strategy : CovertProjectStrategy
     agreement_year : float
     years : list
+    covert_project_parameters : CovertProjectParameters
     stock : Optional[PRCDarkComputeStock] = None
     covert_fab : Optional[CovertFab] = None
     detection_time_via_other_strategies : Optional[float] = None
@@ -22,7 +23,9 @@ class CovertProject:
         self.dark_compute_stock = PRCDarkComputeStock(
             agreement_year = self.agreement_year,
             proportion_of_initial_compute_stock_to_divert = self.covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
-            optimal_proportion_of_initial_compute_stock_to_divert = CovertProjectStrategy().proportion_of_initial_compute_stock_to_divert
+            optimal_proportion_of_initial_compute_stock_to_divert = self.covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
+            initial_compute_parameters = self.covert_project_parameters.initial_compute_stock_parameters,
+            survival_parameters = self.covert_project_parameters.survival_rate_parameters
         )
 
         # Convert absolute years to years since agreement start
@@ -32,7 +35,9 @@ class CovertProject:
             GW_per_initial_datacenter = self.covert_project_strategy.GW_per_initial_datacenter,
             number_of_initial_datacenters = self.covert_project_strategy.number_of_initial_datacenters,
             construction_labor = self.covert_project_strategy.datacenter_construction_labor,
-            years_since_agreement_start = years_since_agreement_start
+            years_since_agreement_start = years_since_agreement_start,
+            datacenter_parameters = self.covert_project_parameters.datacenter_model_parameters,
+            project_parameters = self.covert_project_parameters
         )
 
         if (self.covert_project_strategy.build_a_covert_fab):
@@ -44,7 +49,8 @@ class CovertProject:
                     proportion_of_prc_lithography_scanners_devoted_to_fab = self.covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
                     operation_labor = self.covert_project_strategy.covert_fab_operating_labor,
                     agreement_year = self.agreement_year,
-                    years_since_agreement_start = years_since_agreement_start
+                    years_since_agreement_start = years_since_agreement_start,
+                    project_parameters = self.covert_project_parameters
                 )
             except FabNotBuiltException:
                 # Fab not built because process node threshold not met
@@ -64,9 +70,9 @@ class CovertProject:
 
         self.lr_over_time_vs_num_workers = lr_over_time_vs_num_workers(
             labor_by_year=labor_by_year,
-            mean_detection_time_100_workers=CovertProjectParameters.mean_detection_time_for_100_workers,
-            mean_detection_time_1000_workers=CovertProjectParameters.mean_detection_time_for_1000_workers,
-            variance_theta=CovertProjectParameters.variance_of_detection_time_given_num_workers
+            mean_detection_time_100_workers=self.covert_project_parameters.mean_detection_time_for_100_workers,
+            mean_detection_time_1000_workers=self.covert_project_parameters.mean_detection_time_for_1000_workers,
+            variance_theta=self.covert_project_parameters.variance_of_detection_time_given_num_workers
         )
         
     def operational_dark_compute(self, year: float):

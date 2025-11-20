@@ -9,6 +9,7 @@ from copy import deepcopy
 # Import CovertProject and CovertProjectStrategy
 from backend.classes.covert_project import CovertProject
 from backend.classes.covert_fab import set_localization_probabilities
+from backend.classes.dark_compute_stock import Compute
 from backend.paramaters import CovertProjectStrategy, Parameters
 
 @dataclass
@@ -22,20 +23,25 @@ class BeliefsAboutProject:
     project_strategy_conditional_on_existence : CovertProjectStrategy = None
     distribution_over_compute_operation : list = field(default_factory=list)
     p_project_exists_update_history : dict = field(default_factory=dict)
+    initial_p_project_exists : float = None  # Store the initial prior
 
-    def update_p_project_exists(self, year: float, likelihood_ratio: float):
-        """Update p_project_exists using Bayesian update with likelihood ratio"""
-        # Clamp p_project_exists to avoid division by zero
-        p_clamped = max(1e-10, min(1 - 1e-10, self.p_project_exists))
+    def update_p_project_exists_from_cumulative_lr(self, year: float, cumulative_likelihood_ratio: float):
+        """Update p_project_exists using cumulative likelihood ratio from initial prior"""
+        # Always start from the initial prior
+        if self.initial_p_project_exists is None:
+            self.initial_p_project_exists = self.p_project_exists
+
+        # Clamp initial prior to avoid division by zero
+        p_clamped = max(1e-10, min(1 - 1e-10, self.initial_p_project_exists))
         prior_odds = p_clamped / (1 - p_clamped)
-        posterior_odds = prior_odds * likelihood_ratio
+        posterior_odds = prior_odds * cumulative_likelihood_ratio
         posterior_p = posterior_odds / (1 + posterior_odds)
 
         # Store update history (append to list for this year)
         if year not in self.p_project_exists_update_history:
             self.p_project_exists_update_history[year] = []
         self.p_project_exists_update_history[year].append({
-            'update': likelihood_ratio,
+            'update': cumulative_likelihood_ratio,
             'current_p_project_exists': posterior_p
         })
 
@@ -86,18 +92,21 @@ class Simulation:
                 if project.covert_fab is not None:
                     # get_monthly_production_rate returns Compute object with monthly production rate, multiply by increment (in years) and months per year
                     compute_per_month = project.covert_fab.get_monthly_production_rate(current_year)
-                    additional_dark_compute = compute_per_month.total_h100e_tpp() * 12 * increment
-                    project.dark_compute_stock.add_dark_compute(current_year, additional_dark_compute)
+                    # Scale chip counts by the time increment to get total compute produced
+                    months = 12 * increment
+                    scaled_chip_counts = {chip: count * months for chip, count in compute_per_month.chip_counts.items()}
+                    compute_to_add = Compute(chip_counts=scaled_chip_counts)
+                    project.dark_compute_stock.add_dark_compute(current_year, compute_to_add)
 
                 # ========== Get cumulative likelihood ratios from various intelligence sources ==========
                 project_lr = project.get_cumulative_evidence_of_covert_project(current_year)
 
                 # ========== Update detector beliefs with cumulative likelihood ratios ==========
                 for detector_name, detector in self.detectors.items():
-                    # Update project existence probability with aggregated LR
-                    detector.beliefs_about_projects[project.name].update_p_project_exists(
+                    # Update project existence probability with cumulative LR
+                    detector.beliefs_about_projects[project.name].update_p_project_exists_from_cumulative_lr(
                         year=current_year,
-                        likelihood_ratio=project_lr,
+                        cumulative_likelihood_ratio=project_lr,
                     )
                 
             current_year += increment
@@ -124,6 +133,7 @@ class Model:
                 beliefs_about_projects = {
                     "prc_covert_project" : BeliefsAboutProject(
                         p_project_exists = self.parameters.covert_project_parameters.p_project_exists,
+                        initial_p_project_exists = self.parameters.covert_project_parameters.p_project_exists,
                         project_strategy_conditional_on_existence = CovertProjectStrategy(),
                     )
                 }
@@ -158,7 +168,8 @@ class Model:
                 name = "prc_covert_project",
                 covert_project_strategy = self.parameters.covert_project_strategy,
                 agreement_year = self.parameters.simulation_settings.start_year,
-                years = years
+                years = years,
+                covert_project_parameters = self.parameters.covert_project_parameters
             )
         }
 

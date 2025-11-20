@@ -14,41 +14,6 @@ function plotDatacenterCombined(data) {
 
     // Create traces for both series
     const traces = [
-        // Capacity: Upper bound (invisible)
-        {
-            x: years,
-            y: dcm.datacenter_capacity.p75.map(v => v * 1000),
-            type: 'scatter',
-            mode: 'lines',
-            line: { width: 0 },
-            showlegend: false,
-            hoverinfo: 'skip',
-            yaxis: 'y'
-        },
-        // Capacity: Lower bound (fills to previous)
-        {
-            x: years,
-            y: dcm.datacenter_capacity.p25.map(v => v * 1000),
-            type: 'scatter',
-            mode: 'lines',
-            fill: 'tonexty',
-            fillcolor: 'rgba(90, 168, 155, 0.2)',
-            line: { width: 0 },
-            showlegend: false,
-            hoverinfo: 'skip',
-            yaxis: 'y'
-        },
-        // Capacity: Median line
-        {
-            x: years,
-            y: dcm.datacenter_capacity.median.map(v => v * 1000),
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: capacityColor, width: 3 },
-            name: 'Covert Datacenter capacity',
-            hovertemplate: 'Capacity: %{y:.0f} MW<extra></extra>',
-            yaxis: 'y'
-        },
         // LR: 25th percentile (invisible)
         {
             x: years,
@@ -58,7 +23,7 @@ function plotDatacenterCombined(data) {
             line: { color: 'transparent' },
             showlegend: false,
             hoverinfo: 'skip',
-            yaxis: 'y2'
+            yaxis: 'y'
         },
         // LR: 75th percentile (fills to previous)
         {
@@ -71,7 +36,7 @@ function plotDatacenterCombined(data) {
             line: { color: 'transparent' },
             showlegend: false,
             hoverinfo: 'skip',
-            yaxis: 'y2'
+            yaxis: 'y'
         },
         // LR: Median line
         {
@@ -82,6 +47,41 @@ function plotDatacenterCombined(data) {
             line: { color: lrColor, width: 3 },
             name: 'Evidence of Datacenters',
             hovertemplate: 'LR: %{y:.2f}<extra></extra>',
+            yaxis: 'y'
+        },
+        // Capacity: Upper bound (invisible)
+        {
+            x: years,
+            y: dcm.datacenter_capacity.p75,
+            type: 'scatter',
+            mode: 'lines',
+            line: { width: 0 },
+            showlegend: false,
+            hoverinfo: 'skip',
+            yaxis: 'y2'
+        },
+        // Capacity: Lower bound (fills to previous)
+        {
+            x: years,
+            y: dcm.datacenter_capacity.p25,
+            type: 'scatter',
+            mode: 'lines',
+            fill: 'tonexty',
+            fillcolor: 'rgba(90, 168, 155, 0.2)',
+            line: { width: 0 },
+            showlegend: false,
+            hoverinfo: 'skip',
+            yaxis: 'y2'
+        },
+        // Capacity: Median line
+        {
+            x: years,
+            y: dcm.datacenter_capacity.median,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: capacityColor, width: 3 },
+            name: 'Covert Datacenter capacity',
+            hovertemplate: 'Capacity: %{y:.2f} GW<extra></extra>',
             yaxis: 'y2'
         }
     ];
@@ -90,39 +90,66 @@ function plotDatacenterCombined(data) {
         xaxis: {
             title: 'Year',
             titlefont: { size: 13 },
-            automargin: true,
-            showline: false,
-            mirror: false
+            automargin: true
         },
         yaxis: {
-            title: 'Energy capacity (MW)',
-            titlefont: { size: 13, color: capacityColor },
-            tickfont: { size: 10, color: capacityColor },
+            title: {
+                text: 'Evidence (LR)',
+                standoff: 15
+            },
+            titlefont: { size: 13, color: '#000' },
+            tickfont: { size: 10, color: lrColor },
             automargin: true,
             side: 'left',
-            showline: false,
-            mirror: false
+            type: 'log'
         },
         yaxis2: {
-            title: 'Evidence (LR)',
-            titlefont: { size: 13, color: lrColor },
-            tickfont: { size: 10, color: lrColor },
+            title: {
+                text: 'Capacity (GW)',
+                standoff: 15
+            },
+            titlefont: { size: 13, color: '#000' },
+            tickfont: { size: 10, color: capacityColor },
             overlaying: 'y',
             side: 'right',
-            type: 'log',
-            automargin: true,
-            showline: false,
-            mirror: false
+            automargin: true
         },
-        showlegend: false,
+        showlegend: true,
+        legend: {
+            x: 0.5,
+            y: -0.25,
+            xanchor: 'center',
+            yanchor: 'top',
+            orientation: 'h',
+            font: { size: 10 },
+            bgcolor: 'rgba(255,255,255,0)',
+            borderwidth: 0,
+            tracegroupgap: 20
+        },
         hovermode: 'x unified',
-        margin: { l: 60, r: 60, t: 10, b: 50 },
+        margin: { l: 55, r: 55, t: 0, b: 60 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
 
     Plotly.newPlot('datacenterCombinedPlot', traces, layout, {displayModeBar: false, responsive: true});
-    setTimeout(() => Plotly.Plots.resize('datacenterCombinedPlot'), 50);
+
+    // Match plot heights to dashboard height after both plots are created
+    setTimeout(() => {
+        const dashboard = document.querySelector('#covertDatacentersTopSection .dashboard');
+        const plotContainers = document.querySelectorAll('#covertDatacentersTopSection .plot-container');
+        if (dashboard && plotContainers.length > 0) {
+            const dashboardHeight = dashboard.offsetHeight;
+            plotContainers.forEach(container => {
+                container.style.height = dashboardHeight + 'px';
+            });
+            // Force resize after setting height
+            setTimeout(() => {
+                Plotly.Plots.resize('datacenterCapacityCcdfPlot');
+                Plotly.Plots.resize('datacenterCombinedPlot');
+            }, 50);
+        }
+    }, 150);
 }
 
 function plotDatacenterCapacityCcdf(data) {
@@ -154,22 +181,27 @@ function plotDatacenterCapacityCcdf(data) {
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             type: 'log',
-            automargin: true,
-            showline: false,
-            mirror: false
+            automargin: true
         },
         yaxis: {
             title: 'P(capacity > x)',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             range: [0, 1],
-            automargin: true,
-            showline: false,
-            mirror: false
+            automargin: true
         },
-        showlegend: false,
+        showlegend: true,
+        legend: {
+            x: 0.98,
+            y: 0.98,
+            xanchor: 'right',
+            yanchor: 'top',
+            bgcolor: 'rgba(255,255,255,0.8)',
+            bordercolor: '#ccc',
+            borderwidth: 1
+        },
         hovermode: 'closest',
-        margin: { l: 50, r: 10, t: 10, b: 65, pad: 10 },
+        margin: { l: 55, r: 0, t: 0, b: 60 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -260,22 +292,22 @@ function updateDatacenterDashboard(data) {
         const capacities = data.covert_datacenters.individual_capacity_before_detection;
         const times = data.covert_datacenters.individual_time_before_detection;
 
-        // Calculate median (50th percentile)
+        // Calculate 80th percentile
         const sortedCapacities = [...capacities].sort((a, b) => a - b);
         const sortedTimes = [...times].sort((a, b) => a - b);
-        const medianCapacity = sortedCapacities[Math.floor(sortedCapacities.length / 2)];
-        const medianTime = sortedTimes[Math.floor(sortedTimes.length / 2)];
+        const p80Capacity = sortedCapacities[Math.floor(sortedCapacities.length * 0.8)];
+        const p80Time = sortedTimes[Math.floor(sortedTimes.length * 0.8)];
 
         // Display capacity with proper formatting
-        if (medianCapacity >= 1) {
-            document.getElementById('dashboardDatacenterCapacity').textContent = `${medianCapacity.toFixed(1)} GW`;
-        } else if (medianCapacity >= 0.001) {
-            document.getElementById('dashboardDatacenterCapacity').textContent = `${(medianCapacity * 1000).toFixed(0)} MW`;
+        if (p80Capacity >= 1) {
+            document.getElementById('dashboardDatacenterCapacity').textContent = `${p80Capacity.toFixed(1)} GW`;
+        } else if (p80Capacity >= 0.001) {
+            document.getElementById('dashboardDatacenterCapacity').textContent = `${(p80Capacity * 1000).toFixed(0)} MW`;
         } else {
-            document.getElementById('dashboardDatacenterCapacity').textContent = `${(medianCapacity * 1000).toFixed(1)} MW`;
+            document.getElementById('dashboardDatacenterCapacity').textContent = `${(p80Capacity * 1000).toFixed(1)} MW`;
         }
 
         // Display time
-        document.getElementById('dashboardDatacenterTime').textContent = `${medianTime.toFixed(1)} years`;
+        document.getElementById('dashboardDatacenterTime').textContent = p80Time.toFixed(1);
     }
 }

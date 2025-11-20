@@ -450,6 +450,23 @@ def extract_energy_breakdown_by_source(simulation_results, years):
     initial_h100e_all_sims = np.zeros((num_sims, num_years))
     fab_h100e_all_sims = np.zeros((num_sims, num_years))
 
+    # Collect fab energy efficiency from each simulation that has a covert fab
+    fab_efficiency_list = []
+    for sim_idx, (covert_projects, _) in enumerate(simulation_results):
+        covert_fab = covert_projects["prc_covert_project"].covert_fab
+        if covert_fab and covert_fab.dark_compute_monthly_production_rate_history:
+            # Get any year from the production history (fab produces one type per simulation)
+            sample_year = list(covert_fab.dark_compute_monthly_production_rate_history.keys())[0]
+            compute_obj = covert_fab.dark_compute_monthly_production_rate_history[sample_year]
+
+            # Get the single chip from the Compute object
+            if compute_obj.chip_counts:
+                chip = list(compute_obj.chip_counts.keys())[0]
+                # Calculate energy_efficiency_relative_to_h100 from chip properties
+                # energy_efficiency = (h100e_tpp_per_chip * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP) / W_of_energy_consumed
+                fab_efficiency = (chip.h100e_tpp_per_chip * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP) / chip.W_of_energy_consumed
+                fab_efficiency_list.append(fab_efficiency)
+
     for sim_idx, (covert_projects, _) in enumerate(simulation_results):
         dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
 
@@ -467,20 +484,22 @@ def extract_energy_breakdown_by_source(simulation_results, years):
     initial_h100e_median = np.median(initial_h100e_all_sims, axis=0)
     fab_h100e_median = np.median(fab_h100e_all_sims, axis=0)
 
-    # Calculate average efficiency over all years
+    # Calculate average efficiency for initial stock over all years
     initial_energy_total = np.sum(initial_energy_median)
-    fab_energy_total = np.sum(fab_energy_median)
     initial_h100e_total = np.sum(initial_h100e_median)
-    fab_h100e_total = np.sum(fab_h100e_median)
 
     initial_efficiency = (initial_h100e_total / initial_energy_total) if initial_energy_total > 0 else 0
-    fab_efficiency = (fab_h100e_total / fab_energy_total) if fab_energy_total > 0 else 0
 
     # Calculate baseline H100 efficiency
     h100_baseline_efficiency = 1e9 / (H100_TPP_PER_CHIP * H100_WATTS_PER_TPP)
 
     initial_efficiency_relative = initial_efficiency / h100_baseline_efficiency if h100_baseline_efficiency > 0 else 0
-    fab_efficiency_relative = fab_efficiency / h100_baseline_efficiency if h100_baseline_efficiency > 0 else 0
+
+    # Take median of fab efficiency across simulations with fabs
+    if fab_efficiency_list:
+        fab_efficiency_relative = np.median(fab_efficiency_list)
+    else:
+        fab_efficiency_relative = 1.0  # Fallback if no fab was built
 
     # Create energy array
     energy_by_source_array = np.zeros((num_years, 2))

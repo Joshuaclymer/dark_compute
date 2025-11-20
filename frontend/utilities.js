@@ -1,5 +1,47 @@
 // Utility plotting functions shared across sections
 
+// ============================================================================
+// CENTRALIZED HOVER CONFIGURATION
+// ============================================================================
+// All hover effects should use these standardized configurations to ensure
+// consistency across the entire application. To modify hover behavior globally,
+// update these configuration objects.
+// ============================================================================
+
+const HoverConfig = {
+    // For time series plots with x-axis (e.g., line charts over time)
+    // This creates the unified vertical hover line effect
+    timeSeries: {
+        hovermode: 'x unified'
+    },
+
+    // For scatter plots, CCDF plots, and other non-time-series visualizations
+    scatter: {
+        hovermode: 'closest'
+    },
+
+    // For bar charts and categorical data
+    bar: {
+        hovermode: 'closest'
+    },
+
+    // Helper function to get hover template that matches the unified style
+    // Use this for traces that need custom hover templates
+    getTemplate: (label, valueFormat = '.2f') => {
+        return `${label}: %{y:${valueFormat}}<extra></extra>`;
+    },
+
+    // Helper for XY hover templates (e.g., CCDF plots)
+    getXYTemplate: (xLabel, yLabel, xFormat = '.2f', yFormat = '.3f') => {
+        return `${xLabel}: %{x:${xFormat}}<br>${yLabel}: %{y:${yFormat}}<extra></extra>`;
+    },
+
+    // Mark traces that should not show hover info (e.g., shaded regions, percentile bands)
+    skipHover: {
+        hoverinfo: 'skip'
+    }
+};
+
 function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null) {
     // Create histogram/PDF from values
 
@@ -73,15 +115,18 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
 
     const xaxisConfig = {
         title: xAxisLabel,
-        titlefont: { size: 10 },
+        titlefont: { size: 13 },
         automargin: true,
-        tickfont: { size: 9 }
+        tickfont: { size: 10 }
     };
 
     const yaxisConfig = {
-        title: logScale ? 'Probability' : 'Density',
-        titlefont: { size: 10 },
-        tickfont: { size: 9 }
+        title: {
+            text: logScale ? 'Probability' : 'Density',
+            standoff: 15
+        },
+        titlefont: { size: 13 },
+        tickfont: { size: 10 }
     };
 
     if (logScale) {
@@ -106,8 +151,11 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
             automargin: true
         },
         showlegend: false,
-        margin: { l: 50, r: 10, t: title ? 30 : 10, b: 55, pad: 10 },
-        hovermode: 'closest'
+        margin: { l: 55, r: 0, t: title ? 30 : 0, b: 60 },
+        hovermode: 'closest',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        autosize: true
     };
 
     if (title) {

@@ -9,10 +9,9 @@ H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s F
 H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass (default, can be overridden)
 
 
-def sample_initial_prc_compute_stock(year):
+def sample_initial_prc_compute_stock(year, params: InitialPRCDarkComputeParameters):
     """Sample initial PRC compute stock based on year and proportion diverted to covert project"""
     from backend.util import sample_from_log_normal
-    params = InitialPRCDarkComputeParameters
     years_since_2025 = year - 2025
     median_total_stock = params.total_prc_compute_stock_in_2025 * (params.annual_growth_rate_of_prc_compute_stock ** years_since_2025)
     relative_sigma = params.relative_sigma_of_prc_compute_stock
@@ -21,9 +20,9 @@ def sample_initial_prc_compute_stock(year):
 
     return total_stock_sample
 
-def sample_us_estimate_of_prc_compute_stock(prc_compute_stock):
+def sample_us_estimate_of_prc_compute_stock(prc_compute_stock, params: InitialPRCDarkComputeParameters):
     # Calculate pdf of absolute relative error
-    k = -np.log(0.5) / InitialPRCDarkComputeParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock
+    k = -np.log(0.5) / params.us_intelligence_median_error_in_estimate_of_prc_compute_stock
 
     u = np.random.uniform(0, 1)
 
@@ -46,7 +45,7 @@ def sample_us_estimate_of_prc_compute_stock(prc_compute_stock):
     return max(0, us_estimate)
 
 
-def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion_proportion, us_estimate_of_prc_compute_stock):
+def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion_proportion, us_estimate_of_prc_compute_stock, params: InitialPRCDarkComputeParameters):
     """Calculate likelihood ratio from global compute accounting"""
     # Consider two cases:
     # Case 1: Covert project exists of optimal size
@@ -64,7 +63,7 @@ def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion
     us_estimate_absolute_error_if_project_exists = abs(us_estimate_of_prc_compute_stock - true_compute_stock_if_covert_project_exists) / true_compute_stock_if_covert_project_exists
 
     # PDF of absolute error
-    k = -np.log(0.5) / InitialPRCDarkComputeParameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock
+    k = -np.log(0.5) / params.us_intelligence_median_error_in_estimate_of_prc_compute_stock
     p_observe_us_estimate_error_if_project_exists = k * np.exp(-k * us_estimate_absolute_error_if_project_exists)
 
     # Case 2: Fab does not exist
@@ -80,10 +79,9 @@ def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion
 
     return lr
 
-def sample_global_compute(year):
+def sample_global_compute(year, params: InitialPRCDarkComputeParameters):
     """Sample global compute stock based on year"""
     from backend.util import sample_from_log_normal
-    params = InitialPRCDarkComputeParameters
     years_since_2025 = year - 2025
     median_total_stock = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** years_since_2025)
     relative_sigma = params.relative_sigma_of_global_compute
@@ -92,34 +90,32 @@ def sample_global_compute(year):
 
     return global_compute
 
-def sample_reported_global_compute(prc_compute_stock_diverted, global_compute):
+def sample_reported_global_compute(prc_compute_stock_diverted, global_compute, params: InitialPRCDarkComputeParameters):
     def _sample_unreported_compute_owned_by_non_prc_actors():
         """Sample unreported compute owned by non-PRC actors based on year"""
         from backend.util import sample_from_log_normal
-        params = InitialPRCDarkComputeParameters
-        median = params.median_unreported_compute_owned_by_non_prc_actors = 1e6
-        relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors = 0.5
+        median = params.median_unreported_compute_owned_by_non_prc_actors
+        relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors
 
         unreported_compute_owned_by_non_prc_actors = sample_from_log_normal(median, relative_sigma)
 
         return unreported_compute_owned_by_non_prc_actors
-    
+
     unreported_compute_owned_by_non_prc_actors = _sample_unreported_compute_owned_by_non_prc_actors()
 
     reported_global_compute = global_compute - unreported_compute_owned_by_non_prc_actors - prc_compute_stock_diverted
 
     return reported_global_compute
 
-def get_reported_global_compute_production(year, prc_compute_stock_diverted):
-    total_global_compute = InitialPRCDarkComputeParameters.total_global_compute_in_2025 * (InitialPRCDarkComputeParameters.annual_growth_rate_of_global_compute ** (year - 2025))
+def get_reported_global_compute_production(year, prc_compute_stock_diverted, params: InitialPRCDarkComputeParameters):
+    total_global_compute = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** (year - 2025))
     return total_global_compute - prc_compute_stock_diverted
 
-def lr_from_global_compute_production_accounting(reported_historical_global_compute_production, reported_global_compute, reported_prc_compute_stock, optimal_diversion_proportion):
+def lr_from_global_compute_production_accounting(reported_historical_global_compute_production, reported_global_compute, reported_prc_compute_stock, optimal_diversion_proportion, params: InitialPRCDarkComputeParameters):
 
     discrepency = reported_global_compute - reported_historical_global_compute_production
 
     # Case 1: There's no covert PRC project
-    params = InitialPRCDarkComputeParameters
     relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors
     sigma_log = np.sqrt(np.log(1 + relative_sigma**2))
     mu_log = np.log(params.median_unreported_compute_owned_by_non_prc_actors)
@@ -146,14 +142,13 @@ def lr_from_global_compute_production_accounting(reported_historical_global_comp
 
     return lr
 
-def sample_hazard_rate_multiplier() -> float:
+def sample_hazard_rate_multiplier(params: SurvivalRateParameters) -> float:
     """Sample a multiplier for hazard rates from a metalog distribution.
 
     Returns a multiplier that will be applied to both initial_hazard_rate and
     increase_of_hazard_rate_per_year to create correlated uncertainty.
     """
     from backend.util import sample_from_metalog_3term_semi_bounded
-    params = SurvivalRateParameters
 
     # Compute absolute percentiles from the ratios
     p25 = params.hazard_rate_p25_relative_to_p50
@@ -163,14 +158,13 @@ def sample_hazard_rate_multiplier() -> float:
     # Sample multiplier from semi-bounded metalog distribution (lower bound 0, no upper bound)
     return sample_from_metalog_3term_semi_bounded(p25, p50, p75)
 
-def sample_hazard_rates() -> tuple[float, float]:
+def sample_hazard_rates(params: SurvivalRateParameters) -> tuple[float, float]:
     """Sample both initial hazard rate and increase rate using a common multiplier.
 
     Returns:
         tuple: (initial_hazard_rate, increase_of_hazard_rate_per_year)
     """
-    params = SurvivalRateParameters
-    multiplier = sample_hazard_rate_multiplier()
+    multiplier = sample_hazard_rate_multiplier(params)
 
     initial_hazard_rate = params.initial_hazard_rate_p50 * multiplier
     increase_of_hazard_rate_per_year = params.increase_of_hazard_rate_per_year_p50 * multiplier
@@ -240,9 +234,12 @@ class Compute():
 
 class PRCDarkComputeStock():
 
-    def __init__(self, agreement_year, proportion_of_initial_compute_stock_to_divert, optimal_proportion_of_initial_compute_stock_to_divert):
+    def __init__(self, agreement_year, proportion_of_initial_compute_stock_to_divert, optimal_proportion_of_initial_compute_stock_to_divert, initial_compute_parameters: InitialPRCDarkComputeParameters, survival_parameters: SurvivalRateParameters):
         self.agreement_year = agreement_year
-        self.initial_prc_stock = sample_initial_prc_compute_stock(agreement_year)
+        self.initial_compute_parameters = initial_compute_parameters
+        self.survival_parameters = survival_parameters
+
+        self.initial_prc_stock = sample_initial_prc_compute_stock(agreement_year, initial_compute_parameters)
         self.initial_prc_dark_compute = self.initial_prc_stock * proportion_of_initial_compute_stock_to_divert
 
         # dark_compute_added_per_year now stores chip dictionaries instead of single numbers
@@ -251,54 +248,73 @@ class PRCDarkComputeStock():
         self.dark_compute_added_per_year = {}
 
         # Initialize with a default chip representing the initial PRC dark compute stock
-        params = InitialPRCDarkComputeParameters
         self.dark_compute_added_per_year[agreement_year] = {
             'initial_prc_stock': {
                 'count': 1.0,  # Normalized count
                 'h100_equivalence': self.initial_prc_dark_compute,
-                'energy_efficiency_relative_to_h100': params.energy_efficiency_relative_to_h100,
+                'energy_efficiency_relative_to_h100': initial_compute_parameters.energy_efficiency_relative_to_h100,
                 'bandwidth': 1.8  # Default inter-chip bandwidth in tbps (H100-like)
             }
-        } 
+        }
 
-        self.us_estimate_of_prc_stock = sample_us_estimate_of_prc_compute_stock(self.initial_prc_stock)
+        self.us_estimate_of_prc_stock = sample_us_estimate_of_prc_compute_stock(self.initial_prc_stock, initial_compute_parameters)
         self.lr_from_prc_compute_accounting = lr_from_prc_compute_accounting(
             reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
             optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
-            us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock
+            us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock,
+            params=initial_compute_parameters
         )
-        self.global_compute = sample_global_compute(agreement_year)
+        self.global_compute = sample_global_compute(agreement_year, initial_compute_parameters)
 
-        self.reported_global_compute = sample_reported_global_compute(self.initial_prc_dark_compute, self.global_compute)
+        self.reported_global_compute = sample_reported_global_compute(self.initial_prc_dark_compute, self.global_compute, initial_compute_parameters)
 
-        self.reported_historical_global_compute_production = get_reported_global_compute_production(agreement_year, self.initial_prc_dark_compute)
+        self.reported_historical_global_compute_production = get_reported_global_compute_production(agreement_year, self.initial_prc_dark_compute, initial_compute_parameters)
         self.lr_from_global_compute_production_accounting = lr_from_global_compute_production_accounting(
             reported_historical_global_compute_production= self.reported_historical_global_compute_production,
             reported_global_compute=self.reported_global_compute,
             reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
-            optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert
+            optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
+            params=initial_compute_parameters
         )
-        self.initial_hazard_rate, self.increase_in_hazard_rate_per_year = sample_hazard_rates()
+        self.initial_hazard_rate, self.increase_in_hazard_rate_per_year = sample_hazard_rates(survival_parameters)
     
-    def add_dark_compute(self, year : float, additional_dark_compute : float):
-        """Add dark compute for a year. This will create a default chip entry.
+    def add_dark_compute(self, year : float, compute_to_add):
+        """Add dark compute for a year from a Compute object.
 
         Args:
             year: The year to add compute for
-            additional_dark_compute: The H100-equivalent compute to add
+            compute_to_add: Either a Compute object with chip specifications, or a float for H100e TPP (uses defaults)
         """
-        params = InitialPRCDarkComputeParameters
         if year not in self.dark_compute_added_per_year:
             self.dark_compute_added_per_year[year] = {}
 
-        # Add as a new chip with default characteristics
-        chip_id = f'added_year_{year}'
-        self.dark_compute_added_per_year[year][chip_id] = {
-            'count': 1.0,
-            'h100_equivalence': additional_dark_compute,
-            'energy_efficiency_relative_to_h100': params.energy_efficiency_relative_to_h100,
-            'bandwidth': 1.8  # Default inter-chip bandwidth in tbps
-        }
+        # Handle both Compute objects and scalar values
+        if isinstance(compute_to_add, Compute):
+            # Extract chip characteristics from the Compute object
+            chip_id_counter = len(self.dark_compute_added_per_year[year])
+
+            for chip, count in compute_to_add.chip_counts.items():
+                # Calculate energy efficiency from the chip's properties
+                # energy_efficiency_relative_to_h100 = (h100e_tpp_per_chip * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP) / W_of_energy_consumed
+                energy_efficiency_relative_to_h100 = (chip.h100e_tpp_per_chip * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP) / chip.W_of_energy_consumed
+
+                chip_id = f'added_year_{year}_chip_{chip_id_counter}'
+                self.dark_compute_added_per_year[year][chip_id] = {
+                    'count': count,
+                    'h100_equivalence': chip.h100e_tpp_per_chip * count,
+                    'energy_efficiency_relative_to_h100': energy_efficiency_relative_to_h100,
+                    'bandwidth': chip.inter_chip_memory_bandwidth_tbps
+                }
+                chip_id_counter += 1
+        else:
+            # Backward compatibility: treat as scalar H100e TPP with default characteristics
+            chip_id = f'added_year_{year}'
+            self.dark_compute_added_per_year[year][chip_id] = {
+                'count': 1.0,
+                'h100_equivalence': compute_to_add,
+                'energy_efficiency_relative_to_h100': self.initial_compute_parameters.energy_efficiency_relative_to_h100,
+                'bandwidth': 1.8  # Default inter-chip bandwidth in tbps
+            }
     
     def dark_compute_dead_and_alive(self, year : float):
         """Calculate total compute across all years up to the given year.

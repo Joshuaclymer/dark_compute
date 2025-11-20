@@ -314,6 +314,10 @@ function plotDarkComputeModel(data) {
 
         const traces = [];
 
+        // Check if fab has any energy (index 1 is fab)
+        const fabEnergy = energyData.map(yearData => yearData[1]);
+        const hasFabEnergy = fabEnergy.some(val => val > 0);
+
         // Calculate total energy (sum of both sources) at each time point
         const totalEnergy = energyData.map(yearData => yearData[0] + yearData[1]);
 
@@ -321,6 +325,11 @@ function plotDarkComputeModel(data) {
         for (let i = 0; i < sourceLabels.length; i++) {
             const energyAtSource = energyData.map(yearData => yearData[i]);
             const sourceLabel = sourceLabels[i];
+
+            // Skip fab compute (i=1) if there's no fab energy in the median
+            if (i === 1 && !hasFabEnergy) {
+                continue;
+            }
 
             traces.push({
                 x: years,

@@ -36,7 +36,7 @@ class CovertProjectStrategy:
     # Data centers
     GW_per_initial_datacenter : float = 5
     number_of_initial_datacenters : float = 0.1
-    datacenter_construction_labor : int = 500
+    datacenter_construction_labor : int = 10000
 
     # Covert fab
     build_a_covert_fab : bool = True
@@ -112,7 +112,7 @@ class CovertFabParameters:
     localization_130nm_2025: float = 0.80
     localization_130nm_2031: float = 0.80
     localization_28nm_2025: float = 0.0
-    localization_28nm_2031: float = 0.25
+    localization_28nm_2031: float = 0.6
     localization_14nm_2025: float = 0.0
     localization_14nm_2031: float = 0.10
     localization_7nm_2025: float = 0.0

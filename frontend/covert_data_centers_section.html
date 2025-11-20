@@ -1,30 +1,31 @@
             <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 40px; color: #333;">Covert Data Centers</h1>
 
             <!-- Dashboard and Plots in One Row (Flexbox with wrap) -->
-            <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 10px; align-items: stretch;">
+            <div id="covertDatacentersTopSection" style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 10px; align-items: flex-start;">
                 <!-- Datacenter Dashboard -->
-                <div class="dashboard" style="flex: 0 0 auto; min-width: 250px; max-width: 300px;">
-                    <div class="dashboard-item">
+                <div class="dashboard" style="flex: 1 1 125px; min-width: 300px; padding: 20px; display: flex; flex-direction: column; gap: 0; justify-content: flex-start;">
+                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin: 0 0 20px 0;">80th percentiles:</div>
+                    <div class="dashboard-item" style="margin: 0 0 20px 0;">
                         <div class="dashboard-value" id="dashboardDatacenterCapacity">--</div>
-                        <div class="dashboard-label">Datacenter Capacity Built Before Detection (Median)</div>
-                        <div class="dashboard-sublabel">Detection = Evidence of datacenters causes ≥5x belief update</div>
+                        <div class="dashboard-label">of datacenter capacity built before detection</div>
+                        <div class="dashboard-sublabel">Detection means a ≥5x update</div>
                     </div>
-                    <div class="dashboard-item">
-                        <div class="dashboard-value" id="dashboardDatacenterTime">--</div>
-                        <div class="dashboard-label">Years Operational Before Detection (Median)</div>
+                    <div class="dashboard-item" style="margin: 0;">
+                        <div class="dashboard-value-small" id="dashboardDatacenterTime">--</div>
+                        <div class="dashboard-label-light">years operational before detection</div>
                     </div>
                 </div>
 
                 <!-- Capacity CCDF Plot -->
-                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px;">
-                    <div class="plot-title">Datacenter Capacity Built Before Detection</div>
-                    <div id="datacenterCapacityCcdfPlot" style="height: 243px; width: 100%;"></div>
+                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px; padding: 20px; display: flex; flex-direction: column; height: auto;">
+                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Datacenter Capacity Built Before Detection</div>
+                    <div id="datacenterCapacityCcdfPlot" class="plot" style="flex: 1; min-height: 0;"></div>
                 </div>
 
                 <!-- Simulation Runs Plot -->
-                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px;">
-                    <div class="plot-title">Simulation Runs</div>
-                    <div id="datacenterCombinedPlot" class="plot" style="height: 243px;"></div>
+                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px; padding: 20px; display: flex; flex-direction: column; height: auto;">
+                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Simulation Runs</div>
+                    <div id="datacenterCombinedPlot" class="plot" style="flex: 1; min-height: 0;"></div>
                 </div>
             </div>
 

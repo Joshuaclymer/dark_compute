@@ -55,7 +55,8 @@ function plotTimeSeries(data) {
             fill: 'tonexty',
             fillcolor: lrColor + '30',
             line: { color: 'transparent' },
-            name: '25th-75th %ile (LR)',
+            name: 'LR: 25th-75th %ile',
+            legendgroup: 'lr',
             hovertemplate: 'LR: %{y:.2f}<extra></extra>'
         },
         {
@@ -64,7 +65,8 @@ function plotTimeSeries(data) {
             type: 'scatter',
             mode: 'lines',
             line: { color: lrColor, width: 3 },
-            name: 'Median Evidence of Covert Fab',
+            name: 'LR: Median',
+            legendgroup: 'lr',
             hovertemplate: 'LR: %{y:.2f}<extra></extra>'
         },
         ...individualH100e,
@@ -86,7 +88,8 @@ function plotTimeSeries(data) {
             fill: 'tonexty',
             fillcolor: computeColor + '60',
             line: { color: 'transparent' },
-            name: '25th-75th %ile (H100e)',
+            name: 'H100e: 25th-75th %ile',
+            legendgroup: 'h100e',
             yaxis: 'y2',
             hovertemplate: 'H100e: %{y:,.0f}<extra></extra>'
         },
@@ -96,7 +99,8 @@ function plotTimeSeries(data) {
             type: 'scatter',
             mode: 'lines',
             line: { color: computeColor, width: 3 },
-            name: 'Median H100e',
+            name: 'H100e: Median',
+            legendgroup: 'h100e',
             yaxis: 'y2',
             hovertemplate: 'H100e: %{y:,.0f}<extra></extra>'
         }
@@ -113,7 +117,10 @@ function plotTimeSeries(data) {
             automargin: true
         },
         yaxis: {
-            title: 'Evidence of Covert Fab (Likelihood Ratio)',
+            title: {
+                text: 'Evidence of Covert Fab (LR)',
+                standoff: 15
+            },
             titlefont: { size: 13, color: '#000' },
             tickfont: { size: 10, color: lrColor },
             type: 'log',
@@ -121,7 +128,10 @@ function plotTimeSeries(data) {
             automargin: true
         },
         yaxis2: {
-            title: 'H100e Produced by Fab',
+            title: {
+                text: 'H100e Produced by Fab',
+                standoff: 15
+            },
             titlefont: { size: 13, color: '#000' },
             tickfont: { size: 10, color: computeColor },
             overlaying: 'y',
@@ -132,21 +142,40 @@ function plotTimeSeries(data) {
         },
         showlegend: true,
         legend: {
-            x: 0.02,
+            x: 0.5,
             y: -0.25,
-            xanchor: 'left',
+            xanchor: 'center',
             yanchor: 'top',
             orientation: 'h',
-            font: { size: 10 }
+            font: { size: 10 },
+            bgcolor: 'rgba(255,255,255,0)',
+            borderwidth: 0,
+            tracegroupgap: 20
         },
         hovermode: 'x unified',
-        margin: { l: 50, r: 10, t: 10, b: 85, pad: 10 },
+        margin: { l: 55, r: 55, t: 0, b: 60 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
 
     Plotly.newPlot('timeSeriesPlot', traces, layout, {displayModeBar: false, responsive: true});
-    setTimeout(() => Plotly.Plots.resize('timeSeriesPlot'), 50);
+
+    // Match plot heights to dashboard height after both plots are created
+    setTimeout(() => {
+        const dashboard = document.querySelector('#covertFabTopSection .dashboard');
+        const plotContainers = document.querySelectorAll('#covertFabTopSection .plot-container');
+        if (dashboard && plotContainers.length > 0) {
+            const dashboardHeight = dashboard.offsetHeight;
+            plotContainers.forEach(container => {
+                container.style.height = dashboardHeight + 'px';
+            });
+            // Force resize after setting height
+            setTimeout(() => {
+                Plotly.Plots.resize('computeCcdfPlot');
+                Plotly.Plots.resize('timeSeriesPlot');
+            }, 50);
+        }
+    }, 150);
 }
 
 
@@ -156,16 +185,16 @@ function plotH100YearsTimeSeries(data) {
     const dcm = data.dark_compute_model;
     const years = dcm.years;
 
-    // Colors - use blue for LR (same as "Posterior Probability of Covert Project")
-    const lrColor = '#5B8DBE'; // Blue for likelihood ratio
+    // Colors - use blue for probability (same as "Posterior Probability of Covert Project")
+    const probColor = '#5B8DBE'; // Blue for probability
     const h100YearsColor = '#5AA89B'; // Turquoise green for H100-years
 
     // Create traces - median lines with confidence intervals
     const traces = [
-        // Cumulative LR confidence interval
+        // Posterior probability confidence interval
         {
             x: years.concat(years.slice().reverse()),
-            y: dcm.cumulative_lr.p75.concat(dcm.cumulative_lr.p25.slice().reverse()),
+            y: dcm.posterior_prob_project.p75.concat(dcm.posterior_prob_project.p25.slice().reverse()),
             fill: 'toself',
             fillcolor: 'rgba(91, 141, 190, 0.2)',
             line: { color: 'transparent' },
@@ -173,16 +202,16 @@ function plotH100YearsTimeSeries(data) {
             hoverinfo: 'skip',
             yaxis: 'y'
         },
-        // LR median
+        // Probability median
         {
             x: years,
-            y: dcm.cumulative_lr.median,
+            y: dcm.posterior_prob_project.median,
             type: 'scatter',
             mode: 'lines',
-            line: { color: lrColor, width: 3 },
-            name: 'Likelihood Ratio',
+            line: { color: probColor, width: 3 },
+            name: 'US Estimated Likelihood of PRC Covert Project',
             yaxis: 'y',
-            hovertemplate: 'LR: %{y:.2f}<extra></extra>'
+            hovertemplate: 'Probability: %{y:.3f}<extra></extra>'
         },
         // H100-years confidence interval
         {
@@ -215,16 +244,22 @@ function plotH100YearsTimeSeries(data) {
             automargin: true
         },
         yaxis: {
-            title: 'Likelihood Ratio',
-            titlefont: { size: 13, color: lrColor },
-            tickfont: { size: 10, color: lrColor },
+            title: {
+                text: 'US Estimated Likelihood<br>of a PRC Covert Project',
+                standoff: 15
+            },
+            titlefont: { size: 13, color: '#000' },
+            tickfont: { size: 10, color: probColor },
             side: 'left',
-            type: 'log',
+            range: [0, 1],
             automargin: true
         },
         yaxis2: {
-            title: 'H100-Years',
-            titlefont: { size: 13, color: h100YearsColor },
+            title: {
+                text: 'H100 years of computation',
+                standoff: 15
+            },
+            titlefont: { size: 13, color: '#000' },
             tickfont: { size: 10, color: h100YearsColor },
             overlaying: 'y',
             side: 'right',
@@ -232,21 +267,40 @@ function plotH100YearsTimeSeries(data) {
         },
         showlegend: true,
         legend: {
-            x: 0.02,
+            x: 0.5,
             y: -0.25,
-            xanchor: 'left',
+            xanchor: 'center',
             yanchor: 'top',
             orientation: 'h',
-            font: { size: 10 }
+            font: { size: 10 },
+            bgcolor: 'rgba(255,255,255,0)',
+            borderwidth: 0,
+            tracegroupgap: 20
         },
         hovermode: 'x unified',
-        margin: { l: 50, r: 50, t: 10, b: 85, pad: 10 },
+        margin: { l: 55, r: 55, t: 0, b: 60 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
 
     Plotly.newPlot('h100YearsTimeSeriesPlot', traces, layout, {displayModeBar: false, responsive: true});
-    setTimeout(() => Plotly.Plots.resize('h100YearsTimeSeriesPlot'), 50);
+
+    // Match plot heights to dashboard height after both plots are created
+    setTimeout(() => {
+        const dashboard = document.querySelector('#darkComputeTopSection .dashboard');
+        const plotContainers = document.querySelectorAll('#darkComputeTopSection .plot-container');
+        if (dashboard && plotContainers.length > 0) {
+            const dashboardHeight = dashboard.offsetHeight;
+            plotContainers.forEach(container => {
+                container.style.height = dashboardHeight + 'px';
+            });
+            // Force resize after setting height
+            setTimeout(() => {
+                Plotly.Plots.resize('projectH100YearsCcdfPlot');
+                Plotly.Plots.resize('h100YearsTimeSeriesPlot');
+            }, 50);
+        }
+    }, 150);
 }
 
 function plotComputeCcdf(data) {
@@ -312,7 +366,7 @@ function plotComputeCcdf(data) {
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 50, r: 10, t: 10, b: 65, pad: 10 },
+        margin: { l: 55, r: 0, t: 0, b: 60 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -364,18 +418,14 @@ function plotProjectH100YearsCcdf(data) {
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             type: 'log',
-            automargin: true,
-            showline: false,
-            mirror: false
+            automargin: true
         },
         yaxis: {
             title: 'P(H100-years > x)',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             range: [0, 1],
-            automargin: true,
-            showline: false,
-            mirror: false
+            automargin: true
         },
         showlegend: true,
         legend: {
@@ -388,7 +438,7 @@ function plotProjectH100YearsCcdf(data) {
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 50, r: 50, t: 10, b: 65, pad: 10 },
+        margin: { l: 55, r: 0, t: 0, b: 60 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -398,17 +448,17 @@ function plotProjectH100YearsCcdf(data) {
 }
 
 function updateDashboard(data) {
-    // Find the median simulation by H100e production
+    // Find the 80th percentile simulation by H100e production
     const h100eValues = data.covert_fab?.individual_h100e_before_detection || [];
     const timeValues = data.covert_fab?.individual_time_before_detection || [];
     const nodeValues = data.covert_fab?.individual_process_node || [];
     const energyValues = data.covert_fab?.individual_energy_before_detection || [];
 
     if (h100eValues.length > 0) {
-        // Sort by H100e and find median simulation
+        // Sort by H100e and find 80th percentile simulation
         const indexed = h100eValues.map((h100e, idx) => ({ h100e, idx }));
         indexed.sort((a, b) => a.h100e - b.h100e);
-        const idx50 = Math.floor(indexed.length * 0.5);
+        const idx50 = Math.floor(indexed.length * 0.8);
         const sim80th = indexed[idx50];
 
         // Get all values from this same simulation
@@ -450,6 +500,12 @@ function updateDashboard(data) {
         const probFabBuilt = data.prob_fab_built !== undefined ? (data.prob_fab_built * 100).toFixed(1) + '%' : '--';
         document.getElementById('dashboardProbFabBuilt').textContent = probFabBuilt;
 
+        // Update the section description with the percentage
+        const fabPercentageSpan = document.getElementById('fabBuiltPercentage');
+        if (fabPercentageSpan) {
+            fabPercentageSpan.textContent = data.prob_fab_built !== undefined ? ` (${(data.prob_fab_built * 100).toFixed(1)}% of simulations)` : '';
+        }
+
         // Update detection label with highest LR value
         const likelihoodRatios = data.likelihood_ratios || [1, 3, 5];
         const highestLR = likelihoodRatios[likelihoodRatios.length - 1];
@@ -467,30 +523,30 @@ function updateDashboard(data) {
         // Sort by H100-years and find 80th percentile simulation
         const projectIndexed = projectH100YearsValues.map((h100years, idx) => ({ h100years, idx }));
         projectIndexed.sort((a, b) => a.h100years - b.h100years);
-        const projectIdx80 = Math.floor(projectIndexed.length * 0.8);
-        const projectSim80th = projectIndexed[projectIdx80];
+        const projectIdxP80 = Math.floor(projectIndexed.length * 0.8);
+        const projectSimP80 = projectIndexed[projectIdxP80];
 
         // Get all values from this same simulation
-        const projectH100Years80th = projectSim80th.h100years;
-        const projectH100e80th = projectH100eValues[projectSim80th.idx];
-        const projectEnergy80th = projectEnergyValues[projectSim80th.idx];
-        const projectTime80th = projectTimeValues[projectSim80th.idx];
+        const projectH100YearsMedian = projectSimP80.h100years;
+        const projectH100eMedian = projectH100eValues[projectSimP80.idx];
+        const projectEnergyMedian = projectEnergyValues[projectSimP80.idx];
+        const projectTimeMedian = projectTimeValues[projectSimP80.idx];
 
         // Display H100-years
-        const h100YearsRounded = Math.round(projectH100Years80th / 100000) * 100000;
+        const h100YearsRounded = Math.round(projectH100YearsMedian / 100000) * 100000;
         if (h100YearsRounded >= 1000000) {
             document.getElementById('dashboardProject80thH100Years').textContent =
-                `~${(h100YearsRounded / 1000000).toFixed(1)}M H100-years`;
+                `${(h100YearsRounded / 1000000).toFixed(1)}M H100-years`;
         } else if (h100YearsRounded >= 1000) {
             document.getElementById('dashboardProject80thH100Years').textContent =
-                `~${(h100YearsRounded / 1000).toFixed(0)}K H100-years`;
+                `${(h100YearsRounded / 1000).toFixed(0)}K H100-years`;
         } else {
             document.getElementById('dashboardProject80thH100Years').textContent =
-                `~${h100YearsRounded.toFixed(0)} H100-years`;
+                `${h100YearsRounded.toFixed(0)} H100-years`;
         }
 
         // Display H100e and energy combined
-        const projectRounded = Math.round(projectH100e80th / 100000) * 100000;
+        const projectRounded = Math.round(projectH100eMedian / 100000) * 100000;
         let projectH100eText;
         if (projectRounded >= 1000000) {
             projectH100eText = `${(projectRounded / 1000000).toFixed(1)}M H100e`;
@@ -501,18 +557,26 @@ function updateDashboard(data) {
         }
 
         let projectEnergyText;
-        if (projectEnergy80th >= 1) {
-            projectEnergyText = `${projectEnergy80th.toFixed(1)} GW`;
-        } else if (projectEnergy80th >= 0.001) {
-            projectEnergyText = `${(projectEnergy80th * 1000).toFixed(0)} MW`;
+        if (projectEnergyMedian >= 1) {
+            projectEnergyText = `${projectEnergyMedian.toFixed(1)} GW`;
+        } else if (projectEnergyMedian >= 0.001) {
+            projectEnergyText = `${(projectEnergyMedian * 1000).toFixed(0)} MW`;
         } else {
-            projectEnergyText = `${(projectEnergy80th * 1000).toFixed(1)} MW`;
+            projectEnergyText = `${(projectEnergyMedian * 1000).toFixed(1)} MW`;
         }
 
         document.getElementById('dashboardProject80thH100eCombined').innerHTML =
             `${projectH100eText}<br><span style="font-size: 24px; color: #666;">${projectEnergyText}</span>`;
 
         // Display time
-        document.getElementById('dashboardProject80thTime').textContent = projectTime80th.toFixed(1);
+        document.getElementById('dashboardProject80thTime').textContent = projectTimeMedian.toFixed(1);
+
+        // Update detection label with highest LR value for dark compute model
+        const likelihoodRatios = data.dark_compute_model?.likelihood_ratios || data.likelihood_ratios || [1, 3, 5];
+        const highestLR = likelihoodRatios[likelihoodRatios.length - 1];
+        const projectDetectionLabel = document.getElementById('dashboardProjectDetectionLabel');
+        if (projectDetectionLabel) {
+            projectDetectionLabel.textContent = `Detection means ≥${highestLR}x update`;
+        }
     }
 }

@@ -4,13 +4,13 @@ function plotInitialStock(data) {
     // Plot detection probability bar chart and initial compute stock histogram
     if (data.initial_stock && data.initial_stock.initial_dark_compute_detection_probs && data.initial_stock.initial_compute_stock_samples) {
 
-        // Update dashboard with median values
+        // Update dashboard with 80th percentile values
         const sortedDarkCompute = [...data.initial_stock.initial_compute_stock_samples].sort((a, b) => a - b);
-        const medianDarkCompute = sortedDarkCompute[Math.floor(sortedDarkCompute.length / 2)];
+        const p80DarkCompute = sortedDarkCompute[Math.floor(sortedDarkCompute.length * 0.8)];
 
         // Format H100e text
         let h100eText;
-        const rounded = Math.round(medianDarkCompute / 100000) * 100000;
+        const rounded = Math.round(p80DarkCompute / 100000) * 100000;
         if (rounded >= 1000000) {
             h100eText = `${(rounded / 1000000).toFixed(1)}M H100e`;
         } else if (rounded >= 1000) {
@@ -21,7 +21,7 @@ function plotInitialStock(data) {
 
         // Calculate energy for this compute stock
         const h100PowerWatts = parseFloat(document.getElementById('h100_power_watts').value);
-        const energyGW = (medianDarkCompute * h100PowerWatts) / 1e9; // Convert watts to GW
+        const energyGW = (p80DarkCompute * h100PowerWatts) / 1e9; // Convert watts to GW
 
         let energyText;
         if (energyGW >= 1) {
@@ -63,26 +63,49 @@ function plotInitialStock(data) {
         const barLayout = {
             xaxis: {
                 title: 'Probability of detection',
-                titlefont: { size: 11 },
-                tickfont: { size: 9 }
+                titlefont: { size: 13 },
+                tickfont: { size: 10 },
+                automargin: true
             },
             yaxis: {
-                title: 'P(Detection)',
-                titlefont: { size: 11 },
+                title: {
+                    text: 'P(Detection)',
+                    standoff: 15
+                },
+                titlefont: { size: 13 },
                 tickfont: { size: 10 },
                 range: [0, 1],
-                tickformat: '.0%'
+                tickformat: '.0%',
+                automargin: true
             },
             showlegend: false,
-            margin: { l: 55, r: 10, t: 10, b: 70 },
+            margin: { l: 55, r: 0, t: 0, b: 60 },
             paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)'
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            autosize: true
         };
 
         Plotly.newPlot('initialDarkComputeDetectionPlot', [barTrace], barLayout, {displayModeBar: false, responsive: true});
 
         // Histogram for initial compute stock
         plotPDF('initialComputeStockPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'PRC Dark Compute Stock (H100e)', 30, false);
+
+        // Match plot heights to dashboard height after both plots are created
+        setTimeout(() => {
+            const dashboard = document.querySelector('#initialStockTopSection .dashboard');
+            const plotContainers = document.querySelectorAll('#initialStockTopSection .plot-container');
+            if (dashboard && plotContainers.length > 0) {
+                const dashboardHeight = dashboard.offsetHeight;
+                plotContainers.forEach(container => {
+                    container.style.height = dashboardHeight + 'px';
+                });
+                // Force resize after setting height
+                setTimeout(() => {
+                    Plotly.Plots.resize('initialDarkComputeDetectionPlot');
+                    Plotly.Plots.resize('initialComputeStockPlot');
+                }, 50);
+            }
+        }, 150);
     }
 
     // Plot LR breakdown histograms for initial compute reporting

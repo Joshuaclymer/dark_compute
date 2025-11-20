@@ -205,7 +205,8 @@
 
         .breakdown-section {
             margin-top: 30px;
-            padding: 15px 10px;
+            margin-bottom: 30px;
+            padding: 40px 30px;
             background: #f9f9f9;
             border-radius: 8px;
             overflow: visible;
@@ -252,7 +253,6 @@
             width: 100%;
             max-width: 100%;
             background: white;
-            border: 1px solid #ddd;
             border-radius: 4px;
             overflow: hidden;
             position: relative;
@@ -277,7 +277,6 @@
             max-height: 200px;
             width: 100%;
             background: white;
-            border: 1px solid #ddd;
             border-radius: 4px;
             padding: 20px;
             display: flex;
@@ -288,11 +287,6 @@
             white-space: nowrap;
         }
 
-        .breakdown-box-inner:hover {
-            border-color: #007bff;
-            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
-            transform: scale(1.02);
-        }
 
         .breakdown-plot > div:not(.js-plotly-plot) {
             width: 100% !important;

@@ -39,7 +39,11 @@
                 </div>
             </div>
 
-            <div class="breakdown-section" id="covertFabComputeProductionBreakdown">
+            <div class="breakdown-section" id="covertFabComputeProductionBreakdown" style="margin-top: 30px;">
+                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 15px; color: #333; text-align: center;">Breakdown of compute produced before detection</h2>
+                <div class="section-description" style="margin-bottom: 20px; text-align: center;">
+                    The compute produced before detection depends on three factors: (1) how much compute the covert fab produces per month, (2) how much energy this production requires, and (3) how various intelligence sources combine to assess the likelihood of detection. The following break down how we model each factor.
+                </div>
                 <div class="breakdown-title">Compute Production Breakdown</div>
                 <div class="section-description">
                     Architecture efficiency improves until the agreement year, then remains constant.<br>
@@ -94,10 +98,8 @@
                         <div class="breakdown-label">Compute produced per month (H100e / month)</div>
                     </div>
                 </div>
-            </div>
 
-            <div class="breakdown-section">
-                <div class="breakdown-title">Energy Requirements Breakdown</div>
+                <div class="breakdown-title" style="margin-top: 40px;">Energy Requirements Breakdown</div>
                 <div class="section-description">
                     Shows how compute production translates to energy consumption based on chip characteristics.<br>
                     Energy requirements (GW / month) = Compute produced per month × Transistor density relative to H100 × Energy efficiency relative to H100 × Energy requirements of H100
@@ -141,10 +143,8 @@
                         <div class="breakdown-label">Energy requirements per month (GW / month)</div>
                     </div>
                 </div>
-            </div>
 
-            <div class="breakdown-section">
-                <div class="breakdown-title">Intelligence Evidence Breakdown</div>
+                <div class="breakdown-title" style="margin-top: 40px;">Intelligence Evidence Breakdown</div>
                 <div class="section-description">
                     Total Evidence = LR<sub>inventory</sub> × LR<sub>procurement</sub> × LR<sub>other</sub><br>
                     Evidence from three independent intelligence sources to estimate detection likelihood.

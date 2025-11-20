@@ -569,7 +569,7 @@ function updateDashboard(data) {
             `${projectH100eText}<br><span style="font-size: 24px; color: #666;">${projectEnergyText}</span>`;
 
         // Display time
-        document.getElementById('dashboardProject80thTime').textContent = projectTimeMedian.toFixed(1);
+        document.getElementById('dashboardProject80thTime').textContent = projectTimeMedian.toFixed(1) + ' years';
 
         // Update detection label with highest LR value for dark compute model
         const likelihoodRatios = data.dark_compute_model?.likelihood_ratios || data.likelihood_ratios || [1, 3, 5];

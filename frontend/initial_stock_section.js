@@ -130,6 +130,20 @@ function plotInitialStock(data) {
                 <div class="breakdown-label">Proportion diverted<br>to covert project</div>
             </div>`;
 
+        // Attach hover effect to the newly created breakdown-box-inner
+        const diversionProportionInner = document.querySelector('#diversionProportionDisplay .breakdown-box-inner');
+        if (diversionProportionInner) {
+            diversionProportionInner.style.transition = 'all 0.2s ease';
+            diversionProportionInner.addEventListener('mouseenter', () => {
+                diversionProportionInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                diversionProportionInner.style.transform = 'scale(1.015)';
+            });
+            diversionProportionInner.addEventListener('mouseleave', () => {
+                diversionProportionInner.style.boxShadow = '';
+                diversionProportionInner.style.transform = '';
+            });
+        }
+
         // Plot the resulting dark compute stock - purple color #9B72B0
         plotPDF('darkComputeResultPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100e)', 30, false);
     }

@@ -1,185 +1,733 @@
-            <!-- Dark Compute Model Section -->
-            <h1 style="margin-top: 40px; margin-bottom: 10px; font-size: 32px; font-weight: bold; color: #333;">Covert AI Progress Model</h1>
-            <p style="margin-bottom: 30px; font-size: 16px; color: #666;">A model of how much compute the PRC might covertly operate during an AI slowdown agreement.</p>
+<!-- Dark Compute Model Section -->
+<h1
+  style="
+    margin-top: 40px;
+    margin-bottom: 10px;
+    font-size: 32px;
+    font-weight: bold;
+    color: #333;
+  "
+>
+  Dark compute model
+</h1>
+<p style="margin-bottom: 30px; font-size: 16px; color: #666">
+  A model of how much compute the PRC might covertly operate if it tried to
+  cheat an AI slowdown agreement. These predictions assume the agreement goes
+  into force in <span id="param-agreement-year" class="param-link">2030</span>,
+  and the PRC pursues
+  <span
+    class="param-link"
+    onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.focus(); input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }"
+    >the strategy</span
+  >
+  that maximizes the 80th percentile of computation performed before
+  detection.<sup
+    class="footnote-tooltip"
+    style="
+      position: relative;
+      cursor: pointer;
+      color: #0066cc;
+      font-weight: 600;
+    "
+  >
+    <span class="footnote-number">[1]</span>
+    <span
+      class="footnote-text"
+      style="
+        visibility: hidden;
+        width: 300px;
+        background-color: #333;
+        color: #fff;
+        text-align: left;
+        border-radius: 6px;
+        padding: 10px;
+        position: absolute;
+        z-index: 1000;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -150px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 13px;
+        line-height: 1.4;
+        font-weight: normal;
+      "
+    >
+      Detection means that US intelligence's odds of a covert project rises by
+      at least 5x from their odds before observing any evidence.
+      <span
+        style="
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          margin-left: -5px;
+          border-width: 5px;
+          border-style: solid;
+          border-color: #333 transparent transparent transparent;
+        "
+      ></span>
+    </span>
+  </sup>
+</p>
 
-            <!-- Dashboard and Plots in Same Flex -->
-            <div id="darkComputeTopSection" style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 10px; align-items: flex-start;">
-                <!-- Dark Compute Dashboard -->
-                <div class="dashboard" style="flex: 1 1 125px; min-width: 300px; padding: 20px; display: flex; flex-direction: column; gap: 0; justify-content: flex-start;">
-                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin: 0 0 20px 0;">80th percentiles:</div>
-                    <div class="dashboard-item" style="margin: 0 0 20px 0;">
-                        <div class="dashboard-value" id="dashboardProject80thH100Years">--</div>
-                        <div class="dashboard-label">Computation performed before detection</div>
-                        <div class="dashboard-sublabel" id="dashboardProjectDetectionLabel">Detection means ≥5x update</div>
-                    </div>
-                    <div class="dashboard-item" style="margin: 0 0 20px 0;">
-                        <div class="dashboard-value" id="dashboardProject80thH100eCombined">--</div>
-                        <div class="dashboard-label">Scale of covert data centers</div>
-                    </div>
-                    <div class="dashboard-item" style="margin: 0;">
-                        <div class="dashboard-value" id="dashboardProject80thTime">--</div>
-                        <div class="dashboard-label">Time before detection</div>
-                    </div>
-                </div>
+<!-- Dashboard and Plots in Same Flex -->
+<div
+  id="darkComputeTopSection"
+  style="
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+  "
+>
+  <!-- Dark Compute Dashboard -->
+  <div
+    class="dashboard"
+    style="
+      flex: 1 1 125px;
+      min-width: 300px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      justify-content: flex-start;
+    "
+  >
+    <div
+      class="plot-title"
+      style="
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin: 0 0 20px 0;
+      "
+    >
+      80th percentile outcome:
+    </div>
+    <div class="dashboard-item" style="margin: 0 0 20px 0">
+      <div class="dashboard-value" id="dashboardProject80thH100Years">--</div>
+      <div class="dashboard-label">Computation performed before detection</div>
+      <div class="dashboard-sublabel" id="dashboardProjectDetectionLabel">
+        Detection means ≥5x update
+      </div>
+    </div>
+    <div class="dashboard-item" style="margin: 0 0 20px 0">
+      <div class="dashboard-value" id="dashboardProject80thH100eCombined">
+        --
+      </div>
+      <div class="dashboard-label">Scale of covert data centers</div>
+    </div>
+    <div class="dashboard-item" style="margin: 0">
+      <div class="dashboard-value" id="dashboardProject80thTime">--</div>
+      <div class="dashboard-label">Time before detection</div>
+    </div>
+  </div>
 
-                <!-- H100-Years CCDF Plot -->
-                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px; padding: 20px; display: flex; flex-direction: column; height: auto;">
-                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">H100-Years of Computation Before Detection</div>
-                    <div id="projectH100YearsCcdfPlot" class="plot" style="flex: 1; min-height: 0;"></div>
-                </div>
+  <!-- H100-Years CCDF Plot -->
+  <div
+    class="plot-container"
+    style="
+      flex: 1 1 300px;
+      min-width: 300px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    "
+  >
+    <div
+      class="plot-title"
+      style="
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        margin-top: 0;
+      "
+    >
+      H100-Years of Computation Before Detection
+    </div>
+    <div
+      id="projectH100YearsCcdfPlot"
+      class="plot"
+      style="flex: 1; min-height: 0"
+    ></div>
+  </div>
 
-                <!-- H100-Years and Evidence Strength Over Time Plot -->
-                <div class="plot-container" style="flex: 1 1 300px; min-width: 300px; padding: 20px; display: flex; flex-direction: column; height: auto;">
-                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Simulation Runs</div>
-                    <div id="h100YearsTimeSeriesPlot" class="plot" style="flex: 1; min-height: 0;"></div>
-                </div>
+  <!-- H100-Years and Evidence Strength Over Time Plot -->
+  <div
+    class="plot-container"
+    style="
+      flex: 1 1 300px;
+      min-width: 300px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    "
+  >
+    <div
+      class="plot-title"
+      style="
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        margin-top: 0;
+      "
+    >
+      Simulation Runs
+    </div>
+    <div
+      id="h100YearsTimeSeriesPlot"
+      class="plot"
+      style="flex: 1; min-height: 0"
+    ></div>
+  </div>
+</div>
+
+<!-- Combined Breakdown Section -->
+<div class="breakdown-section" style="margin-top: 30px">
+  <h2
+    style="
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #222;
+      text-align: left;
+      letter-spacing: -0.5px;
+    "
+  >
+    Breaking down covert computation.
+  </h2>
+  <div
+    class="section-description"
+    style="
+      margin-bottom: 20px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #555;
+      max-width: 900px;
+    "
+  >
+    The amount of computation the PRC could perform covertly depends on <strong>unreported compute</strong> and 
+    <strong>how quickly unreported compute is detected.</strong>
+
+    <br><br>
+
+    <em>Click on any of the plots below to see more details.</em>
+
+    <style>
+      .footnote-tooltip:hover .footnote-text {
+        visibility: visible;
+        opacity: 1;
+      }
+      .param-link {
+        color: #0066cc;
+        font-weight: bold;
+        cursor: pointer;
+        text-decoration: none;
+        border-bottom: 1px dotted #0066cc;
+      }
+      .param-link:hover {
+        color: #0052a3;
+        border-bottom: 1px solid #0052a3;
+      }
+    </style>
+  </div>
+
+  <div style="display: flex; position: relative">
+    <div style="flex: 1; position: relative">
+      <!-- Unreported Computation Section -->
+      <div style="position: relative; padding-bottom: 60px; padding-top: 20px">
+        <h3
+          style="
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: left;
+          "
+        >
+          Unreported Compute
+        </h3>
+        <div
+          class="section-description"
+          style="max-width: 900px; text-align: left"
+        >
+          To perform AI workloads, the PRC needs <strong>unreported AI chips</strong> and
+          also enough <strong>covert data center capacity</strong> to operate them.
+        </div>
+
+        <!-- Continuous outline for both subsections -->
+        <div style="border-left: 2px solid #ccc; padding-left: 25px; margin-left: 5px; margin-top: 20px;">
+          <!-- Unreported AI Chips subsection -->
+          <div style="position: relative">
+            <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
+            <div class="section-description" style="max-width: 900px; text-align: left">
+              The quantity of <strong>unreported AI chips</strong> is equal to the initial stock
+              of unreported chips, plus hardware the PRC acquires after the agreement is in force, multiplied by the proportion of chips that survive degradation and failure.
             </div>
+          </div>
 
-            <!-- Combined Breakdown Section -->
-            <div class="breakdown-section" style="margin-top: 30px;">
-                <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 10px; color: #222; text-align: left; letter-spacing: -0.5px;">Breaking down H100-years of computation performed before detection</h2>
-                <div class="section-description" style="margin-bottom: 20px; text-align: left; font-size: 15px; line-height: 1.7; color: #555; max-width: 900px;">
-                    The amount of computation a covert PRC project could perform before detection depends on several factors: (1) the PRC's stock of untraced AI chips ('dark compute'), (2) their covert data center capacity, and (3) how quickly US intelligence gathers for the existence of a covert project over time:
-                </div>
-
-                <div style="display: flex; position: relative;">
-                    <div style="flex: 1; position: relative; padding-left: 20px;">
-                        <!-- Dark Compute Stock Breakdown -->
-                        <div style="position: relative; padding-bottom: 60px; padding-top: 20px; border-left: 2px solid #ccc; padding-left: 25px; margin-left: 5px;">
-                        <div style="position: relative;">
-                            <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
-                            <div class="breakdown-title" style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #444; text-align: left;">Dark Compute Stock</div>
-                        </div>
-                        <div class="section-description" style="max-width: 900px; text-align: left;">
-                            The total stock of undeclared PRC AI hardware equals the initially stockpiled compute, plus compute acquired, multiplied by the fraction of compute that survives attrition.<br>
-                        </div>
-
-                        <!-- Dark Compute Equation Section -->
-                        <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
-                    <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">(</div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <div id="initialDarkComputePlot" class="breakdown-plot" style="height: 250px;"></div>
-                        <div class="breakdown-label" style="text-align: center;">Initial Stock</div>
-                        <div class="breakdown-description" style="text-align: center;">Chips diverted from PRC's existing inventory at the time the agreement goes into force.</div>
-                    </div>
-                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">+</div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <div id="covertFabFlowPlot" class="breakdown-plot" style="height: 250px;"></div>
-                        <div class="breakdown-label" style="text-align: center;">Compute Flow</div>
-                        <div class="breakdown-description" style="text-align: center;">Cumulative compute produced by the covert fab over time.</div>
-                    </div>
-                    <div style="font-size: 120px; font-weight: 300; color: #666; flex: 0 0 30px; text-align: center; line-height: 250px;">)</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">×</div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <div id="chipSurvivalPlot" class="breakdown-plot" style="height: 250px;"></div>
-                        <div class="breakdown-label" style="text-align: center;">Surviving Fraction</div>
-                        <div class="breakdown-description" style="text-align: center;">The fraction of compute that remains operational at a given point in time, accounting for degradation and failure.</div>
-                    </div>
-                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <div id="totalDarkComputePlot" class="breakdown-plot" style="height: 250px;"></div>
-                        <div class="breakdown-label" style="text-align: center;">Dark Compute Stock</div>
-                        <div class="breakdown-description" style="text-align: center;">Total untraced compute available to covert PRC project.</div>
-                    </div>
-                        </div>
-                        </div>
-
-                        <!-- Data Center Capacity Breakdown -->
-                        <div style="position: relative; padding-bottom: 60px; padding-top: 0px; border-left: 2px solid #ccc; padding-left: 25px; margin-left: 5px;">
-                        <div style="position: relative;">
-                            <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
-                            <div class="breakdown-title" style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #444; text-align: left;">Covert Datacenter Capacity</div>
-                        </div>
-                        <div class="section-description" style="max-width: 900px; text-align: left;">
-                            The PRC has to operate stocked hardware in covert data centers, the capacity of which limits how much dark compute can be actively used.
-                        </div>
-
-                        <!-- Operational Dark Compute Equation Section -->
-                        <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <div id="datacenterCapacityPlot2" class="breakdown-plot"></div>
-                        <div class="breakdown-label" style="text-align: center;">Covert Datacenter Capacity</div>
-                        <div class="breakdown-description" style="text-align: center;">Energy capacity available in covert datacenters, measured in gigawatts.</div>
-                    </div>
-                    <div style="position: relative; flex: 0 0 30px; text-align: center;">
-                        <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 9px; text-align: center; color: #888; white-space: nowrap;">Caps</div>
-                        <div style="font-size: 20px; color: #666;">→</div>
-                    </div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <div id="darkComputeEnergyPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label" style="text-align: center;">Chip Stock Energy Usage (Medians)</div>
-                        <div class="breakdown-description" style="text-align: center;">Energy required to run untraced AI chips at full capacity.</div>
-                    </div>
-                    <div style="font-size: 24px; font-weight: bold; color: #666; flex: 0 0 30px; text-align: center;">=</div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <div id="operationalDarkComputePlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label" style="text-align: center;">Operating Compute</div>
-                        <div class="breakdown-description" style="text-align: center;">Quantity of compute operated in PRC covert data centers.</div>
-                    </div>
-                            </div>
-                        </div>
-
-                        <!-- US Estimated Likelihood of PRC Covert Project -->
-                        <div style="position: relative; margin-bottom: 30px; padding-top: 0px; padding-left: 25px; margin-left: 5px;">
-                        <!-- Small vertical line to connect to the horizontal line -->
-                        <div style="position: absolute; left: 0px; top: 0; width: 2px; height: 14px; background: #ccc;"></div>
-                        <div style="position: relative;">
-                            <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
-                            <div class="breakdown-title" style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #444; text-align: left;">Strength of Evidence over time</div>
-                        </div>
-                        <div class="section-description" style="max-width: 900px; text-align: left;">
-                            Eventually, a covert PRC project is 'detected,' after which point, USG could pull out of the AI slowdown agreement to limit the
-
-
-                            US intelligence is more likely to gather information about the covert project's existence as time passes. Initially, the intelligence community Multiply the prior probability with likelihood ratios from multiple independent sources of evidence to assess the overall probability of a PRC covert project.<br>
-                            Posterior = Prior × LR<sub>initial stock</sub> × LR<sub>diverted SME</sub> × LR<sub>other intel</sub>
-                        </div>
-
-                        <div class="breakdown-plots-row">
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <div id="dashboardPriorProject" class="breakdown-box">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <div>--</div>
-                                <div class="breakdown-label">Prior Probability of<br>Covert Project</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
-                    </div>
-                    <div class="breakdown-item">
-                        <div id="lrInitialStockPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Evidence from initial chip diversion</div>
-                        <div class="breakdown-description">Combined likelihood ratio from PRC compute stock accounting and global compute production accounting.</div>
-                    </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
-                    </div>
-                    <div class="breakdown-item">
-                        <div id="lrDivertedSMEPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Evidence from diverted SME</div>
-                        <div class="breakdown-description">Combined likelihood ratio from PRC SME stock accounting and SME procurement tracing.</div>
-                    </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
-                    </div>
-                    <div class="breakdown-item">
-                        <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Evidence from other intelligence sources</div>
-                        <div class="breakdown-description">Likelihood ratio from HUMINT, SIGINT, and other intelligence sources over time.</div>
-                    </div>
-                    <div class="operator arrow-operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                        <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">Convert to<br>probability</div>
-                        <div style="font-size: 20px; color: #666;">→</div>
-                    </div>
-                    <div class="breakdown-item">
-                        <div id="posteriorProbProjectPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Posterior Probability of<br>Covert Project</div>
-                    </div>
-                        </div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Dark Compute Equation Section -->
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+          "
+        >
+          <div
+            style="
+              font-size: 120px;
+              font-weight: 300;
+              color: #666;
+              flex: 0 0 30px;
+              text-align: center;
+              line-height: 250px;
+            "
+          >
+            (
+          </div>
+          <div style="flex: 1; min-width: 200px">
+            <div
+              id="initialDarkComputePlot"
+              class="breakdown-plot"
+              style="height: 250px"
+            ></div>
+            <div class="breakdown-label" style="text-align: center">
+              Initial Unreported Chip Stock
             </div>
+            <div class="breakdown-description" style="text-align: center">
+              Assuming the PRC initially has ~<span id="param-initial-prc-compute" class="param-link">1M</span> H100e, and diverts <span id="param-diversion-percent" class="param-link">5</span>% before the agreement goes into force.
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 24px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 30px;
+              text-align: center;
+            "
+          >
+            +
+          </div>
+          <div style="flex: 1; min-width: 200px">
+            <div
+              id="covertFabFlowPlot"
+              class="breakdown-plot"
+              style="height: 250px"
+            ></div>
+            <div class="breakdown-label" style="text-align: center">
+              Flow from covert fab
+            </div>
+            <div class="breakdown-description" style="text-align: center">
+              Assuming the PRC diverts <span id="param-sme-diversion-percent" class="param-link">10</span>% of indigenous ≤<span id="param-fab-node" class="param-link">28</span>nm SME before the agreement goes into force.
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 120px;
+              font-weight: 300;
+              color: #666;
+              flex: 0 0 30px;
+              text-align: center;
+              line-height: 250px;
+            "
+          >
+            )
+          </div>
+          <div
+            style="
+              font-size: 24px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 30px;
+              text-align: center;
+            "
+          >
+            ×
+          </div>
+          <div style="flex: 1; min-width: 200px">
+            <div
+              id="chipSurvivalPlot"
+              class="breakdown-plot"
+              style="height: 250px"
+            ></div>
+            <div class="breakdown-label" style="text-align: center">
+             Surviving fraction of compute 
+            </div>
+            <div class="breakdown-description" style="text-align: center">
+              The fraction of compute that remains operational at a given point
+              in time, accounting for degradation and failure.
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 24px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 30px;
+              text-align: center;
+            "
+          >
+            =
+          </div>
+          <div style="flex: 1; min-width: 200px">
+            <div
+              id="totalDarkComputePlot"
+              class="breakdown-plot"
+              style="height: 250px"
+            ></div>
+            <div class="breakdown-label" style="text-align: center">
+             Unreported Chip Stock 
+            </div>
+            <div class="breakdown-description" style="text-align: center">
+              Total untraced compute available to a covert PRC project.
+            </div>
+          </div>
+        </div>
 
-            <!-- End of Dark Compute Model Section -->
+        <!-- Unreported Data Centers subsection (still within the same border) -->
+        <div style="position: relative; margin-top: 20px;">
+          <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
+          <div
+            class="section-description"
+            style="max-width: 900px; text-align: left"
+          >
+            The number of AI chips that the PRC can operate is limited by the capacity of <strong>unreported data centers</strong>, which grow as a greater number can be constructed with a small and stealthy workforce. 
+          </div>
+        </div>
+
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+          "
+        >
+          <div style="flex: 1; min-width: 200px">
+            <div id="datacenterCapacityPlot2" class="breakdown-plot"></div>
+            <div class="breakdown-label" style="text-align: center">
+             Unreported Data Center Capacity 
+            </div>
+            <div class="breakdown-description" style="text-align: center">
+              Energy capacity available in covert datacenters, measured in
+              gigawatts, assuming <span id="param-datacenter-workers-2" class="param-link">10,000</span> workers construct covert data centers continually.
+            </div>
+          </div>
+          <div style="position: relative; flex: 0 0 30px; text-align: center">
+            <div
+              style="
+                position: absolute;
+                top: -15px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 9px;
+                text-align: center;
+                color: #888;
+                white-space: nowrap;
+              "
+            >
+              Caps
+            </div>
+            <div style="font-size: 20px; color: #666">→</div>
+          </div>
+          <div style="flex: 1; min-width: 200px">
+            <div id="darkComputeEnergyPlot" class="breakdown-plot"></div>
+            <div class="breakdown-label" style="text-align: center">
+              Chip Stock Energy Usage (Medians)
+            </div>
+            <div class="breakdown-description" style="text-align: center">
+              Energy required to run untraced AI chips at full capacity.
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 24px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 30px;
+              text-align: center;
+            "
+          >
+            =
+          </div>
+          <div style="flex: 1; min-width: 200px">
+            <div id="operationalDarkComputePlot" class="breakdown-plot"></div>
+            <div class="breakdown-label" style="text-align: center">
+              Operating Compute
+            </div>
+            <div class="breakdown-description" style="text-align: center">
+              Quantity of compute operated in PRC covert data centers.
+            </div>
+          </div>
+        </div>
+        </div>
+        <!-- End continuous outline -->
+      </div>
+
+      <!-- US Estimated Likelihood of PRC Covert Project -->
+      <div
+        style="
+          position: relative;
+          padding-bottom: 60px;
+          padding-top: 10px;
+        "
+      >
+        <h3
+          style="
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+          "
+        >
+          Speed of detection
+        </h3>
+        <div
+          class="section-description"
+          style="max-width: 900px; text-align: left"
+        >
+          US intelligence collects increasing evidence of a covert PRC project over time. This evidence comes from two main sources: discrepancies between the AI assets the PRC reports and the assets the US estimates the PRC has at the start of the agreement, and also direct evidence of covert sites (via IMGINT, HUMINT, SIGINT, etc).
+        </div>
+
+        <!-- Continuous outline for both detection subsections -->
+        <div style="border-left: 2px solid #ccc; padding-left: 25px; margin-left: 5px; margin-top: 20px;">
+          <!-- Initial discrepancies subsection -->
+          <div style="position: relative">
+            <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
+            <div class="section-description" style="max-width: 900px; text-align: left">
+              US intelligence gets evidence of defection right at the agreement start by looking for discrepancies between the quantity of chips/datacenters/SME the PRC reports, and the quantity US intelligence already estimated them to have. We modeled the strength of this evidence by looking at the historical track record of how accurately US intelligence estimated the quantities of assets sensitive to national security (e.g. nuclear weapons, ICBMs, etc).
+            </div>
+          </div>
+
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+          "
+        >
+          <div style="flex: 1; min-width: 140px">
+            <div id="lrPrcAccountingPlot" class="breakdown-plot" style="height: 180px"></div>
+            <div class="breakdown-label" style="text-align: center; font-size: 11px">
+              Evidence from discrepancies between reported and estimated PRC chip stock
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 20px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 20px;
+              text-align: center;
+            "
+          >
+            ×
+          </div>
+          <div style="flex: 1; min-width: 140px">
+            <div id="lrGlobalAccountingPlot" class="breakdown-plot" style="height: 180px"></div>
+            <div class="breakdown-label" style="text-align: center; font-size: 11px">
+              Evidence from discrepancies between reported global chip production and reported global chip stock
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 20px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 20px;
+              text-align: center;
+            "
+          >
+            ×
+          </div>
+          <div style="flex: 1; min-width: 140px">
+            <div id="lrSmeInventoryPlot" class="breakdown-plot" style="height: 180px"></div>
+            <div class="breakdown-label" style="text-align: center; font-size: 11px">
+              Evidence from PRC SME stock accounting
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 20px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 20px;
+              text-align: center;
+            "
+          >
+            ×
+          </div>
+          <div style="flex: 1; min-width: 140px">
+            <div id="lrSmeProcurementPlot" class="breakdown-plot" style="height: 180px"></div>
+            <div class="breakdown-label" style="text-align: center; font-size: 11px">
+              Evidence from tracing SME procurements
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 20px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 20px;
+              text-align: center;
+            "
+          >
+            =
+          </div>
+          <div style="flex: 1; min-width: 140px">
+            <div id="lrReportedAssetsPlot" class="breakdown-plot" style="height: 180px"></div>
+            <div class="breakdown-label" style="text-align: center; font-size: 11px">
+              Combined evidence from reported assets
+            </div>
+          </div>
+        </div>
+
+        <!-- Ongoing intelligence subsection (still within the same border) -->
+        <div style="position: relative; margin-top: 20px;">
+          <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
+          <div
+            class="section-description"
+            style="max-width: 900px; text-align: left"
+          >
+            US intelligence also receives evidence ongoingly of covert operations via networks of spies, satellite imagery, compromised devices, etc. We modeled the speed of detection from these methods by drawing on historical examples of how quickly covert nuclear sites were identified.
+          </div>
+        </div>
+
+        <div class="breakdown-plots-row">
+          <div class="breakdown-item">
+            <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
+            <div class="breakdown-label">
+              Evidence from other intelligence sources
+            </div>
+            <div class="breakdown-description">
+              Likelihood ratio from HUMINT, SIGINT, and other intelligence
+              sources over time.
+            </div>
+          </div>
+        </div>
+
+        <!-- Combined evidence subsection -->
+        <div style="position: relative; margin-top: 20px;">
+          <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
+          <div
+            class="section-description"
+            style="max-width: 900px; text-align: left"
+          >
+            Combining evidence from reported assets and ongoing intelligence sources yields the overall probability of detection.
+          </div>
+        </div>
+
+        <div class="breakdown-plots-row">
+          <div
+            style="display: flex; flex-direction: column; align-items: center"
+          >
+            <div id="dashboardPriorProject" class="breakdown-box">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 10px;
+                "
+              >
+                <div>--</div>
+                <div class="breakdown-label">
+                  Prior Probability of<br />Covert Project
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="operator"
+            style="
+              position: relative;
+              height: 240px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <div style="font-size: 24px; font-weight: bold; color: #666">×</div>
+          </div>
+          <div class="breakdown-item">
+            <div id="lrReportedAssetsPlot" class="breakdown-plot"></div>
+            <div class="breakdown-label">
+              Evidence from reported assets
+            </div>
+            <div class="breakdown-description">
+              Combined likelihood ratio from initial chip diversion and diverted SME.
+            </div>
+          </div>
+          <div
+            class="operator"
+            style="
+              position: relative;
+              height: 240px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <div style="font-size: 24px; font-weight: bold; color: #666">×</div>
+          </div>
+          <div class="breakdown-item">
+            <div id="lrOtherIntelPlot2" class="breakdown-plot"></div>
+            <div class="breakdown-label">
+              Evidence from other intelligence sources
+            </div>
+            <div class="breakdown-description">
+              Likelihood ratio from HUMINT, SIGINT, and other intelligence sources.
+            </div>
+          </div>
+          <div
+            class="operator arrow-operator"
+            style="
+              position: relative;
+              height: 240px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-direction: column;
+            "
+          >
+            <div
+              style="
+                font-size: 9px;
+                text-align: center;
+                color: #888;
+                line-height: 1.3;
+                margin-bottom: 5px;
+              "
+            >
+              Convert to<br />probability
+            </div>
+            <div style="font-size: 20px; color: #666">→</div>
+          </div>
+          <div class="breakdown-item">
+            <div id="posteriorProbProjectPlot" class="breakdown-plot"></div>
+            <div class="breakdown-label">
+              Posterior Probability of<br />Covert Project
+            </div>
+          </div>
+        </div>
+        </div>
+        <!-- End continuous outline -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- End of Dark Compute Model Section -->

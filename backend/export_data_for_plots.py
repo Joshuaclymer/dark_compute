@@ -274,6 +274,35 @@ def extract_project_lr_components_over_time(simulation_results, years):
     return lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim
 
 
+def extract_detailed_lr_components_over_time(simulation_results, years):
+    """Extract detailed breakdown of LR components for display."""
+    lr_prc_accounting_by_sim = []
+    lr_global_accounting_by_sim = []
+    lr_sme_inventory_by_sim = []
+    lr_sme_procurement_by_sim = []
+
+    for covert_projects, detectors in simulation_results:
+        project = covert_projects["prc_covert_project"]
+
+        # Get initial stock LR components (constant over time)
+        lr_prc = project.dark_compute_stock.lr_from_prc_compute_accounting
+        lr_global = project.dark_compute_stock.lr_from_global_compute_production_accounting
+        lr_prc_accounting_by_sim.append([lr_prc for _ in years])
+        lr_global_accounting_by_sim.append([lr_global for _ in years])
+
+        # Get SME LR components (constant over time)
+        if project.covert_fab is not None:
+            lr_inventory = project.covert_fab.lr_inventory
+            lr_procurement = project.covert_fab.lr_procurement
+        else:
+            lr_inventory = 1.0
+            lr_procurement = 1.0
+        lr_sme_inventory_by_sim.append([lr_inventory for _ in years])
+        lr_sme_procurement_by_sim.append([lr_procurement for _ in years])
+
+    return lr_prc_accounting_by_sim, lr_global_accounting_by_sim, lr_sme_inventory_by_sim, lr_sme_procurement_by_sim
+
+
 def extract_fab_combined_lr_over_time(simulation_results, years):
     """Extract cumulative combined likelihood ratio from fab's cumulative_detection_likelihood_ratio method."""
     combined_lr_by_sim = []
@@ -970,6 +999,7 @@ def extract_plot_data(model, app_params):
     h100_years_by_sim = extract_h100_years_over_time(model.simulation_results, years, agreement_year)
     cumulative_lr_by_sim = extract_cumulative_lr_over_time(model.simulation_results, years)
     lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim = extract_project_lr_components_over_time(model.simulation_results, years)
+    lr_prc_accounting_by_sim, lr_global_accounting_by_sim, lr_sme_inventory_by_sim, lr_sme_procurement_by_sim = extract_detailed_lr_components_over_time(model.simulation_results, years)
 
     # Extract fab-specific data
     lr_inventory_by_sim, lr_procurement_by_sim, lr_fab_other_by_sim = extract_fab_lr_components_over_time(model.simulation_results, years)
@@ -1079,6 +1109,12 @@ def extract_plot_data(model, app_params):
             "lr_diverted_sme": fmt_pct(lr_sme_by_sim),
             "lr_other_intel": fmt_pct(lr_other_by_sim),
             "posterior_prob_project": fmt_pct(project_beliefs_by_sim),
+
+            # Individual LR components for detailed breakdown
+            "lr_prc_accounting": fmt_pct(lr_prc_accounting_by_sim),
+            "lr_global_accounting": fmt_pct(lr_global_accounting_by_sim),
+            "lr_sme_inventory": fmt_pct(lr_sme_inventory_by_sim),
+            "lr_sme_procurement": fmt_pct(lr_sme_procurement_by_sim),
 
             # -------------------------------------------------------------------
             # Covert Project Dashboard - Individual simulation data

@@ -142,6 +142,11 @@
                 setTimeout(initializeApp, 100);
                 return;
             }
+
+            // Initialize parameter displays with current values
+            if (typeof updateParameterDisplays === 'function') {
+                updateParameterDisplays();
+            }
         const plotsDiv = document.getElementById('plots');
 
         function setStatus(message, type) {
@@ -295,8 +300,7 @@
                     Plotly.Plots.resize('computeCcdfPlot');
                     Plotly.Plots.resize('datacenterCombinedPlot');
                     Plotly.Plots.resize('datacenterCapacityCcdfPlot');
-                    Plotly.Plots.resize('lrInitialStockPlot');
-                    Plotly.Plots.resize('lrDivertedSMEPlot');
+                    // Individual LR component plots are resized in dark_compute_model_section.js
                     Plotly.Plots.resize('lrOtherIntelPlot');
                     Plotly.Plots.resize('posteriorProbProjectPlot');
                 }, 100);
@@ -372,15 +376,9 @@
                         });
                     }
 
-                    // 1. LR from initial stock (Combined LR from PRC and global accounting)
-                    // Use the same data as lrCombinedPlot
-                    plotPDF('lrInitialStockPlot', data.initial_stock.lr_combined_samples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
-
-                    // 2. LR from diverted SME (multiply inventory and procurement LRs)
-                    const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
-                    const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
-                    const lrDivertedSME = lrInventoryFinal.map((inv, i) => inv * lrProcurementFinal[i]);
-                    plotPDF('lrDivertedSMEPlot', lrDivertedSME, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 50);
+                    // Note: Individual LR component plots are now created in dark_compute_model_section.js
+                    // This includes lrPrcAccountingPlot, lrGlobalAccountingPlot, lrSmeInventoryPlot,
+                    // lrSmeProcurementPlot, and lrReportedAssetsPlot
 
                     // 3. LR from other intelligence sources (same as lrOtherPlot)
                     const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
@@ -901,9 +899,13 @@
 
             // Dark Compute Model Section - US Estimated Likelihood of PRC Covert Project
             'dashboardPriorProject': 'covert_project_parameters.p_project_exists',
-            'lrInitialStockPlot': '#initialStockIntelligenceBreakdown', // Scroll to section instead of input
-            'lrDivertedSMEPlot': 'proportion_diverted_sme',
+            'lrPrcAccountingPlot': '#initialStockIntelligenceBreakdown', // Individual component plots
+            'lrGlobalAccountingPlot': '#initialStockIntelligenceBreakdown',
+            'lrSmeInventoryPlot': 'proportion_diverted_sme',
+            'lrSmeProcurementPlot': 'proportion_diverted_sme',
+            'lrReportedAssetsPlot': null, // Combined output
             'lrOtherIntelPlot': 'mean_detection_time_100',
+            'lrOtherIntelPlot2': 'mean_detection_time_100',
             'posteriorProbProjectPlot': null, // Output, not an input
 
             // Initial Stock Section - Compute Breakdown

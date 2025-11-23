@@ -88,7 +88,7 @@ function plotInitialStock(data) {
         Plotly.newPlot('initialDarkComputeDetectionPlot', [barTrace], barLayout, {displayModeBar: false, responsive: true});
 
         // Histogram for initial compute stock
-        plotPDF('initialComputeStockPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'PRC Dark Compute Stock (H100e)', 30, false);
+        plotPDF('initialComputeStockPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'PRC Dark Compute Stock (H100 equivalents (FLOPS))', 30, false);
 
         // Match plot heights to dashboard height after both plots are created
         setTimeout(() => {
@@ -120,7 +120,7 @@ function plotInitialStock(data) {
     if (data.initial_stock && data.initial_stock.initial_prc_stock_samples && data.initial_stock.diversion_proportion && data.initial_stock.initial_compute_stock_samples) {
 
         // Plot initial PRC stock distribution - purple color #9B72B0
-        plotPDF('initialPrcStockPlot', data.initial_stock.initial_prc_stock_samples, '#9B72B0', 'Initial PRC Compute Stock (H100e)', 30, false);
+        plotPDF('initialPrcStockPlot', data.initial_stock.initial_prc_stock_samples, '#9B72B0', 'Initial PRC Compute Stock (H100 equivalents (FLOPS))', 30, false);
 
         // Display the diversion proportion
         const diversionPercent = (data.initial_stock.diversion_proportion * 100).toFixed(0);
@@ -145,6 +145,6 @@ function plotInitialStock(data) {
         }
 
         // Plot the resulting dark compute stock - purple color #9B72B0
-        plotPDF('darkComputeResultPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100e)', 30, false);
+        plotPDF('darkComputeResultPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100 equivalents (FLOPS))', 30, false);
     }
 }

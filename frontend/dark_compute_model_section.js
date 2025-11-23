@@ -62,7 +62,7 @@ function plotDarkComputeModel(data) {
                 range: [years[0], 2037]
             },
             yaxis: {
-                title: 'H100e',
+                title: 'H100 equivalents (FLOPS)',
                 titlefont: { size: 10 },
                 tickfont: { size: 9 },
                 tickformat: '.2s'
@@ -196,7 +196,7 @@ function plotDarkComputeModel(data) {
                 tickfont: { size: 9 }
             },
             yaxis: {
-                title: 'H100e',
+                title: 'H100 equivalents (FLOPS)',
                 titlefont: { size: 10 },
                 tickfont: { size: 9 },
                 tickformat: '.2s'
@@ -500,7 +500,7 @@ function plotDarkComputeModel(data) {
                 automargin: true
             },
             yaxis: {
-                title: 'H100e',
+                title: 'H100 equivalents (FLOPS)',
                 titlefont: { size: 10 },
                 tickfont: { size: 9 },
                 automargin: true,
@@ -515,5 +515,157 @@ function plotDarkComputeModel(data) {
 
         Plotly.newPlot('operationalDarkComputePlot', traces, layout, {responsive: true, displayModeBar: false});
         setTimeout(() => Plotly.Plots.resize('operationalDarkComputePlot'), 50);
+    }
+
+    // Plot individual LR components for Speed of Detection section
+    if (data.dark_compute_model) {
+        const years = data.dark_compute_model.years;
+
+        // Helper function to create LR plot
+        function plotLRComponent(elementId, lrData, title) {
+            if (!lrData) return;
+
+            const traces = [
+                {
+                    x: years,
+                    y: lrData.p75,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: 'transparent' },
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: years,
+                    y: lrData.p25,
+                    type: 'scatter',
+                    mode: 'lines',
+                    fill: 'tonexty',
+                    fillcolor: 'rgba(91, 141, 190, 0.2)',
+                    line: { color: 'transparent' },
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: years,
+                    y: lrData.median,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#5B8DBE', width: 2 },
+                    name: title,
+                    showlegend: false
+                }
+            ];
+
+            const layout = {
+                xaxis: {
+                    title: 'Year',
+                    titlefont: { size: 10 },
+                    tickfont: { size: 9 },
+                    range: [years[0], 2037]
+                },
+                yaxis: {
+                    title: 'Likelihood Ratio',
+                    titlefont: { size: 10 },
+                    tickfont: { size: 9 }
+                },
+                margin: { l: 50, r: 20, t: 10, b: 40 },
+                height: 240,
+                hovermode: 'x unified'
+            };
+
+            Plotly.newPlot(elementId, traces, layout, {responsive: true, displayModeBar: false});
+        }
+
+        // Plot individual LR components for first subsection (initial discrepancies) as distributions
+        // These are constant over time, so we extract just the first value from each simulation
+        if (data.dark_compute_model.lr_prc_accounting && data.dark_compute_model.lr_prc_accounting.individual) {
+            const lrPrcSamples = data.dark_compute_model.lr_prc_accounting.individual.map(sim => sim[0]);
+            plotPDF('lrPrcAccountingPlot', lrPrcSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
+        }
+        if (data.dark_compute_model.lr_global_accounting && data.dark_compute_model.lr_global_accounting.individual) {
+            const lrGlobalSamples = data.dark_compute_model.lr_global_accounting.individual.map(sim => sim[0]);
+            plotPDF('lrGlobalAccountingPlot', lrGlobalSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
+        }
+        if (data.dark_compute_model.lr_sme_inventory && data.dark_compute_model.lr_sme_inventory.individual) {
+            const lrSmeInventorySamples = data.dark_compute_model.lr_sme_inventory.individual.map(sim => sim[0]);
+            plotPDF('lrSmeInventoryPlot', lrSmeInventorySamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
+        }
+        if (data.dark_compute_model.lr_sme_procurement && data.dark_compute_model.lr_sme_procurement.individual) {
+            const lrSmeProcurementSamples = data.dark_compute_model.lr_sme_procurement.individual.map(sim => sim[0]);
+            plotPDF('lrSmeProcurementPlot', lrSmeProcurementSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
+        }
+
+        // Plot combined evidence from reported assets as distribution (also constant over time)
+        if (data.dark_compute_model.lr_initial_stock && data.dark_compute_model.lr_initial_stock.individual &&
+            data.dark_compute_model.lr_diverted_sme && data.dark_compute_model.lr_diverted_sme.individual) {
+            const lrReportedAssetsSamples = data.dark_compute_model.lr_initial_stock.individual.map((sim, i) =>
+                sim[0] * data.dark_compute_model.lr_diverted_sme.individual[i][0]
+            );
+            plotPDF('lrReportedAssetsPlot', lrReportedAssetsSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
+        }
+
+        // Plot ongoing intelligence for second subsection
+        plotLRComponent('lrOtherIntelPlot', data.dark_compute_model.lr_other_intel, 'Other Intel');
+
+        // Plot elements for third subsection (combined evidence) - duplicate other intel for the combination equation
+        plotLRComponent('lrOtherIntelPlot2', data.dark_compute_model.lr_other_intel, 'Other Intel');
+
+        // Plot posterior probability
+        if (data.dark_compute_model.posterior_prob_project) {
+            const posteriorData = data.dark_compute_model.posterior_prob_project;
+            const traces = [
+                {
+                    x: years,
+                    y: posteriorData.p75,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: 'transparent' },
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: years,
+                    y: posteriorData.p25,
+                    type: 'scatter',
+                    mode: 'lines',
+                    fill: 'tonexty',
+                    fillcolor: 'rgba(91, 141, 190, 0.2)',
+                    line: { color: 'transparent' },
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: years,
+                    y: posteriorData.median,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#5B8DBE', width: 2 },
+                    name: 'Posterior Probability',
+                    showlegend: false
+                }
+            ];
+
+            const layout = {
+                xaxis: {
+                    title: 'Year',
+                    titlefont: { size: 10 },
+                    tickfont: { size: 9 },
+                    range: [years[0], 2037]
+                },
+                yaxis: {
+                    title: 'Probability',
+                    titlefont: { size: 10 },
+                    tickfont: { size: 9 },
+                    tickformat: '.0%',
+                    range: [0, 1]
+                },
+                margin: { l: 50, r: 20, t: 10, b: 40 },
+                height: 240,
+                hovermode: 'x unified'
+            };
+
+            Plotly.newPlot('posteriorProbProjectPlot', traces, layout, {responsive: true, displayModeBar: false});
+        }
     }
 }

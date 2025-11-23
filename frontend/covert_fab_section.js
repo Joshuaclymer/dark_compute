@@ -129,7 +129,7 @@ function plotTimeSeries(data) {
         },
         yaxis2: {
             title: {
-                text: 'H100e Produced by Fab',
+                text: 'H100 equivalents (FLOPS) Produced by Fab',
                 standoff: 15
             },
             titlefont: { size: 13, color: '#000' },
@@ -342,7 +342,7 @@ function plotComputeCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: "H100e Produced by Covert Fab Before 'Detection'",
+            title: "H100 equivalents (FLOPS) Produced by Covert Fab Before 'Detection'",
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             type: 'log',
@@ -448,6 +448,9 @@ function plotProjectH100YearsCcdf(data) {
 }
 
 function updateDashboard(data) {
+    // Update parameter display values in the text
+    updateParameterDisplays();
+
     // Find the 80th percentile simulation by H100e production
     const h100eValues = data.covert_fab?.individual_h100e_before_detection || [];
     const timeValues = data.covert_fab?.individual_time_before_detection || [];
@@ -578,5 +581,188 @@ function updateDashboard(data) {
         if (projectDetectionLabel) {
             projectDetectionLabel.textContent = `Detection means ≥${highestLR}x update`;
         }
+    }
+}
+
+function updateParameterDisplays() {
+    // Helper function to format large numbers
+    function formatNumber(num) {
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(0) + 'K';
+        }
+        return num.toFixed(0);
+    }
+
+    // Update initial PRC compute stock
+    const prcComputeInput = document.getElementById('total_prc_compute_stock_in_2025');
+    const initialDiversionInput = document.getElementById('proportion_of_initial_chip_stock_to_divert');
+    const agreementYearInput = document.getElementById('agreement_year');
+    const growthRateInput = document.getElementById('annual_growth_rate_of_prc_compute_stock');
+
+    if (prcComputeInput && initialDiversionInput && agreementYearInput && growthRateInput) {
+        // Calculate PRC compute at agreement year
+        const prcCompute2025 = parseFloat(prcComputeInput.value) * 1e6; // Convert from millions
+        const agreementYear = parseFloat(agreementYearInput.value);
+        const growthRate = parseFloat(growthRateInput.value);
+        const yearsFromBase = agreementYear - 2025;
+
+        // Update agreement year display
+        const agreementYearSpan = document.getElementById('param-agreement-year');
+        if (agreementYearSpan) {
+            agreementYearSpan.textContent = agreementYear.toFixed(0);
+            agreementYearSpan.onclick = () => {
+                if (agreementYearInput) {
+                    agreementYearInput.focus();
+                    agreementYearInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            };
+        }
+
+        // Grow the stock to the agreement year
+        const prcComputeAtAgreement = prcCompute2025 * Math.pow(growthRate, yearsFromBase);
+
+        const diversionProportion = parseFloat(initialDiversionInput.value);
+        const divertedCompute = prcComputeAtAgreement * diversionProportion;
+
+        // Update initial PRC compute display
+        const prcComputeSpan = document.getElementById('param-initial-prc-compute');
+        if (prcComputeSpan) {
+            prcComputeSpan.textContent = formatNumber(prcComputeAtAgreement);
+            // Add click handler
+            prcComputeSpan.onclick = () => {
+                const input = document.getElementById('total_prc_compute_stock_in_2025');
+                if (input) {
+                    input.focus();
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            };
+        }
+
+        // Update diverted compute display
+        const divertedComputeSpan = document.getElementById('param-diverted-compute');
+        if (divertedComputeSpan) {
+            divertedComputeSpan.textContent = formatNumber(divertedCompute);
+            // Add click handler
+            divertedComputeSpan.onclick = () => {
+                const input = document.getElementById('proportion_of_initial_chip_stock_to_divert');
+                if (input) {
+                    input.focus();
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            };
+        }
+
+        // Update diversion percentage display
+        const diversionPercentSpan = document.getElementById('param-diversion-percent');
+        if (diversionPercentSpan) {
+            const percentage = (diversionProportion * 100).toFixed(0);
+            diversionPercentSpan.textContent = percentage;
+            // Add click handler
+            diversionPercentSpan.onclick = () => {
+                const input = document.getElementById('proportion_of_initial_chip_stock_to_divert');
+                if (input) {
+                    input.focus();
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            };
+        }
+    }
+
+    // Update initial compute diversion percentage
+    if (initialDiversionInput) {
+        const percentage = (parseFloat(initialDiversionInput.value) * 100).toFixed(0);
+        const spans = [
+            document.getElementById('param-initial-diversion-percent'),
+            document.getElementById('param-initial-diversion-percent-2')
+        ];
+        spans.forEach(span => {
+            if (span) span.textContent = percentage;
+        });
+    }
+
+    // Update SME diversion percentage
+    const smeDiversionInput = document.getElementById('scanner_proportion');
+    if (smeDiversionInput) {
+        const percentage = (parseFloat(smeDiversionInput.value) * 100).toFixed(0);
+        const spans = [
+            document.getElementById('param-sme-diversion-percent'),
+            document.getElementById('param-sme-diversion-percent-2')
+        ];
+        spans.forEach(span => {
+            if (span) {
+                span.textContent = percentage;
+                // Add click handler to focus the input
+                span.onclick = () => {
+                    const input = document.getElementById('scanner_proportion');
+                    if (input) {
+                        input.focus();
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                };
+            }
+        });
+    }
+
+    // Update fab process node
+    const processNodeInput = document.getElementById('process_node');
+    if (processNodeInput) {
+        const value = processNodeInput.value;
+        let nodeText = '28'; // default
+
+        // Parse the process node strategy to extract the nm value
+        if (value.includes('28nm') || value === 'nm28') {
+            nodeText = '28';
+        } else if (value.includes('14nm') || value === 'nm14') {
+            nodeText = '14';
+        } else if (value.includes('7nm') || value === 'nm7') {
+            nodeText = '7';
+        } else if (value.includes('130nm') || value === 'nm130') {
+            nodeText = '130';
+        } else if (value.includes('best_indigenous')) {
+            // For "best indigenous" strategies, show the constraint if any
+            if (value.includes('gte_28nm')) {
+                nodeText = '28';
+            } else if (value.includes('gte_14nm')) {
+                nodeText = '14';
+            } else if (value.includes('gte_7nm')) {
+                nodeText = '7';
+            } else {
+                nodeText = 'best';
+            }
+        }
+
+        const spans = [
+            document.getElementById('param-fab-node'),
+            document.getElementById('param-fab-node-2')
+        ];
+        spans.forEach(span => {
+            if (span) {
+                span.textContent = nodeText;
+                // Add click handler to focus the input
+                span.onclick = () => {
+                    const input = document.getElementById('process_node');
+                    if (input) {
+                        input.focus();
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                };
+            }
+        });
+    }
+
+    // Update datacenter construction workers
+    const datacenterWorkersInput = document.getElementById('datacenter_construction_labor');
+    if (datacenterWorkersInput) {
+        const workers = parseInt(datacenterWorkersInput.value);
+        const formatted = workers.toLocaleString();
+        const spans = [
+            document.getElementById('param-datacenter-workers'),
+            document.getElementById('param-datacenter-workers-2')
+        ];
+        spans.forEach(span => {
+            if (span) span.textContent = formatted;
+        });
     }
 }

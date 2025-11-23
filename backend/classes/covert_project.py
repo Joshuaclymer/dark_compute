@@ -153,8 +153,7 @@ class CovertProject:
     def get_lr_initial(self) -> float:
         """Get initial stock likelihood ratio (constant over time)."""
         lr_prc = self.dark_compute_stock.lr_from_prc_compute_accounting
-        lr_global = self.dark_compute_stock.lr_from_global_compute_production_accounting
-        return lr_prc * lr_global
+        return lr_prc
     
     def get_lr_sme (self) -> float:
         """Get SME likelihood ratio from covert fab (constant over time). Returns 1.0 if no fab."""

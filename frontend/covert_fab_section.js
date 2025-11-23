@@ -866,4 +866,106 @@ function updateParameterDisplays() {
             };
         }
     }
+
+    // Update worker counts for "Evidence of covert operations" description
+    const dcConstructionInput = document.getElementById('datacenter_construction_labor');
+    const dcOperatingPerMWInput = document.getElementById('operating_labor_per_MW');
+    const fabConstructionInput = document.getElementById('construction_labor');
+    const fabOperatingInput = document.getElementById('operating_labor');
+    // mwPerWorkerInput is already declared above at line 777
+    const endYearInput = document.getElementById('end_year');
+    // agreementYearInput is already declared above at line 601
+
+    let totalWorkers = 0;
+    let dcConstruction = 0;
+    let dcOperating = 0;
+    let fabConstruction = 0;
+    let fabOperating = 0;
+
+    if (dcConstructionInput) {
+        dcConstruction = parseInt(dcConstructionInput.value);
+        totalWorkers += dcConstruction;
+    }
+
+    // Calculate datacenter operating workers at end year
+    if (dcOperatingPerMWInput && mwPerWorkerInput && dcConstructionInput && endYearInput && agreementYearInput) {
+        const operatingPerMW = parseFloat(dcOperatingPerMWInput.value);
+        const mwPerWorkerPerYear = parseFloat(mwPerWorkerInput.value);
+        const workers = parseInt(dcConstructionInput.value);
+        const endYear = parseInt(endYearInput.value);
+        const agreementYear = parseInt(agreementYearInput.value);
+        const yearsOfConstruction = endYear - agreementYear;
+
+        // Total MW capacity = workers * MW_per_worker_per_year * years
+        const totalMW = workers * mwPerWorkerPerYear * yearsOfConstruction;
+
+        // Operating workers = total_MW * operating_per_MW
+        dcOperating = Math.round(totalMW * operatingPerMW);
+        totalWorkers += dcOperating;
+    }
+
+    if (fabConstructionInput) {
+        fabConstruction = parseInt(fabConstructionInput.value);
+        totalWorkers += fabConstruction;
+    }
+
+    if (fabOperatingInput) {
+        fabOperating = parseInt(fabOperatingInput.value);
+        totalWorkers += fabOperating;
+    }
+
+    // Update datacenter construction workers
+    const dcConstructionSpan = document.getElementById('param-datacenter-construction-workers');
+    if (dcConstructionSpan) {
+        dcConstructionSpan.textContent = dcConstruction.toLocaleString();
+        dcConstructionSpan.onclick = () => {
+            if (dcConstructionInput) {
+                dcConstructionInput.focus();
+                dcConstructionInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+    }
+
+    // Update datacenter operating workers (show actual number at end year)
+    const dcOperatingSpan = document.getElementById('param-datacenter-operating-workers');
+    if (dcOperatingSpan) {
+        dcOperatingSpan.textContent = dcOperating.toLocaleString();
+        dcOperatingSpan.onclick = () => {
+            if (dcOperatingPerMWInput) {
+                dcOperatingPerMWInput.focus();
+                dcOperatingPerMWInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+    }
+
+    // Update fab construction workers
+    const fabConstructionSpan = document.getElementById('param-fab-construction-workers');
+    if (fabConstructionSpan) {
+        fabConstructionSpan.textContent = fabConstruction.toLocaleString();
+        fabConstructionSpan.onclick = () => {
+            if (fabConstructionInput) {
+                fabConstructionInput.focus();
+                fabConstructionInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+    }
+
+    // Update fab operating workers
+    const fabOperatingSpan = document.getElementById('param-fab-operating-workers');
+    if (fabOperatingSpan) {
+        fabOperatingSpan.textContent = fabOperating.toLocaleString();
+        fabOperatingSpan.onclick = () => {
+            if (fabOperatingInput) {
+                fabOperatingInput.focus();
+                fabOperatingInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+    }
+
+    // Update total workers (now includes all workers including DC operating at end year)
+    const totalWorkersSpan = document.getElementById('param-total-workers');
+    if (totalWorkersSpan) {
+        totalWorkersSpan.textContent = totalWorkers.toLocaleString();
+        // No click handler for total since it's computed from multiple inputs
+    }
 }

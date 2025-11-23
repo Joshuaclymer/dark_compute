@@ -116,7 +116,7 @@
       <div class="dashboard-value" id="dashboardProject80thH100eCombined">
         --
       </div>
-      <div class="dashboard-label">Scale of covert data centers</div>
+      <div class="dashboard-label">Scale of covert datacenters</div>
     </div>
     <div class="dashboard-item" style="margin: 0">
       <div class="dashboard-value" id="dashboardProject80thTime">--</div>
@@ -241,7 +241,7 @@
   <div style="display: flex; position: relative">
     <div style="flex: 1; position: relative">
       <!-- Unreported Computation Section -->
-      <div style="position: relative; padding-bottom: 60px; padding-top: 20px">
+      <div style="position: relative; padding-bottom: 10px; padding-top: 20px">
         <h3
           style="
             font-size: 20px;
@@ -267,8 +267,8 @@
           <div style="position: relative">
             <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
             <div class="section-description" style="max-width: 900px; text-align: left">
-              The quantity of <strong>unreported AI chips</strong> is equal to the initial stock
-              of unreported chips, plus hardware the PRC acquires after the agreement is in force, multiplied by the proportion of chips that survive degradation and failure.
+              The quantity of <strong>unreported AI chips</strong> is equal to the <strong>initial stock</strong>
+              of unreported chips, plus <strong>hardware acquired</strong> after the agreement is in force, multiplied by the <strong>fraction of chips that survive</strong> degradation and failure.
             </div>
           </div>
 
@@ -276,9 +276,10 @@
         <div
           style="
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 15px;
-            margin-top: 15px;
+            margin-top: 40px;
+            margin-bottom: 40px;
             flex-wrap: wrap;
           "
         >
@@ -290,6 +291,7 @@
               flex: 0 0 30px;
               text-align: center;
               line-height: 250px;
+              margin-top: 5px;
             "
           >
             (
@@ -314,6 +316,7 @@
               color: #666;
               flex: 0 0 30px;
               text-align: center;
+              margin-top: 125px;
             "
           >
             +
@@ -325,7 +328,7 @@
               style="height: 250px"
             ></div>
             <div class="breakdown-label" style="text-align: center">
-              Flow from covert fab
+              Acquired hardware 
             </div>
             <div class="breakdown-description" style="text-align: center">
               Assuming the PRC diverts <span id="param-sme-diversion-percent" class="param-link">10</span>% of indigenous ≤<span id="param-fab-node" class="param-link">28</span>nm SME before the agreement goes into force.
@@ -339,6 +342,7 @@
               flex: 0 0 30px;
               text-align: center;
               line-height: 250px;
+              margin-top: 5px;
             "
           >
             )
@@ -350,6 +354,7 @@
               color: #666;
               flex: 0 0 30px;
               text-align: center;
+              margin-top: 125px;
             "
           >
             ×
@@ -375,6 +380,7 @@
               color: #666;
               flex: 0 0 30px;
               text-align: center;
+              margin-top: 125px;
             "
           >
             =
@@ -401,16 +407,17 @@
             class="section-description"
             style="max-width: 900px; text-align: left"
           >
-            The number of AI chips that the PRC can operate is limited by the capacity of <strong>unreported data centers</strong>, which grow as a greater number can be constructed with a workforce that is small enough to be stealthy. 
+            The capacity of <strong>unreported datacenters</strong> limits the number of AI chips that the PRC can operate.
           </div>
         </div>
 
         <div
           style="
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 15px;
-            margin-top: 15px;
+            margin-top: 40px;
+            margin-bottom: 40px;
             flex-wrap: wrap;
           "
         >
@@ -420,10 +427,10 @@
              Unreported Data Center Capacity 
             </div>
             <div class="breakdown-description" style="text-align: center">
-              Assuming <span id="param-datacenter-workers-2" class="param-link">10,000</span> workers construct covert data centers continually, and <span id="param-mw-per-worker" class="param-link">X</span> MW are constructed by each worker per year on average.
+              Assuming <span id="param-datacenter-workers-2" class="param-link">10,000</span> workers construct covert datacenters continually, and <span id="param-mw-per-worker" class="param-link">X</span> MW are constructed by each worker per year on average.
             </div>
           </div>
-          <div style="position: relative; flex: 0 0 30px; text-align: center">
+          <div style="position: relative; flex: 0 0 30px; text-align: center; margin-top: 120px;">
             <div
               style="
                 position: absolute;
@@ -436,7 +443,7 @@
                 white-space: nowrap;
               "
             >
-              Caps
+              Limits
             </div>
             <div style="font-size: 20px; color: #666">→</div>
           </div>
@@ -456,6 +463,7 @@
               color: #666;
               flex: 0 0 30px;
               text-align: center;
+              margin-top: 120px;
             "
           >
             =
@@ -463,10 +471,31 @@
           <div style="flex: 1; min-width: 200px">
             <div id="operationalDarkComputePlot" class="breakdown-plot"></div>
             <div class="breakdown-label" style="text-align: center">
-              Operating Compute
+              Operating AI chips
             </div>
             <div class="breakdown-description" style="text-align: center">
-              Quantity of compute operated in PRC covert data centers.
+              Quantity of compute operated in PRC covert datacenters.
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 24px;
+              font-weight: bold;
+              color: #666;
+              flex: 0 0 30px;
+              text-align: center;
+              margin-top: 120px;
+            "
+          >
+            =
+          </div>
+          <div style="flex: 1; min-width: 200px">
+            <div id="covertComputationPlot" class="breakdown-plot"></div>
+            <div class="breakdown-label" style="text-align: center">
+              Covert computation
+            </div>
+            <div class="breakdown-description" style="text-align: center">
+              H100-years of computation calculated cumulatively.
             </div>
           </div>
         </div>
@@ -478,7 +507,7 @@
       <div
         style="
           position: relative;
-          padding-bottom: 60px;
+          padding-bottom: 0px;
           padding-top: 10px;
         "
       >
@@ -496,7 +525,7 @@
           class="section-description"
           style="max-width: 900px; text-align: left"
         >
-          US intelligence collects increasing evidence of a covert PRC project over time. This evidence comes from two main sources: discrepancies between reported and estimated asset quantities, and also direct evidence of covert operations (via IMGINT, HUMINT, SIGINT, etc).
+          US intelligence collects evidence of a covert PRC project by observing <strong>discrepancies</strong> between reported and estimated asset quantities, and <strong>direct evidence of covert operations </strong>(via IMGINT, HUMINT, SIGINT, etc).
         </div>
 
         <!-- Continuous outline for both detection subsections -->
@@ -505,21 +534,22 @@
           <div style="position: relative">
             <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
             <div class="section-description" style="max-width: 900px; text-align: left">
-              US intelligence gains evidence of defection right at the agreement start by looking for discrepancies between the quantity of chips/datacenters/SME actors report and the quantity US intelligence already estimated them to have. We modeled the strength of this evidence by looking at the historical track record of how accurately US intelligence estimated the quantities of assets sensitive to national security (e.g. nuclear weapons, ICBMs, etc).
+              <strong>Discrepancies</strong> between the PRC's reported <strong>AI chip stock</strong> and <strong>semiconductor manufacturing equipment (SME)</strong> and intelligence estimates indicate covert operations. 
             </div>
           </div>
 
         <div
           style="
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 40px;
+            margin-bottom: 40px;
             flex-wrap: wrap;
           "
         >
           <div style="flex: 1; min-width: 140px">
-            <div id="lrPrcAccountingPlot" class="breakdown-plot" style="height: 180px"></div>
+            <div id="lrPrcAccountingPlot" class="breakdown-plot" style="height: 240px"></div>
             <div class="breakdown-label" style="text-align: center; font-size: 11px">
               Evidence from discrepancies between reported and estimated PRC chip stock
             </div>
@@ -534,32 +564,13 @@
               color: #666;
               flex: 0 0 20px;
               text-align: center;
+              margin-top: 120px;
             "
           >
             ×
           </div>
           <div style="flex: 1; min-width: 140px">
-            <div id="lrGlobalAccountingPlot" class="breakdown-plot" style="height: 180px"></div>
-            <div class="breakdown-label" style="text-align: center; font-size: 11px">
-              Evidence from discrepancies between reported global chip production and reported stock
-            </div>
-            <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
-              Assuming that there's a median discrepancy of <span id="param-global-discrepancy" class="param-link">X</span> million H100e, and the median number of H100e unreported by actors other than the PRC is <span id="param-median-unreported-non-prc" class="param-link">X</span> H100e.
-            </div>
-          </div>
-          <div
-            style="
-              font-size: 20px;
-              font-weight: bold;
-              color: #666;
-              flex: 0 0 20px;
-              text-align: center;
-            "
-          >
-            ×
-          </div>
-          <div style="flex: 1; min-width: 140px">
-            <div id="lrSmeInventoryPlot" class="breakdown-plot" style="height: 180px"></div>
+            <div id="lrSmeInventoryPlot" class="breakdown-plot" style="height: 240px"></div>
             <div class="breakdown-label" style="text-align: center; font-size: 11px">
               Evidence from discrepancies between reported and estimated PRC SME stock
             </div>
@@ -574,34 +585,18 @@
               color: #666;
               flex: 0 0 20px;
               text-align: center;
-            "
-          >
-            ×
-          </div>
-          <div style="flex: 1; min-width: 140px">
-            <div id="lrSmeProcurementPlot" class="breakdown-plot" style="height: 180px"></div>
-            <div class="breakdown-label" style="text-align: center; font-size: 11px">
-              Evidence from discrepancies between reported global SME production and SME stock
-            </div>
-            <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
-              Assuming relative sigma of PRC scanner production is <span id="param-sigma-prc-scanner" class="param-link">0.15</span>%
-            </div>
-          </div>
-          <div
-            style="
-              font-size: 20px;
-              font-weight: bold;
-              color: #666;
-              flex: 0 0 20px;
-              text-align: center;
+              margin-top: 120px;
             "
           >
             =
           </div>
           <div style="flex: 1; min-width: 140px">
-            <div id="lrReportedAssetsPlot" class="breakdown-plot" style="height: 180px"></div>
+            <div id="lrReportedAssetsInitialPlot" class="breakdown-plot" style="height: 240px"></div>
             <div class="breakdown-label" style="text-align: center; font-size: 11px">
               Combined evidence from reported assets
+            </div>
+            <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+              The product of evidence from chip stock and SME stock discrepancies, assuming these evidence sources are conditionally independent
             </div>
           </div>
         </div>
@@ -613,35 +608,11 @@
             class="section-description"
             style="max-width: 900px; text-align: left"
           >
-            US intelligence also receives evidence ongoingly of covert operations via networks of spies, satellite imagery, compromised devices, etc. We modeled the speed of detection from these methods by drawing on historical examples of how quickly covert nuclear sites were identified.
+            The US also receives <strong>direct evidence of covert operations</strong> from networks of spies, satellite imagery, compromised devices, etc. Multiplying updates from these sources gives the probability of a covert project over time.
           </div>
         </div>
 
-        <div class="breakdown-plots-row">
-          <div class="breakdown-item">
-            <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
-            <div class="breakdown-label">
-              Evidence from other intelligence sources
-            </div>
-            <div class="breakdown-description">
-              Likelihood ratio from HUMINT, SIGINT, and other intelligence
-              sources over time.
-            </div>
-          </div>
-        </div>
-
-        <!-- Combined evidence subsection -->
-        <div style="position: relative; margin-top: 20px;">
-          <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
-          <div
-            class="section-description"
-            style="max-width: 900px; text-align: left"
-          >
-            Combining evidence from reported assets and ongoing intelligence sources yields the overall probability of detection.
-          </div>
-        </div>
-
-        <div class="breakdown-plots-row">
+        <div class="breakdown-plots-row" style="margin-top: 40px;">
           <div
             style="display: flex; flex-direction: column; align-items: center"
           >
@@ -679,7 +650,7 @@
               Evidence from reported assets
             </div>
             <div class="breakdown-description">
-              Combined likelihood ratio from initial chip diversion and diverted SME.
+              Combined likelihood ratio from initial chip diversion and diverted SME (see above).
             </div>
           </div>
           <div
@@ -695,12 +666,12 @@
             <div style="font-size: 24px; font-weight: bold; color: #666">×</div>
           </div>
           <div class="breakdown-item">
-            <div id="lrOtherIntelPlot2" class="breakdown-plot"></div>
+            <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
             <div class="breakdown-label">
-              Evidence from other intelligence sources
+              Direct evidence of covert operations
             </div>
-            <div class="breakdown-description">
-              Likelihood ratio from HUMINT, SIGINT, and other intelligence sources.
+            <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+              Assuming <span id="param-total-workers" style="font-weight: bold;">X</span> workers are involved in the project (<span id="param-datacenter-construction-workers" class="param-link">X</span> constructing datacenters, <span id="param-datacenter-operating-workers" class="param-link">X</span> operating datacenters, <span id="param-fab-construction-workers" class="param-link">X</span> constructing a fab, <span id="param-fab-operating-workers" class="param-link">X</span> operating a fab)
             </div>
           </div>
           <div

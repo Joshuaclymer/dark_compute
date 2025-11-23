@@ -79,68 +79,6 @@ def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion
 
     return lr
 
-def sample_global_compute(year, params: InitialPRCDarkComputeParameters):
-    """Sample global compute stock based on year"""
-    from backend.util import sample_from_log_normal
-    years_since_2025 = year - 2025
-    median_total_stock = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** years_since_2025)
-    relative_sigma = params.relative_sigma_of_global_compute
-
-    global_compute = sample_from_log_normal(median_total_stock, relative_sigma)
-
-    return global_compute
-
-def sample_reported_global_compute(prc_compute_stock_diverted, global_compute, params: InitialPRCDarkComputeParameters):
-    def _sample_unreported_compute_owned_by_non_prc_actors():
-        """Sample unreported compute owned by non-PRC actors based on year"""
-        from backend.util import sample_from_log_normal
-        median = params.median_unreported_compute_owned_by_non_prc_actors
-        relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors
-
-        unreported_compute_owned_by_non_prc_actors = sample_from_log_normal(median, relative_sigma)
-
-        return unreported_compute_owned_by_non_prc_actors
-
-    unreported_compute_owned_by_non_prc_actors = _sample_unreported_compute_owned_by_non_prc_actors()
-
-    reported_global_compute = global_compute - unreported_compute_owned_by_non_prc_actors - prc_compute_stock_diverted
-
-    return reported_global_compute
-
-def get_reported_global_compute_production(year, prc_compute_stock_diverted, params: InitialPRCDarkComputeParameters):
-    total_global_compute = params.total_global_compute_in_2025 * (params.annual_growth_rate_of_global_compute ** (year - 2025))
-    return total_global_compute - prc_compute_stock_diverted
-
-def lr_from_global_compute_production_accounting(reported_historical_global_compute_production, reported_global_compute, reported_prc_compute_stock, optimal_diversion_proportion, params: InitialPRCDarkComputeParameters):
-
-    discrepency = reported_global_compute - reported_historical_global_compute_production
-
-    # Case 1: There's no covert PRC project
-    relative_sigma = params.relative_sigma_unreported_compute_owned_by_non_prc_actors
-    sigma_log = np.sqrt(np.log(1 + relative_sigma**2))
-    mu_log = np.log(params.median_unreported_compute_owned_by_non_prc_actors)
-
-    # Lognormal PDF
-    if discrepency > 0:
-        p_discrepency_if_no_prc_project = (1 / (discrepency * sigma_log * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((np.log(discrepency) - mu_log) / sigma_log)**2)
-    else:
-        p_discrepency_if_no_prc_project = 1e-10  # Very small probability for non-positive values
-    
-
-    # Case 2: There is a covert PRC project
-    estimated_prc_compute_stock = reported_prc_compute_stock / (1 - optimal_diversion_proportion)
-    estimated_computes_diverted_to_prc_project = estimated_prc_compute_stock - reported_prc_compute_stock
-    estimated_compute_unreported_by_non_prc_actors = discrepency - estimated_computes_diverted_to_prc_project
-
-    # Lognormal PDF
-    if estimated_compute_unreported_by_non_prc_actors > 0:
-        p_discrepency_if_prc_project = (1 / (estimated_compute_unreported_by_non_prc_actors * sigma_log * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((np.log(estimated_compute_unreported_by_non_prc_actors) - mu_log) / sigma_log)**2)
-    else:
-        p_discrepency_if_prc_project = 1e-10  # Very small probability for non-positive values
-
-    lr = p_discrepency_if_prc_project / p_discrepency_if_no_prc_project
-
-    return lr
 
 def sample_hazard_rate_multiplier(params: SurvivalRateParameters) -> float:
     """Sample a multiplier for hazard rates from a metalog distribution.
@@ -237,6 +175,7 @@ class PRCDarkComputeStock():
     def __init__(self, agreement_year, proportion_of_initial_compute_stock_to_divert, optimal_proportion_of_initial_compute_stock_to_divert, initial_compute_parameters: InitialPRCDarkComputeParameters, survival_parameters: SurvivalRateParameters):
         self.agreement_year = agreement_year
         self.initial_compute_parameters = initial_compute_parameters
+        assert proportion_of_initial_compute_stock_to_divert < self.initial_compute_parameters.proportion_of_prc_chip_stock_produced_domestically, "This model assumes that the PRC only diverts domestically-produced chips to a covert project. Therefore proportion to divert < proportion produced domestically."
         self.survival_parameters = survival_parameters
 
         self.initial_prc_stock = sample_initial_prc_compute_stock(agreement_year, initial_compute_parameters)
@@ -262,18 +201,6 @@ class PRCDarkComputeStock():
             reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
             optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
             us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock,
-            params=initial_compute_parameters
-        )
-        self.global_compute = sample_global_compute(agreement_year, initial_compute_parameters)
-
-        self.reported_global_compute = sample_reported_global_compute(self.initial_prc_dark_compute, self.global_compute, initial_compute_parameters)
-
-        self.reported_historical_global_compute_production = get_reported_global_compute_production(agreement_year, self.initial_prc_dark_compute, initial_compute_parameters)
-        self.lr_from_global_compute_production_accounting = lr_from_global_compute_production_accounting(
-            reported_historical_global_compute_production= self.reported_historical_global_compute_production,
-            reported_global_compute=self.reported_global_compute,
-            reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_dark_compute,
-            optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
             params=initial_compute_parameters
         )
         self.initial_hazard_rate, self.increase_in_hazard_rate_per_year = sample_hazard_rates(survival_parameters)
@@ -463,13 +390,9 @@ class PRCDarkComputeStock():
         return (initial_energy, fab_energy, initial_h100e, fab_h100e)
 
     def combined_likelihood_ratio(self) -> float:
-        """Calculate combined likelihood ratio from PRC and global compute accounting.
-
-        This multiplies the likelihood ratios from:
-        - PRC compute stock accounting (self.lr_from_prc_compute_accounting)
-        - Global compute production accounting (self.lr_from_global_compute_production_accounting)
+        """Calculate likelihood ratio from PRC compute accounting.
 
         Returns:
-            float: Combined likelihood ratio (product of individual LRs)
+            float: Likelihood ratio from PRC compute stock accounting
         """
-        return self.lr_from_prc_compute_accounting * self.lr_from_global_compute_production_accounting
+        return self.lr_from_prc_compute_accounting

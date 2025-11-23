@@ -388,26 +388,6 @@
         <label for="energy_efficiency_relative_to_h100">Energy efficiency relative to H100 (multiplicative)</label>
         <input type="number" id="energy_efficiency_relative_to_h100" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100'] }}" step="0.1">
     </div>
-    <div class="param-group">
-        <label for="total_global_compute_in_2025">Total global compute in 2025 (millions of H100e)</label>
-        <input type="number" id="total_global_compute_in_2025" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.total_global_compute_in_2025'] / 1e6 }}" step="1">
-    </div>
-    <div class="param-group">
-        <label for="annual_growth_rate_of_global_compute">Annual growth rate of global compute (multiplicative)</label>
-        <input type="number" id="annual_growth_rate_of_global_compute" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_global_compute'] }}" step="0.1">
-    </div>
-    <div class="param-group">
-        <label for="relative_sigma_of_global_compute">Relative sigma of global compute (log scale)</label>
-        <input type="number" id="relative_sigma_of_global_compute" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.relative_sigma_of_global_compute'] }}" step="0.01">
-    </div>
-    <div class="param-group">
-        <label for="median_unreported_compute_owned_by_non_prc_actors">Median unreported compute owned by non-PRC actors (millions of H100e)</label>
-        <input type="number" id="median_unreported_compute_owned_by_non_prc_actors" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.median_unreported_compute_owned_by_non_prc_actors'] / 1e6 }}" step="0.1">
-    </div>
-    <div class="param-group">
-        <label for="relative_sigma_unreported_compute_owned_by_non_prc_actors">Relative sigma of unreported compute owned by non-PRC actors (log scale)</label>
-        <input type="number" id="relative_sigma_unreported_compute_owned_by_non_prc_actors" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.relative_sigma_unreported_compute_owned_by_non_prc_actors'] }}" step="0.1">
-    </div>
     <div class="param-group has-tooltip"
          data-tooltip="<strong>H100 Power Consumption</strong><br><br>Total power consumption of NVIDIA H100 GPU during operation. Source: <a href='https://www.nvidia.com/en-us/data-center/h100/' style='color: #6db4ff;' target='_blank'>https://www.nvidia.com/en-us/data-center/h100/</a>">
         <label for="h100_power_watts">H100 power consumption (W)</label>
@@ -465,7 +445,6 @@
     <h2>Covert fab parameters</h2>
 
     <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Odds of Covert Project</h3>
-    <input type="hidden" id="p_fab_exists" value="0.1">
     <div class="param-group has-tooltip" data-tooltip="<strong>SME Inventory Accounting Detection</strong><br><br><strong>Detection Method:</strong><br>US intelligence could detect a covert fab by noticing that equipment is missing from China's domestic semiconductor industry.<br><br><strong>Two Key Factors:</strong><br>1. Amount diverted: Diverting 80 of 100 stockpiled DUV scanners would be obvious; diverting a handful would not.<br>2. Width of USG's error bars: If USG estimates Chinese companies built 50-150 DUV scanners, a dozen missing wouldn't raise suspicion. If USG knows the exact count, it would notice.<br><br><strong>Historical Calibration:</strong><br>Historical intelligence estimates of weapon counts (tanks, nuclear warheads, etc.) from declassified documents (1960-2025) show median errors of ~15%." data-download="/download/us_intelligence_estimates" data-image="/static/error_bars_plot.png" data-image-after-text="<strong>Adjustment for SME Context:</strong><br>15% would be reasonable if the PRC treats SME with nuclear-weapons-level secrecy. However, it's plausible that China's semiconductor industry remains quasi-private with details shared among investors, or that the expansive SME industry is difficult to lock down. Therefore, I estimate that the US intelligence error margin will be ~7% (2x smaller than weapons programs).">
         <label for="proportion_diverted_sme">Median absolute relative error of US intelligence estimate of PRC SME stock</label>
         <input type="number" id="proportion_diverted_sme" value="{{ defaults['covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock'] }}" step="0.01">

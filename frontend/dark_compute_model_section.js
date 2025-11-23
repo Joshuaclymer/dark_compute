@@ -67,7 +67,7 @@ function plotDarkComputeModel(data) {
                 tickfont: { size: 9 },
                 tickformat: '.2s'
             },
-            margin: { l: 50, r: 20, t: 35, b: 40 },
+            margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
             hovermode: 'x unified',
             legend: {
@@ -139,7 +139,7 @@ function plotDarkComputeModel(data) {
                 tickfont: { size: 9 },
                 range: [0, 1]
             },
-            margin: { l: 50, r: 20, t: 10, b: 40 },
+            margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
             hovermode: 'x unified'
         };
@@ -201,7 +201,7 @@ function plotDarkComputeModel(data) {
                 tickfont: { size: 9 },
                 tickformat: '.2s'
             },
-            margin: { l: 50, r: 20, t: 10, b: 40 },
+            margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
             hovermode: 'x unified'
         };
@@ -290,7 +290,7 @@ function plotDarkComputeModel(data) {
                 automargin: true,
                 range: [0, yMax]
             },
-            margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
+            margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
             hovermode: 'x unified'
         };
@@ -427,7 +427,7 @@ function plotDarkComputeModel(data) {
                 automargin: true,
                 range: [0, yMax]
             },
-            margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
+            margin: { l: 50, r: 20, t: 10, b: 55, pad: 10 },
             height: 250,
             hovermode: 'x unified',
             showlegend: true,
@@ -440,8 +440,7 @@ function plotDarkComputeModel(data) {
                 bordercolor: '#ccc',
                 borderwidth: 1,
                 font: { size: 7 }
-            },
-            autosize: true
+            }
         };
 
         layout.xaxis.range = [years[0], 2037];
@@ -506,7 +505,7 @@ function plotDarkComputeModel(data) {
                 automargin: true,
                 tickformat: '.2s'
             },
-            margin: { l: 50, r: 50, t: 10, b: 55, pad: 10 },
+            margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
             hovermode: 'x unified'
         };
@@ -515,6 +514,88 @@ function plotDarkComputeModel(data) {
 
         Plotly.newPlot('operationalDarkComputePlot', traces, layout, {responsive: true, displayModeBar: false});
         setTimeout(() => Plotly.Plots.resize('operationalDarkComputePlot'), 50);
+    }
+
+    // Plot 7: Covert computation (cumulative H100-years over time)
+    if (data.dark_compute_model && data.dark_compute_model.operational_dark_compute) {
+        const years = data.dark_compute_model.years;
+        const operational_median = data.dark_compute_model.operational_dark_compute.median;
+        const operational_p25 = data.dark_compute_model.operational_dark_compute.p25;
+        const operational_p75 = data.dark_compute_model.operational_dark_compute.p75;
+
+        // Calculate cumulative H100-years by integrating operational compute over time
+        function cumulativeIntegral(operationalData) {
+            const cumulative = [0];  // Start at 0
+            for (let i = 1; i < years.length; i++) {
+                const dt = years[i] - years[i-1];  // Time step in years
+                const avgCompute = (operationalData[i] + operationalData[i-1]) / 2;  // Average compute (in thousands)
+                cumulative.push(cumulative[i-1] + avgCompute * dt);
+            }
+            return cumulative;
+        }
+
+        const cumulative_median = cumulativeIntegral(operational_median);
+        const cumulative_p25 = cumulativeIntegral(operational_p25);
+        const cumulative_p75 = cumulativeIntegral(operational_p75);
+
+        const traces = [
+            // Upper bound of shaded region (invisible line)
+            {
+                x: years,
+                y: cumulative_p75,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: 'transparent' },
+                showlegend: false,
+                hoverinfo: 'skip'
+            },
+            // Lower bound with fill to previous trace
+            {
+                x: years,
+                y: cumulative_p25,
+                type: 'scatter',
+                mode: 'lines',
+                fill: 'tonexty',
+                fillcolor: 'rgba(90, 168, 155, 0.2)',
+                line: { color: 'transparent' },
+                showlegend: false,
+                hoverinfo: 'skip'
+            },
+            // Median line
+            {
+                x: years,
+                y: cumulative_median,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#5AA89B', width: 2 },
+                name: 'Median',
+                showlegend: false
+            }
+        ];
+
+        const layout = {
+            xaxis: {
+                title: 'Year',
+                titlefont: { size: 10 },
+                tickfont: { size: 9 },
+                automargin: true
+            },
+            yaxis: {
+                title: 'H100-years',
+                titlefont: { size: 10 },
+                tickfont: { size: 9 },
+                automargin: true,
+                tickformat: '.2s'
+            },
+            margin: { l: 50, r: 20, t: 15, b: 60 },
+            height: 250,
+            hovermode: 'x unified'
+        };
+
+        layout.xaxis.range = [years[0], 2037];
+
+        Plotly.newPlot('covertComputationPlot', traces, layout, {responsive: true, displayModeBar: false});
+        setTimeout(() => Plotly.Plots.resize('covertComputationPlot'), 50);
     }
 
     // Plot individual LR components for Speed of Detection section
@@ -567,7 +648,8 @@ function plotDarkComputeModel(data) {
                 yaxis: {
                     title: 'Likelihood Ratio',
                     titlefont: { size: 10 },
-                    tickfont: { size: 9 }
+                    tickfont: { size: 9 },
+                    type: 'log'
                 },
                 margin: { l: 50, r: 20, t: 10, b: 40 },
                 height: 240,
@@ -583,58 +665,9 @@ function plotDarkComputeModel(data) {
             const lrPrcSamples = data.dark_compute_model.lr_prc_accounting.individual.map(sim => sim[0]);
             plotPDF('lrPrcAccountingPlot', lrPrcSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
         }
-        if (data.dark_compute_model.lr_global_accounting && data.dark_compute_model.lr_global_accounting.individual) {
-            const lrGlobalSamples = data.dark_compute_model.lr_global_accounting.individual.map(sim => sim[0]);
-            plotPDF('lrGlobalAccountingPlot', lrGlobalSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
-
-            // Update global compute discrepancy and median unreported by non-PRC parameters
-            if (data.dark_compute_model.global_compute_discrepancy && data.dark_compute_model.median_unreported_by_non_prc) {
-                const discrepancies = data.dark_compute_model.global_compute_discrepancy;
-                const medianUnreported = data.dark_compute_model.median_unreported_by_non_prc;
-
-                // Calculate median values from the arrays
-                const medianDiscrepancy = calculateMedian(discrepancies);
-                const medianUnreportedValue = calculateMedian(medianUnreported);
-
-                // Format discrepancy in millions
-                const discrepancyFormatted = (medianDiscrepancy / 1e6).toFixed(2);
-
-                // Format median unreported with k/M suffix
-                let unreportedFormatted;
-                if (medianUnreportedValue >= 1e6) {
-                    unreportedFormatted = (medianUnreportedValue / 1e6).toFixed(2) + 'M';
-                } else if (medianUnreportedValue >= 1e3) {
-                    unreportedFormatted = (medianUnreportedValue / 1e3).toFixed(0) + 'K';
-                } else {
-                    unreportedFormatted = medianUnreportedValue.toFixed(0);
-                }
-
-                // Update the spans
-                const discrepancySpan = document.getElementById('param-global-discrepancy');
-                if (discrepancySpan) {
-                    discrepancySpan.textContent = discrepancyFormatted;
-                }
-
-                const unreportedSpan = document.getElementById('param-median-unreported-non-prc');
-                if (unreportedSpan) {
-                    unreportedSpan.textContent = unreportedFormatted;
-                }
-            }
-        }
-
-        // Helper function to calculate median
-        function calculateMedian(arr) {
-            const sorted = [...arr].sort((a, b) => a - b);
-            const mid = Math.floor(sorted.length / 2);
-            return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-        }
         if (data.dark_compute_model.lr_sme_inventory && data.dark_compute_model.lr_sme_inventory.individual) {
             const lrSmeInventorySamples = data.dark_compute_model.lr_sme_inventory.individual.map(sim => sim[0]);
             plotPDF('lrSmeInventoryPlot', lrSmeInventorySamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
-        }
-        if (data.dark_compute_model.lr_sme_procurement && data.dark_compute_model.lr_sme_procurement.individual) {
-            const lrSmeProcurementSamples = data.dark_compute_model.lr_sme_procurement.individual.map(sim => sim[0]);
-            plotPDF('lrSmeProcurementPlot', lrSmeProcurementSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
         }
 
         // Plot combined evidence from reported assets as distribution (also constant over time)
@@ -643,18 +676,26 @@ function plotDarkComputeModel(data) {
             const lrReportedAssetsSamples = data.dark_compute_model.lr_initial_stock.individual.map((sim, i) =>
                 sim[0] * data.dark_compute_model.lr_diverted_sme.individual[i][0]
             );
+            // Plot in both locations
+            plotPDF('lrReportedAssetsInitialPlot', lrReportedAssetsSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
             plotPDF('lrReportedAssetsPlot', lrReportedAssetsSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
         }
 
-        // Plot ongoing intelligence for second subsection
+        // Plot ongoing intelligence
         plotLRComponent('lrOtherIntelPlot', data.dark_compute_model.lr_other_intel, 'Other Intel');
-
-        // Plot elements for third subsection (combined evidence) - duplicate other intel for the combination equation
-        plotLRComponent('lrOtherIntelPlot2', data.dark_compute_model.lr_other_intel, 'Other Intel');
 
         // Plot posterior probability
         if (data.dark_compute_model.posterior_prob_project) {
             const posteriorData = data.dark_compute_model.posterior_prob_project;
+
+            // Calculate 5x prior probability threshold
+            // Get prior probability from parameters
+            const priorProbInput = document.getElementById('covert_project_parameters.p_project_exists');
+            const priorProb = priorProbInput ? parseFloat(priorProbInput.value) : 0.1;
+            const priorOdds = priorProb / (1 - priorProb);
+            const thresholdOdds = priorOdds * 5;
+            const thresholdProb = thresholdOdds / (1 + thresholdOdds);
+
             const traces = [
                 {
                     x: years,
@@ -684,6 +725,15 @@ function plotDarkComputeModel(data) {
                     line: { color: '#5B8DBE', width: 2 },
                     name: 'Posterior Probability',
                     showlegend: false
+                },
+                {
+                    x: [years[0], years[years.length - 1]],
+                    y: [thresholdProb, thresholdProb],
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#E74C3C', width: 2, dash: 'dash' },
+                    name: 'Detection threshold (5x update)',
+                    showlegend: true
                 }
             ];
 
@@ -703,7 +753,18 @@ function plotDarkComputeModel(data) {
                 },
                 margin: { l: 50, r: 20, t: 10, b: 40 },
                 height: 240,
-                hovermode: 'x unified'
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {
+                    x: 0.02,
+                    y: 0.98,
+                    xanchor: 'left',
+                    yanchor: 'top',
+                    bgcolor: 'rgba(255, 255, 255, 0.8)',
+                    bordercolor: '#ccc',
+                    borderwidth: 1,
+                    font: { size: 9 }
+                }
             };
 
             Plotly.newPlot('posteriorProbProjectPlot', traces, layout, {responsive: true, displayModeBar: false});

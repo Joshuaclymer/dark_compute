@@ -60,14 +60,6 @@ class InitialPRCDarkComputeParameters:
 
     us_intelligence_median_error_in_estimate_of_prc_compute_stock: float = 0.07
 
-    # Global compute stock parameters
-    total_global_compute_in_2025: float = 1e7
-    annual_growth_rate_of_global_compute: float = 2.4
-    relative_sigma_of_global_compute: float = 0.1
-
-    median_unreported_compute_owned_by_non_prc_actors: float = 1e6
-    relative_sigma_unreported_compute_owned_by_non_prc_actors: float = 0.5
-
 @dataclass
 class SurvivalRateParameters:
 

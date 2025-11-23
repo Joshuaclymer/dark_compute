@@ -109,11 +109,9 @@ function plotInitialStock(data) {
     }
 
     // Plot LR breakdown histograms for initial compute reporting
-    if (data.initial_stock && data.initial_stock.lr_prc_accounting_samples && data.initial_stock.lr_global_accounting_samples && data.initial_stock.lr_combined_samples) {
+    if (data.initial_stock && data.initial_stock.lr_prc_accounting_samples) {
         // Use log scale with range 1/3 to 5, and blue color #5B8DBE
         plotPDF('lrPrcAccountingPlot', data.initial_stock.lr_prc_accounting_samples, '#5B8DBE', 'Likelihood Ratio from PRC Accounting', 12, true, 1/3, 5);
-        plotPDF('lrGlobalAccountingPlot', data.initial_stock.lr_global_accounting_samples, '#5B8DBE', 'Likelihood Ratio from Global Production Accounting', 12, true, 1/3, 5);
-        plotPDF('lrCombinedPlot', data.initial_stock.lr_combined_samples, '#5B8DBE', 'Combined LR', 12, true, 1/3, 5);
     }
 
     // Plot initial dark compute stock breakdown

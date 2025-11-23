@@ -177,7 +177,7 @@
                 'covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted': parseFloat(document.getElementById('scanner_proportion').value),
 
                 // Covert project parameters - detection
-                'covert_project_parameters.p_project_exists': parseFloat(document.getElementById('p_fab_exists').value),
+                'covert_project_parameters.p_project_exists': parseFloat(document.getElementById('covert_project_parameters.p_project_exists').value),
                 'covert_project_parameters.mean_detection_time_for_100_workers': parseFloat(document.getElementById('mean_detection_time_100').value),
                 'covert_project_parameters.mean_detection_time_for_1000_workers': parseFloat(document.getElementById('mean_detection_time_1000').value),
                 'covert_project_parameters.variance_of_detection_time_given_num_workers': parseFloat(document.getElementById('variance_detection_time').value),
@@ -291,7 +291,6 @@
                     Plotly.Plots.resize('initialDarkComputeDetectionPlot');
                     Plotly.Plots.resize('initialComputeStockPlot');
                     Plotly.Plots.resize('lrPrcAccountingPlot');
-                    Plotly.Plots.resize('lrGlobalAccountingPlot');
                     Plotly.Plots.resize('lrCombinedPlot');
                     Plotly.Plots.resize('initialPrcStockPlot');
                     Plotly.Plots.resize('darkComputeResultPlot');
@@ -348,11 +347,11 @@
                 }
 
                 // Plot "Strength of Evidence of Covert Project" section
-                if (data.initial_stock && data.initial_stock.lr_combined_samples && data.dark_compute_model) {
+                if (data.initial_stock && data.initial_stock.lr_prc_accounting_samples && data.dark_compute_model) {
                     const years = data.dark_compute_model.years;
 
                     // Get prior probability from parameters and calculate prior odds
-                    const priorProb = parseFloat(document.getElementById('p_fab_exists').value);
+                    const priorProb = parseFloat(document.getElementById('covert_project_parameters.p_project_exists').value);
                     const priorOddsProject = priorProb / (1 - priorProb);
 
                     // Display prior odds
@@ -377,8 +376,7 @@
                     }
 
                     // Note: Individual LR component plots are now created in dark_compute_model_section.js
-                    // This includes lrPrcAccountingPlot, lrGlobalAccountingPlot, lrSmeInventoryPlot,
-                    // lrSmeProcurementPlot, and lrReportedAssetsPlot
+                    // This includes lrPrcAccountingPlot, lrSmeInventoryPlot, and lrReportedAssetsPlot
 
                     // 3. LR from other intelligence sources (same as lrOtherPlot)
                     const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
@@ -399,12 +397,84 @@
 
                     // 4. Posterior probability of covert project
                     // Use backend data from US intelligence beliefs (same as Simulation Runs plot)
-                    plotMedianWithPercentiles('posteriorProbProjectPlot', {
-                        median: data.dark_compute_model.posterior_prob_project.median,
-                        p25: data.dark_compute_model.posterior_prob_project.p25,
-                        p75: data.dark_compute_model.posterior_prob_project.p75,
-                        individual: data.dark_compute_model.posterior_prob_project.individual
-                    }, years, '#5B8DBE', 'Posterior Probability');
+                    // Custom plotting to add threshold line
+                    const posteriorData = data.dark_compute_model.posterior_prob_project;
+
+                    // Calculate 5x prior probability threshold (priorProb already declared above at line 354)
+                    const thresholdOdds = priorOddsProject * 5;
+                    const thresholdProb = thresholdOdds / (1 + thresholdOdds);
+
+                    const traces = [
+                        {
+                            x: years,
+                            y: posteriorData.p75,
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: 'transparent' },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
+                        {
+                            x: years,
+                            y: posteriorData.p25,
+                            type: 'scatter',
+                            mode: 'lines',
+                            fill: 'tonexty',
+                            fillcolor: 'rgba(91, 141, 190, 0.2)',
+                            line: { color: 'transparent' },
+                            showlegend: false,
+                            hoverinfo: 'skip'
+                        },
+                        {
+                            x: years,
+                            y: posteriorData.median,
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: '#5B8DBE', width: 2 },
+                            name: 'Posterior Probability',
+                            showlegend: false
+                        },
+                        {
+                            x: [years[0], years[years.length - 1]],
+                            y: [thresholdProb, thresholdProb],
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: '#E74C3C', width: 2, dash: 'dash' },
+                            name: 'Detection threshold (5x update)',
+                            showlegend: true
+                        }
+                    ];
+
+                    const layout = {
+                        xaxis: {
+                            title: 'Year',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 }
+                        },
+                        yaxis: {
+                            title: 'Posterior Probability',
+                            titlefont: { size: 10 },
+                            tickfont: { size: 9 },
+                            tickformat: '.0%',
+                            range: [0, 1]
+                        },
+                        margin: { l: 50, r: 20, t: 15, b: 60 },
+                        height: 240,
+                        hovermode: 'x unified',
+                        showlegend: true,
+                        legend: {
+                            x: 0.98,
+                            y: 0.02,
+                            xanchor: 'right',
+                            yanchor: 'bottom',
+                            bgcolor: 'rgba(255, 255, 255, 0.8)',
+                            bordercolor: '#ccc',
+                            borderwidth: 1,
+                            font: { size: 9 }
+                        }
+                    };
+
+                    Plotly.newPlot('posteriorProbProjectPlot', traces, layout, {responsive: true, displayModeBar: false});
                 }
 
                 // Plot compute breakdown
@@ -900,12 +970,9 @@
             // Dark Compute Model Section - US Estimated Likelihood of PRC Covert Project
             'dashboardPriorProject': 'covert_project_parameters.p_project_exists',
             'lrPrcAccountingPlot': '#initialStockIntelligenceBreakdown', // Individual component plots
-            'lrGlobalAccountingPlot': '#initialStockIntelligenceBreakdown',
             'lrSmeInventoryPlot': 'proportion_diverted_sme',
-            'lrSmeProcurementPlot': 'proportion_diverted_sme',
             'lrReportedAssetsPlot': null, // Combined output
             'lrOtherIntelPlot': 'mean_detection_time_100',
-            'lrOtherIntelPlot2': 'mean_detection_time_100',
             'posteriorProbProjectPlot': null, // Output, not an input
 
             // Initial Stock Section - Compute Breakdown
@@ -914,7 +981,6 @@
 
             // Initial Stock Section - Intelligence Evidence Breakdown
             'lrPrcAccountingPlot': 'us_intelligence_median_error_in_estimate_of_prc_compute_stock',
-            'lrGlobalAccountingPlot': 'median_unreported_compute_owned_by_non_prc_actors',
             'lrCombinedPlot': null // Output, not an input
         };
 

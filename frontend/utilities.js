@@ -115,9 +115,9 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
 
     const xaxisConfig = {
         title: xAxisLabel,
-        titlefont: { size: 13 },
+        titlefont: { size: 10 },
         automargin: true,
-        tickfont: { size: 10 }
+        tickfont: { size: 9 }
     };
 
     const yaxisConfig = {
@@ -125,8 +125,8 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
             text: logScale ? 'Probability' : 'Density',
             standoff: 15
         },
-        titlefont: { size: 13 },
-        tickfont: { size: 10 }
+        titlefont: { size: 10 },
+        tickfont: { size: 9 }
     };
 
     if (logScale) {

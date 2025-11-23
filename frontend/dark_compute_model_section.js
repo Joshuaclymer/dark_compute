@@ -586,6 +586,47 @@ function plotDarkComputeModel(data) {
         if (data.dark_compute_model.lr_global_accounting && data.dark_compute_model.lr_global_accounting.individual) {
             const lrGlobalSamples = data.dark_compute_model.lr_global_accounting.individual.map(sim => sim[0]);
             plotPDF('lrGlobalAccountingPlot', lrGlobalSamples, '#5B8DBE', 'Likelihood Ratio', 12, true, 1/3, 5);
+
+            // Update global compute discrepancy and median unreported by non-PRC parameters
+            if (data.dark_compute_model.global_compute_discrepancy && data.dark_compute_model.median_unreported_by_non_prc) {
+                const discrepancies = data.dark_compute_model.global_compute_discrepancy;
+                const medianUnreported = data.dark_compute_model.median_unreported_by_non_prc;
+
+                // Calculate median values from the arrays
+                const medianDiscrepancy = calculateMedian(discrepancies);
+                const medianUnreportedValue = calculateMedian(medianUnreported);
+
+                // Format discrepancy in millions
+                const discrepancyFormatted = (medianDiscrepancy / 1e6).toFixed(2);
+
+                // Format median unreported with k/M suffix
+                let unreportedFormatted;
+                if (medianUnreportedValue >= 1e6) {
+                    unreportedFormatted = (medianUnreportedValue / 1e6).toFixed(2) + 'M';
+                } else if (medianUnreportedValue >= 1e3) {
+                    unreportedFormatted = (medianUnreportedValue / 1e3).toFixed(0) + 'K';
+                } else {
+                    unreportedFormatted = medianUnreportedValue.toFixed(0);
+                }
+
+                // Update the spans
+                const discrepancySpan = document.getElementById('param-global-discrepancy');
+                if (discrepancySpan) {
+                    discrepancySpan.textContent = discrepancyFormatted;
+                }
+
+                const unreportedSpan = document.getElementById('param-median-unreported-non-prc');
+                if (unreportedSpan) {
+                    unreportedSpan.textContent = unreportedFormatted;
+                }
+            }
+        }
+
+        // Helper function to calculate median
+        function calculateMedian(arr) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
         }
         if (data.dark_compute_model.lr_sme_inventory && data.dark_compute_model.lr_sme_inventory.individual) {
             const lrSmeInventorySamples = data.dark_compute_model.lr_sme_inventory.individual.map(sim => sim[0]);

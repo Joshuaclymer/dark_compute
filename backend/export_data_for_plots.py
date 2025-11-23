@@ -274,12 +274,14 @@ def extract_project_lr_components_over_time(simulation_results, years):
     return lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim
 
 
-def extract_detailed_lr_components_over_time(simulation_results, years):
+def extract_detailed_lr_components_over_time(simulation_results, years, params):
     """Extract detailed breakdown of LR components for display."""
     lr_prc_accounting_by_sim = []
     lr_global_accounting_by_sim = []
     lr_sme_inventory_by_sim = []
     lr_sme_procurement_by_sim = []
+    global_compute_discrepancy_by_sim = []
+    median_unreported_by_non_prc_by_sim = []
 
     for covert_projects, detectors in simulation_results:
         project = covert_projects["prc_covert_project"]
@@ -300,7 +302,16 @@ def extract_detailed_lr_components_over_time(simulation_results, years):
         lr_sme_inventory_by_sim.append([lr_inventory for _ in years])
         lr_sme_procurement_by_sim.append([lr_procurement for _ in years])
 
-    return lr_prc_accounting_by_sim, lr_global_accounting_by_sim, lr_sme_inventory_by_sim, lr_sme_procurement_by_sim
+        # Calculate global compute discrepancy
+        discrepancy = project.dark_compute_stock.reported_global_compute - project.dark_compute_stock.reported_historical_global_compute_production
+        global_compute_discrepancy_by_sim.append(discrepancy)
+
+        # Get median unreported compute by non-PRC actors from params
+        median_unreported_by_non_prc = params.covert_project_parameters.initial_compute_stock_parameters.median_unreported_compute_owned_by_non_prc_actors
+        median_unreported_by_non_prc_by_sim.append(median_unreported_by_non_prc)
+
+    return (lr_prc_accounting_by_sim, lr_global_accounting_by_sim, lr_sme_inventory_by_sim,
+            lr_sme_procurement_by_sim, global_compute_discrepancy_by_sim, median_unreported_by_non_prc_by_sim)
 
 
 def extract_fab_combined_lr_over_time(simulation_results, years):
@@ -999,7 +1010,8 @@ def extract_plot_data(model, app_params):
     h100_years_by_sim = extract_h100_years_over_time(model.simulation_results, years, agreement_year)
     cumulative_lr_by_sim = extract_cumulative_lr_over_time(model.simulation_results, years)
     lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim = extract_project_lr_components_over_time(model.simulation_results, years)
-    lr_prc_accounting_by_sim, lr_global_accounting_by_sim, lr_sme_inventory_by_sim, lr_sme_procurement_by_sim = extract_detailed_lr_components_over_time(model.simulation_results, years)
+    (lr_prc_accounting_by_sim, lr_global_accounting_by_sim, lr_sme_inventory_by_sim,
+     lr_sme_procurement_by_sim, global_compute_discrepancy_by_sim, median_unreported_by_non_prc_by_sim) = extract_detailed_lr_components_over_time(model.simulation_results, years, app_params)
 
     # Extract fab-specific data
     lr_inventory_by_sim, lr_procurement_by_sim, lr_fab_other_by_sim = extract_fab_lr_components_over_time(model.simulation_results, years)
@@ -1115,6 +1127,10 @@ def extract_plot_data(model, app_params):
             "lr_global_accounting": fmt_pct(lr_global_accounting_by_sim),
             "lr_sme_inventory": fmt_pct(lr_sme_inventory_by_sim),
             "lr_sme_procurement": fmt_pct(lr_sme_procurement_by_sim),
+
+            # Global compute accounting details
+            "global_compute_discrepancy": global_compute_discrepancy_by_sim,
+            "median_unreported_by_non_prc": median_unreported_by_non_prc_by_sim,
 
             # -------------------------------------------------------------------
             # Covert Project Dashboard - Individual simulation data

@@ -56,6 +56,7 @@ class InitialPRCDarkComputeParameters:
     energy_efficiency_relative_to_h100: float = 0.5
     annual_growth_rate_of_prc_compute_stock: float = 2.4
     relative_sigma_of_prc_compute_stock: float = 0.1
+    proportion_of_prc_chip_stock_produced_domestically: float = 0.7
 
     us_intelligence_median_error_in_estimate_of_prc_compute_stock: float = 0.07
 

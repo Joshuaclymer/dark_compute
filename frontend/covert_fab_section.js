@@ -762,7 +762,108 @@ function updateParameterDisplays() {
             document.getElementById('param-datacenter-workers-2')
         ];
         spans.forEach(span => {
-            if (span) span.textContent = formatted;
+            if (span) {
+                span.textContent = formatted;
+                // Add click handler
+                span.onclick = () => {
+                    datacenterWorkersInput.focus();
+                    datacenterWorkersInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                };
+            }
         });
+    }
+
+    // Update MW per worker
+    const mwPerWorkerInput = document.getElementById('MW_per_construction_worker_per_year');
+    if (mwPerWorkerInput) {
+        const value = parseFloat(mwPerWorkerInput.value).toFixed(1);
+        const span = document.getElementById('param-mw-per-worker');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                mwPerWorkerInput.focus();
+                mwPerWorkerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // Update LR component parameters
+    const diversionInitialInput = document.getElementById('proportion_of_initial_chip_stock_to_divert');
+    if (diversionInitialInput) {
+        const value = (parseFloat(diversionInitialInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-diversion-initial-prc');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                diversionInitialInput.focus();
+                diversionInitialInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    const errorPrcComputeInput = document.getElementById('us_intelligence_median_error_in_estimate_of_prc_compute_stock');
+    if (errorPrcComputeInput) {
+        const value = (parseFloat(errorPrcComputeInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-error-prc-compute');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                errorPrcComputeInput.focus();
+                errorPrcComputeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    const sigmaGlobalComputeInput = document.getElementById('relative_sigma_of_global_compute');
+    if (sigmaGlobalComputeInput) {
+        const value = (parseFloat(sigmaGlobalComputeInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-sigma-global-compute');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                sigmaGlobalComputeInput.focus();
+                sigmaGlobalComputeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    const diversionSmeInput = document.getElementById('scanner_proportion');
+    if (diversionSmeInput) {
+        const value = (parseFloat(diversionSmeInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-diversion-sme-prc');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                diversionSmeInput.focus();
+                diversionSmeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // For PRC SME error - this is the proportion_diverted_sme input
+    const errorPrcSmeInput = document.getElementById('proportion_diverted_sme');
+    if (errorPrcSmeInput) {
+        const value = (parseFloat(errorPrcSmeInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-error-prc-sme');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                errorPrcSmeInput.focus();
+                errorPrcSmeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    const sigmaPrcScannerInput = document.getElementById('prc_scanner_production_sigma');
+    if (sigmaPrcScannerInput) {
+        const value = (parseFloat(sigmaPrcScannerInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-sigma-prc-scanner');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                sigmaPrcScannerInput.focus();
+                sigmaPrcScannerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
     }
 }

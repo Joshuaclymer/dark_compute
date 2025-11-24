@@ -317,12 +317,12 @@
                     // Use log scale x-axis but show actual LR values (not log values)
                     plotPDF('lrInventoryPlot', lrInventoryFinal, '#5B8DBE', 'Likelihood Ratio', 10, true);
 
-                    // LR Procurement - Categorical bar plot (1 or 10)
-                    const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
-                    plotCategoricalFrequency('lrProcurementPlot', lrProcurementFinal, [
-                        { value: 1, label: 'Likelihood Ratio = 1<br>(>90% localization)' },
-                        { value: 10, label: 'Likelihood Ratio = 10<br>(≤90% localization)' }
-                    ], '#5B8DBE');
+                    // LR Procurement - Categorical bar plot (1 or 10) - REMOVED FROM UI
+                    // const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
+                    // plotCategoricalFrequency('lrProcurementPlot', lrProcurementFinal, [
+                    //     { value: 1, label: 'Likelihood Ratio = 1<br>(>90% localization)' },
+                    //     { value: 10, label: 'Likelihood Ratio = 10<br>(≤90% localization)' }
+                    // ], '#5B8DBE');
 
                     // LR Other - Median over time with percentiles
                     const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
@@ -951,7 +951,7 @@
         const plotToInputMapping = {
             // Covert Fab Section - US Bayesian Inference plots
             'lrInventoryPlot': 'proportion_diverted_sme', // Median absolute relative error of US intelligence estimate of PRC SME stock
-            'lrProcurementPlot': 'localization_130nm_2025', // Probability PRC achieves >90% indigenization
+            // 'lrProcurementPlot': 'localization_130nm_2025', // REMOVED - Probability PRC achieves >90% indigenization
             'lrOtherPlot': 'mean_detection_time_100', // Detection time
             'posteriorProbPlot': null, // Output, not an input
 

@@ -1226,7 +1226,7 @@ function createIntelligenceAccuracyPlot() {
 
   // Create layout with subplots
   const layout = {
-    height: 300,
+    height: 320,
     showlegend: true,
     autosize: true,
     grid: {
@@ -1317,7 +1317,7 @@ function createIntelligenceAccuracyPlot() {
   const labelOffsets = {
     8: [10, 20],   // Missile gap
     1: [10, -25],  // Bomber gap
-    3: [10, -140]    // Iraq intelligence failure
+    3: [10, -30]    // Iraq intelligence failure
   };
 
   labels.forEach(labelInfo => {

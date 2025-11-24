@@ -966,7 +966,7 @@ function createDetectionLatencyPlot() {
         hovermode: 'closest',
         plot_bgcolor: 'white',
         paper_bgcolor: 'white',
-        margin: { l: 50, r: 20, t: 10, b: 50 },
+        margin: { l: 50, r: 20, t: 10, b: 40 },
         height: 320
     };
 
@@ -1007,23 +1007,23 @@ function createIntelligenceAccuracyPlot() {
 
   // Data for stated error bars (excluding Russian Federation nuclear warheads with min: 1000, max: 2000)
   const statedErrorBars = [
-    {"category": "Nuclear Warheads", "min": 150, "max": 160},
-    {"category": "Nuclear Warheads", "min": 140, "max": 157},
-    {"category": "Nuclear Warheads", "min": 225, "max": 300},
-    {"category": "Nuclear Warheads", "min": 60, "max": 80},
-    {"category": "Fissile material (kg)", "min": 25, "max": 35},
-    {"category": "Fissile material (kg)", "min": 30, "max": 50},
-    {"category": "Fissile material (kg)", "min": 17, "max": 33},
-    {"category": "Fissile material (kg)", "min": 335, "max": 400},
-    {"category": "Fissile material (kg)", "min": 330, "max": 580},
-    {"category": "Fissile material (kg)", "min": 240, "max": 395},
-    {"category": "ICBM launchers", "min": 10, "max": 25},
-    {"category": "ICBM launchers", "min": 10, "max": 25},
-    {"category": "ICBM launchers", "min": 105, "max": 120},
-    {"category": "ICBM launchers", "min": 200, "max": 240},
-    {"category": "Intercontinental missiles", "min": 180, "max": 190},
-    {"category": "Intercontinental missiles", "min": 200, "max": 300},
-    {"category": "Intercontinental missiles", "min": 192, "max": 192}
+    {"category": "Nuclear Warheads", "min": 150, "max": 160, "date": "1984"},
+    {"category": "Nuclear Warheads", "min": 140, "max": 157, "date": "1999"},
+    {"category": "Nuclear Warheads", "min": 225, "max": 300, "date": "1984"},
+    {"category": "Nuclear Warheads", "min": 60, "max": 80, "date": "1999"},
+    {"category": "Fissile material (kg)", "min": 25, "max": 35, "date": "1994"},
+    {"category": "Fissile material (kg)", "min": 30, "max": 50, "date": "2007"},
+    {"category": "Fissile material (kg)", "min": 17, "max": 33, "date": "1994"},
+    {"category": "Fissile material (kg)", "min": 335, "max": 400, "date": "1998"},
+    {"category": "Fissile material (kg)", "min": 330, "max": 580, "date": "1996"},
+    {"category": "Fissile material (kg)", "min": 240, "max": 395, "date": "2000"},
+    {"category": "ICBM launchers", "min": 10, "max": 25, "date": "1961"},
+    {"category": "ICBM launchers", "min": 10, "max": 25, "date": "1961"},
+    {"category": "ICBM launchers", "min": 105, "max": 120, "date": "1963"},
+    {"category": "ICBM launchers", "min": 200, "max": 240, "date": "1964"},
+    {"category": "Intercontinental missiles", "min": 180, "max": 190, "date": "2019"},
+    {"category": "Intercontinental missiles", "min": 200, "max": 300, "date": "2025"},
+    {"category": "Intercontinental missiles", "min": 192, "max": 192, "date": "2024"}
   ];
 
   // Calculate central estimates and bounds
@@ -1031,6 +1031,7 @@ function createIntelligenceAccuracyPlot() {
   const lowerBounds = [];
   const upperBounds = [];
   const categories = [];
+  const dates = [];
   const upperPercentErrors = [];
   const lowerPercentErrors = [];
 
@@ -1040,6 +1041,7 @@ function createIntelligenceAccuracyPlot() {
     lowerBounds.push(entry.min);
     upperBounds.push(entry.max);
     categories.push(entry.category);
+    dates.push(entry.date);
 
     const upperError = ((entry.max - central) / central) * 100;
     const lowerError = ((central - entry.min) / central) * 100;
@@ -1065,6 +1067,14 @@ function createIntelligenceAccuracyPlot() {
     "Nuclear Warheads (/10)", "Nuclear Warheads (/10)",
     "Ground combat systems (/10)", "Ground combat systems (/10)", "Ground combat systems (/10)",
     "Troops (/1000)"
+  ];
+  const estimateDates = [
+    "1991", "1956", "2003",  // Aircraft
+    "2003", "2003",  // Chemical Weapons
+    "1956", "2003", "2003", "1960",  // Missiles / Launchers
+    "1980s", "1980s",  // Nuclear Warheads
+    "1991", "2003", "2003",  // Ground combat systems
+    "1991"  // Troops
   ];
 
   // Calculate median estimate error
@@ -1112,8 +1122,8 @@ function createIntelligenceAccuracyPlot() {
     mode: 'markers',
     marker: { color: pointColor, size: 8 },
     showlegend: false,
-    text: categories,
-    hovertemplate: '%{text}<br>Central: %{x}<br>Upper: %{y}<extra></extra>',
+    customdata: dates.map((d, i) => [categories[i], d]),
+    hovertemplate: '%{customdata[0]}<br>Date: %{customdata[1]}<br>Central: %{x}<br>Upper: %{y}<extra></extra>',
     xaxis: 'x',
     yaxis: 'y'
   });
@@ -1125,8 +1135,8 @@ function createIntelligenceAccuracyPlot() {
     mode: 'markers',
     marker: { color: pointColor, size: 8 },
     showlegend: false,
-    text: categories,
-    hovertemplate: '%{text}<br>Central: %{x}<br>Lower: %{y}<extra></extra>',
+    customdata: dates.map((d, i) => [categories[i], d]),
+    hovertemplate: '%{customdata[0]}<br>Date: %{customdata[1]}<br>Central: %{x}<br>Lower: %{y}<extra></extra>',
     xaxis: 'x',
     yaxis: 'y'
   });
@@ -1173,8 +1183,8 @@ function createIntelligenceAccuracyPlot() {
     mode: 'markers',
     marker: { color: pointColor, size: 8 },
     showlegend: false,
-    text: estimateCategories,
-    hovertemplate: '%{text}<br>Ground truth: %{x}<br>Estimate: %{y}<extra></extra>',
+    customdata: estimateDates.map((d, i) => [estimateCategories[i], d]),
+    hovertemplate: '%{customdata[0]}<br>Date: %{customdata[1]}<br>Ground truth: %{x}<br>Estimate: %{y}<extra></extra>',
     xaxis: 'x2',
     yaxis: 'y2'
   });
@@ -1274,7 +1284,7 @@ function createIntelligenceAccuracyPlot() {
       bordercolor: 'lightgray',
       borderwidth: 1
     },
-    margin: { l: 50, r: 20, t: 40, b: 50 },
+    margin: { l: 50, r: 20, t: 10, b: 40 },
     plot_bgcolor: 'white',
     font: { size: 10 },
     annotations: [

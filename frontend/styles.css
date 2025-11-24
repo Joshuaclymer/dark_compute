@@ -14,6 +14,7 @@
         #globalTooltip {
             position: fixed;
             width: 500px;
+            max-width: calc(100vw - 20px);
             max-height: 80vh;
             overflow-y: auto;
             background-color: #333;
@@ -293,11 +294,22 @@
                 font-size: 14px !important;
                 padding: 0 1px !important;
                 flex: 0 0 10px !important;
-                height: 100% !important;
             }
 
             .operator.arrow-operator {
                 font-size: 12px !important;
+            }
+
+            .operator-inline {
+                font-size: 14px !important;
+                padding: 0 1px !important;
+                flex: 0 0 10px !important;
+                height: 100% !important;
+                margin-top: 0 !important;
+                margin-left: 10px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
             }
 
             /* Make square brackets larger and tall on mobile */

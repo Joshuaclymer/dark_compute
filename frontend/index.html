@@ -891,19 +891,33 @@
                     // Get the position of the element
                     const rect = element.getBoundingClientRect();
 
-                    // Position tooltip to the right of the element
-                    globalTooltip.style.left = (rect.right + 10) + 'px';
-
-                    // Calculate vertical position to keep tooltip within viewport
-                    let topPosition = rect.top;
-
-                    // Show tooltip temporarily to measure its height
+                    // Show tooltip temporarily to measure its dimensions
                     globalTooltip.style.visibility = 'hidden';
                     globalTooltip.style.opacity = '1';
                     globalTooltip.classList.add('visible');
 
+                    const tooltipWidth = globalTooltip.offsetWidth;
                     const tooltipHeight = globalTooltip.offsetHeight;
+                    const viewportWidth = window.innerWidth;
                     const viewportHeight = window.innerHeight;
+
+                    // Calculate horizontal position
+                    let leftPosition = rect.right + 10;
+
+                    // If tooltip would go off right edge of screen, position to the left of element
+                    if (leftPosition + tooltipWidth > viewportWidth - 10) {
+                        leftPosition = rect.left - tooltipWidth - 10;
+
+                        // If positioning to the left would go off left edge, clamp to viewport
+                        if (leftPosition < 10) {
+                            leftPosition = 10;
+                        }
+                    }
+
+                    globalTooltip.style.left = leftPosition + 'px';
+
+                    // Calculate vertical position to keep tooltip within viewport
+                    let topPosition = rect.top;
 
                     // If tooltip would go off bottom of screen, adjust position
                     if (topPosition + tooltipHeight > viewportHeight) {

@@ -1112,7 +1112,8 @@ function createIntelligenceAccuracyPlot() {
     mode: 'markers',
     marker: { color: pointColor, size: 8 },
     showlegend: false,
-    hovertemplate: 'Central: %{x}<br>Upper: %{y}<extra></extra>',
+    text: categories,
+    hovertemplate: '%{text}<br>Central: %{x}<br>Upper: %{y}<extra></extra>',
     xaxis: 'x',
     yaxis: 'y'
   });
@@ -1124,7 +1125,8 @@ function createIntelligenceAccuracyPlot() {
     mode: 'markers',
     marker: { color: pointColor, size: 8 },
     showlegend: false,
-    hovertemplate: 'Central: %{x}<br>Lower: %{y}<extra></extra>',
+    text: categories,
+    hovertemplate: '%{text}<br>Central: %{x}<br>Lower: %{y}<extra></extra>',
     xaxis: 'x',
     yaxis: 'y'
   });
@@ -1171,7 +1173,8 @@ function createIntelligenceAccuracyPlot() {
     mode: 'markers',
     marker: { color: pointColor, size: 8 },
     showlegend: false,
-    hovertemplate: 'Ground truth: %{x}<br>Estimate: %{y}<extra></extra>',
+    text: estimateCategories,
+    hovertemplate: '%{text}<br>Ground truth: %{x}<br>Estimate: %{y}<extra></extra>',
     xaxis: 'x2',
     yaxis: 'y2'
   });

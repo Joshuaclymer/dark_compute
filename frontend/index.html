@@ -281,6 +281,8 @@
                 plotDatacenterCapacityCcdf(data);
                 plotProjectH100YearsCcdf(data);
                 updateDatacenterDashboard(data);
+                createIntelligenceAccuracyPlot();
+                createDetectionLatencyPlot();
 
                 // Force resize after a brief delay to ensure plots fill containers
                 setTimeout(() => {
@@ -299,6 +301,8 @@
                     Plotly.Plots.resize('computeCcdfPlot');
                     Plotly.Plots.resize('datacenterCombinedPlot');
                     Plotly.Plots.resize('datacenterCapacityCcdfPlot');
+                    Plotly.Plots.resize('intelligenceAccuracyPlot');
+                    Plotly.Plots.resize('detectionLatencyPlot');
                     // Individual LR component plots are resized in dark_compute_model_section.js
                     Plotly.Plots.resize('lrOtherIntelPlot');
                     Plotly.Plots.resize('posteriorProbProjectPlot');
@@ -397,12 +401,15 @@
 
                     // 4. Posterior probability of covert project
                     // Use backend data from US intelligence beliefs (same as Simulation Runs plot)
-                    // Custom plotting to add threshold line
+                    // Custom plotting to add threshold lines
                     const posteriorData = data.dark_compute_model.posterior_prob_project;
 
-                    // Calculate 5x prior probability threshold (priorProb already declared above at line 354)
-                    const thresholdOdds = priorOddsProject * 5;
-                    const thresholdProb = thresholdOdds / (1 + thresholdOdds);
+                    // Define thresholds with colors matching H100-Years plot
+                    const thresholds = [
+                        { multiplier: 1, color: '#9B7BB3', label: '1x update' },  // Purple
+                        { multiplier: 3, color: '#5B8DBE', label: '3x update' },  // Blue
+                        { multiplier: 5, color: '#5AA89B', label: '5x update' }   // Blue-green
+                    ];
 
                     const traces = [
                         {
@@ -433,17 +440,24 @@
                             line: { color: '#5B8DBE', width: 2 },
                             name: 'Posterior Probability',
                             showlegend: false
-                        },
-                        {
+                        }
+                    ];
+
+                    // Add threshold lines
+                    for (const threshold of thresholds) {
+                        const thresholdOdds = priorOddsProject * threshold.multiplier;
+                        const thresholdProb = thresholdOdds / (1 + thresholdOdds);
+
+                        traces.push({
                             x: [years[0], years[years.length - 1]],
                             y: [thresholdProb, thresholdProb],
                             type: 'scatter',
                             mode: 'lines',
-                            line: { color: '#E74C3C', width: 2, dash: 'dash' },
-                            name: 'Detection threshold (5x update)',
+                            line: { color: threshold.color, width: 2, dash: 'dash' },
+                            name: `Detection (${threshold.multiplier}x)`,
                             showlegend: true
-                        }
-                    ];
+                        });
+                    }
 
                     const layout = {
                         xaxis: {

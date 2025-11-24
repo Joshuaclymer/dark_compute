@@ -359,3 +359,23 @@
             text-align: center;
             line-height: 1.6;
         }
+
+        /* Parameter link styles */
+        .param-link {
+            font-weight: bold;
+            color: #0066cc;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+
+        .param-link:hover {
+            color: #0052a3;
+            text-decoration-style: solid;
+        }
+
+        /* Footnote tooltip styles */
+        .footnote-tooltip:hover .footnote-text {
+            visibility: visible;
+            opacity: 1;
+        }

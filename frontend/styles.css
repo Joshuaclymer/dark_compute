@@ -87,7 +87,7 @@
 
         .top-plots {
             display: grid;
-            grid-template-columns: minmax(250px, 300px) 1fr 1fr;
+            grid-template-columns: minmax(200px, 300px) 1fr 1fr;
             gap: 20px;
             margin-bottom: 10px;
             width: 100%;
@@ -293,6 +293,7 @@
                 font-size: 14px !important;
                 padding: 0 1px !important;
                 flex: 0 0 10px !important;
+                height: 100% !important;
             }
 
             .operator.arrow-operator {

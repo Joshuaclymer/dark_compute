@@ -302,6 +302,8 @@
                     Plotly.Plots.resize('lrPrcAccountingPlot');
                     Plotly.Plots.resize('initialPrcStockPlot');
                     Plotly.Plots.resize('darkComputeResultPlot');
+                    Plotly.Plots.resize('initialStockDarkComputePlot');
+                    Plotly.Plots.resize('initialStockEnergyRequirementsPlot');
                     Plotly.Plots.resize('prcComputeOverTimePlot');
                     Plotly.Plots.resize('timeSeriesPlot');
                     Plotly.Plots.resize('h100YearsTimeSeriesPlot');
@@ -1139,6 +1141,12 @@
             'initialPrcStockPlot': 'total_prc_compute_stock_in_2025',
             'darkComputeResultPlot': null, // Output, not an input
 
+            // Initial Stock Section - Energy Requirements Breakdown
+            'initialStockH100EnergyDisplay': 'h100_power_watts',
+            'initialStockEnergyEfficiencyDisplay': 'energy_efficiency_relative_to_h100',
+            'initialStockDarkComputePlot': null, // Output, not an input (same as darkComputeResultPlot)
+            'initialStockEnergyRequirementsPlot': null, // Output, not an input
+
             // Initial Stock Section - Intelligence Evidence Breakdown
             'lrPrcAccountingPlot': 'us_intelligence_median_error_in_estimate_of_prc_compute_stock',
 
@@ -1159,7 +1167,9 @@
             'diversionProportionDisplay',
             'datacenterWorkersDisplay',
             'mwPerWorkerDisplay',
-            'agreementYearDisplay'
+            'agreementYearDisplay',
+            'initialStockH100EnergyDisplay',
+            'initialStockEnergyEfficiencyDisplay'
         ];
 
         Object.entries(plotToInputMapping).forEach(([plotId, inputId]) => {

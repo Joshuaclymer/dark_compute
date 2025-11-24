@@ -297,4 +297,69 @@ function plotInitialStock(data) {
         // Plot the resulting dark compute stock - purple color #9B72B0
         plotPDF('darkComputeResultPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log');
     }
+
+    // Plot energy requirements breakdown
+    if (data.initial_stock && data.initial_stock.initial_compute_stock_samples) {
+        // Get H100 power from user input
+        const h100PowerWatts = parseFloat(document.getElementById('h100_power_watts').value);
+        const h100PowerKW = h100PowerWatts / 1000;
+
+        // Display H100 energy requirements
+        document.getElementById('initialStockH100EnergyDisplay').innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <div class="breakdown-box-inner">${h100PowerKW.toFixed(2)} kW</div>
+                <div class="breakdown-label">Energy requirements of H100</div>
+            </div>`;
+
+        // Attach hover effect
+        const h100EnergyInner = document.querySelector('#initialStockH100EnergyDisplay .breakdown-box-inner');
+        if (h100EnergyInner) {
+            h100EnergyInner.style.transition = 'all 0.2s ease';
+            h100EnergyInner.addEventListener('mouseenter', () => {
+                h100EnergyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                h100EnergyInner.style.transform = 'scale(1.015)';
+            });
+            h100EnergyInner.addEventListener('mouseleave', () => {
+                h100EnergyInner.style.boxShadow = '';
+                h100EnergyInner.style.transform = '';
+            });
+        }
+
+        // Get energy efficiency from user input
+        const energyEfficiency = parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value);
+
+        // Display energy efficiency
+        document.getElementById('initialStockEnergyEfficiencyDisplay').innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <div class="breakdown-box-inner">${energyEfficiency.toFixed(2)}x</div>
+                <div class="breakdown-label">Energy efficiency relative to H100</div>
+            </div>`;
+
+        // Attach hover effect
+        const energyEfficiencyInner = document.querySelector('#initialStockEnergyEfficiencyDisplay .breakdown-box-inner');
+        if (energyEfficiencyInner) {
+            energyEfficiencyInner.style.transition = 'all 0.2s ease';
+            energyEfficiencyInner.addEventListener('mouseenter', () => {
+                energyEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                energyEfficiencyInner.style.transform = 'scale(1.015)';
+            });
+            energyEfficiencyInner.addEventListener('mouseleave', () => {
+                energyEfficiencyInner.style.boxShadow = '';
+                energyEfficiencyInner.style.transform = '';
+            });
+        }
+
+        // Plot dark compute stock (same as darkComputeResultPlot) - purple color #9B72B0
+        plotPDF('initialStockDarkComputePlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log');
+
+        // Calculate energy requirements for each sample
+        // Energy (GW) = H100e × watts_per_H100 × energy_efficiency / 1e9
+        const energyRequirementsSamples = data.initial_stock.initial_compute_stock_samples.map(h100e => {
+            const totalWatts = h100e * h100PowerWatts * energyEfficiency;
+            return totalWatts / 1e9; // Convert to GW
+        });
+
+        // Plot energy requirements distribution - turquoise color #5AA89B
+        plotPDF('initialStockEnergyRequirementsPlot', energyRequirementsSamples, '#5AA89B', 'Energy Requirements (GW)', 30, false);
+    }
 }

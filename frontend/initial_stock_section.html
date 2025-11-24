@@ -90,5 +90,57 @@
                         <div class="breakdown-description">The resulting compute stock diverted to the covert project, which is hidden from international monitoring and accounting systems.</div>
                     </div>
                 </div>
+
+                <div class="section-description" style="margin-top: 40px;">
+                    Energy Requirements = Energy requirements of H100 × Energy efficiency relative to H100 × Initial PRC unreported chip stock
+                </div>
+
+                <div class="breakdown-plots-row">
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="initialStockH100EnergyDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Energy requirements of H100</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                ×
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operator">
+                        ×
+                    </div>
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="initialStockEnergyEfficiencyDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Energy efficiency relative to H100</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                ×
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operator">
+                        ×
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="initialStockDarkComputePlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Initial PRC unreported chip stock</div>
+                        <div class="breakdown-description">The compute stock diverted to the covert project.</div>
+                    </div>
+                    <div class="operator">
+                        =
+                    </div>
+                    <div class="breakdown-item">
+                        <div id="initialStockEnergyRequirementsPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Energy requirements (GW)</div>
+                        <div class="breakdown-description">Total energy required to power the initial unreported chip stock.</div>
+                    </div>
+                </div>
             </div>
 

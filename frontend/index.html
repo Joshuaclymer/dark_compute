@@ -173,7 +173,7 @@
                 'covert_project_strategy.GW_per_initial_datacenter': parseFloat(document.getElementById('GW_per_initial_datacenter').value),
                 'covert_project_strategy.number_of_initial_datacenters': parseFloat(document.getElementById('number_of_initial_datacenters').value),
                 'covert_project_strategy.datacenter_construction_labor': parseInt(document.getElementById('datacenter_construction_labor').value),
-                'covert_project_strategy.year_prc_starts_building_covert_datacenters': parseInt(document.getElementById('year_prc_starts_building_covert_datacenters').value),
+                'covert_project_strategy.years_before_agreement_year_prc_starts_building_covert_datacenters': parseInt(document.getElementById('years_before_agreement_year_prc_starts_building_covert_datacenters').value),
                 'covert_project_strategy.build_a_covert_fab': document.getElementById('build_covert_fab').checked,
                 'covert_project_strategy.covert_fab_operating_labor': parseInt(document.getElementById('operating_labor').value),
                 'covert_project_strategy.covert_fab_construction_labor': parseInt(document.getElementById('construction_labor').value),
@@ -369,7 +369,7 @@
                     document.getElementById('dashboardPriorProject').innerHTML = `
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                             <div class="breakdown-box-inner">${priorOddsProject.toFixed(3)}</div>
-                            <div class="breakdown-label">Prior Odds of<br>Covert Project</div>
+                            <div class="breakdown-label">Prior odds of<br>covert project</div>
                         </div>`;
 
                     // Attach hover effect to the newly created breakdown-box-inner
@@ -543,7 +543,7 @@
                     document.getElementById('architectureEfficiencyDisplay').innerHTML = `
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                             <div class="breakdown-box-inner">${archEffValue.toFixed(2)}</div>
-                            <div class="breakdown-label">Architecture Efficiency (relative to H100)</div>
+                            <div class="breakdown-label">Architecture efficiency (relative to H100)</div>
                         </div>`;
 
                     // Attach hover effect to the newly created breakdown-box-inner
@@ -864,7 +864,7 @@
         const agreementYearDisplay = document.getElementById('agreementYearDisplay');
         if (agreementYearDisplay) {
             agreementYearDisplay.addEventListener('click', () => {
-                const inputField = document.getElementById('year_prc_starts_building_covert_datacenters');
+                const inputField = document.getElementById('years_before_agreement_year_prc_starts_building_covert_datacenters');
                 if (inputField) {
                     inputField.focus();
                     inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1144,7 +1144,7 @@
             // Covert Data Centers Section - Capacity Breakdown
             'datacenterWorkersDisplay': 'datacenter_construction_labor',
             'mwPerWorkerDisplay': 'MW_per_construction_worker_per_year',
-            'agreementYearDisplay': 'year_prc_starts_building_covert_datacenters',
+            'agreementYearDisplay': 'years_before_agreement_year_prc_starts_building_covert_datacenters',
             'datacenterCapacityBreakdownPlot': null // Output, not an input
         };
 

@@ -37,7 +37,7 @@ class CovertProjectStrategy:
     GW_per_initial_datacenter : float = 5
     number_of_initial_datacenters : float = 0.1
     datacenter_construction_labor : int = 10000
-    year_prc_starts_building_covert_datacenters : Optional[int] = None  # Defaults to agreement year if None
+    years_before_agreement_year_prc_starts_building_covert_datacenters : int = 0  # Years before agreement year to start building (0 = at agreement year)
 
     # Covert fab
     build_a_covert_fab : bool = True

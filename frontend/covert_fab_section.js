@@ -140,20 +140,9 @@ function plotTimeSeries(data) {
             tickformat: '.2s',
             range: [0, yAxisMax]
         },
-        showlegend: true,
-        legend: {
-            x: 0.5,
-            y: -0.25,
-            xanchor: 'center',
-            yanchor: 'top',
-            orientation: 'h',
-            font: { size: 10 },
-            bgcolor: 'rgba(255,255,255,0)',
-            borderwidth: 0,
-            tracegroupgap: 20
-        },
+        showlegend: false,
         hovermode: 'x unified',
-        margin: { l: 55, r: 55, t: 0, b: 60 },
+        margin: { l: 55, r: 55, t: 0, b: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };

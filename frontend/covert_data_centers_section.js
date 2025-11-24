@@ -127,7 +127,7 @@ function plotDatacenterCombined(data) {
             bordercolor: '#ddd'
         },
         hovermode: 'x unified',
-        margin: { l: 55, r: 55, t: 0, b: 40 },
+        margin: { l: 55, r: 55, t: 0, b: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -201,7 +201,7 @@ function plotDatacenterCapacityCcdf(data) {
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 55, r: 0, t: 0, b: 60 },
+        margin: { l: 55, r: 0, t: 0, b: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -332,9 +332,12 @@ function populateDatacenterCapacityBreakdown(data) {
             <div class="breakdown-label">MW built per<br>worker per year</div>
         </div>`;
 
-    // Get year PRC starts building covert datacenters from input
-    const datacenterStartYearInput = document.getElementById('year_prc_starts_building_covert_datacenters');
-    const datacenterStartYear = datacenterStartYearInput ? parseInt(datacenterStartYearInput.value) : 2030;
+    // Get years before agreement year from input, then calculate the actual start year
+    const yearsBeforeInput = document.getElementById('years_before_agreement_year_prc_starts_building_covert_datacenters');
+    const agreementYearInput = document.getElementById('agreement_year');
+    const agreementYear = agreementYearInput ? parseInt(agreementYearInput.value) : 2030;
+    const yearsBefore = yearsBeforeInput ? parseInt(yearsBeforeInput.value) : 0;
+    const datacenterStartYear = agreementYear - yearsBefore;
     document.getElementById('agreementYearDisplay').innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
             <div class="breakdown-box-inner">${datacenterStartYear}</div>

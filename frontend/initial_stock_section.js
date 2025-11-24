@@ -89,7 +89,7 @@ function plotInitialStock(data) {
                 automargin: true
             },
             yaxis: {
-                title: 'PRC Compute Stock (H100e)',
+                title: 'PRC chip stock (H100e)',
                 titlefont: { size: 10 },
                 tickfont: { size: 9 },
                 type: 'log',

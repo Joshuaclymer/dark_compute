@@ -32,10 +32,9 @@ class CovertProject:
         years_since_agreement_start = [year - self.agreement_year for year in self.years]
 
         # Calculate datacenter start year offset (relative to agreement year)
-        datacenter_start_year = self.covert_project_strategy.year_prc_starts_building_covert_datacenters
-        if datacenter_start_year is None:
-            datacenter_start_year = self.agreement_year
-        datacenter_start_year_offset = datacenter_start_year - self.agreement_year
+        # years_before is positive if construction starts before agreement, negative if after
+        years_before = self.covert_project_strategy.years_before_agreement_year_prc_starts_building_covert_datacenters
+        datacenter_start_year_offset = -years_before
 
         self.covert_datacenters = CovertPRCDatacenters(
             GW_per_initial_datacenter = self.covert_project_strategy.GW_per_initial_datacenter,

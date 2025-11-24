@@ -29,18 +29,18 @@
                 </div>
 
                 <div class="plot-container" style="flex: 1 1 200px; min-width: 200px; padding: 20px; display: flex; flex-direction: column; height: auto;">
-                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Covert Compute Produced Before Detection</div>
+                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Covert compute produced before detection</div>
                     <div id="computeCcdfPlot" class="plot" style="flex: 1; min-height: 0;"></div>
                 </div>
 
                 <div class="plot-container" style="flex: 1 1 200px; min-width: 200px; padding: 20px; display: flex; flex-direction: column; height: auto;">
-                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Simulation Runs</div>
+                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Simulation runs</div>
                     <div id="timeSeriesPlot" class="plot" style="flex: 1; min-height: 0;"></div>
                 </div>
             </div>
 
             <div class="breakdown-section" id="covertFabComputeProductionBreakdown" style="margin-top: 30px;">
-                <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 10px; color: #222; text-align: left; letter-spacing: -0.5px;">Breakdown of compute produced before detection</h2>
+                <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 10px; color: #222; text-align: left; letter-spacing: -0.5px;">Breaking down fab production</h2>
                 <div class="section-description" style="margin-bottom: 20px; text-align: left; font-size: 15px;">
                     The compute produced before detection depends on three factors: (1) how much compute the covert fab produces per month, (2) how much energy this production requires, and (3) how various intelligence sources combine to assess the likelihood of detection. The following break down how we model each factor.
                 </div>
@@ -92,7 +92,7 @@
                             <div id="architectureEfficiencyDisplay" class="breakdown-box">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                                     <div>--</div>
-                                    <div class="breakdown-label">Architecture Efficiency (relative to H100)</div>
+                                    <div class="breakdown-label">Architecture efficiency (relative to H100)</div>
                                 </div>
                             </div>
                             <div class="operator-inline">
@@ -156,34 +156,6 @@
                     <div class="breakdown-item">
                         <div id="energyPerMonthPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Energy requirements per month (GW / month)</div>
-                    </div>
-                </div>
-
-                <div class="breakdown-title" style="margin-top: 40px;">Intelligence Evidence Breakdown</div>
-                <div class="section-description">
-                    Total Evidence = LR<sub>inventory</sub> × LR<sub>procurement</sub> × LR<sub>other</sub><br>
-                    Evidence from three independent intelligence sources to estimate detection likelihood.
-                </div>
-                <div class="breakdown-plots-row">
-                    <div class="breakdown-item">
-                        <div id="lrInventoryPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Evidence from accounting for prior PRC SME stock</div>
-                        <div class="breakdown-description">If the PRC reports less SME than U.S. intelligence believes that it possesses, then this is evidence for a covert fab. Conversely, if the PRC reports the same or more equipment than the U.S. thinks it possesses, this is evidence against a covert fab.</div>
-                    </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
-                    </div>
-                    <div class="breakdown-item">
-                        <div id="lrOtherPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Evidence of covert operations</div>
-                        <div class="breakdown-description">Over time, U.S. intelligence is increasingly likely to identify information through human intelligence, signal intelligence, etc. that provides strong evidence of a covert fab. For every year they don't observe this information, the likelihood of a covert fab decreases.</div>
-                    </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">=</div>
-                    </div>
-                    <div class="breakdown-item">
-                        <div id="posteriorProbPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Evidence of<br>Covert Fab</div>
                     </div>
                 </div>
             </div>

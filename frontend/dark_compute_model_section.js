@@ -966,7 +966,7 @@ function createDetectionLatencyPlot() {
         hovermode: 'closest',
         plot_bgcolor: 'white',
         paper_bgcolor: 'white',
-        margin: { l: 50, r: 20, t: 10, b: 40 },
+        margin: { l: 50, r: 20, t: 10, b: 70 },
         height: 320
     };
 
@@ -1284,7 +1284,7 @@ function createIntelligenceAccuracyPlot() {
       bordercolor: 'lightgray',
       borderwidth: 1
     },
-    margin: { l: 50, r: 20, t: 10, b: 40 },
+    margin: { l: 50, r: 20, t: 10, b: 70 },
     plot_bgcolor: 'white',
     font: { size: 10 },
     annotations: [

@@ -319,10 +319,10 @@
                 if (data.covert_fab && data.covert_fab.lr_inventory) {
                     const years = data.covert_fab.years;
 
-                    // LR Inventory - PDF of values across simulations at final timestep
-                    const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
+                    // LR Inventory - PDF of values across simulations at final timestep - REMOVED FROM UI
+                    // const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
                     // Use log scale x-axis but show actual LR values (not log values)
-                    plotPDF('lrInventoryPlot', lrInventoryFinal, '#5B8DBE', 'Likelihood Ratio', 10, true);
+                    // plotPDF('lrInventoryPlot', lrInventoryFinal, '#5B8DBE', 'Likelihood Ratio', 10, true);
 
                     // LR Procurement - Categorical bar plot (1 or 10) - REMOVED FROM UI
                     // const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
@@ -331,30 +331,31 @@
                     //     { value: 10, label: 'Likelihood Ratio = 10<br>(≤90% localization)' }
                     // ], '#5B8DBE');
 
-                    // LR Other - Median over time with percentiles
-                    const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
-                    const lrOtherP25 = years.map((_, i) => {
-                        const values = lrOtherArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
-                    });
-                    const lrOtherP75 = years.map((_, i) => {
-                        const values = lrOtherArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
-                    });
-                    plotMedianWithPercentiles('lrOtherPlot', {
-                        median: data.covert_fab.lr_other.median,
-                        p25: lrOtherP25,
-                        p75: lrOtherP75,
-                        individual: data.covert_fab.lr_other.individual
-                    }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
+                    // LR Other - Median over time with percentiles - REMOVED FROM UI
+                    // const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
+                    // const lrOtherP25 = years.map((_, i) => {
+                    //     const values = lrOtherArray.map(sim => sim[i]);
+                    //     return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
+                    // });
+                    // const lrOtherP75 = years.map((_, i) => {
+                    //     const values = lrOtherArray.map(sim => sim[i]);
+                    //     return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
+                    // });
+                    // plotMedianWithPercentiles('lrOtherPlot', {
+                    //     median: data.covert_fab.lr_other.median,
+                    //     p25: lrOtherP25,
+                    //     p75: lrOtherP75,
+                    //     individual: data.covert_fab.lr_other.individual
+                    // }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
 
-                    // Plot combined LR (product of inventory, procurement, and other intelligence)
-                    plotMedianWithPercentiles('posteriorProbPlot', {
-                        median: data.covert_fab.lr_combined.median,
-                        p25: data.covert_fab.lr_combined.p25,
-                        p75: data.covert_fab.lr_combined.p75,
-                        individual: data.covert_fab.lr_combined.individual
-                    }, data.covert_fab.years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
+                    // Plot combined LR (product of inventory, procurement, and other intelligence) - REMOVED FROM UI
+                    // This is now plotted in dark_compute_model_section.js as posteriorProbProjectPlot
+                    // plotMedianWithPercentiles('posteriorProbPlot', {
+                    //     median: data.covert_fab.lr_combined.median,
+                    //     p25: data.covert_fab.lr_combined.p25,
+                    //     p75: data.covert_fab.lr_combined.p75,
+                    //     individual: data.covert_fab.lr_combined.individual
+                    // }, data.covert_fab.years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
                 }
 
                 // Plot "Strength of Evidence of Covert Project" section
@@ -1094,10 +1095,10 @@
         // Make breakdown plots clickable and link to sidebar inputs
         const plotToInputMapping = {
             // Covert Fab Section - US Bayesian Inference plots
-            'lrInventoryPlot': 'proportion_diverted_sme', // Median absolute relative error of US intelligence estimate of PRC SME stock
+            // 'lrInventoryPlot': 'proportion_diverted_sme', // REMOVED FROM UI - Median absolute relative error of US intelligence estimate of PRC SME stock
             // 'lrProcurementPlot': 'localization_130nm_2025', // REMOVED - Probability PRC achieves >90% indigenization
-            'lrOtherPlot': 'mean_detection_time_100', // Detection time
-            'posteriorProbPlot': null, // Output, not an input
+            // 'lrOtherPlot': 'mean_detection_time_100', // REMOVED FROM UI - Detection time
+            // 'posteriorProbPlot': null, // REMOVED FROM UI - Output, not an input
 
             // Covert Fab Section - Compute Production Rate plots
             'isOperationalPlot': 'construction_time_5k', // First construction time param

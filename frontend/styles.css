@@ -301,15 +301,17 @@
             }
 
             .operator-inline {
-                font-size: 14px !important;
+                font-size: 24px !important;
                 padding: 0 1px !important;
-                flex: 0 0 10px !important;
-                height: 100% !important;
+                flex: 0 0 auto !important;
                 margin-top: 0 !important;
-                margin-left: 10px !important;
                 display: flex !important;
-                align-items: center !important;
+                align-items: flex-start !important;
                 justify-content: center !important;
+            }
+
+            .breakdown-box + .operator-inline {
+                margin-top: 50px !important;
             }
 
             /* Make square brackets larger and tall on mobile */

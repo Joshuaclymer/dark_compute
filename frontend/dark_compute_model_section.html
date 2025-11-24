@@ -35,7 +35,7 @@
       class="footnote-text"
       style="
         visibility: hidden;
-        width: 300px;
+        max-width: min(300px, calc(100vw - 20px)); width: max-content;
         background-color: #333;
         color: #fff;
         text-align: left;
@@ -45,7 +45,7 @@
         z-index: 1000;
         bottom: 125%;
         left: 50%;
-        margin-left: -150px;
+        transform: translateX(-50%);
         opacity: 0;
         transition: opacity 0.3s;
         font-size: 13px;
@@ -585,7 +585,7 @@
                 class="footnote-text"
                 style="
                   visibility: hidden;
-                  width: 300px;
+                  max-width: min(300px, calc(100vw - 20px)); width: max-content;
                   background-color: #333;
                   color: #fff;
                   text-align: left;
@@ -595,7 +595,7 @@
                   z-index: 1000;
                   bottom: 125%;
                   left: 50%;
-                  margin-left: -150px;
+                  transform: translateX(-50%);
                   opacity: 0;
                   transition: opacity 0.3s;
                   font-size: 13px;
@@ -622,7 +622,7 @@
 
         <div class="breakdown-plots-row" style="margin-top: 40px;">
           <div class="breakdown-box-item">
-            <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
               <div id="dashboardPriorProject" class="breakdown-box">
                 <div
                   style="

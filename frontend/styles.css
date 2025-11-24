@@ -252,8 +252,7 @@
 
         .breakdown-box-item {
             text-align: left;
-            min-width: 200px;
-            flex: 1 1 200px;
+            flex: 0 0 auto;
             display: flex;
             flex-direction: row;
             align-items: center;
@@ -273,6 +272,8 @@
 
         @media (max-width: 480px) {
             .breakdown-box-item {
+                flex: 1 1 100%;
+                width: 100%;
                 margin-top: 0;
                 margin-bottom: 0;
                 min-height: auto;
@@ -288,6 +289,10 @@
                 margin-right: 5px;
                 padding-left: 5px;
                 padding-right: 5px;
+            }
+
+            .breakdown-box-item + .operator {
+                display: none !important;
             }
 
             .operator {
@@ -354,7 +359,7 @@
             font-size: 32px;
             font-weight: bold;
             color: #555;
-            margin-top: 100px;
+            margin-top: 80px;
             margin-left: auto;
             margin-right: auto;
             width: 100%;
@@ -431,6 +436,10 @@
             justify-content: center;
         }
 
+        .operator-inline {
+            display: none;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -486,6 +495,10 @@
         }
 
         @media (max-width: 768px) {
+            .breakdown-box-item + .operator {
+                display: none !important;
+            }
+
             .detailed-breakdown-sections {
                 display: none !important;
             }

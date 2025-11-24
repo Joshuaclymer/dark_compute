@@ -967,62 +967,78 @@
         // Setup footnote handlers - click to show tooltip
         const footnoteLinks = document.querySelectorAll('.footnote-link');
 
+        // Helper function to show footnote tooltip
+        function showFootnoteTooltip(link) {
+            const footnoteText = link.getAttribute('data-footnote');
+            if (footnoteText) {
+                globalTooltip.innerHTML = footnoteText;
+
+                // Get the position of the footnote link
+                const rect = link.getBoundingClientRect();
+
+                // Show tooltip temporarily to measure its dimensions
+                globalTooltip.style.visibility = 'hidden';
+                globalTooltip.style.opacity = '1';
+                globalTooltip.classList.add('visible');
+
+                const tooltipWidth = globalTooltip.offsetWidth;
+                const tooltipHeight = globalTooltip.offsetHeight;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                // Calculate horizontal position
+                let leftPosition = rect.right + 10;
+
+                // If tooltip would go off right edge of screen, position to the left of element
+                if (leftPosition + tooltipWidth > viewportWidth - 10) {
+                    leftPosition = rect.left - tooltipWidth - 10;
+
+                    // If positioning to the left would go off left edge, clamp to viewport
+                    if (leftPosition < 10) {
+                        leftPosition = 10;
+                    }
+                }
+
+                globalTooltip.style.left = leftPosition + 'px';
+
+                // Calculate vertical position to keep tooltip within viewport
+                let topPosition = rect.top;
+
+                // If tooltip would go off bottom of screen, adjust position
+                if (topPosition + tooltipHeight > viewportHeight) {
+                    topPosition = Math.max(10, viewportHeight - tooltipHeight - 10);
+                }
+
+                // If tooltip would go off top of screen, adjust position
+                if (topPosition < 10) {
+                    topPosition = 10;
+                }
+
+                globalTooltip.style.top = topPosition + 'px';
+
+                // Now show tooltip properly
+                globalTooltip.style.visibility = 'visible';
+            }
+        }
+
         footnoteLinks.forEach(link => {
+            // Click handler for mobile
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-
-                const footnoteText = link.getAttribute('data-footnote');
-                if (footnoteText) {
-                    globalTooltip.innerHTML = footnoteText;
-
-                    // Get the position of the footnote link
-                    const rect = link.getBoundingClientRect();
-
-                    // Show tooltip temporarily to measure its dimensions
-                    globalTooltip.style.visibility = 'hidden';
-                    globalTooltip.style.opacity = '1';
-                    globalTooltip.classList.add('visible');
-
-                    const tooltipWidth = globalTooltip.offsetWidth;
-                    const tooltipHeight = globalTooltip.offsetHeight;
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
-
-                    // Calculate horizontal position
-                    let leftPosition = rect.right + 10;
-
-                    // If tooltip would go off right edge of screen, position to the left of element
-                    if (leftPosition + tooltipWidth > viewportWidth - 10) {
-                        leftPosition = rect.left - tooltipWidth - 10;
-
-                        // If positioning to the left would go off left edge, clamp to viewport
-                        if (leftPosition < 10) {
-                            leftPosition = 10;
-                        }
-                    }
-
-                    globalTooltip.style.left = leftPosition + 'px';
-
-                    // Calculate vertical position to keep tooltip within viewport
-                    let topPosition = rect.top;
-
-                    // If tooltip would go off bottom of screen, adjust position
-                    if (topPosition + tooltipHeight > viewportHeight) {
-                        topPosition = Math.max(10, viewportHeight - tooltipHeight - 10);
-                    }
-
-                    // If tooltip would go off top of screen, adjust position
-                    if (topPosition < 10) {
-                        topPosition = 10;
-                    }
-
-                    globalTooltip.style.top = topPosition + 'px';
-
-                    // Now show tooltip properly
-                    globalTooltip.style.visibility = 'visible';
-                }
+                showFootnoteTooltip(link);
             });
+
+            // Hover handlers for desktop - only if device supports hover
+            if (window.matchMedia('(hover: hover)').matches) {
+                link.addEventListener('mouseenter', () => {
+                    showFootnoteTooltip(link);
+                });
+
+                link.addEventListener('mouseleave', () => {
+                    hideTooltip();
+                });
+            }
         });
 
         // Hide footnote tooltip when clicking elsewhere

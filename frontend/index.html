@@ -173,6 +173,7 @@
                 'covert_project_strategy.GW_per_initial_datacenter': parseFloat(document.getElementById('GW_per_initial_datacenter').value),
                 'covert_project_strategy.number_of_initial_datacenters': parseFloat(document.getElementById('number_of_initial_datacenters').value),
                 'covert_project_strategy.datacenter_construction_labor': parseInt(document.getElementById('datacenter_construction_labor').value),
+                'covert_project_strategy.year_prc_starts_building_covert_datacenters': parseInt(document.getElementById('year_prc_starts_building_covert_datacenters').value),
                 'covert_project_strategy.build_a_covert_fab': document.getElementById('build_covert_fab').checked,
                 'covert_project_strategy.covert_fab_operating_labor': parseInt(document.getElementById('operating_labor').value),
                 'covert_project_strategy.covert_fab_construction_labor': parseInt(document.getElementById('construction_labor').value),
@@ -187,8 +188,10 @@
 
                 // Initial PRC compute stock parameters
                 'covert_project_parameters.initial_compute_stock_parameters.total_prc_compute_stock_in_2025': parseFloat(document.getElementById('total_prc_compute_stock_in_2025').value) * 1e6,
-                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock').value),
-                'covert_project_parameters.initial_compute_stock_parameters.relative_sigma_of_prc_compute_stock': parseFloat(document.getElementById('relative_sigma_of_prc_compute_stock').value),
+                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p10': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p10').value),
+                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p50': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p50').value),
+                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p90': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p90').value),
+                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically': parseFloat(document.getElementById('proportion_of_prc_chip_stock_produced_domestically').value),
                 'covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock': parseFloat(document.getElementById('us_intelligence_median_error_in_estimate_of_prc_compute_stock').value),
                 'covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100': parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value),
                 'covert_project_parameters.initial_compute_stock_parameters.h100_power_watts': parseFloat(document.getElementById('h100_power_watts').value),
@@ -284,6 +287,7 @@
                 plotDatacenterCapacityCcdf(data);
                 plotProjectH100YearsCcdf(data);
                 updateDatacenterDashboard(data);
+                populateDatacenterCapacityBreakdown(data);
                 createIntelligenceAccuracyPlot();
                 createDetectionLatencyPlot();
 
@@ -296,9 +300,9 @@
                     Plotly.Plots.resize('initialDarkComputeDetectionPlot');
                     Plotly.Plots.resize('initialComputeStockPlot');
                     Plotly.Plots.resize('lrPrcAccountingPlot');
-                    Plotly.Plots.resize('lrCombinedPlot');
                     Plotly.Plots.resize('initialPrcStockPlot');
                     Plotly.Plots.resize('darkComputeResultPlot');
+                    Plotly.Plots.resize('prcComputeOverTimePlot');
                     Plotly.Plots.resize('timeSeriesPlot');
                     Plotly.Plots.resize('h100YearsTimeSeriesPlot');
                     Plotly.Plots.resize('computeCcdfPlot');
@@ -830,6 +834,45 @@
             diversionProportionDisplay.style.cursor = 'pointer';
         }
 
+        // Add click handler for datacenter workers display
+        const datacenterWorkersDisplay = document.getElementById('datacenterWorkersDisplay');
+        if (datacenterWorkersDisplay) {
+            datacenterWorkersDisplay.addEventListener('click', () => {
+                const inputField = document.getElementById('datacenter_construction_labor');
+                if (inputField) {
+                    inputField.focus();
+                    inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            datacenterWorkersDisplay.style.cursor = 'pointer';
+        }
+
+        // Add click handler for MW per worker display
+        const mwPerWorkerDisplay = document.getElementById('mwPerWorkerDisplay');
+        if (mwPerWorkerDisplay) {
+            mwPerWorkerDisplay.addEventListener('click', () => {
+                const inputField = document.getElementById('MW_per_construction_worker_per_year');
+                if (inputField) {
+                    inputField.focus();
+                    inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            mwPerWorkerDisplay.style.cursor = 'pointer';
+        }
+
+        // Add click handler for datacenter start year display
+        const agreementYearDisplay = document.getElementById('agreementYearDisplay');
+        if (agreementYearDisplay) {
+            agreementYearDisplay.addEventListener('click', () => {
+                const inputField = document.getElementById('year_prc_starts_building_covert_datacenters');
+                if (inputField) {
+                    inputField.focus();
+                    inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            agreementYearDisplay.style.cursor = 'pointer';
+        }
+
         // Setup tooltip handlers
         const globalTooltip = document.getElementById('globalTooltip');
         const tooltipElements = document.querySelectorAll('.has-tooltip');
@@ -1091,12 +1134,18 @@
             'posteriorProbProjectPlot': null, // Output, not an input
 
             // Initial Stock Section - Compute Breakdown
+            'prcComputeOverTimePlot': 'total_prc_compute_stock_in_2025',
             'initialPrcStockPlot': 'total_prc_compute_stock_in_2025',
             'darkComputeResultPlot': null, // Output, not an input
 
             // Initial Stock Section - Intelligence Evidence Breakdown
             'lrPrcAccountingPlot': 'us_intelligence_median_error_in_estimate_of_prc_compute_stock',
-            'lrCombinedPlot': null // Output, not an input
+
+            // Covert Data Centers Section - Capacity Breakdown
+            'datacenterWorkersDisplay': 'datacenter_construction_labor',
+            'mwPerWorkerDisplay': 'MW_per_construction_worker_per_year',
+            'agreementYearDisplay': 'year_prc_starts_building_covert_datacenters',
+            'datacenterCapacityBreakdownPlot': null // Output, not an input
         };
 
         // Add clickable class and click handlers to plots with associated inputs
@@ -1106,7 +1155,10 @@
             'chipsPerWaferPlot',
             'architectureEfficiencyDisplay',
             'h100EnergyDisplay',
-            'diversionProportionDisplay'
+            'diversionProportionDisplay',
+            'datacenterWorkersDisplay',
+            'mwPerWorkerDisplay',
+            'agreementYearDisplay'
         ];
 
         Object.entries(plotToInputMapping).forEach(([plotId, inputId]) => {

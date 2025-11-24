@@ -129,6 +129,54 @@ def sample_from_metalog_3term_semi_bounded(p25: float, p50: float, p75: float) -
 
     return result
 
+
+def sample_from_metalog_3term_semi_bounded_custom_percentiles(p10: float, p50: float, p90: float) -> float:
+    """
+    Sample from a semi-bounded (lower bound of 0, no upper bound) distribution using a 3-term metalog
+    with custom percentiles (10th, 50th, 90th).
+
+    Uses the pymetalog library to fit a metalog distribution to the percentiles.
+    This is suitable for multipliers where we want to allow arbitrarily large values.
+
+    Args:
+        p10: 10th percentile value (must be > 0)
+        p50: 50th percentile (median) value (must be > 0)
+        p90: 90th percentile value (must be > 0)
+
+    Returns:
+        A sample from the distribution bounded at 0 from below
+    """
+    # Ensure percentiles are positive
+    p10 = max(p10, 1e-6)
+    p50 = max(p50, 1e-6)
+    p90 = max(p90, 1e-6)
+
+    # Create cache key
+    cache_key = ('semi_bounded_10_50_90', p10, p50, p90)
+
+    # Check if we've already fitted this distribution
+    if cache_key not in _cache.metalog_distributions:
+        # Fit metalog to the three quantiles
+        # The metalog expects x values (quantiles) and their corresponding probabilities
+        x = [p10, p50, p90]
+        probs = [0.1, 0.5, 0.9]
+
+        # Fit a 3-term semi-bounded metalog with lower bound at 0
+        m = pm.metalog(x=x, probs=probs, bounds=[0], boundedness='sl', term_limit=3, term_lower_bound=2)
+        _cache.metalog_distributions[cache_key] = m
+    else:
+        m = _cache.metalog_distributions[cache_key]
+
+    # Sample from the distribution using pymetalog's rmetalog function
+    # rmetalog returns an array, so we take the first element and convert to float
+    result = float(pm.rmetalog(m, n=1, term=3)[0])
+
+    # Ensure result is non-negative
+    result = max(result, 0)
+
+    return result
+
+
 def build_composite_detection_distribution(
     labor_by_year: Dict[float, int],
     mean_detection_time_100_workers: float,

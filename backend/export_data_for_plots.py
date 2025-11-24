@@ -540,6 +540,33 @@ def extract_energy_breakdown_by_source(simulation_results, years):
 # INITIAL DARK COMPUTE STOCK ANALYSIS
 # =============================================================================
 
+def extract_prc_compute_over_time(years, initial_compute_parameters):
+    """Extract PRC compute stock over time based on growth parameters.
+
+    This calculates the expected PRC compute stock for each year based on
+    the 2025 baseline and annual growth rate. Each sample uses a single
+    sampled growth rate applied consistently across all years.
+    """
+    from backend.classes.dark_compute_stock import sample_prc_growth_rate, compute_prc_compute_stock
+
+    # We'll generate multiple samples to get percentiles
+    num_samples = 100
+    prc_compute_by_year_by_sample = []
+
+    for _ in range(num_samples):
+        # Sample growth rate once per simulation using metalog distribution
+        growth_rate = sample_prc_growth_rate(initial_compute_parameters)
+
+        # Apply this growth rate consistently across all years
+        prc_compute_over_time = []
+        for year in years:
+            prc_stock = compute_prc_compute_stock(year, growth_rate, initial_compute_parameters)
+            prc_compute_over_time.append(prc_stock)
+        prc_compute_by_year_by_sample.append(prc_compute_over_time)
+
+    return prc_compute_by_year_by_sample
+
+
 def extract_initial_stock_data(simulation_results, likelihood_ratios, diversion_proportion):
     """Extract initial dark compute stock data from simulation results."""
     initial_prc_stock_samples = []
@@ -568,7 +595,7 @@ def extract_initial_stock_data(simulation_results, likelihood_ratios, diversion_
         'initial_compute_stock_samples': initial_compute_samples,
         'diversion_proportion': diversion_proportion,
         'lr_prc_accounting_samples': lr_prc_accounting_samples,
-        'initial_dark_compute_detection_probs': detection_probs
+        'initial_dark_compute_detection_probs': detection_probs,
     }
 
 
@@ -1015,6 +1042,18 @@ def extract_plot_data(model, app_params):
     diversion_proportion = app_params.covert_project_strategy.proportion_of_initial_compute_stock_to_divert
     initial_stock_data = extract_initial_stock_data(model.simulation_results, likelihood_ratios, diversion_proportion)
 
+    # Extract PRC compute over time (from 2025 to agreement start year)
+    initial_compute_parameters = app_params.covert_project_parameters.initial_compute_stock_parameters
+    prc_compute_years = list(range(2025, int(agreement_year) + 1))
+    prc_compute_over_time_by_sim = extract_prc_compute_over_time(prc_compute_years, initial_compute_parameters)
+
+    # Calculate domestic production (proportion of total PRC compute)
+    proportion_domestic = initial_compute_parameters.proportion_of_prc_chip_stock_produced_domestically
+    prc_domestic_compute_by_sim = [
+        [compute * proportion_domestic for compute in sim_data]
+        for sim_data in prc_compute_over_time_by_sim
+    ]
+
     # Helper to format percentiles for output (p25, median, p75, individual)
     def fmt_pct(data, scale_fn=None):
         """Calculate and format percentiles plus individual simulation data."""
@@ -1191,7 +1230,14 @@ def extract_plot_data(model, app_params):
         # =====================================================================
         # INITIAL DARK COMPUTE STOCK (diverted chips)
         # =====================================================================
-        "initial_stock": initial_stock_data,
+        "initial_stock": {
+            **initial_stock_data,
+            "prc_compute_over_time": fmt_pct(prc_compute_over_time_by_sim),
+            "prc_domestic_compute_over_time": fmt_pct(prc_domestic_compute_by_sim),
+            "prc_compute_years": prc_compute_years,
+            "proportion_domestic": proportion_domestic,
+            "years": years_array.tolist(),
+        },
     }
 
     # Convert numpy types to native Python types for JSON serialization

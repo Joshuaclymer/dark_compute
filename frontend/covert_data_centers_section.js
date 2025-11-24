@@ -116,18 +116,18 @@ function plotDatacenterCombined(data) {
         },
         showlegend: true,
         legend: {
-            x: 0.5,
-            y: -0.25,
-            xanchor: 'center',
-            yanchor: 'top',
-            orientation: 'h',
+            x: 0.98,
+            y: 0.02,
+            xanchor: 'right',
+            yanchor: 'bottom',
+            orientation: 'v',
             font: { size: 10 },
-            bgcolor: 'rgba(255,255,255,0)',
-            borderwidth: 0,
-            tracegroupgap: 20
+            bgcolor: 'rgba(255,255,255,0.8)',
+            borderwidth: 1,
+            bordercolor: '#ddd'
         },
         hovermode: 'x unified',
-        margin: { l: 55, r: 55, t: 0, b: 60 },
+        margin: { l: 55, r: 55, t: 0, b: 40 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -309,5 +309,121 @@ function updateDatacenterDashboard(data) {
 
         // Display time
         document.getElementById('dashboardDatacenterTime').textContent = p80Time.toFixed(1);
+    }
+}
+
+function populateDatacenterCapacityBreakdown(data) {
+    // Populate the breakdown boxes with parameter values from input elements
+    // Get datacenter construction workers from input
+    const workersInput = document.getElementById('datacenter_construction_labor');
+    const workers = workersInput ? parseInt(workersInput.value) : 10000;
+    document.getElementById('datacenterWorkersDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${workers.toLocaleString()}</div>
+            <div class="breakdown-label">Construction<br>workers</div>
+        </div>`;
+
+    // Get MW per worker per year from input
+    const mwPerWorkerInput = document.getElementById('MW_per_construction_worker_per_year');
+    const mwPerWorker = mwPerWorkerInput ? parseFloat(mwPerWorkerInput.value) : 0.2;
+    document.getElementById('mwPerWorkerDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${mwPerWorker.toFixed(2)}</div>
+            <div class="breakdown-label">MW built per<br>worker per year</div>
+        </div>`;
+
+    // Get year PRC starts building covert datacenters from input
+    const datacenterStartYearInput = document.getElementById('year_prc_starts_building_covert_datacenters');
+    const datacenterStartYear = datacenterStartYearInput ? parseInt(datacenterStartYearInput.value) : 2030;
+    document.getElementById('agreementYearDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${datacenterStartYear}</div>
+            <div class="breakdown-label">Year PRC starts building<br>covert datacenters</div>
+        </div>`;
+
+    // Add hover effects to the boxes
+    const boxes = [
+        document.querySelector('#datacenterWorkersDisplay .breakdown-box-inner'),
+        document.querySelector('#mwPerWorkerDisplay .breakdown-box-inner'),
+        document.querySelector('#agreementYearDisplay .breakdown-box-inner')
+    ];
+    boxes.forEach(box => {
+        if (box) {
+            box.style.transition = 'all 0.2s ease';
+            box.addEventListener('mouseenter', () => {
+                box.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                box.style.transform = 'scale(1.015)';
+            });
+            box.addEventListener('mouseleave', () => {
+                box.style.boxShadow = '';
+                box.style.transform = '';
+            });
+        }
+    });
+
+    // Plot datacenter capacity over time
+    if (data.dark_compute_model && data.dark_compute_model.datacenter_capacity) {
+        const years = data.dark_compute_model.years;
+        const capacity_median = data.dark_compute_model.datacenter_capacity.median;
+        const capacity_p25 = data.dark_compute_model.datacenter_capacity.p25;
+        const capacity_p75 = data.dark_compute_model.datacenter_capacity.p75;
+
+        const traces = [
+            // Upper bound of shaded region (invisible line)
+            {
+                x: years,
+                y: capacity_p75,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: 'transparent' },
+                showlegend: false,
+                hoverinfo: 'skip'
+            },
+            // Lower bound with fill to previous trace
+            {
+                x: years,
+                y: capacity_p25,
+                type: 'scatter',
+                mode: 'lines',
+                fill: 'tonexty',
+                fillcolor: 'rgba(90, 168, 155, 0.2)',
+                line: { color: 'transparent' },
+                showlegend: false,
+                hoverinfo: 'skip'
+            },
+            // Median line
+            {
+                x: years,
+                y: capacity_median,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#2D6B61', width: 3 },  // Dark turquoise
+                name: 'Median',
+                showlegend: false
+            }
+        ];
+
+        const layout = {
+            xaxis: {
+                title: 'Year',
+                titlefont: { size: 10 },
+                tickfont: { size: 9 },
+                automargin: true
+            },
+            yaxis: {
+                title: 'GW',
+                titlefont: { size: 10 },
+                tickfont: { size: 9 },
+                automargin: true
+            },
+            margin: { l: 50, r: 20, t: 15, b: 60 },
+            height: 250,
+            hovermode: 'x unified'
+        };
+
+        layout.xaxis.range = [years[0], 2037];
+
+        Plotly.newPlot('datacenterCapacityBreakdownPlot', traces, layout, {responsive: true, displayModeBar: false});
+        setTimeout(() => Plotly.Plots.resize('datacenterCapacityBreakdownPlot'), 50);
     }
 }

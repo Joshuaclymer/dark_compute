@@ -31,13 +31,20 @@ class CovertProject:
         # Convert absolute years to years since agreement start
         years_since_agreement_start = [year - self.agreement_year for year in self.years]
 
+        # Calculate datacenter start year offset (relative to agreement year)
+        datacenter_start_year = self.covert_project_strategy.year_prc_starts_building_covert_datacenters
+        if datacenter_start_year is None:
+            datacenter_start_year = self.agreement_year
+        datacenter_start_year_offset = datacenter_start_year - self.agreement_year
+
         self.covert_datacenters = CovertPRCDatacenters(
             GW_per_initial_datacenter = self.covert_project_strategy.GW_per_initial_datacenter,
             number_of_initial_datacenters = self.covert_project_strategy.number_of_initial_datacenters,
             construction_labor = self.covert_project_strategy.datacenter_construction_labor,
             years_since_agreement_start = years_since_agreement_start,
             datacenter_parameters = self.covert_project_parameters.datacenter_model_parameters,
-            project_parameters = self.covert_project_parameters
+            project_parameters = self.covert_project_parameters,
+            datacenter_start_year_offset = datacenter_start_year_offset
         )
 
         if (self.covert_project_strategy.build_a_covert_fab):

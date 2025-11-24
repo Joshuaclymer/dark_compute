@@ -7,7 +7,7 @@ function plotDarkComputeModel(data) {
     if (data.initial_stock && data.initial_stock.initial_compute_stock_samples) {
         // Use raw numbers with k/M formatting
         const samples = data.initial_stock.initial_compute_stock_samples;
-        plotPDF('initialDarkComputePlot', samples, '#BB8FCE', 'H100 Equivalents');
+        plotPDF('initialDarkComputePlot', samples, '#9B72B0', 'H100 Equivalents', 30, false, null, null, null, null, 'log');
     }
 
     // Plot 2: Flow from covert fab (line plot - cumulative production over time)

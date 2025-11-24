@@ -61,37 +61,47 @@
                         <div id="waferStartsPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Production capacity (wafer starts per month)</div>
                     </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    <div class="operator">
+                        ×
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <div id="chipsPerWaferPlot" class="breakdown-box">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <div></div>
-                                <div class="breakdown-label">Working H100-sized chips per wafer</div>
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="chipsPerWaferPlot" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div></div>
+                                    <div class="breakdown-label">Working H100-sized chips per wafer</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                ×
                             </div>
                         </div>
                     </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    <div class="operator">
+                        ×
                     </div>
                     <div class="breakdown-item">
                         <div id="computePerChipPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Transistor density relative to H100</div>
                     </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    <div class="operator">
+                        ×
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <div id="architectureEfficiencyDisplay" class="breakdown-box">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <div>--</div>
-                                <div class="breakdown-label">Architecture Efficiency (relative to H100)</div>
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="architectureEfficiencyDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Architecture Efficiency (relative to H100)</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                =
                             </div>
                         </div>
                     </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">=</div>
+                    <div class="operator">
+                        =
                     </div>
                     <div class="breakdown-item">
                         <div id="totalComputePlot" class="breakdown-plot"></div>
@@ -117,19 +127,24 @@
                         <div id="densityVsEfficiencyPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Watts per performance relative to H100</div>
                     </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    <div class="operator">
+                        ×
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <div id="h100EnergyDisplay" class="breakdown-box">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <div>--</div>
-                                <div class="breakdown-label">Energy requirements of H100</div>
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="h100EnergyDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Energy requirements of H100</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                ×
                             </div>
                         </div>
                     </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    <div class="operator">
+                        ×
                     </div>
                     <div class="breakdown-item">
                         <div id="energyComputePerMonthPlot" class="breakdown-plot"></div>

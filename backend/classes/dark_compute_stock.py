@@ -9,16 +9,19 @@ H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s F
 H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass (default, can be overridden)
 
 
-def sample_initial_prc_compute_stock(year, params: InitialPRCDarkComputeParameters):
-    """Sample initial PRC compute stock based on year and proportion diverted to covert project"""
-    from backend.util import sample_from_log_normal
+def sample_prc_growth_rate(params: InitialPRCDarkComputeParameters):
+    """Sample the PRC compute stock growth rate using a metalog distribution with specified percentiles."""
+    from backend.util import sample_from_metalog_3term_semi_bounded_custom_percentiles
+    return sample_from_metalog_3term_semi_bounded_custom_percentiles(
+        params.annual_growth_rate_of_prc_compute_stock_p10,
+        params.annual_growth_rate_of_prc_compute_stock_p50,
+        params.annual_growth_rate_of_prc_compute_stock_p90
+    )
+
+def compute_prc_compute_stock(year, growth_rate, params: InitialPRCDarkComputeParameters):
+    """Calculate PRC compute stock for a given year using a specific growth rate"""
     years_since_2025 = year - 2025
-    median_total_stock = params.total_prc_compute_stock_in_2025 * (params.annual_growth_rate_of_prc_compute_stock ** years_since_2025)
-    relative_sigma = params.relative_sigma_of_prc_compute_stock
-
-    total_stock_sample = sample_from_log_normal(median_total_stock, relative_sigma)
-
-    return total_stock_sample
+    return params.total_prc_compute_stock_in_2025 * (growth_rate ** years_since_2025)
 
 def sample_us_estimate_of_prc_compute_stock(prc_compute_stock, params: InitialPRCDarkComputeParameters):
     # Calculate pdf of absolute relative error
@@ -178,7 +181,11 @@ class PRCDarkComputeStock():
         assert proportion_of_initial_compute_stock_to_divert < self.initial_compute_parameters.proportion_of_prc_chip_stock_produced_domestically, "This model assumes that the PRC only diverts domestically-produced chips to a covert project. Therefore proportion to divert < proportion produced domestically."
         self.survival_parameters = survival_parameters
 
-        self.initial_prc_stock = sample_initial_prc_compute_stock(agreement_year, initial_compute_parameters)
+        # Sample growth rate once for this simulation
+        self.prc_growth_rate = sample_prc_growth_rate(initial_compute_parameters)
+
+        # Calculate initial PRC stock using the sampled growth rate
+        self.initial_prc_stock = compute_prc_compute_stock(agreement_year, self.prc_growth_rate, initial_compute_parameters)
         self.initial_prc_dark_compute = self.initial_prc_stock * proportion_of_initial_compute_stock_to_divert
 
         # dark_compute_added_per_year now stores chip dictionaries instead of single numbers

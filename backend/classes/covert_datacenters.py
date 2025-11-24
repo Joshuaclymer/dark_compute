@@ -25,10 +25,11 @@ def sample_GW_per_year_per_construction_labor(datacenter_parameters):
 #             self.number_of_initially_concealed_datacenters * self.GW_per_initially_concealed_datacenter)
 
 class CovertPRCDatacenters():
-    def __init__(self, GW_per_initial_datacenter : float, number_of_initial_datacenters : float, construction_labor : float, years_since_agreement_start: List[float], datacenter_parameters: CovertDatacenterParameters, project_parameters: CovertProjectParameters):
+    def __init__(self, GW_per_initial_datacenter : float, number_of_initial_datacenters : float, construction_labor : float, years_since_agreement_start: List[float], datacenter_parameters: CovertDatacenterParameters, project_parameters: CovertProjectParameters, datacenter_start_year_offset: float = 0.0):
         self.GW_per_initial_datacenter = GW_per_initial_datacenter
         self.number_of_initial_datacenters = number_of_initial_datacenters
         self.construction_labor = construction_labor
+        self.datacenter_start_year_offset = datacenter_start_year_offset
 
         # Store datacenter parameters instance
         self.datacenter_parameters = datacenter_parameters
@@ -50,7 +51,9 @@ class CovertPRCDatacenters():
         )
 
     def get_GW_capacity(self, year):
-        constructable_datacenters = self.GW_per_initial_datacenter * self.number_of_initial_datacenters + self.GW_per_year_of_concealed_datacenters * year
+        # Adjust year by datacenter start offset (only count years after construction starts)
+        years_since_construction_start = max(0, year - self.datacenter_start_year_offset)
+        constructable_datacenters = self.GW_per_initial_datacenter * self.number_of_initial_datacenters + self.GW_per_year_of_concealed_datacenters * years_since_construction_start
         max_energy_allocatable = self.datacenter_parameters.max_proportion_of_PRC_energy_consumption * self.datacenter_parameters.total_GW_of_PRC_energy_consumption
         return min(constructable_datacenters, max_energy_allocatable)
 

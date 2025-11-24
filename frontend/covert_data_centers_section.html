@@ -19,13 +19,102 @@
                 <!-- Capacity CCDF Plot -->
                 <div class="plot-container" style="flex: 1 1 200px; min-width: 200px; padding: 20px; display: flex; flex-direction: column; height: auto;">
                     <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Datacenter Capacity Built Before Detection</div>
-                    <div id="datacenterCapacityCcdfPlot" class="plot" style="flex: 1; min-height: 0;"></div>
+                    <div id="datacenterCapacityCcdfPlot" class="plot" style="flex: 1; min-height: 0; height: 473px;"></div>
                 </div>
 
                 <!-- Simulation Runs Plot -->
                 <div class="plot-container" style="flex: 1 1 200px; min-width: 200px; padding: 20px; display: flex; flex-direction: column; height: auto;">
                     <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; margin-top: 0;">Simulation Runs</div>
-                    <div id="datacenterCombinedPlot" class="plot" style="flex: 1; min-height: 0;"></div>
+                    <div id="datacenterCombinedPlot" class="plot" style="flex: 1; min-height: 0; height: 473px;"></div>
+                </div>
+            </div>
+
+            <!-- Breaking Down Covert Data Center Capacity -->
+            <div class="breakdown-section" id="datacenterCapacityBreakdown" style="margin-top: 30px;">
+                <h3
+                    style="
+                        font-size: 20px;
+                        font-weight: 600;
+                        margin-bottom: 15px;
+                        color: #333;
+                        text-align: left;
+                    "
+                >
+                    Breaking down covert data center capacity
+                </h3>
+                <div class="section-description">
+                    The capacity of covert data centers depends on the number of workers constructing them, the rate at which they can build infrastructure, and the time elapsed since construction began.<br>
+                    Data Center Capacity (GW) = Construction Workers × MW Per Worker Per Year × (year − Agreement Year)
+                </div>
+
+                <div class="breakdown-plots-row">
+                    <!-- Number of datacenter workers box -->
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="datacenterWorkersDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Construction<br>workers</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                ×
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="operator">
+                        ×
+                    </div>
+
+                    <!-- MW per worker box -->
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="mwPerWorkerDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">MW built per<br>worker per year</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                × (year −
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="operator">
+                        × (year −
+                    </div>
+
+                    <!-- Agreement year box -->
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="agreementYearDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Year PRC starts building<br>covert datacenters</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                )
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="operator">
+                        )
+                    </div>
+
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #666;">=</div>
+                    </div>
+
+                    <!-- Data center capacity plot -->
+                    <div class="breakdown-item">
+                        <div id="datacenterCapacityBreakdownPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Covert Data Center Capacity Over Time</div>
+                        <div class="breakdown-description">The cumulative capacity of covert data centers built by the construction workforce, measured in gigawatts (GW) of power capacity.</div>
+                    </div>
                 </div>
             </div>
 

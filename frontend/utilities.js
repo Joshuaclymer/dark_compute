@@ -42,7 +42,7 @@ const HoverConfig = {
     }
 };
 
-function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null) {
+function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null, xAxisType = null) {
     // Create histogram/PDF from values
 
     const marker = { color: color, line: { width: 0.5, color: 'white' } };
@@ -60,11 +60,26 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
         hovertemplate: '%{x:.2f}<br>Density: %{y:.3f}<extra></extra>'
     };
 
-    // For log scale, manually specify bin edges
-    if (logScale) {
-        // Use custom range if provided, otherwise default to 0.1 to 10
-        const minVal = logMin !== null ? logMin : 0.1;
-        const maxVal = logMax !== null ? logMax : 10;
+    // For log scale with custom binning (for LR plots), manually specify bin edges
+    // Or if xAxisType is 'log', use automatic range detection
+    if (logScale || xAxisType === 'log') {
+        // Use custom range if provided, otherwise detect from data
+        let minVal, maxVal;
+        if (logMin !== null && logMax !== null) {
+            minVal = logMin;
+            maxVal = logMax;
+        } else {
+            // Auto-detect range from data
+            const validValues = values.filter(v => v > 0); // Log scale requires positive values
+            minVal = Math.min(...validValues);
+            maxVal = Math.max(...validValues);
+            // Add some padding in log space
+            const logMin = Math.log10(minVal);
+            const logMax = Math.log10(maxVal);
+            const logRange = logMax - logMin;
+            minVal = Math.pow(10, logMin - logRange * 0.05);
+            maxVal = Math.pow(10, logMax + logRange * 0.05);
+        }
         const numBins = 12;
         const logMinVal = Math.log10(minVal);
         const logMaxVal = Math.log10(maxVal);
@@ -108,7 +123,12 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
         trace.y = probabilities;
         delete trace.histnorm;
         trace.width = binEdges.map((edge, i) => i < binEdges.length - 1 ? binEdges[i + 1] - binEdges[i] : 0).slice(0, -1);
-        trace.hovertemplate = 'LR: %{x:.2f}<br>Probability: %{y:.3f}<extra></extra>';
+        // Use appropriate hover template based on whether this is LR plot or compute stock plot
+        if (logScale) {
+            trace.hovertemplate = 'LR: %{x:.2f}<br>Probability: %{y:.3f}<extra></extra>';
+        } else {
+            trace.hovertemplate = '%{x:.2s}<br>Probability: %{y:.3f}<extra></extra>';
+        }
     } else {
         trace.nbinsx = nbins;
     }
@@ -122,14 +142,20 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
 
     const yaxisConfig = {
         title: {
-            text: logScale ? 'Probability' : 'Density',
+            text: (logScale || xAxisType === 'log') ? 'Probability' : 'Density',
             standoff: 15
         },
         titlefont: { size: 10 },
         tickfont: { size: 9 }
     };
 
-    if (logScale) {
+    // Set x-axis type if specified (e.g., 'log')
+    if (xAxisType === 'log') {
+        // Simple log scale with auto ticks for compute stock plots
+        xaxisConfig.type = 'log';
+        xaxisConfig.autorange = true;
+    } else if (logScale) {
+        // Log scale with custom ticks for LR plots
         xaxisConfig.type = 'log';
         // Manually specify tick values for better visibility
         // Use the actual max value from logMax parameter

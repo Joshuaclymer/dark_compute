@@ -188,7 +188,7 @@
         #datacenterCapacityCcdfPlot, #datacenterCombinedPlot,
         #initialDarkComputeDetectionPlot, #initialComputeStockPlot,
         #initialDarkComputePlot, #covertFabFlowPlot, #chipSurvivalPlot, #totalDarkComputePlot,
-        #darkComputeEnergyPlot, #operationalDarkComputePlot, #datacenterCapacityPlot2 {
+        #darkComputeEnergyPlot, #operationalDarkComputePlot, #datacenterCapacityPlot2, #datacenterCapacityBreakdownPlot {
             border: none !important;
         }
 
@@ -196,7 +196,7 @@
         #datacenterCapacityCcdfPlot > div, #datacenterCombinedPlot > div,
         #initialDarkComputeDetectionPlot > div, #initialComputeStockPlot > div,
         #initialDarkComputePlot > div, #covertFabFlowPlot > div, #chipSurvivalPlot > div, #totalDarkComputePlot > div,
-        #darkComputeEnergyPlot > div, #operationalDarkComputePlot > div, #datacenterCapacityPlot2 > div {
+        #darkComputeEnergyPlot > div, #operationalDarkComputePlot > div, #datacenterCapacityPlot2 > div, #datacenterCapacityBreakdownPlot > div {
             border: none !important;
         }
 

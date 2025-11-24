@@ -31,68 +31,63 @@
             </div>
 
             <div class="breakdown-section" id="initialStockIntelligenceBreakdown" style="margin-top: 30px;">
-                <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 10px; color: #222; text-align: left; letter-spacing: -0.5px;">Breakdown of initial dark compute</h2>
-                <div class="section-description" style="margin-bottom: 20px; text-align: left; font-size: 15px;">
-                    The initial dark compute depends on two factors: (1) how much compute the PRC could initially divert to a covert project, and (2) how various intelligence sources combine to assess the likelihood of detection. The following break down how we model each factor.
-                </div>
-                <div class="breakdown-title">Compute Breakdown</div>
+                <h3
+          style="
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: left;
+          "
+        >
+          Breaking down initial unreported chip stock
+        </h3>
                 <div class="section-description">
                     The dark compute stock is determined by the total PRC compute stock at time of agreement and the proportion diverted to the covert project.<br>
                     Dark Compute Stock = Initial PRC Compute Stock × Proportion Diverted
                 </div>
+
                 <div class="breakdown-plots-row">
+                    <!-- PRC Compute Over Time Plot -->
+                    <div class="breakdown-item">
+                        <div id="prcComputeOverTimePlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">PRC Compute Stock Over Time</div>
+                        <div class="breakdown-description">Assuming the PRC has <span id="param-prc-compute-2025" class="param-link">1</span>M H100e in 2025, and its chip stock grows by <span id="param-growth-rate-median" class="param-link">2</span>x per year.</div>
+                    </div>
+                    <!-- Arrow with dynamic text -->
+                    <div class="operator" style="position: relative; height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+                        <div id="agreementYearText" style="font-size: 13px; color: #666; text-align: center; white-space: nowrap;">Plug in <span id="agreementYearValue">2030</span></div>
+                        <div style="font-size: 24px; font-weight: bold; color: #666;">→</div>
+                    </div>
+                    <!-- Initial PRC compute stock -->
                     <div class="breakdown-item">
                         <div id="initialPrcStockPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Initial PRC compute stock</div>
+                        <div class="breakdown-label">PRC chip stock at agreement start</div>
                         <div class="breakdown-description">The total compute stock owned by the PRC at the time the agreement goes into force, before any diversion to a covert project.</div>
                     </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
+                    <div class="operator">
+                        ×
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <div id="diversionProportionDisplay" class="breakdown-box">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <div>--</div>
-                                <div class="breakdown-label">Proportion diverted<br>to covert project</div>
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="diversionProportionDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Proportion diverted<br>to covert project</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                =
                             </div>
                         </div>
                     </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 20px; font-weight: bold; color: #666;">=</div>
+                    <div class="operator">
+                        =
                     </div>
                     <div class="breakdown-item">
                         <div id="darkComputeResultPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Initial PRC dark compute</div>
+                        <div class="breakdown-label">Initial PRC unreported chip stock</div>
                         <div class="breakdown-description">The resulting compute stock diverted to the covert project, which is hidden from international monitoring and accounting systems.</div>
-                    </div>
-                </div>
-
-                <div class="breakdown-title" style="margin-top: 40px;">Intelligence Evidence Breakdown</div>
-                <div class="section-description">
-                    Multiply likelihood ratios from PRC compute stock reporting and global compute production accounting to assess detection risk from initial stock discrepancies.<br>
-                    Combined LR = LR<sub>PRC accounting</sub> × LR<sub>global accounting</sub>
-                </div>
-                <div class="breakdown-plots-row">
-                    <div class="breakdown-item">
-                        <div id="lrPrcAccountingPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Evidence from PRC compute stock accounting</div>
-                        <div class="breakdown-description">If the PRC reports less compute stock than U.S. intelligence estimates they possess, this is evidence for a covert project. Conversely, if the PRC reports the same or more compute than the U.S. estimates, this is evidence against a covert project.</div>
-                    </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
-                    </div>
-                    <div class="breakdown-item">
-                        <div id="lrGlobalAccountingPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Evidence from global compute production accounting</div>
-                        <div class="breakdown-description">If the total amount of reported global compute is lower than U.S. intelligence estimates of total compute produced to date, this suggests unreported compute exists. Given that the PRC is the most likely actor to hold large quantities of unreported compute, a substantial discrepancy between reported and estimated production provides evidence of a PRC covert project.</div>
-                    </div>
-                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 20px; font-weight: bold; color: #666;">=</div>
-                    </div>
-                    <div class="breakdown-item">
-                        <div id="lrCombinedPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Combined likelihood ratio</div>
-                        <div class="breakdown-description">The product of the two independent evidence sources gives the overall likelihood ratio update from initial compute reporting. Higher values indicate stronger evidence for a covert project.</div>
                     </div>
                 </div>
             </div>

@@ -10,3 +10,5 @@ cd /Users/joshuaclymer/github/covert_compute_production_model && python3 app.py
 ```
 
 The app is configured to run on http://127.0.0.1:5001
+
+Use existing functions and ccs styles when you can, and keep code clean.

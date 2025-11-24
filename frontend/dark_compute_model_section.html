@@ -86,7 +86,7 @@
     class="dashboard"
     style="
       flex: 1 1 125px;
-      min-width: 300px;
+      min-width: 200px;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -129,7 +129,7 @@
     class="plot-container"
     style="
       flex: 1 1 300px;
-      min-width: 300px;
+      min-width: 200px;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -160,7 +160,7 @@
     class="plot-container"
     style="
       flex: 1 1 300px;
-      min-width: 300px;
+      min-width: 200px;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -637,18 +637,9 @@
                 </div>
               </div>
             </div>
-          </div>
-          <div
-            class="operator"
-            style="
-              position: relative;
-              height: 240px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            "
-          >
-            <div style="font-size: 24px; font-weight: bold; color: #666">×</div>
+            <div class="operator">
+              ×
+            </div>
           </div>
           <div class="breakdown-item">
             <div id="lrReportedAssetsPlot" class="breakdown-plot"></div>
@@ -722,7 +713,7 @@
         <!-- Images Row -->
         <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; margin-top: 40px;">
           <!-- Intelligence Accuracy Image -->
-          <div style="flex: 1; min-width: 300px; max-width: 900px;">
+          <div style="flex: 1; min-width: 200px; max-width: 900px;">
             <div id="intelligenceAccuracyPlot" style="width: 100%; height: 320px;"></div>
             <div style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
               Historical accuracy of intelligence estimates of military asset counts
@@ -730,7 +721,7 @@
           </div>
 
           <!-- Nuclear Detection Speed Image -->
-          <div style="flex: 1; min-width: 300px; max-width: 900px;">
+          <div style="flex: 1; min-width: 200px; max-width: 900px;">
             <div id="detectionLatencyPlot" style="width: 100%; height: 320px;"></div>
             <div style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
               Historical detection speed of covert nuclear operations

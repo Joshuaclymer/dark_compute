@@ -216,8 +216,8 @@
     <strong>how quickly unreported compute is detected.</strong>
   </div>
 
-  <div style="display: flex; position: relative">
-    <div style="flex: 1; position: relative">
+  <div style="display: flex; position: relative; max-width: 100%; overflow: hidden;">
+    <div style="flex: 1; position: relative; max-width: 100%;">
       <!-- Unreported Computation Section -->
       <div style="position: relative; padding-bottom: 10px; padding-top: 20px">
         <h3
@@ -259,6 +259,7 @@
             margin-top: 40px;
             margin-bottom: 40px;
             flex-wrap: wrap;
+            max-width: 100%;
           "
         >
           <div
@@ -272,9 +273,9 @@
               margin-top: 5px;
             "
           >
-            (
+            [
           </div>
-          <div style="flex: 1; min-width: 200px">
+          <div class="breakdown-item">
             <div
               id="initialDarkComputePlot"
               class="breakdown-plot"
@@ -299,14 +300,14 @@
           >
             +
           </div>
-          <div style="flex: 1; min-width: 200px">
+          <div class="breakdown-item">
             <div
               id="covertFabFlowPlot"
               class="breakdown-plot"
               style="height: 250px"
             ></div>
             <div class="breakdown-label" style="text-align: center">
-              Acquired hardware 
+              Acquired hardware
             </div>
             <div class="breakdown-description" style="text-align: center">
               Assuming the PRC diverts <span id="param-sme-diversion-percent" class="param-link">10</span>% of indigenous ≤<span id="param-fab-node" class="param-link">28</span>nm SME before the agreement goes into force.
@@ -323,7 +324,7 @@
               margin-top: 5px;
             "
           >
-            )
+            ]
           </div>
           <div
             style="
@@ -337,14 +338,14 @@
           >
             ×
           </div>
-          <div style="flex: 1; min-width: 200px">
+          <div class="breakdown-item">
             <div
               id="chipSurvivalPlot"
               class="breakdown-plot"
               style="height: 250px"
             ></div>
             <div class="breakdown-label" style="text-align: center">
-             Surviving fraction of compute 
+             Surviving fraction of compute
             </div>
             <div class="breakdown-description" style="text-align: center">
               The fraction of compute that remains operational at a given point
@@ -363,14 +364,14 @@
           >
             =
           </div>
-          <div style="flex: 1; min-width: 200px">
+          <div class="breakdown-item">
             <div
               id="totalDarkComputePlot"
               class="breakdown-plot"
               style="height: 250px"
             ></div>
             <div class="breakdown-label" style="text-align: center">
-             Unreported Chip Stock 
+             Unreported Chip Stock
             </div>
             <div class="breakdown-description" style="text-align: center">
               Total untraced compute available to a covert PRC project.
@@ -397,12 +398,13 @@
             margin-top: 40px;
             margin-bottom: 40px;
             flex-wrap: wrap;
+            max-width: 100%;
           "
         >
-          <div style="flex: 1; min-width: 200px">
+          <div class="breakdown-item">
             <div id="datacenterCapacityPlot2" class="breakdown-plot"></div>
             <div class="breakdown-label" style="text-align: center">
-             Unreported Data Center Capacity 
+             Unreported Data Center Capacity
             </div>
             <div class="breakdown-description" style="text-align: center">
               Assuming <span id="param-datacenter-workers-2" class="param-link">10,000</span> workers construct covert datacenters continually, and <span id="param-mw-per-worker" class="param-link">X</span> MW are constructed by each worker per year on average.
@@ -425,7 +427,7 @@
             </div>
             <div style="font-size: 20px; color: #666">→</div>
           </div>
-          <div style="flex: 1; min-width: 200px">
+          <div class="breakdown-item">
             <div id="darkComputeEnergyPlot" class="breakdown-plot"></div>
             <div class="breakdown-label" style="text-align: center">
               Chip Stock Energy Usage (Medians)
@@ -446,7 +448,7 @@
           >
             =
           </div>
-          <div style="flex: 1; min-width: 200px">
+          <div class="breakdown-item">
             <div id="operationalDarkComputePlot" class="breakdown-plot"></div>
             <div class="breakdown-label" style="text-align: center">
               Operating AI chips
@@ -467,7 +469,7 @@
           >
             =
           </div>
-          <div style="flex: 1; min-width: 200px">
+          <div class="breakdown-item">
             <div id="covertComputationPlot" class="breakdown-plot"></div>
             <div class="breakdown-label" style="text-align: center">
               Covert computation
@@ -524,9 +526,10 @@
             margin-top: 40px;
             margin-bottom: 40px;
             flex-wrap: wrap;
+            max-width: 100%;
           "
         >
-          <div style="flex: 1; min-width: 140px">
+          <div class="breakdown-item">
             <div id="lrPrcAccountingPlot" class="breakdown-plot" style="height: 240px"></div>
             <div class="breakdown-label" style="text-align: center; font-size: 11px">
               Evidence from discrepancies between reported and estimated PRC chip stock
@@ -535,19 +538,10 @@
               Assuming there is a median discrepancy of <span id="param-diversion-initial-prc" class="param-link">5</span>% (the fraction of chips the PRC diverted), and the median error of US estimate of PRC chip stock is <span id="param-error-prc-compute" class="param-link">20</span>%
             </div>
           </div>
-          <div
-            style="
-              font-size: 20px;
-              font-weight: bold;
-              color: #666;
-              flex: 0 0 20px;
-              text-align: center;
-              margin-top: 120px;
-            "
-          >
+          <div class="operator">
             ×
           </div>
-          <div style="flex: 1; min-width: 140px">
+          <div class="breakdown-item">
             <div id="lrSmeInventoryPlot" class="breakdown-plot" style="height: 240px"></div>
             <div class="breakdown-label" style="text-align: center; font-size: 11px">
               Evidence from discrepancies between reported and estimated PRC SME stock
@@ -556,19 +550,10 @@
               Assuming there is a median discrepancy of <span id="param-diversion-sme-prc" class="param-link">10</span>% (the fraction of SME the PRC diverted), and the median error of US estimate of PRC SME stock is <span id="param-error-prc-sme" class="param-link">20</span>%
             </div>
           </div>
-          <div
-            style="
-              font-size: 20px;
-              font-weight: bold;
-              color: #666;
-              flex: 0 0 20px;
-              text-align: center;
-              margin-top: 120px;
-            "
-          >
+          <div class="operator">
             =
           </div>
-          <div style="flex: 1; min-width: 140px">
+          <div class="breakdown-item">
             <div id="lrReportedAssetsInitialPlot" class="breakdown-plot" style="height: 240px"></div>
             <div class="breakdown-label" style="text-align: center; font-size: 11px">
               Combined evidence from reported assets
@@ -636,7 +621,7 @@
         </div>
 
         <div class="breakdown-plots-row" style="margin-top: 40px;">
-          <div class="breakdown-item">
+          <div class="breakdown-box-item">
             <div id="dashboardPriorProject" class="breakdown-box">
               <div
                 style="

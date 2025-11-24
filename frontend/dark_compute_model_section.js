@@ -1174,26 +1174,25 @@ function createIntelligenceAccuracyPlot() {
   });
 
   // Create traces for right subplot (Estimate vs reality)
-  const rightTraces = [];
+  // These will be adjusted for narrow screens later
+  const rightTracesTemplate = [];
 
   // Add all estimate points with same color
-  rightTraces.push({
+  rightTracesTemplate.push({
     x: groundTruths,
     y: estimates,
     mode: 'markers',
     marker: { color: pointColor, size: 8 },
     showlegend: false,
     customdata: estimateDates.map((d, i) => [estimateCategories[i], d]),
-    hovertemplate: '%{customdata[0]}<br>Date: %{customdata[1]}<br>Ground truth: %{x}<br>Estimate: %{y}<extra></extra>',
-    xaxis: 'x2',
-    yaxis: 'y2'
+    hovertemplate: '%{customdata[0]}<br>Date: %{customdata[1]}<br>Ground truth: %{x}<br>Estimate: %{y}<extra></extra>'
   });
 
   // Add median error region for right subplot
   const maxRangeEst = Math.max(...estimates, ...groundTruths);
   const xLineEst = linspace(0, maxRangeEst, 100);
 
-  rightTraces.push({
+  rightTracesTemplate.push({
     x: [...xLineEst, ...[...xLineEst].reverse()],
     y: [...xLineEst.map(x => estimateLowerSlope * x), ...[...xLineEst].reverse().map(x => estimateUpperSlope * x)],
     fill: 'toself',
@@ -1202,30 +1201,85 @@ function createIntelligenceAccuracyPlot() {
     line: { width: 0 },
     name: `Median error margin = ${medianEstimateError.toFixed(1)}%`,
     showlegend: true,
-    hoverinfo: 'skip',
-    xaxis: 'x2',
-    yaxis: 'y2',
-    legend: 'legend2'
+    hoverinfo: 'skip'
   });
 
   // Add y=x line for right subplot
-  rightTraces.push({
+  rightTracesTemplate.push({
     x: xLineEst,
     y: xLineEst,
     mode: 'lines',
     line: { color: 'grey', width: 1 },
     opacity: 0.5,
     showlegend: false,
-    hoverinfo: 'skip',
-    xaxis: 'x2',
-    yaxis: 'y2'
+    hoverinfo: 'skip'
   });
 
-  // Combine all traces
-  const data = [...leftTraces, ...rightTraces];
+  // Check if screen is narrow
+  const containerWidth = document.getElementById(elementId)?.offsetWidth || window.innerWidth;
+  const isNarrow = containerWidth < 600;
 
-  // Create layout with subplots
-  const layout = {
+  // Adjust right traces for axis references
+  const rightTraces = rightTracesTemplate.map(trace => {
+    if (isNarrow) {
+      // For narrow screens, use primary axes
+      return trace;
+    } else {
+      // For wide screens, use secondary axes
+      return { ...trace, xaxis: 'x2', yaxis: 'y2', legend: 'legend2' };
+    }
+  });
+
+  // Combine traces based on screen width
+  const data = isNarrow ? rightTraces : [...leftTraces, ...rightTraces];
+
+  // Create layout with subplots (or single plot for narrow screens)
+  const layout = isNarrow ? {
+    // Single plot layout for narrow screens
+    height: 320,
+    showlegend: true,
+    autosize: true,
+    xaxis: {
+      title: 'Ground Truth',
+      showgrid: true,
+      gridwidth: 1,
+      gridcolor: 'lightgray'
+    },
+    yaxis: {
+      title: 'Estimate',
+      showgrid: true,
+      gridwidth: 1,
+      gridcolor: 'lightgray'
+    },
+    legend: {
+      font: { size: 9 },
+      orientation: 'v',
+      yanchor: 'top',
+      y: 0.98,
+      xanchor: 'left',
+      x: 0.02,
+      bgcolor: 'rgba(255, 255, 255, 0.8)',
+      bordercolor: 'lightgray',
+      borderwidth: 1
+    },
+    margin: { l: 50, r: 20, t: 40, b: 70 },
+    plot_bgcolor: 'white',
+    font: { size: 10 },
+    annotations: [
+      {
+        text: 'Estimate vs. ground truth',
+        xref: 'paper',
+        yref: 'paper',
+        x: 0.5,
+        y: 1.05,
+        xanchor: 'center',
+        yanchor: 'bottom',
+        showarrow: false,
+        font: { size: 12 }
+      }
+    ]
+  } : {
+    // Two subplot layout for wider screens
     height: 320,
     showlegend: true,
     autosize: true,
@@ -1341,8 +1395,8 @@ function createIntelligenceAccuracyPlot() {
       borderwidth: 1,
       borderpad: 3,
       opacity: 0.8,
-      xref: 'x2',
-      yref: 'y2'
+      xref: isNarrow ? 'x' : 'x2',
+      yref: isNarrow ? 'y' : 'y2'
     });
   });
 
@@ -1352,4 +1406,13 @@ function createIntelligenceAccuracyPlot() {
   };
 
   Plotly.newPlot(elementId, data, layout, config);
+
+  // Add resize listener to update plot when screen width changes
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      createIntelligenceAccuracyPlot();
+    }, 250);
+  });
 }

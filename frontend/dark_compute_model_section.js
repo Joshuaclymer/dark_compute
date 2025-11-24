@@ -1317,7 +1317,7 @@ function createIntelligenceAccuracyPlot() {
   const labelOffsets = {
     8: [10, 20],   // Missile gap
     1: [10, -25],  // Bomber gap
-    3: [10, 70]    // Iraq intelligence failure
+    3: [10, 140]    // Iraq intelligence failure
   };
 
   labels.forEach(labelInfo => {

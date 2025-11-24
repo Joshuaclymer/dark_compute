@@ -22,52 +22,14 @@
   >
   that maximizes the 80th percentile of computation performed before
   detection.<sup
-    class="footnote-tooltip"
+    class="footnote-link"
     style="
-      position: relative;
       cursor: pointer;
       color: #0066cc;
       font-weight: 600;
     "
-  >
-    <span class="footnote-number">[1]</span>
-    <span
-      class="footnote-text"
-      style="
-        visibility: hidden;
-        max-width: min(300px, calc(100vw - 20px)); width: max-content;
-        background-color: #333;
-        color: #fff;
-        text-align: left;
-        border-radius: 6px;
-        padding: 10px;
-        position: absolute;
-        z-index: 1000;
-        bottom: 125%;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0;
-        transition: opacity 0.3s;
-        font-size: 13px;
-        line-height: 1.4;
-        font-weight: normal;
-      "
-    >
-      Detection means that US intelligence's odds of a covert project rises by
-      at least 5x from their odds before observing any evidence.
-      <span
-        style="
-          position: absolute;
-          top: 100%;
-          left: 50%;
-          margin-left: -5px;
-          border-width: 5px;
-          border-style: solid;
-          border-color: #333 transparent transparent transparent;
-        "
-      ></span>
-    </span>
-  </sup>
+    data-footnote="Detection means that US intelligence's odds of a covert project rises by at least 5x from their odds before observing any evidence."
+  >[1]</sup>
 </p>
 
 <!-- Dashboard and Plots in Same Flex -->
@@ -288,16 +250,7 @@
               Assuming the PRC initially has ~<span id="param-initial-prc-compute" class="param-link">1M</span> H100e, and diverts <span id="param-diversion-percent" class="param-link">5</span>% before the agreement goes into force.
             </div>
           </div>
-          <div
-            style="
-              font-size: 24px;
-              font-weight: bold;
-              color: #666;
-              flex: 0 0 30px;
-              text-align: center;
-              margin-top: 125px;
-            "
-          >
+          <div class="operator">
             +
           </div>
           <div class="breakdown-item">
@@ -326,16 +279,7 @@
           >
             ]
           </div>
-          <div
-            style="
-              font-size: 24px;
-              font-weight: bold;
-              color: #666;
-              flex: 0 0 30px;
-              text-align: center;
-              margin-top: 125px;
-            "
-          >
+          <div class="operator">
             ×
           </div>
           <div class="breakdown-item">
@@ -352,16 +296,7 @@
               in time, accounting for degradation and failure.
             </div>
           </div>
-          <div
-            style="
-              font-size: 24px;
-              font-weight: bold;
-              color: #666;
-              flex: 0 0 30px;
-              text-align: center;
-              margin-top: 125px;
-            "
-          >
+          <div class="operator">
             =
           </div>
           <div class="breakdown-item">
@@ -438,7 +373,7 @@
           </div>
           <div
             style="
-              font-size: 24px;
+              font-size: 24px !important;
               font-weight: bold;
               color: #666;
               flex: 0 0 30px;
@@ -459,7 +394,7 @@
           </div>
           <div
             style="
-              font-size: 24px;
+              font-size: 24px !important;
               font-weight: bold;
               color: #666;
               flex: 0 0 30px;
@@ -572,51 +507,14 @@
             style="max-width: 900px; text-align: left"
           >
             The US also receives <strong>direct evidence of covert operations</strong> from networks of spies, satellite imagery, compromised devices, etc. Multiplying updates<sup
-              class="footnote-tooltip"
+              class="footnote-link"
               style="
-                position: relative;
                 cursor: pointer;
                 color: #0066cc;
                 font-weight: 600;
               "
-            >
-              <span class="footnote-number">[2]</span>
-              <span
-                class="footnote-text"
-                style="
-                  visibility: hidden;
-                  max-width: min(300px, calc(100vw - 20px)); width: max-content;
-                  background-color: #333;
-                  color: #fff;
-                  text-align: left;
-                  border-radius: 6px;
-                  padding: 10px;
-                  position: absolute;
-                  z-index: 1000;
-                  bottom: 125%;
-                  left: 50%;
-                  transform: translateX(-50%);
-                  opacity: 0;
-                  transition: opacity 0.3s;
-                  font-size: 13px;
-                  line-height: 1.4;
-                  font-weight: normal;
-                "
-              >
-                This assumes these sources of evidence are conditionally independent, meaning that conditioning on a PRC covert project existing (or not existing), the likelihood of seeing one type of evidence is independent of seeing the other.
-                <span
-                  style="
-                    position: absolute;
-                    top: 100%;
-                    left: 50%;
-                    margin-left: -5px;
-                    border-width: 5px;
-                    border-style: solid;
-                    border-color: #333 transparent transparent transparent;
-                  "
-                ></span>
-              </span>
-            </sup> from these sources gives the probability of a covert project over time.
+              data-footnote="This assumes these sources of evidence are conditionally independent, meaning that conditioning on a PRC covert project existing (or not existing), the likelihood of seeing one type of evidence is independent of seeing the other."
+            >[2]</sup> from these sources gives the probability of a covert project over time.
           </div>
         </div>
 
@@ -662,7 +560,7 @@
               justify-content: center;
             "
           >
-            <div style="font-size: 24px; font-weight: bold; color: #666">×</div>
+            <div class="operator">×</div>
           </div>
           <div class="breakdown-item">
             <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
@@ -737,6 +635,9 @@
     </div>
   </div>
 </div>
-<p style="font-size: 16px; color: #666; margin-top: 5px;">The next sections break down these components in greater detail.</p>
+<p style="font-size: 16px; color: #666; margin-top: 5px;">
+  <span class="desktop-only">The next sections break down these components in greater detail.</span>
+  <span class="mobile-only">View the page on desktop for a more detailed breakdown.</span>
+</p>
 
 <!-- End of Dark Compute Model Section -->

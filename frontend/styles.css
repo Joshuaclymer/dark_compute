@@ -291,13 +291,13 @@
             }
 
             .operator {
-                font-size: 14px !important;
+                /* font-size: 14px !important; */
                 padding: 0 1px !important;
                 flex: 0 0 10px !important;
             }
 
             .operator.arrow-operator {
-                font-size: 12px !important;
+                font-size: 14px !important;
             }
 
             .operator-inline {
@@ -311,7 +311,7 @@
             }
 
             .breakdown-box + .operator-inline {
-                margin-top: 50px !important;
+                margin-top: 24px !important;
             }
 
             /* Make square brackets larger and tall on mobile */
@@ -463,8 +463,38 @@
             text-decoration-style: solid;
         }
 
-        /* Footnote tooltip styles */
-        .footnote-tooltip:hover .footnote-text {
-            visibility: visible !important;
-            opacity: 1 !important;
+        /* Footnote link styles */
+        .footnote-link {
+            cursor: pointer;
+            color: #0066cc;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footnote-link:hover {
+            color: #0052a3;
+        }
+
+        /* Desktop/Mobile content visibility */
+        .mobile-only {
+            display: none;
+        }
+
+        .desktop-only {
+            display: inline;
+        }
+
+        @media (max-width: 768px) {
+            .detailed-breakdown-sections {
+                display: none !important;
+            }
+
+            .mobile-only {
+                display: inline;
+            }
+
+            .desktop-only {
+                display: none;
+            }
         }

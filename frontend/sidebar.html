@@ -287,7 +287,7 @@
         <input type="number" id="num_simulations" value="{{ defaults['simulation_settings.num_simulations'] }}" min="1" max="10000">
     </div>
 
-    <h2 id="prc-strategy-section">PRC Strategy</h2>
+    <h2 id="covert-project-properties-section">Covert Project Properties</h2>
     <div class="param-group">
         <label>
             <input type="checkbox" id="run_covert_project" checked>
@@ -296,28 +296,18 @@
     </div>
     <div class="param-group">
         <label for="proportion_of_initial_chip_stock_to_divert">Proportion of initial chip stock to divert</label>
-        <input type="number" id="proportion_of_initial_chip_stock_to_divert" value="{{ defaults['covert_project_strategy.proportion_of_initial_compute_stock_to_divert'] }}" step="0.01" min="0" max="1">
+        <input type="number" id="proportion_of_initial_chip_stock_to_divert" value="{{ defaults['covert_project_properties.proportion_of_initial_compute_stock_to_divert'] }}" step="0.01" min="0" max="1">
     </div>
 
-    <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Covert datacenters</h3>
-    <div class="param-group">
-        <label for="GW_per_initial_datacenter">GW per initial datacenter</label>
-        <input type="number" id="GW_per_initial_datacenter" value="{{ defaults['covert_project_strategy.GW_per_initial_datacenter'] }}" step="0.1">
-    </div>
-    <div class="param-group">
-        <label for="number_of_initial_datacenters">Number of initial datacenters</label>
-        <input type="number" id="number_of_initial_datacenters" value="{{ defaults['covert_project_strategy.number_of_initial_datacenters'] }}" step="0.1">
-    </div>
     <div class="param-group">
         <label for="datacenter_construction_labor">Datacenter construction labor</label>
-        <input type="number" id="datacenter_construction_labor" value="{{ defaults['covert_project_strategy.datacenter_construction_labor'] }}" step="1">
+        <input type="number" id="datacenter_construction_labor" value="{{ defaults['covert_project_properties.datacenter_construction_labor'] }}" step="1">
     </div>
     <div class="param-group">
         <label for="years_before_agreement_year_prc_starts_building_covert_datacenters">Years before agreement year PRC starts building covert datacenters</label>
-        <input type="number" id="years_before_agreement_year_prc_starts_building_covert_datacenters" value="{{ defaults['covert_project_strategy.years_before_agreement_year_prc_starts_building_covert_datacenters'] }}" step="1">
+        <input type="number" id="years_before_agreement_year_prc_starts_building_covert_datacenters" value="{{ defaults['covert_project_properties.years_before_agreement_year_prc_starts_building_covert_datacenters'] }}" step="1">
     </div>
 
-    <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Covert fab</h3>
     <div class="param-group">
         <label>
             <input type="checkbox" id="build_covert_fab" checked>
@@ -326,31 +316,49 @@
     </div>
     <div class="param-group">
         <label for="operating_labor">Number of workers to operate fab</label>
-        <input type="number" id="operating_labor" value="{{ defaults['covert_project_strategy.covert_fab_operating_labor'] }}">
+        <input type="number" id="operating_labor" value="{{ defaults['covert_project_properties.covert_fab_operating_labor'] }}">
     </div>
     <div class="param-group">
         <label for="construction_labor">Number of workers to construct fab</label>
-        <input type="number" id="construction_labor" value="{{ defaults['covert_project_strategy.covert_fab_construction_labor'] }}">
+        <input type="number" id="construction_labor" value="{{ defaults['covert_project_properties.covert_fab_construction_labor'] }}">
     </div>
     <div class="param-group">
         <label for="process_node">Process node strategy</label>
         <select id="process_node">
-            <option value="best_indigenous" {% if defaults['covert_project_strategy.covert_fab_process_node'] == 'best_indigenous' %}selected{% endif %}>Best Indigenous</option>
-            <option value="best_indigenous_gte_28nm" {% if defaults['covert_project_strategy.covert_fab_process_node'] == 'best_indigenous_gte_28nm' %}selected{% endif %}>Best Indigenous >= 28nm</option>
-            <option value="best_indigenous_gte_14nm" {% if defaults['covert_project_strategy.covert_fab_process_node'] == 'best_indigenous_gte_14nm' %}selected{% endif %}>Best Indigenous >= 14nm</option>
-            <option value="best_indigenous_gte_7nm" {% if defaults['covert_project_strategy.covert_fab_process_node'] == 'best_indigenous_gte_7nm' %}selected{% endif %}>Best Indigenous >= 7nm</option>
-            <option value="nm130" {% if defaults['covert_project_strategy.covert_fab_process_node'] == 'nm130' %}selected{% endif %}>130nm</option>
-            <option value="nm28" {% if defaults['covert_project_strategy.covert_fab_process_node'] == 'nm28' %}selected{% endif %}>28nm</option>
-            <option value="nm14" {% if defaults['covert_project_strategy.covert_fab_process_node'] == 'nm14' %}selected{% endif %}>14nm</option>
-            <option value="nm7" {% if defaults['covert_project_strategy.covert_fab_process_node'] == 'nm7' %}selected{% endif %}>7nm</option>
+            <option value="best_indigenous" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'best_indigenous' %}selected{% endif %}>Best Indigenous</option>
+            <option value="best_indigenous_gte_28nm" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'best_indigenous_gte_28nm' %}selected{% endif %}>Best Indigenous >= 28nm</option>
+            <option value="best_indigenous_gte_14nm" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'best_indigenous_gte_14nm' %}selected{% endif %}>Best Indigenous >= 14nm</option>
+            <option value="best_indigenous_gte_7nm" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'best_indigenous_gte_7nm' %}selected{% endif %}>Best Indigenous >= 7nm</option>
+            <option value="nm130" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'nm130' %}selected{% endif %}>130nm</option>
+            <option value="nm28" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'nm28' %}selected{% endif %}>28nm</option>
+            <option value="nm14" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'nm14' %}selected{% endif %}>14nm</option>
+            <option value="nm7" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'nm7' %}selected{% endif %}>7nm</option>
         </select>
     </div>
     <div class="param-group">
         <label for="scanner_proportion">Proportion of prc sme diverted to covert fab at start of the agreement</label>
-        <input type="number" id="scanner_proportion" value="{{ defaults['covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted'] }}" step="0.001">
+        <input type="number" id="scanner_proportion" value="{{ defaults['covert_project_properties.covert_fab_proportion_of_prc_lithography_scanners_devoted'] }}" step="0.001">
     </div>
 
-    <h2>Covert Project Parameters</h2>
+    <h2>Slowdown Counterfactual</h2>
+    <div class="param-group">
+        <label for="median_global_compute_in_2026">Median global compute in 2026 (millions of H100e)</label>
+        <input type="number" id="median_global_compute_in_2026" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.median_global_compute_in_2026'] / 1e6 }}" step="1">
+    </div>
+    <div class="param-group">
+        <label for="median_global_compute_annual_rate_of_increase">Median global compute annual rate of increase (multiplicative)</label>
+        <input type="number" id="median_global_compute_annual_rate_of_increase" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.median_global_compute_annual_rate_of_increase'] }}" step="0.1">
+    </div>
+    <div class="param-group">
+        <label for="fraction_of_global_compute_for_single_ai_project">Fraction of global compute spent on AI R&D for a single project</label>
+        <input type="number" id="fraction_of_global_compute_for_single_ai_project" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_global_compute_for_single_ai_project'] }}" step="0.0001" min="0" max="1">
+    </div>
+    <div class="param-group">
+        <label for="fraction_of_prc_compute_spent_on_ai_rd_before_slowdown">Fraction of PRC compute spent on AI R&D before slowdown</label>
+        <input type="number" id="fraction_of_prc_compute_spent_on_ai_rd_before_slowdown" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_prc_compute_spent_on_ai_rd_before_slowdown'] }}" step="0.01" min="0" max="1">
+    </div>
+
+    <h2>Detection parameters</h2>
 
     <div class="param-group">
         <label for="covert_project_parameters.p_project_exists">US prior probability that covert project exists</label>
@@ -368,6 +376,14 @@
     <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters determine the relationship between workforce size and the probability a covert project is detected over time. We estimated these parameters using online information about historical nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (σ) represents the standard deviation of the log-normal distribution." data-download="/download/nuclear_case_studies">
         <label for="variance_detection_time">Detection time sigma (years)</label>
         <input type="number" id="variance_detection_time" value="{{ defaults['covert_project_parameters.variance_of_detection_time_given_num_workers'] }}" step="0.01">
+    </div>
+    <div class="param-group">
+        <label for="us_intelligence_median_error_in_estimate_of_prc_compute_stock">US intelligence median error in estimate of PRC compute stock</label>
+        <input type="number" id="us_intelligence_median_error_in_estimate_of_prc_compute_stock" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock'] }}" step="0.01">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip="<strong>SME Inventory Accounting Detection</strong><br><br><strong>Detection Method:</strong><br>US intelligence could detect a covert fab by noticing that equipment is missing from China's domestic semiconductor industry.<br><br><strong>Two Key Factors:</strong><br>1. Amount diverted: Diverting 80 of 100 stockpiled DUV scanners would be obvious; diverting a handful would not.<br>2. Width of USG's error bars: If USG estimates Chinese companies built 50-150 DUV scanners, a dozen missing wouldn't raise suspicion. If USG knows the exact count, it would notice.<br><br><strong>Historical Calibration:</strong><br>Historical intelligence estimates of weapon counts (tanks, nuclear warheads, etc.) from declassified documents (1960-2025) show median errors of ~15%." data-download="/download/us_intelligence_estimates" data-image="/static/error_bars_plot.png" data-image-after-text="<strong>Adjustment for SME Context:</strong><br>15% would be reasonable if the PRC treats SME with nuclear-weapons-level secrecy. However, it's plausible that China's semiconductor industry remains quasi-private with details shared among investors, or that the expansive SME industry is difficult to lock down. Therefore, I estimate that the US intelligence error margin will be ~7% (2x smaller than weapons programs).">
+        <label for="proportion_diverted_sme">US intelligence median error in estimate of PRC SME stock</label>
+        <input type="number" id="proportion_diverted_sme" value="{{ defaults['covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock'] }}" step="0.01">
     </div>
 
     <h2>Initial PRC Dark Compute Parameters</h2>
@@ -388,12 +404,12 @@
         <input type="number" id="annual_growth_rate_of_prc_compute_stock_p90" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p90'] }}" step="0.1">
     </div>
     <div class="param-group">
-        <label for="proportion_of_prc_chip_stock_produced_domestically">Proportion of PRC chip stock produced domestically</label>
-        <input type="number" id="proportion_of_prc_chip_stock_produced_domestically" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically'] }}" step="0.01" min="0" max="1">
+        <label for="proportion_of_prc_chip_stock_produced_domestically_2026">Proportion of PRC chip stock produced domestically in 2026</label>
+        <input type="number" id="proportion_of_prc_chip_stock_produced_domestically_2026" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2026'] }}" step="0.01" min="0" max="1">
     </div>
     <div class="param-group">
-        <label for="us_intelligence_median_error_in_estimate_of_prc_compute_stock">US intelligence median error in estimate of PRC compute stock</label>
-        <input type="number" id="us_intelligence_median_error_in_estimate_of_prc_compute_stock" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock'] }}" step="0.01">
+        <label for="proportion_of_prc_chip_stock_produced_domestically_2030">Proportion of PRC chip stock produced domestically in 2030</label>
+        <input type="number" id="proportion_of_prc_chip_stock_produced_domestically_2030" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2030'] }}" step="0.01" min="0" max="1">
     </div>
     <div class="param-group has-tooltip"
          data-tooltip="<strong>Energy Efficiency Relative to H100</strong><br><br>This parameter represents how energy-efficient the PRC compute stock is compared to an H100 chip. A value of 0.5 means the chips consume twice as much energy per unit of compute as an H100. A value of 2.0 means they are twice as efficient.<br><br>This is used to calculate total energy consumption based on H100-equivalent compute.">
@@ -456,11 +472,6 @@
 
     <h2>Covert fab parameters</h2>
 
-    <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Odds of Covert Project</h3>
-    <div class="param-group has-tooltip" data-tooltip="<strong>SME Inventory Accounting Detection</strong><br><br><strong>Detection Method:</strong><br>US intelligence could detect a covert fab by noticing that equipment is missing from China's domestic semiconductor industry.<br><br><strong>Two Key Factors:</strong><br>1. Amount diverted: Diverting 80 of 100 stockpiled DUV scanners would be obvious; diverting a handful would not.<br>2. Width of USG's error bars: If USG estimates Chinese companies built 50-150 DUV scanners, a dozen missing wouldn't raise suspicion. If USG knows the exact count, it would notice.<br><br><strong>Historical Calibration:</strong><br>Historical intelligence estimates of weapon counts (tanks, nuclear warheads, etc.) from declassified documents (1960-2025) show median errors of ~15%." data-download="/download/us_intelligence_estimates" data-image="/static/error_bars_plot.png" data-image-after-text="<strong>Adjustment for SME Context:</strong><br>15% would be reasonable if the PRC treats SME with nuclear-weapons-level secrecy. However, it's plausible that China's semiconductor industry remains quasi-private with details shared among investors, or that the expansive SME industry is difficult to lock down. Therefore, I estimate that the US intelligence error margin will be ~7% (2x smaller than weapons programs).">
-        <label for="proportion_diverted_sme">Median absolute relative error of US intelligence estimate of PRC SME stock</label>
-        <input type="number" id="proportion_diverted_sme" value="{{ defaults['covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock'] }}" step="0.01">
-    </div>
     <div class="has-tooltip" style="margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: #666; cursor: help;" data-tooltip="<strong>PRC Semiconductor Manufacturing Equipment (SME) Indigenization</strong><br><br><strong>Why Indigenization Matters for Covert Fabs:</strong><br>The SME market involves very few buyers and sellers globally. If equipment goes missing or can't be accounted for in international supply chains, there are only a handful of actors that could be hiding it—and the PRC would be a highly salient suspect. Therefore, a covert PRC fab would likely need to rely primarily on domestically-produced equipment to avoid detection through procurement accounting.<br><br>These parameters represent the probability that the PRC achieves >90% domestic sourcing of SME at each process node by the specified year. See the attached data file for detailed capabilities by equipment category and process node." data-image-after-text="<strong>Current Status (2025):</strong><br>The PRC can manufacture 130nm chips with mostly domestic tools (~80% localized). More advanced nodes require imported equipment, particularly photolithography scanners.<br><br><strong>Near-Term Progress (by 2031):</strong><br>• <strong>28nm:</strong> SMEE and Huawei-linked Yuliangsheng are developing DUV immersion scanners for 28nm. SMIC plans production integration by 2027. Given typical delays between prototype and production-ready equipment, there's ~25% chance of >90% localization by 2031.<br>• <strong>14nm & 7nm:</strong> Multi-patterning techniques could enable 28nm scanners to reach these nodes, but this requires years of additional development. Lower probability of high localization by 2031 (10% for 14nm, 6% for 7nm).<br><br><strong>Key Accelerants:</strong><br>• U.S. export controls driving indigenization urgency<br>• $47.5B Chinese government SME fund<br>• Aggressive talent recruitment (Huawei recruiting from ASML at 3x salary)<br>• Huawei's ¥12B R&D park with 35,000+ employees<br><br>The main bottleneck is talent (experienced engineers), not funding. Recent investments may start paying off by 2031, but the probability decreases significantly for more advanced nodes." data-image="/static/china_capabilities_table.png" data-download="/download/prc_indigenous_sme_capabilities">
         Probability PRC achieves >90% indiginization at node
     </div>
@@ -505,9 +516,6 @@
         </div>
     </div>
 
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-
-    <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Compute Production Rate</h3>
     <div class="param-group has-tooltip"
          data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>How does fab construction time depend on construction labor? McKinsey claims that 'about 100 workers are dedicated to the construction phase' for approximately every $1 billion spent on fab construction. Looking at a couple of examples, this claim appears to be roughly accurate.<br><br>Now, here's the cost of constructing a fab given its production capacity:<br><br><img src='/static/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'><br><br>Our model predicts the production capacity based on operating labor and SME inputs. So we can predict the construction labor that would typically be required by first estimating the cost of the project, and then using the heuristic that 100 concurrent workers are needed for every $1 billion USD.<br><br>But what if the provided construction labor falls short of this standard requirement? Then, we assume that if X times less construction labor is provided, construction will move X times slower. Conversely, if construction labor is oversupplied, then we assume that there's no speedup (which corresponds to the simple 'fixed-ratios' production function).<br><br><img src='/static/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'>"
          data-download="/download/construction_time_vs_fab_capacity">
@@ -576,9 +584,6 @@
         <input type="number" id="architecture_efficiency" value="{{ defaults['covert_project_parameters.covert_fab_parameters.architecture_efficiency_improvement_per_year'] }}" step="0.01">
     </div>
 
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-
-    <h3 style="font-size: 14px; margin-top: 15px; color: #777;">Energy Requirements</h3>
     <div class="param-group has-tooltip"
          data-tooltip="<strong>W/TPP vs Density Exponent (Before Dennard Scaling End)</strong><br><br>Energy efficiency (watts per tera-parameter-pass) scales with transistor density following a power law: W/TPP ∝ (transistor_density)^exponent. Before Dennard scaling ended in ~2006, voltage could scale down with transistor size, leading to more aggressive efficiency improvements with density.<br><br>We estimated the value of this parameter using Epoch's AI hardware trends: <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>https://epoch.ai/blog/trends-in-machine-learning-hardware</a>"
          data-image="/static/energy_efficiency_vs_transistors.png">

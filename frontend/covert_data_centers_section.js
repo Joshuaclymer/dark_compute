@@ -93,23 +93,17 @@ function plotDatacenterCombined(data) {
             automargin: true
         },
         yaxis: {
-            title: {
-                text: 'Evidence (LR)',
-                standoff: 15
-            },
-            titlefont: { size: 13, color: '#000' },
-            tickfont: { size: 10, color: lrColor },
+            title: 'Evidence (LR)',
+            titlefont: { size: 13 },
+            tickfont: { size: 10 },
             automargin: true,
             side: 'left',
             type: 'log'
         },
         yaxis2: {
-            title: {
-                text: 'Capacity (GW)',
-                standoff: 15
-            },
-            titlefont: { size: 13, color: '#000' },
-            tickfont: { size: 10, color: capacityColor },
+            title: 'Capacity (GW)',
+            titlefont: { size: 13 },
+            tickfont: { size: 10 },
             overlaying: 'y',
             side: 'right',
             automargin: true
@@ -292,11 +286,11 @@ function updateDatacenterDashboard(data) {
         const capacities = data.covert_datacenters.individual_capacity_before_detection;
         const times = data.covert_datacenters.individual_time_before_detection;
 
-        // Calculate 80th percentile
+        // Calculate 50th percentile (median)
         const sortedCapacities = [...capacities].sort((a, b) => a - b);
         const sortedTimes = [...times].sort((a, b) => a - b);
-        const p80Capacity = sortedCapacities[Math.floor(sortedCapacities.length * 0.8)];
-        const p80Time = sortedTimes[Math.floor(sortedTimes.length * 0.8)];
+        const p80Capacity = sortedCapacities[Math.floor(sortedCapacities.length * 0.5)];
+        const p80Time = sortedTimes[Math.floor(sortedTimes.length * 0.5)];
 
         // Display capacity with proper formatting
         if (p80Capacity >= 1) {

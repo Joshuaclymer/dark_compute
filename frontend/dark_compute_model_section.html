@@ -11,25 +11,7 @@
   Dark compute model
 </h1>
 <p style="margin-bottom: 30px; font-size: 16px; color: #666">
-  A model of how much compute the PRC might covertly operate if it tried to
-  cheat an AI slowdown agreement. These predictions assume the agreement goes
-  into force in <span id="param-agreement-year" class="param-link">2030</span>,
-  and the PRC pursues
-  <span
-    class="param-link"
-    onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.focus(); input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }"
-    >the strategy</span
-  >
-  that maximizes the 80th percentile of computation performed before
-  detection.<sup
-    class="footnote-link"
-    style="
-      cursor: pointer;
-      color: #0066cc;
-      font-weight: 600;
-    "
-    data-footnote="Detection means that US intelligence's odds of a covert project rises by at least 5x from their odds before observing any evidence."
-  >[1]</sup>
+  A model of how much computation a covert PRC AI project might be able to perform if it cheats an AI slowdown agreement. These are predictions for an agreement that goes into force in <span id="param-agreement-year" class="param-link">2030</span>.
 </p>
 
 <!-- Dashboard and Plots in Same Flex -->
@@ -47,8 +29,8 @@
   <div
     class="dashboard"
     style="
-      flex: 1 1 125px;
-      min-width: 200px;
+      flex: 0 0 auto;
+      width: 240px;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -65,28 +47,27 @@
         margin: 0 0 20px 0;
       "
     >
-      80th percentile outcome:
+      Median outcome
     </div>
-    <div class="dashboard-item" style="margin: 0 0 20px 0">
-      <div class="dashboard-value" id="dashboardProject80thH100Years">--</div>
-      <div class="dashboard-label">Computation performed before detection</div>
-      <div class="dashboard-sublabel" id="dashboardProjectDetectionLabel">
-        Detection means ≥5x update
-      </div>
+
+    <div class="dashboard-item" style="margin: 0 0 20px 0;">
+      <div class="dashboard-value" id="dashboardMedianH100Years">--</div>
+      <div class="dashboard-label">Covert computation*</div>
     </div>
-    <div class="dashboard-item" style="margin: 0 0 20px 0">
-      <div class="dashboard-value" id="dashboardProject80thH100eCombined">
-        --
-      </div>
-      <div class="dashboard-label">Scale of covert datacenters</div>
+
+    <div class="dashboard-item" style="margin: 0 0 20px 0;">
+      <div class="dashboard-value" id="dashboardMedianTime">--</div>
+      <div class="dashboard-label">Time to detection*</div>
     </div>
-    <div class="dashboard-item" style="margin: 0 0 20px 0">
-      <div class="dashboard-value" id="dashboardProject80thTime">--</div>
-      <div class="dashboard-label">Time before detection</div>
+
+    <div class="dashboard-item" style="margin: 0 0 20px 0;">
+      <div class="dashboard-value" id="dashboardAiRdReduction">--</div>
+      <div class="dashboard-label">Global AI R&D compute reduction*</div>
     </div>
-    <div class="dashboard-item" style="margin: 0">
-      <div class="dashboard-value-small" id="dashboardAiRdReduction">--</div>
-      <div class="dashboard-label-light">Reduction in AI R&D H100-years before detection</div>
+
+    <div class="dashboard-item" style="margin: 0;">
+      <div class="dashboard-value" id="dashboardPrcReduction">--</div>
+      <div class="dashboard-label">PRC AI R&D compute<br>reduction*</div>
     </div>
   </div>
 
@@ -112,10 +93,41 @@
         margin-top: 0;
       "
     >
-      H100-years of computation before detection
+      Computation performed by covert project before detection
     </div>
     <div
       id="projectH100YearsCcdfPlot"
+      class="plot"
+      style="flex: 1; min-height: 0"
+    ></div>
+  </div>
+
+  <!-- AI R&D Reduction CCDF Plot -->
+  <div
+    class="plot-container"
+    style="
+      flex: 1 1 200px;
+      min-width: 200px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    "
+  >
+    <div
+      class="plot-title"
+      style="
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        margin-top: 0;
+      "
+    >
+      Reduction in AI R&D compute due to slowdown*
+    </div>
+    <div
+      id="aiRdReductionCcdfPlot"
       class="plot"
       style="flex: 1; min-height: 0"
     ></div>
@@ -153,6 +165,10 @@
   </div>
 </div>
 
+<p style="font-size: 12px; color: #666; margin-top: 15px; margin-bottom: 30px; font-style: italic;">
+  *Unless otherwise specified, US intelligence 'detects' a covert project after it receives >4x update that the project exists, after which, USG exits the AI slowdown agreement.
+</p>
+
 <!-- Combined Breakdown Section -->
 <div class="breakdown-section" style="margin-top: 30px; margin-bottom: 30px">
   <h2
@@ -165,23 +181,37 @@
       letter-spacing: -0.5px;
     "
   >
-    Breaking down covert computation
+    How we estimate covert computation
   </h2>
-  <div
-    class="section-description"
-    style="
-      margin-bottom: 20px;
-      text-align: left;
-      font-size: 15px;
-      line-height: 1.7;
-      color: #555;
-      max-width: 900px;
-    "
-  >
-    The amount of computation the PRC could perform covertly depends on <strong>unreported compute</strong> and 
-    <strong>how quickly unreported compute is detected.</strong>
-  </div>
+  <div style="display: flex; gap: 30px; align-items: flex-start; margin-bottom: 15px;">
+    <div
+      class="section-description"
+      style="
+        text-align: left;
+        font-size: 15px;
+        line-height: 1.7;
+        color: #555;
+        flex: 1;
+        max-width: 1500px;
+      "
+    >
+      The amount of computation a covert project performs depends on strategic choices, such as how many AI chips to divert, how many workers to involve, etc. These properties affect both the <strong>rate of computation</strong> and <strong>detection likelihood</strong>, which trade-off against each other: if the PRC diverts more chips to the covert effort, it can perform computation faster, but will be discovered earlier. So we identify the <span
+      class="param-link"
+      onclick="const section = document.getElementById('covert-project-properties-section'); if (section) { section.scrollIntoView({ behavior: 'smooth', block: 'center' }); }"
+      >project properties</span> that balance this tradeoff and maximize the median computation performed before detection.
+      <br><br>
+      The sections below explain the core component of this model, which is how we map <span
+      class="param-link"
+      onclick="const section = document.getElementById('covert-project-properties-section'); if (section) { section.scrollIntoView({ behavior: 'smooth', block: 'center' }); }"
+      >project properties</span> to the <strong>rate of computation</strong> and <strong>detection likelihood</strong> at any given time.
+    </div>
 
+    <!-- Diagram as SVG -->
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
+      <img src="model_diagram.svg" alt="Overview of the model" style="width: 100%; max-width: 540px; height: auto;" />
+      <div style="text-align: center; margin-top: 6px; font-style: italic; font-size: 11px; color: #666;">Overview of the model</div>
+    </div>
+  </div>
   <div style="display: flex; position: relative; max-width: 100%; overflow: hidden;">
     <div style="flex: 1; position: relative; max-width: 100%;">
       <!-- Unreported Computation Section -->
@@ -195,14 +225,15 @@
             text-align: left;
           "
         >
-          Unreported Compute
+          Predicting the rate of computation 
         </h3>
+
         <div
           class="section-description"
           style="max-width: 900px; text-align: left"
+        
         >
-          To perform AI workloads, the PRC needs <strong>unreported AI chips</strong> and
-          also enough <strong>covert data center capacity</strong> to operate them.
+          The rate of computation is determined by the covert project's <strong>stock of AI chips</strong> and how many of these chips it can operate in <strong>covert datacenters</strong>.
         </div>
 
         <!-- Continuous outline for both subsections -->
@@ -211,8 +242,7 @@
           <div style="position: relative">
             <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
             <div class="section-description" style="max-width: 900px; text-align: left">
-              The quantity of <strong>unreported AI chips</strong> is equal to the <strong>initial stock</strong>
-              of unreported chips, plus <strong>hardware acquired</strong> after the agreement is in force, multiplied by the <strong>fraction of chips that survive</strong> degradation and failure. <em>Click on the plots below to see more details.</em>
+              The project's <strong>stock of AI chips</strong> is equal to the <em>initial stock</em> diverted to the project, plus the <em>AI chips later acquired</em> after the agreement is in force, multiplied by the <em>fraction of chips that survive</em> degradation and failure. Click on the plots below to see more details.
             </div>
           </div>
 
@@ -241,14 +271,14 @@
           >
             [
           </div>
-          <div class="breakdown-item">
+          <div class="breakdown-item" style="cursor: pointer;" onclick="document.getElementById('initialStockIntelligenceBreakdown').scrollIntoView({ behavior: 'smooth', block: 'start' });">
             <div
               id="initialDarkComputePlot"
               class="breakdown-plot"
               style="height: 250px"
             ></div>
             <div class="breakdown-label" style="text-align: center">
-              Initial unreported chip stock
+              Initial covert chip stock
             </div>
             <div class="breakdown-description" style="text-align: center">
               Assuming the PRC initially has ~<span id="param-initial-prc-compute" class="param-link">1M</span> H100e, and diverts <span id="param-diversion-percent" class="param-link">5</span>% before the agreement goes into force.
@@ -257,7 +287,7 @@
           <div class="operator">
             +
           </div>
-          <div class="breakdown-item">
+          <div class="breakdown-item" style="cursor: pointer;" onclick="document.getElementById('covertFabTopSection').scrollIntoView({ behavior: 'smooth', block: 'start' });">
             <div
               id="covertFabFlowPlot"
               class="breakdown-plot"
@@ -310,7 +340,7 @@
               style="height: 250px"
             ></div>
             <div class="breakdown-label" style="text-align: center">
-             Unreported chip stock
+             Covert chip stock
             </div>
             <div class="breakdown-description" style="text-align: center">
               Total untraced compute available to a covert PRC project.
@@ -325,7 +355,7 @@
             class="section-description"
             style="max-width: 900px; text-align: left"
           >
-            The capacity of <strong>unreported datacenters</strong> depends on the number of workers constructing them and limits the number of AI chips that the PRC can operate.
+            The capacity of <strong>covert datacenters</strong> limits how many AI chips the project can operate.
           </div>
         </div>
 
@@ -340,7 +370,7 @@
             max-width: 100%;
           "
         >
-          <div class="breakdown-item">
+          <div class="breakdown-item" style="cursor: pointer;" onclick="document.getElementById('datacenterCapacityBreakdown').scrollIntoView({ behavior: 'smooth', block: 'start' });">
             <div id="datacenterCapacityPlot2" class="breakdown-plot"></div>
             <div class="breakdown-label" style="text-align: center">
              Unreported data center capacity
@@ -421,13 +451,14 @@
             color: #333;
           "
         >
-          Speed of detection
+          Predicting the likelihood of detection
         </h3>
         <div
           class="section-description"
           style="max-width: 900px; text-align: left"
         >
-          US intelligence collects evidence of a covert PRC project by observing <strong>discrepancies</strong> between reported and estimated asset quantities, and <strong>direct evidence of covert operations </strong>(via IMGINT, HUMINT, SIGINT, etc).
+          We don't directly predict the likelihood of 'detection' at each time step. Instead, we model how much <em>confidence</em> US intelligence has that a covert PRC AI project exists. Once this confidence exceeds some threshold (we chose a <span id="detection-threshold-text"></span>x increase in odds), then a project is 'detected,' after which the US exits the bilateral AI slowdown agreement.<br><br>
+          The <em>confidence</em> US intelligence agencies gain for the existence of a covert project comes from two sources: <strong>discrepancies</strong> between reported and estimated quantities of semiconductor assets, and <strong>direct observations of covert operations </strong>(via IMGINT, HUMINT, SIGINT, etc).
         </div>
 
         <!-- Continuous outline for both detection subsections -->
@@ -436,7 +467,7 @@
           <div style="position: relative">
             <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
             <div class="section-description" style="max-width: 900px; text-align: left">
-              <strong>Discrepancies</strong> between the PRC's reported <strong>AI chip stock</strong> and <strong>semiconductor manufacturing equipment (SME)</strong> and intelligence estimates provide evidence of a covert project.
+              At the start of an AI slowdown agreement, the PRC government reports quantities of key assets, such as its <em>AI chip stock</em> and <em>semiconductor manufacturing equipment (SME)</em>. If these reported quantities are lower than the quantities US intelligence estimates the PRC has, then this <strong>discrepancy</strong> provides evidence that assets were diverted to a covert project.
             </div>
           </div>
 
@@ -493,7 +524,7 @@
             class="section-description"
             style="max-width: 900px; text-align: left"
           >
-            The US also receives <strong>direct evidence of covert operations</strong> from networks of spies, satellite imagery, compromised devices, etc. Multiplying updates<sup
+            The US also receives <strong>direct evidence of covert operations</strong> from networks of spies, satellite imagery, compromised devices, etc. We multiply these updates<sup
               class="footnote-link"
               style="
                 cursor: pointer;
@@ -501,7 +532,7 @@
                 font-weight: 600;
               "
               data-footnote="This assumes these sources of evidence are conditionally independent, meaning that conditioning on a PRC covert project existing (or not existing), the likelihood of seeing one type of evidence is independent of seeing the other."
-            >[2]</sup> from these sources gives the probability of a covert project over time.
+            >[2]</sup> to estimate the odds US intelligence agencies provide for a covert project over time.
           </div>
         </div>
 
@@ -585,7 +616,7 @@
         <!-- Historical Evidence subsection (still within the same border) -->
         <div style="margin-top: 60px;">
           <div class="section-description" style="max-width: 900px; text-align: left; margin-bottom: 40px;">
-            These forecasts come from two main pieces of historical data: (1) how accurately intelligence organizations estimated quantities of military assets (ICBMs, nuclear warheads, etc) (2) how quickly intelligence agencies identified covert nuclear operations:
+            How did we build these models of intelligence gathering if many relevant details are classified? We use two main pieces of (unclassified) historical data: (1) the accuracy of intelligence estimates of weapon quantities, such as ICBMs, nuclear warheads, etc and (2) the speed at which intelligence agencies identified covert nuclear operations:
           </div>
         </div>
 

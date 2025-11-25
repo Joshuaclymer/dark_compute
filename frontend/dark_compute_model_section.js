@@ -1,5 +1,13 @@
 // JavaScript for Dark Compute Model section
 
+// Initialize detection threshold text on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const thresholdElement = document.getElementById('detection-threshold-text');
+    if (thresholdElement && typeof DETECTION_CONFIG !== 'undefined') {
+        thresholdElement.textContent = DETECTION_CONFIG.PRIMARY_THRESHOLD;
+    }
+});
+
 function plotDarkComputeModel(data) {
     // Plot dark compute equation section
 
@@ -959,10 +967,7 @@ function plotH100YearsTimeSeries(data) {
             automargin: true
         },
         yaxis: {
-            title: {
-                text: 'US Estimated Likelihood<br>of a PRC Covert Project',
-                standoff: 15
-            },
+            title: 'US Chance of Covert Project',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             side: 'left',
@@ -970,10 +975,7 @@ function plotH100YearsTimeSeries(data) {
             automargin: true
         },
         yaxis2: {
-            title: {
-                text: 'H100 years of computation',
-                standoff: 15
-            },
+            title: 'H100 years of computation',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             overlaying: 'y',

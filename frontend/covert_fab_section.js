@@ -117,23 +117,17 @@ function plotTimeSeries(data) {
             automargin: true
         },
         yaxis: {
-            title: {
-                text: 'Evidence of Covert Fab (LR)',
-                standoff: 15
-            },
-            titlefont: { size: 13, color: '#000' },
-            tickfont: { size: 10, color: lrColor },
+            title: 'Evidence of Covert Fab (LR)',
+            titlefont: { size: 13 },
+            tickfont: { size: 10 },
             type: 'log',
             side: 'left',
             automargin: true
         },
         yaxis2: {
-            title: {
-                text: 'H100 equivalents (FLOPS) Produced by Fab',
-                standoff: 15
-            },
-            titlefont: { size: 13, color: '#000' },
-            tickfont: { size: 10, color: computeColor },
+            title: 'H100 equivalents (FLOPS) Produced by Fab',
+            titlefont: { size: 13 },
+            tickfont: { size: 10 },
             overlaying: 'y',
             side: 'right',
             automargin: true,
@@ -168,129 +162,7 @@ function plotTimeSeries(data) {
 }
 
 
-function plotH100YearsTimeSeries(data) {
-    if (!data.dark_compute_model) return;
-
-    const dcm = data.dark_compute_model;
-    const years = dcm.years;
-
-    // Colors - use blue for probability (same as "Posterior Probability of Covert Project")
-    const probColor = '#5B8DBE'; // Blue for probability
-    const h100YearsColor = '#5AA89B'; // Turquoise green for H100-years
-
-    // Create traces - median lines with confidence intervals
-    const traces = [
-        // Posterior probability confidence interval
-        {
-            x: years.concat(years.slice().reverse()),
-            y: dcm.posterior_prob_project.p75.concat(dcm.posterior_prob_project.p25.slice().reverse()),
-            fill: 'toself',
-            fillcolor: 'rgba(91, 141, 190, 0.2)',
-            line: { color: 'transparent' },
-            showlegend: false,
-            hoverinfo: 'skip',
-            yaxis: 'y'
-        },
-        // Probability median
-        {
-            x: years,
-            y: dcm.posterior_prob_project.median,
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: probColor, width: 3 },
-            name: 'US Estimated Likelihood of PRC Covert Project',
-            yaxis: 'y',
-            hovertemplate: 'Probability: %{y:.3f}<extra></extra>'
-        },
-        // H100-years confidence interval
-        {
-            x: years.concat(years.slice().reverse()),
-            y: dcm.h100_years.p75.concat(dcm.h100_years.p25.slice().reverse()),
-            fill: 'toself',
-            fillcolor: 'rgba(90, 168, 155, 0.2)',
-            line: { color: 'transparent' },
-            showlegend: false,
-            hoverinfo: 'skip',
-            yaxis: 'y2'
-        },
-        // H100-years median
-        {
-            x: years,
-            y: dcm.h100_years.median,
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: h100YearsColor, width: 3 },
-            name: 'H100-Years',
-            yaxis: 'y2',
-            hovertemplate: 'H100-Years: %{y:.1f}<extra></extra>'
-        }
-    ];
-
-    const layout = {
-        xaxis: {
-            title: 'Year',
-            titlefont: { size: 13 },
-            automargin: true
-        },
-        yaxis: {
-            title: {
-                text: 'US Estimated Likelihood<br>of a PRC Covert Project',
-                standoff: 15
-            },
-            titlefont: { size: 13, color: '#000' },
-            tickfont: { size: 10, color: probColor },
-            side: 'left',
-            range: [0, 1],
-            automargin: true
-        },
-        yaxis2: {
-            title: {
-                text: 'H100 years of computation',
-                standoff: 15
-            },
-            titlefont: { size: 13, color: '#000' },
-            tickfont: { size: 10, color: h100YearsColor },
-            overlaying: 'y',
-            side: 'right',
-            automargin: true
-        },
-        showlegend: true,
-        legend: {
-            x: 0.5,
-            y: -0.25,
-            xanchor: 'center',
-            yanchor: 'top',
-            orientation: 'h',
-            font: { size: 10 },
-            bgcolor: 'rgba(255,255,255,0)',
-            borderwidth: 0,
-            tracegroupgap: 20
-        },
-        hovermode: 'x unified',
-        margin: { l: 55, r: 55, t: 0, b: 60 },
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)'
-    };
-
-    Plotly.newPlot('h100YearsTimeSeriesPlot', traces, layout, {displayModeBar: false, responsive: true});
-
-    // Match plot heights to dashboard height after both plots are created
-    setTimeout(() => {
-        const dashboard = document.querySelector('#darkComputeTopSection .dashboard');
-        const plotContainers = document.querySelectorAll('#darkComputeTopSection .plot-container');
-        if (dashboard && plotContainers.length > 0) {
-            const dashboardHeight = dashboard.offsetHeight;
-            plotContainers.forEach(container => {
-                container.style.height = dashboardHeight + 'px';
-            });
-            // Force resize after setting height
-            setTimeout(() => {
-                Plotly.Plots.resize('projectH100YearsCcdfPlot');
-                Plotly.Plots.resize('h100YearsTimeSeriesPlot');
-            }, 50);
-        }
-    }, 150);
-}
+// plotH100YearsTimeSeries has been moved to dark_compute_model_section.js
 
 function plotComputeCcdf(data) {
     if (!data.covert_fab || !data.covert_fab.compute_ccdfs) {
@@ -298,9 +170,9 @@ function plotComputeCcdf(data) {
         return;
     }
 
-    // Use likelihood ratios from backend
-    const likelihoodRatios = data.likelihood_ratios || [1, 3, 5];
-    const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
+    // Use likelihood ratios from backend or global config
+    const likelihoodRatios = data.likelihood_ratios || DETECTION_CONFIG.LIKELIHOOD_RATIOS;
+    const colors = DETECTION_CONFIG.COLORS;
 
     const traces = [];
     const thresholds = likelihoodRatios.map((lr, index) => {
@@ -364,93 +236,23 @@ function plotComputeCcdf(data) {
     setTimeout(() => Plotly.Plots.resize('computeCcdfPlot'), 50);
 }
 
-function plotProjectH100YearsCcdf(data) {
-    if (!data.dark_compute_model || !data.dark_compute_model.h100_years_ccdf) {
-        document.getElementById('projectH100YearsCcdfPlot').innerHTML = '<p>No detection data available</p>';
-        return;
-    }
-
-    // Use likelihood ratios from backend
-    const likelihoodRatios = data.dark_compute_model.likelihood_ratios || [1, 3, 5];
-    const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
-
-    const traces = [];
-    const thresholds = likelihoodRatios.map((lr, index) => {
-        return {
-            value: lr,  // Use LR directly as the key
-            label: `>${lr}x update`,
-            color: colors[index % colors.length]
-        };
-    });
-
-    // Reverse thresholds for legend order (highest to lowest)
-    const thresholdsReversed = [...thresholds].reverse();
-
-    for (const threshold of thresholdsReversed) {
-        const ccdf = data.dark_compute_model.h100_years_ccdf[threshold.value];
-        if (ccdf && ccdf.length > 0) {
-            traces.push({
-                x: ccdf.map(d => d.x),
-                y: ccdf.map(d => d.y),
-                type: 'scatter',
-                mode: 'lines',
-                line: { color: threshold.color, width: 2 },
-                name: `"Detection" = ${threshold.label}`,
-                hovertemplate: 'H100-years: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>'
-            });
-        }
-    }
-
-    const layout = {
-        xaxis: {
-            title: "H100-Years Before 'Detection'",
-            titlefont: { size: 13 },
-            tickfont: { size: 10 },
-            type: 'log',
-            automargin: true
-        },
-        yaxis: {
-            title: 'P(H100-years > x)',
-            titlefont: { size: 13 },
-            tickfont: { size: 10 },
-            range: [0, 1],
-            automargin: true
-        },
-        showlegend: true,
-        legend: {
-            x: 0.98,
-            y: 0.98,
-            xanchor: 'right',
-            yanchor: 'top',
-            bgcolor: 'rgba(255,255,255,0.8)',
-            bordercolor: '#ccc',
-            borderwidth: 1
-        },
-        hovermode: 'closest',
-        margin: { l: 55, r: 0, t: 0, b: 60 },
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)'
-    };
-
-    Plotly.newPlot('projectH100YearsCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
-    setTimeout(() => Plotly.Plots.resize('projectH100YearsCcdfPlot'), 50);
-}
+// plotProjectH100YearsCcdf has been moved to dark_compute_model_section.js
 
 function updateDashboard(data) {
     // Update parameter display values in the text
     updateParameterDisplays();
 
-    // Find the 80th percentile simulation by H100e production
+    // Find the 50th percentile (median) simulation by H100e production
     const h100eValues = data.covert_fab?.individual_h100e_before_detection || [];
     const timeValues = data.covert_fab?.individual_time_before_detection || [];
     const nodeValues = data.covert_fab?.individual_process_node || [];
     const energyValues = data.covert_fab?.individual_energy_before_detection || [];
 
     if (h100eValues.length > 0) {
-        // Sort by H100e and find 80th percentile simulation
+        // Sort by H100e and find 50th percentile (median) simulation
         const indexed = h100eValues.map((h100e, idx) => ({ h100e, idx }));
         indexed.sort((a, b) => a.h100e - b.h100e);
-        const idx50 = Math.floor(indexed.length * 0.8);
+        const idx50 = Math.floor(indexed.length * 0.5);
         const sim80th = indexed[idx50];
 
         // Get all values from this same simulation
@@ -505,123 +307,7 @@ function updateDashboard(data) {
             `Detection means ≥${highestLR}x update`;
     }
 
-    // Populate dark compute project dashboard
-    const projectH100eValues = data.dark_compute_model?.individual_project_h100e_before_detection || [];
-    const projectEnergyValues = data.dark_compute_model?.individual_project_energy_before_detection || [];
-    const projectTimeValues = data.dark_compute_model?.individual_project_time_before_detection || [];
-    const projectH100YearsValues = data.dark_compute_model?.individual_project_h100_years_before_detection || [];
-
-    if (projectH100eValues.length > 0) {
-        // Sort by H100-years and find 80th percentile simulation
-        const projectIndexed = projectH100YearsValues.map((h100years, idx) => ({ h100years, idx }));
-        projectIndexed.sort((a, b) => a.h100years - b.h100years);
-        const projectIdxP80 = Math.floor(projectIndexed.length * 0.8);
-        const projectSimP80 = projectIndexed[projectIdxP80];
-
-        // Get all values from this same simulation
-        const projectH100YearsMedian = projectSimP80.h100years;
-        const projectH100eMedian = projectH100eValues[projectSimP80.idx];
-        const projectEnergyMedian = projectEnergyValues[projectSimP80.idx];
-        const projectTimeMedian = projectTimeValues[projectSimP80.idx];
-
-        // Display H100-years
-        const h100YearsRounded = Math.round(projectH100YearsMedian / 100000) * 100000;
-        if (h100YearsRounded >= 1000000) {
-            document.getElementById('dashboardProject80thH100Years').textContent =
-                `${(h100YearsRounded / 1000000).toFixed(1)}M H100-years`;
-        } else if (h100YearsRounded >= 1000) {
-            document.getElementById('dashboardProject80thH100Years').textContent =
-                `${(h100YearsRounded / 1000).toFixed(0)}K H100-years`;
-        } else {
-            document.getElementById('dashboardProject80thH100Years').textContent =
-                `${h100YearsRounded.toFixed(0)} H100-years`;
-        }
-
-        // Display H100e and energy combined
-        const projectRounded = Math.round(projectH100eMedian / 100000) * 100000;
-        let projectH100eText;
-        if (projectRounded >= 1000000) {
-            projectH100eText = `${(projectRounded / 1000000).toFixed(1)}M H100e`;
-        } else if (projectRounded >= 1000) {
-            projectH100eText = `${(projectRounded / 1000).toFixed(0)}K H100e`;
-        } else {
-            projectH100eText = `${projectRounded.toFixed(0)} H100e`;
-        }
-
-        let projectEnergyText;
-        if (projectEnergyMedian >= 1) {
-            projectEnergyText = `${projectEnergyMedian.toFixed(1)} GW`;
-        } else if (projectEnergyMedian >= 0.001) {
-            projectEnergyText = `${(projectEnergyMedian * 1000).toFixed(0)} MW`;
-        } else {
-            projectEnergyText = `${(projectEnergyMedian * 1000).toFixed(1)} MW`;
-        }
-
-        document.getElementById('dashboardProject80thH100eCombined').innerHTML =
-            `${projectH100eText}<br><span style="font-size: 24px; color: #666;">${projectEnergyText}</span>`;
-
-        // Display time
-        document.getElementById('dashboardProject80thTime').textContent = projectTimeMedian.toFixed(1) + ' years';
-
-        // Calculate AI R&D reduction
-        // First, calculate global compute H100-years from agreement start to detection
-        // Get global compute data
-        const globalComputeData = data.initial_stock?.global_compute_over_time;
-        const years = data.initial_stock?.prc_compute_years;
-
-        console.log('AI R&D Calculation Debug:');
-        console.log('globalComputeData:', globalComputeData);
-        console.log('years:', years);
-        console.log('projectTimeMedian:', projectTimeMedian);
-        console.log('projectH100YearsMedian:', projectH100YearsMedian);
-
-        if (globalComputeData && years) {
-            // Get agreement year
-            const agreementYearInput = document.getElementById('agreement_year');
-            const agreementYear = agreementYearInput ? parseInt(agreementYearInput.value) : 2030;
-
-            // Calculate detection year for this simulation
-            const detectionYear = agreementYear + projectTimeMedian;
-
-            // Find the indices for agreement year and detection year
-            const agreementIdx = years.findIndex(y => y >= agreementYear);
-            const detectionIdx = years.findIndex(y => y >= detectionYear);
-
-            console.log('agreementYear:', agreementYear);
-            console.log('detectionYear:', detectionYear);
-            console.log('agreementIdx:', agreementIdx);
-            console.log('detectionIdx:', detectionIdx);
-
-            if (agreementIdx !== -1 && detectionIdx !== -1) {
-                // Calculate H100-years for global compute between agreement and detection
-                // Assuming 20% of global compute is used by a single company for AI R&D
-                let globalH100Years = 0;
-                for (let i = agreementIdx; i < detectionIdx; i++) {
-                    const yearDuration = years[i + 1] - years[i];
-                    const avgCompute = (globalComputeData[i] + globalComputeData[i + 1]) / 2;
-                    globalH100Years += avgCompute * yearDuration * 0.2; // 20% of global compute
-                }
-
-                // Calculate reduction factor: global AI R&D H100-years / covert project H100-years
-                const reductionFactor = globalH100Years / projectH100YearsMedian;
-
-                // Display the reduction factor
-                document.getElementById('dashboardAiRdReduction').textContent = reductionFactor.toFixed(1) + 'x';
-            } else {
-                document.getElementById('dashboardAiRdReduction').textContent = '--';
-            }
-        } else {
-            document.getElementById('dashboardAiRdReduction').textContent = '--';
-        }
-
-        // Update detection label with highest LR value for dark compute model
-        const likelihoodRatios = data.dark_compute_model?.likelihood_ratios || data.likelihood_ratios || [1, 3, 5];
-        const highestLR = likelihoodRatios[likelihoodRatios.length - 1];
-        const projectDetectionLabel = document.getElementById('dashboardProjectDetectionLabel');
-        if (projectDetectionLabel) {
-            projectDetectionLabel.textContent = `Detection means ≥${highestLR}x update`;
-        }
-    }
+    // Dark compute project dashboard is now handled in dark_compute_model_section.js
 }
 
 function updateParameterDisplays() {

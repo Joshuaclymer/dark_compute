@@ -563,6 +563,46 @@ function updateDashboard(data) {
         // Display time
         document.getElementById('dashboardProject80thTime').textContent = projectTimeMedian.toFixed(1) + ' years';
 
+        // Calculate AI R&D reduction
+        // First, calculate global compute H100-years from agreement start to detection
+        // Get global compute data
+        const globalComputeData = data.initial_stock?.global_compute_over_time;
+        const years = data.initial_stock?.prc_compute_years;
+
+        if (globalComputeData && years) {
+            // Get agreement year
+            const agreementYearInput = document.getElementById('agreement_year');
+            const agreementYear = agreementYearInput ? parseInt(agreementYearInput.value) : 2030;
+
+            // Calculate detection year for this simulation
+            const detectionYear = agreementYear + projectTimeMedian;
+
+            // Find the indices for agreement year and detection year
+            const agreementIdx = years.findIndex(y => y >= agreementYear);
+            const detectionIdx = years.findIndex(y => y >= detectionYear);
+
+            if (agreementIdx !== -1 && detectionIdx !== -1) {
+                // Calculate H100-years for global compute between agreement and detection
+                // Assuming 20% of global compute is used by a single company for AI R&D
+                let globalH100Years = 0;
+                for (let i = agreementIdx; i < detectionIdx; i++) {
+                    const yearDuration = years[i + 1] - years[i];
+                    const avgCompute = (globalComputeData[i] + globalComputeData[i + 1]) / 2;
+                    globalH100Years += avgCompute * yearDuration * 0.2; // 20% of global compute
+                }
+
+                // Calculate reduction factor: global AI R&D H100-years / covert project H100-years
+                const reductionFactor = globalH100Years / projectH100YearsMedian;
+
+                // Display the reduction factor
+                document.getElementById('dashboardAiRdReduction').textContent = reductionFactor.toFixed(1) + 'x';
+            } else {
+                document.getElementById('dashboardAiRdReduction').textContent = '--';
+            }
+        } else {
+            document.getElementById('dashboardAiRdReduction').textContent = '--';
+        }
+
         // Update detection label with highest LR value for dark compute model
         const likelihoodRatios = data.dark_compute_model?.likelihood_ratios || data.likelihood_ratios || [1, 3, 5];
         const highestLR = likelihoodRatios[likelihoodRatios.length - 1];

@@ -569,6 +569,12 @@ function updateDashboard(data) {
         const globalComputeData = data.initial_stock?.global_compute_over_time;
         const years = data.initial_stock?.prc_compute_years;
 
+        console.log('AI R&D Calculation Debug:');
+        console.log('globalComputeData:', globalComputeData);
+        console.log('years:', years);
+        console.log('projectTimeMedian:', projectTimeMedian);
+        console.log('projectH100YearsMedian:', projectH100YearsMedian);
+
         if (globalComputeData && years) {
             // Get agreement year
             const agreementYearInput = document.getElementById('agreement_year');
@@ -580,6 +586,11 @@ function updateDashboard(data) {
             // Find the indices for agreement year and detection year
             const agreementIdx = years.findIndex(y => y >= agreementYear);
             const detectionIdx = years.findIndex(y => y >= detectionYear);
+
+            console.log('agreementYear:', agreementYear);
+            console.log('detectionYear:', detectionYear);
+            console.log('agreementIdx:', agreementIdx);
+            console.log('detectionIdx:', detectionIdx);
 
             if (agreementIdx !== -1 && detectionIdx !== -1) {
                 // Calculate H100-years for global compute between agreement and detection

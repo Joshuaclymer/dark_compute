@@ -332,7 +332,7 @@ function plotInitialStock(data) {
         document.getElementById('initialStockEnergyEfficiencyDisplay').innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                 <div class="breakdown-box-inner">${energyEfficiency.toFixed(2)}x</div>
-                <div class="breakdown-label">Energy efficiency relative to H100</div>
+                <div class="breakdown-label">Energy requirements relative to H100</div>
             </div>`;
 
         // Attach hover effect
@@ -359,7 +359,7 @@ function plotInitialStock(data) {
             return totalWatts / 1e9; // Convert to GW
         });
 
-        // Plot energy requirements distribution - turquoise color #5AA89B
-        plotPDF('initialStockEnergyRequirementsPlot', energyRequirementsSamples, '#5AA89B', 'Energy Requirements (GW)', 30, false);
+        // Plot energy requirements distribution - turquoise color #5AA89B with log scale
+        plotPDF('initialStockEnergyRequirementsPlot', energyRequirementsSamples, '#5AA89B', 'Energy Requirements of Initial Stock (GW)', 30, false, null, null, null, null, 'log');
     }
 }

@@ -1151,6 +1151,8 @@
             'lrPrcAccountingPlot': 'us_intelligence_median_error_in_estimate_of_prc_compute_stock',
 
             // Covert Data Centers Section - Capacity Breakdown
+            'totalPrcEnergyDisplay': 'total_GW_of_PRC_energy_consumption',
+            'maxProportionEnergyDisplay': 'max_proportion_of_PRC_energy_consumption',
             'datacenterWorkersDisplay': 'datacenter_construction_labor',
             'mwPerWorkerDisplay': 'MW_per_construction_worker_per_year',
             'agreementYearDisplay': 'years_before_agreement_year_prc_starts_building_covert_datacenters',
@@ -1169,7 +1171,9 @@
             'mwPerWorkerDisplay',
             'agreementYearDisplay',
             'initialStockH100EnergyDisplay',
-            'initialStockEnergyEfficiencyDisplay'
+            'initialStockEnergyEfficiencyDisplay',
+            'totalPrcEnergyDisplay',
+            'maxProportionEnergyDisplay'
         ];
 
         Object.entries(plotToInputMapping).forEach(([plotId, inputId]) => {

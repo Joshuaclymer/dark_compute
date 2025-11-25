@@ -314,6 +314,26 @@ function updateDatacenterDashboard(data) {
 
 function populateDatacenterCapacityBreakdown(data) {
     // Populate the breakdown boxes with parameter values from input elements
+
+    // Get total PRC energy consumption from input
+    const totalPrcEnergyInput = document.getElementById('total_GW_of_PRC_energy_consumption');
+    const totalPrcEnergy = totalPrcEnergyInput ? parseFloat(totalPrcEnergyInput.value) : 1000;
+    document.getElementById('totalPrcEnergyDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${totalPrcEnergy.toLocaleString()} GW</div>
+            <div class="breakdown-label">Total PRC energy<br>consumption (GW)</div>
+        </div>`;
+
+    // Get max proportion for covert datacenters from input
+    const maxProportionInput = document.getElementById('max_proportion_of_PRC_energy_consumption');
+    const maxProportion = maxProportionInput ? parseFloat(maxProportionInput.value) : 0.01;
+    const maxProportionPercent = (maxProportion * 100).toFixed(2);
+    document.getElementById('maxProportionEnergyDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${maxProportionPercent}%</div>
+            <div class="breakdown-label">Max proportion for<br>covert datacenters</div>
+        </div>`;
+
     // Get datacenter construction workers from input
     const workersInput = document.getElementById('datacenter_construction_labor');
     const workers = workersInput ? parseInt(workersInput.value) : 10000;
@@ -346,6 +366,8 @@ function populateDatacenterCapacityBreakdown(data) {
 
     // Add hover effects to the boxes
     const boxes = [
+        document.querySelector('#totalPrcEnergyDisplay .breakdown-box-inner'),
+        document.querySelector('#maxProportionEnergyDisplay .breakdown-box-inner'),
         document.querySelector('#datacenterWorkersDisplay .breakdown-box-inner'),
         document.querySelector('#mwPerWorkerDisplay .breakdown-box-inner'),
         document.querySelector('#agreementYearDisplay .breakdown-box-inner')

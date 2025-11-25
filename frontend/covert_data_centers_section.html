@@ -43,11 +43,54 @@
                     Breaking down covert data center capacity
                 </h3>
                 <div class="section-description">
-                    The capacity of covert data centers depends on the number of workers constructing them, the rate at which they can build infrastructure, and the time elapsed since construction began.<br>
-                    Data Center Capacity (GW) = Construction Workers × MW Per Worker Per Year × (year − Agreement Year)
+                    The capacity of covert data centers is constrained by both construction capacity and maximum energy consumption limits.<br>
+                    Data Center Capacity (GW) = Min(Total PRC Energy Consumption × Max Proportion for Covert Datacenters, Construction Workers × MW Per Worker Per Year × (year − Start Year))
                 </div>
 
                 <div class="breakdown-plots-row">
+                    <!-- Min function start -->
+                    <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 16px; font-weight: bold; color: #666;">Min(</div>
+                    </div>
+
+                    <!-- Total PRC energy consumption box -->
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="totalPrcEnergyDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Total PRC energy<br>consumption (GW)</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                ×
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="operator">
+                        ×
+                    </div>
+
+                    <!-- Max proportion box -->
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="maxProportionEnergyDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Max proportion for<br>covert datacenters</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                ,
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="operator">
+                        ,
+                    </div>
+
                     <!-- Number of datacenter workers box -->
                     <div class="breakdown-box-item">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
@@ -96,13 +139,13 @@
                                 </div>
                             </div>
                             <div class="operator-inline">
-                                )
+                                ))
                             </div>
                         </div>
                     </div>
 
                     <div class="operator">
-                        )
+                        ))
                     </div>
 
                     <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
@@ -113,7 +156,7 @@
                     <div class="breakdown-item">
                         <div id="datacenterCapacityBreakdownPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Covert data center capacity over time</div>
-                        <div class="breakdown-description">The cumulative capacity of covert data centers built by the construction workforce, measured in gigawatts (GW) of power capacity.</div>
+                        <div class="breakdown-description">The cumulative capacity of covert data centers built by the construction workforce, capped by maximum energy consumption limits.</div>
                     </div>
                 </div>
             </div>

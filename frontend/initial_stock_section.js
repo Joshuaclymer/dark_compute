@@ -350,7 +350,7 @@ function plotInitialStock(data) {
         document.getElementById('initialStockEnergyEfficiencyDisplay').innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                 <div class="breakdown-box-inner">${energyEfficiency.toFixed(2)}</div>
-                <div class="breakdown-label">Energy requirements relative to H100</div>
+                <div class="breakdown-label">Energy efficiency of initial PRC stock relative to H100</div>
             </div>`;
 
         // Attach hover effect

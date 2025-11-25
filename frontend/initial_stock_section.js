@@ -8,7 +8,7 @@ function plotInitialStock(data) {
         const median = data.initial_stock.prc_compute_over_time.median;
         const p75 = data.initial_stock.prc_compute_over_time.p75;
         const domesticMedian = data.initial_stock.prc_domestic_compute_over_time.median;
-        const proportionDomestic = data.initial_stock.proportion_domestic;
+        const proportionDomesticByYear = data.initial_stock.proportion_domestic_by_year;
 
         // Create shaded area for 25-75 percentile range
         const shadedArea = {
@@ -70,7 +70,11 @@ function plotInitialStock(data) {
             hoverinfo: 'skip'
         };
 
-        // Create domestic production line
+        // Create domestic production line with year-specific proportion in hover text
+        const domesticHoverText = years.map((year, idx) =>
+            `Year: ${year}<br>Domestically produced: ${domesticMedian[idx].toExponential(2)} H100e<br>(${(proportionDomesticByYear[idx] * 100).toFixed(1)}% of total)`
+        );
+
         const domesticLine = {
             x: years,
             y: domesticMedian,
@@ -78,7 +82,8 @@ function plotInitialStock(data) {
             line: { color: '#5AA89B', width: 2, dash: 'dot' },
             type: 'scatter',
             name: 'Domestically produced by PRC (median)',
-            hovertemplate: 'Year: %{x}<br>Domestically produced: %{y:.2s} H100e<br>(' + (proportionDomestic * 100).toFixed(0) + '% of total)<extra></extra>'
+            text: domesticHoverText,
+            hovertemplate: '%{text}<extra></extra>'
         };
 
         // Create global compute line (if available)
@@ -98,7 +103,8 @@ function plotInitialStock(data) {
                 title: 'Year',
                 titlefont: { size: 10 },
                 tickfont: { size: 9 },
-                automargin: true
+                automargin: true,
+                range: [years[0], years[years.length - 1]]
             },
             yaxis: {
                 title: 'PRC chip stock (H100e)',
@@ -131,6 +137,7 @@ function plotInitialStock(data) {
         }
 
         Plotly.newPlot('prcComputeOverTimePlot', traces, layout, {displayModeBar: false, responsive: true});
+        setTimeout(() => Plotly.Plots.resize('prcComputeOverTimePlot'), 50);
 
         // Update agreement year text
         const agreementYear = years[years.length - 1];
@@ -174,9 +181,9 @@ function plotInitialStock(data) {
     // Plot detection probability bar chart and initial compute stock histogram
     if (data.initial_stock && data.initial_stock.initial_dark_compute_detection_probs && data.initial_stock.initial_compute_stock_samples) {
 
-        // Update dashboard with 80th percentile values
+        // Update dashboard with 50th percentile (median) values
         const sortedDarkCompute = [...data.initial_stock.initial_compute_stock_samples].sort((a, b) => a - b);
-        const p80DarkCompute = sortedDarkCompute[Math.floor(sortedDarkCompute.length * 0.8)];
+        const p80DarkCompute = sortedDarkCompute[Math.floor(sortedDarkCompute.length * 0.5)];
 
         // Format H100e text
         let h100eText;
@@ -205,15 +212,16 @@ function plotInitialStock(data) {
         document.getElementById('dashboardMedianDarkComputeCombined').innerHTML =
             `${h100eText}<br><span style="font-size: 24px; color: #666;">${energyText}</span>`;
 
-        // Display probability of detection (P(LR ≥ 5x))
-        if (data.initial_stock.initial_dark_compute_detection_probs && data.initial_stock.initial_dark_compute_detection_probs['5x'] !== undefined) {
-            const probDetection = data.initial_stock.initial_dark_compute_detection_probs['5x'];
+        // Display probability of detection (P(LR ≥ primary threshold))
+        const primaryThreshold = DETECTION_CONFIG.PRIMARY_THRESHOLD;
+        if (data.initial_stock.initial_dark_compute_detection_probs && data.initial_stock.initial_dark_compute_detection_probs[`${primaryThreshold}x`] !== undefined) {
+            const probDetection = data.initial_stock.initial_dark_compute_detection_probs[`${primaryThreshold}x`];
             document.getElementById('dashboardMedianLR').textContent = (probDetection * 100).toFixed(1) + '%';
         }
 
         // Bar chart for detection probabilities
-        const likelihoodRatios = data.likelihood_ratios || [1, 3, 5];
-        const colors = ['#9B7BB3', '#5B8DBE', '#5AA89B'];  // Purple, Blue, Blue-green
+        const likelihoodRatios = data.likelihood_ratios || DETECTION_CONFIG.LIKELIHOOD_RATIOS;
+        const colors = DETECTION_CONFIG.COLORS;
         const detectionProbs = likelihoodRatios.map((lr, idx) => ({
             lr: lr,
             prob: data.initial_stock.initial_dark_compute_detection_probs[`${lr}x`] || 0,

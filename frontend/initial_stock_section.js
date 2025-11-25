@@ -77,9 +77,21 @@ function plotInitialStock(data) {
             mode: 'lines',
             line: { color: '#5AA89B', width: 2, dash: 'dot' },
             type: 'scatter',
-            name: 'Domestically produced',
+            name: 'Domestically produced by PRC (median)',
             hovertemplate: 'Year: %{x}<br>Domestically produced: %{y:.2s} H100e<br>(' + (proportionDomestic * 100).toFixed(0) + '% of total)<extra></extra>'
         };
+
+        // Create global compute line (if available)
+        const globalComputeData = data.initial_stock.global_compute_over_time;
+        const globalComputeLine = globalComputeData ? {
+            x: years,
+            y: globalComputeData,
+            mode: 'lines',
+            line: { color: '#E8A87C', width: 2, dash: 'dash' },
+            type: 'scatter',
+            name: 'Global compute (median)',
+            hovertemplate: 'Year: %{x}<br>Global compute: %{y:.2s} H100e<extra></extra>'
+        } : null;
 
         const layout = {
             xaxis: {
@@ -112,7 +124,13 @@ function plotInitialStock(data) {
             autosize: true
         };
 
-        Plotly.newPlot('prcComputeOverTimePlot', [shadedArea, p25Line, medianLine, p75Line, percentileRangeLegend, domesticLine], layout, {displayModeBar: false, responsive: true});
+        // Build traces array, conditionally including global compute line
+        const traces = [shadedArea, p25Line, medianLine, p75Line, percentileRangeLegend, domesticLine];
+        if (globalComputeLine) {
+            traces.push(globalComputeLine);
+        }
+
+        Plotly.newPlot('prcComputeOverTimePlot', traces, layout, {displayModeBar: false, responsive: true});
 
         // Update agreement year text
         const agreementYear = years[years.length - 1];
@@ -331,7 +349,7 @@ function plotInitialStock(data) {
         // Display energy efficiency
         document.getElementById('initialStockEnergyEfficiencyDisplay').innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                <div class="breakdown-box-inner">${energyEfficiency.toFixed(2)}x</div>
+                <div class="breakdown-box-inner">${energyEfficiency.toFixed(2)}</div>
                 <div class="breakdown-label">Energy requirements relative to H100</div>
             </div>`;
 

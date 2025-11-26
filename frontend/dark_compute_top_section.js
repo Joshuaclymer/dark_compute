@@ -227,11 +227,175 @@ function plotH100YearsTimeSeries(data) {
             });
             // Force resize after setting height
             setTimeout(() => {
-                Plotly.Plots.resize('projectH100YearsCcdfPlot');
+                Plotly.Plots.resize('chipProductionReductionCcdfPlot');
                 Plotly.Plots.resize('h100YearsTimeSeriesPlot');
             }, 50);
         }
     }, 150);
+}
+
+function plotChipProductionReductionCcdf(data) {
+    if (!data.dark_compute_model || !data.dark_compute_model.chip_production_reduction_ccdf) {
+        document.getElementById('chipProductionReductionCcdfPlot').innerHTML = '<p>No chip production reduction data available</p>';
+        return;
+    }
+
+    const reductionData = data.dark_compute_model.chip_production_reduction_ccdf;
+    const primaryThreshold = DETECTION_CONFIG.PRIMARY_THRESHOLD;
+
+    // Check if we have the new structure (with global and prc keys)
+    const globalCcdf = reductionData.global ? reductionData.global[primaryThreshold] : null;
+    const prcCcdf = reductionData.prc ? reductionData.prc[primaryThreshold] : null;
+
+    if ((!globalCcdf || globalCcdf.length === 0) && (!prcCcdf || prcCcdf.length === 0)) {
+        document.getElementById('chipProductionReductionCcdfPlot').innerHTML = `<p>No chip production reduction data available for ${primaryThreshold}x update</p>`;
+        return;
+    }
+
+    const traces = [];
+
+    // Add global AI chip production reduction trace
+    if (globalCcdf && globalCcdf.length > 0) {
+        traces.push({
+            x: globalCcdf.map(d => d.x),
+            y: globalCcdf.map(d => d.y),
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#E8A863', width: 2 },
+            name: 'Global AI Chip Production',
+            hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+        });
+    }
+
+    // Add PRC AI chip production reduction trace
+    if (prcCcdf && prcCcdf.length > 0) {
+        traces.push({
+            x: prcCcdf.map(d => d.x),
+            y: prcCcdf.map(d => d.y),
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#C77CAA', width: 2 },
+            name: 'PRC AI Chip Production',
+            hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+        });
+    }
+
+    const layout = {
+        xaxis: {
+            title: "No-agreement production<br>/ covert production",
+            titlefont: { size: 11 },
+            tickfont: { size: 10 },
+            type: 'log',
+            range: [Math.log10(1), null],  // Start at 1x reduction
+            automargin: true,
+            ticksuffix: 'x'
+        },
+        yaxis: {
+            title: 'P(Reduction > x)',
+            titlefont: { size: 13 },
+            tickfont: { size: 10 },
+            range: [0, 1],
+            automargin: true
+        },
+        showlegend: true,
+        legend: {
+            x: 0.98,
+            y: 0.98,
+            xanchor: 'right',
+            yanchor: 'top',
+            bgcolor: 'rgba(255,255,255,0.8)',
+            bordercolor: '#ccc',
+            borderwidth: 1
+        },
+        hovermode: 'closest',
+        margin: { l: 55, r: 0, t: 0, b: 60 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('chipProductionReductionCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
+    setTimeout(() => Plotly.Plots.resize('chipProductionReductionCcdfPlot'), 50);
+}
+
+function plotAiRdReductionCcdf(data) {
+    if (!data.dark_compute_model || !data.dark_compute_model.ai_rd_reduction_ccdf) {
+        document.getElementById('aiRdReductionCcdfPlot').innerHTML = '<p>No AI R&D reduction data available</p>';
+        return;
+    }
+
+    const reductionData = data.dark_compute_model.ai_rd_reduction_ccdf;
+    const primaryThreshold = DETECTION_CONFIG.PRIMARY_THRESHOLD;
+
+    // Check if we have the new structure (with global and prc keys)
+    const globalCcdf = reductionData.global ? reductionData.global[primaryThreshold] : reductionData[primaryThreshold];
+    const prcCcdf = reductionData.prc ? reductionData.prc[primaryThreshold] : null;
+
+    if (!globalCcdf || globalCcdf.length === 0) {
+        document.getElementById('aiRdReductionCcdfPlot').innerHTML = `<p>No AI R&D reduction data available for ${primaryThreshold}x update</p>`;
+        return;
+    }
+
+    const traces = [];
+
+    // Add global AI R&D reduction trace
+    traces.push({
+        x: globalCcdf.map(d => d.x),
+        y: globalCcdf.map(d => d.y),
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#E8A863', width: 2 },
+        name: 'Global AI R&D Compute',
+        hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+    });
+
+    // Add PRC AI R&D reduction trace if available
+    if (prcCcdf && prcCcdf.length > 0) {
+        traces.push({
+            x: prcCcdf.map(d => d.x),
+            y: prcCcdf.map(d => d.y),
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#C77CAA', width: 2 },
+            name: 'PRC AI R&D Compute',
+            hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+        });
+    }
+
+    const layout = {
+        xaxis: {
+            title: "No-agreement computation<br>/ covert computation",
+            titlefont: { size: 11 },
+            tickfont: { size: 10 },
+            type: 'log',
+            range: [Math.log10(10), null],  // Start at 10x reduction
+            automargin: true,
+            ticksuffix: 'x'
+        },
+        yaxis: {
+            title: 'P(Reduction > x)',
+            titlefont: { size: 13 },
+            tickfont: { size: 10 },
+            range: [0, 1],
+            automargin: true
+        },
+        showlegend: true,
+        legend: {
+            x: 0.98,
+            y: 0.98,
+            xanchor: 'right',
+            yanchor: 'top',
+            bgcolor: 'rgba(255,255,255,0.8)',
+            bordercolor: '#ccc',
+            borderwidth: 1
+        },
+        hovermode: 'closest',
+        margin: { l: 55, r: 0, t: 0, b: 60 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('aiRdReductionCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
+    setTimeout(() => Plotly.Plots.resize('aiRdReductionCcdfPlot'), 50);
 }
 
 function plotProjectH100YearsCcdf(data) {
@@ -306,61 +470,52 @@ function plotProjectH100YearsCcdf(data) {
     setTimeout(() => Plotly.Plots.resize('projectH100YearsCcdfPlot'), 50);
 }
 
-function plotAiRdReductionCcdf(data) {
-    if (!data.dark_compute_model || !data.dark_compute_model.ai_rd_reduction_ccdf) {
-        document.getElementById('aiRdReductionCcdfPlot').innerHTML = '<p>No AI R&D reduction data available</p>';
+function plotTimeToDetectionCcdf(data) {
+    if (!data.dark_compute_model || !data.dark_compute_model.time_to_detection_ccdf) {
+        document.getElementById('timeToDetectionCcdfPlot').innerHTML = '<p>No time to detection data available</p>';
         return;
     }
 
-    const reductionData = data.dark_compute_model.ai_rd_reduction_ccdf;
-    const primaryThreshold = DETECTION_CONFIG.PRIMARY_THRESHOLD;
-
-    // Check if we have the new structure (with global and prc keys)
-    const globalCcdf = reductionData.global ? reductionData.global[primaryThreshold] : reductionData[primaryThreshold];
-    const prcCcdf = reductionData.prc ? reductionData.prc[primaryThreshold] : null;
-
-    if (!globalCcdf || globalCcdf.length === 0) {
-        document.getElementById('aiRdReductionCcdfPlot').innerHTML = `<p>No AI R&D reduction data available for ${primaryThreshold}x update</p>`;
-        return;
-    }
+    // Use likelihood ratios from backend or global config
+    const likelihoodRatios = data.dark_compute_model.likelihood_ratios || DETECTION_CONFIG.LIKELIHOOD_RATIOS;
+    const colors = DETECTION_CONFIG.COLORS;
 
     const traces = [];
-
-    // Add global AI R&D reduction trace
-    traces.push({
-        x: globalCcdf.map(d => d.x),
-        y: globalCcdf.map(d => d.y),
-        type: 'scatter',
-        mode: 'lines',
-        line: { color: '#E8A863', width: 2 },
-        name: 'Global AI R&D Compute',
-        hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+    const thresholds = likelihoodRatios.map((lr, index) => {
+        return {
+            value: lr,
+            label: `>${lr}x update`,
+            color: colors[index % colors.length]
+        };
     });
 
-    // Add PRC AI R&D reduction trace if available
-    if (prcCcdf && prcCcdf.length > 0) {
-        traces.push({
-            x: prcCcdf.map(d => d.x),
-            y: prcCcdf.map(d => d.y),
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: '#C77CAA', width: 2 },
-            name: 'PRC AI R&D Compute',
-            hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
-        });
+    // Reverse thresholds for legend order (highest to lowest)
+    const thresholdsReversed = [...thresholds].reverse();
+
+    for (const threshold of thresholdsReversed) {
+        const ccdf = data.dark_compute_model.time_to_detection_ccdf[threshold.value];
+        if (ccdf && ccdf.length > 0) {
+            traces.push({
+                x: ccdf.map(d => d.x),
+                y: ccdf.map(d => d.y),
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: threshold.color, width: 2 },
+                name: `"Detection" = ${threshold.label}`,
+                hovertemplate: 'Years: %{x:.1f}<br>P(≥x): %{y:.3f}<extra></extra>'
+            });
+        }
     }
 
     const layout = {
         xaxis: {
-            title: "Reduction in AI R&D Compute",
+            title: "Years until detection",
             titlefont: { size: 13 },
             tickfont: { size: 10 },
-            type: 'log',
-            range: [Math.log10(10), null],  // Start at 10x reduction
             automargin: true
         },
         yaxis: {
-            title: 'P(Reduction > x)',
+            title: 'P(Time to detection > x)',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             range: [0, 1],
@@ -382,8 +537,39 @@ function plotAiRdReductionCcdf(data) {
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
 
-    Plotly.newPlot('aiRdReductionCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
-    setTimeout(() => Plotly.Plots.resize('aiRdReductionCcdfPlot'), 50);
+    Plotly.newPlot('timeToDetectionCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
+    setTimeout(() => Plotly.Plots.resize('timeToDetectionCcdfPlot'), 50);
+}
+
+function roundToSigFigs(num, sigFigs) {
+    // Round a number to specified significant figures
+    if (num === 0) return 0;
+    const magnitude = Math.floor(Math.log10(Math.abs(num)));
+    const multiplier = Math.pow(10, sigFigs - magnitude - 1);
+    return Math.round(num * multiplier) / multiplier;
+}
+
+function getMedianFromCcdf(ccdfData) {
+    // Find the x value where y ≈ 0.5 (median) from a CCDF
+    // CCDF is sorted by x ascending, y descending (starts at ~1, ends at ~0)
+    if (!ccdfData || ccdfData.length === 0) return null;
+
+    // Find the point where y crosses 0.5
+    for (let i = 0; i < ccdfData.length - 1; i++) {
+        if (ccdfData[i].y >= 0.5 && ccdfData[i + 1].y < 0.5) {
+            // Linear interpolation to find exact x where y = 0.5
+            const x1 = ccdfData[i].x;
+            const x2 = ccdfData[i + 1].x;
+            const y1 = ccdfData[i].y;
+            const y2 = ccdfData[i + 1].y;
+            const t = (0.5 - y1) / (y2 - y1);
+            return x1 + t * (x2 - x1);
+        }
+    }
+
+    // If y never crosses 0.5, return the last x value (or first if all > 0.5)
+    if (ccdfData[0].y < 0.5) return ccdfData[0].x;
+    return ccdfData[ccdfData.length - 1].x;
 }
 
 function updateDarkComputeModelDashboard(data) {
@@ -417,8 +603,31 @@ function updateDarkComputeModelDashboard(data) {
         // Display time to detection
         document.getElementById('dashboardMedianTime').textContent = projectTimeMedian.toFixed(1) + ' years';
 
-        // Calculate AI R&D reduction (will update both dashboard values)
+        // Calculate AI R&D reduction (updates dashboardAiRdReduction)
         updateAiRdReduction(data, projectTimeMedian, projectH100YearsMedian);
+    }
+
+    // Update chip production reduction from the CCDF data
+    updateChipProductionReduction(data);
+}
+
+function updateChipProductionReduction(data) {
+    // Get the median from the global chip production reduction CCDF
+    const primaryThreshold = DETECTION_CONFIG.PRIMARY_THRESHOLD;
+    const reductionData = data.dark_compute_model?.chip_production_reduction_ccdf;
+
+    if (reductionData && reductionData.global && reductionData.global[primaryThreshold]) {
+        const globalCcdf = reductionData.global[primaryThreshold];
+        const medianReduction = getMedianFromCcdf(globalCcdf);
+
+        if (medianReduction !== null) {
+            const rounded = roundToSigFigs(medianReduction, 1);
+            document.getElementById('dashboardPrcReduction').textContent = rounded + 'x';
+        } else {
+            document.getElementById('dashboardPrcReduction').textContent = '--';
+        }
+    } else {
+        document.getElementById('dashboardPrcReduction').textContent = '--';
     }
 }
 
@@ -524,54 +733,14 @@ function updateAiRdReduction(data, projectTimeMedian, projectH100YearsMedian) {
     console.log('globalAverage:', globalAverage);
     console.log('ratio:', ratio);
 
-    // Update dashboard display for AI R&D reduction
-    document.getElementById('dashboardAiRdReduction').textContent = ratio.toFixed(1) + 'x';
-
-    // Now calculate PRC AI R&D compute reduction
-    // Get PRC compute parameters
-    const prcCompute2025Input = document.getElementById('total_prc_compute_stock_in_2025');
-    const prcGrowthRateInput = document.getElementById('annual_growth_rate_of_prc_compute_stock_p50');
-    const prcAiRdFractionInput = document.getElementById('fraction_of_prc_compute_spent_on_ai_rd_before_slowdown');
-
-    if (prcCompute2025Input && prcGrowthRateInput && prcAiRdFractionInput) {
-      const prcCompute2025 = parseFloat(prcCompute2025Input.value) * 1e6;
-      const prcGrowthRate = parseFloat(prcGrowthRateInput.value);
-      const prcAiRdFraction = parseFloat(prcAiRdFractionInput.value);
-
-      // Calculate average PRC AI R&D compute if no slowdown (continues growing)
-      // This is total PRC compute * fraction spent on AI R&D
-      let prcAiRdNoSlowdownSum = 0;
-      for (let i = agreementIdx; i <= detectionIdx; i++) {
-        const year = years[i];
-        const yearsSince2025 = year - 2025;
-        const prcCompute = prcCompute2025 * Math.pow(prcGrowthRate, yearsSince2025);
-        // Apply the fraction spent on AI R&D
-        prcAiRdNoSlowdownSum += prcCompute * prcAiRdFraction;
-      }
-      const prcAiRdNoSlowdownAverage = prcAiRdNoSlowdownSum / numPoints;
-
-      // The average with slowdown is the covert project's operating compute (same as calculated above)
-      const prcAiRdWithSlowdownAverage = covertAverage;
-
-      // Calculate the ratio: no slowdown / with slowdown
-      const prcRatio = prcAiRdNoSlowdownAverage / prcAiRdWithSlowdownAverage;
-
-      console.log('prcAiRdNoSlowdownAverage:', prcAiRdNoSlowdownAverage);
-      console.log('prcAiRdWithSlowdownAverage:', prcAiRdWithSlowdownAverage);
-      console.log('prcAiRdFraction:', prcAiRdFraction);
-      console.log('prcRatio:', prcRatio);
-
-      // Update dashboard display for PRC AI R&D reduction
-      document.getElementById('dashboardPrcReduction').textContent = prcRatio.toFixed(1) + 'x';
-    } else {
-      document.getElementById('dashboardPrcReduction').textContent = '--';
-    }
+    // Update dashboard display for AI R&D reduction (rounded to 1 sig fig)
+    const roundedRatio = roundToSigFigs(ratio, 1);
+    document.getElementById('dashboardAiRdReduction').textContent = roundedRatio + 'x';
 
   } catch (error) {
     console.error('AI R&D Calculation Error:', error.message);
     console.error('Full error:', error);
     document.getElementById('dashboardAiRdReduction').textContent = '--';
-    document.getElementById('dashboardPrcReduction').textContent = '--';
     // Re-throw the error so it appears in the browser console
     throw error;
   }

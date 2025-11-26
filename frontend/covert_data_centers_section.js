@@ -312,28 +312,36 @@ function populateDatacenterCapacityBreakdown(data) {
     // Get total PRC energy consumption from input
     const totalPrcEnergyInput = document.getElementById('total_GW_of_PRC_energy_consumption');
     const totalPrcEnergy = totalPrcEnergyInput ? parseFloat(totalPrcEnergyInput.value) : 1000;
+    const totalPrcEnergyFormatted = totalPrcEnergy >= 1000 ? `${(totalPrcEnergy / 1000).toFixed(0)}K GW` : `${totalPrcEnergy} GW`;
     document.getElementById('totalPrcEnergyDisplay').innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <div class="breakdown-box-inner">${totalPrcEnergy.toLocaleString()} GW</div>
-            <div class="breakdown-label">Total PRC energy<br>consumption (GW)</div>
+            <div class="breakdown-box-inner">${totalPrcEnergyFormatted}</div>
+            <div class="breakdown-label">PRC energy<br>consumption</div>
         </div>`;
 
     // Get max proportion for covert datacenters from input
     const maxProportionInput = document.getElementById('max_proportion_of_PRC_energy_consumption');
     const maxProportion = maxProportionInput ? parseFloat(maxProportionInput.value) : 0.01;
-    const maxProportionPercent = (maxProportion * 100).toFixed(2);
+    const maxProportionPercent = Math.round(maxProportion * 100);
     document.getElementById('maxProportionEnergyDisplay').innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
             <div class="breakdown-box-inner">${maxProportionPercent}%</div>
-            <div class="breakdown-label">Max proportion for<br>covert datacenters</div>
+            <div class="breakdown-label">Max % energy</div>
         </div>`;
+
+    // Update inline text in description
+    const inlineElement = document.getElementById('inlineMaxEnergyPercent');
+    if (inlineElement) {
+        inlineElement.textContent = `${maxProportionPercent}%`;
+    }
 
     // Get datacenter construction workers from input
     const workersInput = document.getElementById('datacenter_construction_labor');
     const workers = workersInput ? parseInt(workersInput.value) : 10000;
+    const workersFormatted = workers >= 1000 ? `${(workers / 1000).toFixed(0)}K` : workers.toLocaleString();
     document.getElementById('datacenterWorkersDisplay').innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <div class="breakdown-box-inner">${workers.toLocaleString()}</div>
+            <div class="breakdown-box-inner">${workersFormatted}</div>
             <div class="breakdown-label">Construction<br>workers</div>
         </div>`;
 

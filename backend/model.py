@@ -6,11 +6,11 @@ from copy import deepcopy
 # CLASSES
 # ============================================================================
 
-# Import CovertProject and CovertProjectStrategy
+# Import CovertProject and CovertProjectProperties
 from backend.classes.covert_project import CovertProject
 from backend.classes.covert_fab import set_localization_probabilities
 from backend.classes.dark_compute_stock import Compute
-from backend.paramaters import CovertProjectStrategy, Parameters
+from backend.paramaters import CovertProjectProperties, Parameters
 
 @dataclass
 class DetectorStrategy:
@@ -20,7 +20,7 @@ class DetectorStrategy:
 class BeliefsAboutProject:
     p_project_exists : float = None
     p_covert_fab_exists : float = None
-    project_strategy_conditional_on_existence : CovertProjectStrategy = None
+    project_strategy_conditional_on_existence : CovertProjectProperties = None
     distribution_over_compute_operation : list = field(default_factory=list)
     p_project_exists_update_history : dict = field(default_factory=dict)
     initial_p_project_exists : float = None  # Store the initial prior
@@ -134,7 +134,7 @@ class Model:
                     "prc_covert_project" : BeliefsAboutProject(
                         p_project_exists = self.parameters.covert_project_parameters.p_project_exists,
                         initial_p_project_exists = self.parameters.covert_project_parameters.p_project_exists,
-                        project_strategy_conditional_on_existence = CovertProjectStrategy(),
+                        project_strategy_conditional_on_existence = CovertProjectProperties(),
                     )
                 }
             )
@@ -166,7 +166,7 @@ class Model:
         return {
             "prc_covert_project" : CovertProject(
                 name = "prc_covert_project",
-                covert_project_strategy = self.parameters.covert_project_strategy,
+                covert_project_properties = self.parameters.covert_project_properties,
                 agreement_year = self.parameters.simulation_settings.start_year,
                 years = years,
                 covert_project_parameters = self.parameters.covert_project_parameters

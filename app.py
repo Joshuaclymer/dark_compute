@@ -1,20 +1,74 @@
 from flask import Flask, render_template, jsonify, request, send_file
 from backend.model import Model
 from backend.paramaters import (
-    CovertProjectStrategy,
+    CovertProjectProperties,
     CovertProjectParameters,
     SimulationSettings,
     Parameters
 )
-from backend.export_data_for_plots import extract_plot_data
+from backend.serve_data_for_dark_compute_model import extract_plot_data
 from backend import util
+import json
+import os
+import hashlib
 
 app = Flask(__name__, template_folder='frontend')
+
+# Cache directory
+CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+def get_cache_key(params_dict):
+    """Generate a cache key from parameters dictionary."""
+    # Convert dict to sorted JSON string for consistent hashing
+    params_json = json.dumps(params_dict, sort_keys=True)
+    return hashlib.md5(params_json.encode()).hexdigest()
+
+def save_cache(params_dict, results):
+    """Save simulation results to cache."""
+    cache_key = get_cache_key(params_dict)
+    cache_file = os.path.join(CACHE_DIR, f'{cache_key}.json')
+    with open(cache_file, 'w') as f:
+        json.dump({'params': params_dict, 'results': results}, f)
+    print(f"Saved cache: {cache_file}", flush=True)
+    return cache_key
+
+def load_cache(params_dict):
+    """Load simulation results from cache if available."""
+    cache_key = get_cache_key(params_dict)
+    cache_file = os.path.join(CACHE_DIR, f'{cache_key}.json')
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            data = json.load(f)
+        print(f"Loaded cache: {cache_file}", flush=True)
+        return data['results']
+    return None
+
+def get_default_cache_file():
+    """Get the path to the default cache file."""
+    return os.path.join(CACHE_DIR, 'default.json')
+
+def save_default_cache(results):
+    """Save results as the default cache."""
+    cache_file = get_default_cache_file()
+    with open(cache_file, 'w') as f:
+        json.dump(results, f)
+    print(f"Saved default cache: {cache_file}", flush=True)
+
+def load_default_cache():
+    """Load the default cache if available."""
+    cache_file = get_default_cache_file()
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            results = json.load(f)
+        print(f"Loaded default cache: {cache_file}", flush=True)
+        return results
+    return None
 
 # Create a global Parameters instance that stays synchronized with the sidebar
 app_params = Parameters(
     simulation_settings=SimulationSettings(),
-    covert_project_strategy=CovertProjectStrategy(),
+    covert_project_properties=CovertProjectProperties(),
     covert_project_parameters=CovertProjectParameters()
 )
 
@@ -24,15 +78,27 @@ def index():
     defaults = app_params.to_dict()
     return render_template('index.html', defaults=defaults)
 
+@app.route('/slowdown')
+def slowdown():
+    """Serve the AI development slowdown model page."""
+    return send_file('slowdown_model_frontend/slowdown_model.html')
+
+@app.route('/slowdown_model_frontend/<path:filename>')
+def serve_slowdown_files(filename):
+    """Serve files from the slowdown_model_frontend directory."""
+    return send_file(f'slowdown_model_frontend/{filename}')
+
 @app.route('/<path:filename>')
 def serve_html(filename):
-    """Serve HTML, JS, and CSS files from the frontend directory."""
+    """Serve HTML, JS, CSS, and SVG files from the frontend directory."""
     if filename.endswith('.html') and filename != 'index.html':
         return send_file(f'frontend/{filename}')
     if filename.endswith('.js'):
         return send_file(f'frontend/{filename}')
     if filename.endswith('.css'):
         return send_file(f'frontend/{filename}')
+    if filename.endswith('.svg'):
+        return send_file(f'frontend/{filename}', mimetype='image/svg+xml')
     return '', 404
 
 @app.route('/log_client_error', methods=['POST'])
@@ -54,6 +120,47 @@ def log_client_error():
         print(f"ERROR logging client error: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
+@app.route('/get_default_results')
+def get_default_results():
+    """Get cached default simulation results."""
+    try:
+        results = load_default_cache()
+        if results:
+            return jsonify(results)
+        else:
+            return jsonify({"error": "No default cache available"}), 404
+    except Exception as e:
+        print(f"ERROR loading default cache: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get_slowdown_model_data')
+def get_slowdown_model_data():
+    """Get AI takeoff slowdown model data with default parameters."""
+    try:
+        from backend.serve_data_for_slowdown_model import extract_takeoff_slowdown_trajectories
+
+        # Use default parameters
+        params = Parameters(
+            simulation_settings=SimulationSettings(),
+            covert_project_properties=CovertProjectProperties(),
+            covert_project_parameters=CovertProjectParameters()
+        )
+
+        # Extract takeoff trajectories
+        trajectories = extract_takeoff_slowdown_trajectories(params)
+
+        return jsonify({
+            'takeoff_trajectories': trajectories,
+            'agreement_year': params.simulation_settings.start_year
+        })
+    except Exception as e:
+        print(f"ERROR computing slowdown model data: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/run_simulation', methods=['POST'])
 def run_simulation():
     try:
@@ -61,6 +168,16 @@ def run_simulation():
     except Exception as e:
         print(f"ERROR parsing request: {e}", flush=True)
         return jsonify({"error": str(e)}), 400
+
+    # Check if we should try to use cache
+    use_cache = data.get('use_cache', True)
+
+    # Try to load from cache first if enabled
+    if use_cache:
+        cached_results = load_cache(data)
+        if cached_results:
+            print(f"Using cached results", flush=True)
+            return jsonify(cached_results)
 
     # Clear caches
     util._cache.clear()
@@ -93,6 +210,9 @@ def run_simulation():
 
         # Extract data for plots (includes initial stock data and type conversion)
         results = extract_plot_data(model, app_params)
+
+        # Save to cache
+        save_cache(data, results)
 
         return jsonify(results)
 

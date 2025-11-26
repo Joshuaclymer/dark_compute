@@ -1,13 +1,13 @@
             <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 40px; color: #333;">Initial stock</h1>
 
             <div class="section-description" style="margin-bottom: 20px; text-align: left;">
-                Before an international AI agreement is verified, states might stash away compute for a covert project. How much compute could the PRC stash away, and how suspicious would the absence of this compute be?
+                States might stash away compute for a covert project before an international AI agreement is in force. How much compute could the PRC stash away, and how energy efficient would it be? 
             </div>
 
             <!-- Dashboard and Detection Probability -->
             <div id="initialStockTopSection" style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 10px; align-items: flex-start;">
-                <div class="dashboard" style="flex: 1 1 125px; min-width: 200px; padding: 20px; display: flex; flex-direction: column; gap: 0; justify-content: flex-start;">
-                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin: 0 0 20px 0;">80th percentile outcome:</div>
+                <div class="dashboard" style="flex: 0 0 auto; width: 240px; padding: 20px; display: flex; flex-direction: column; gap: 0; justify-content: flex-start;">
+                    <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin: 0 0 20px 0;">Median outcome</div>
                     <div class="dashboard-item" style="margin: 0 0 20px 0;">
                         <div class="dashboard-value" id="dashboardMedianDarkComputeCombined">--</div>
                         <div class="dashboard-label">of initial PRC dark compute stock</div>
@@ -15,7 +15,7 @@
                     <div class="dashboard-item" style="margin: 0;">
                         <div class="dashboard-value-small" id="dashboardMedianLR">--</div>
                         <div class="dashboard-label-light">probability of detection</div>
-                        <div class="dashboard-sublabel">Detection means a ≥5x likelihood ratio</div>
+                        <div class="dashboard-sublabel">Detection means a ≥4x likelihood ratio</div>
                     </div>
                 </div>
 
@@ -43,8 +43,7 @@
           Breaking down initial unreported chip stock
         </h3>
                 <div class="section-description">
-                    The dark compute stock is determined by the total PRC compute stock at time of agreement and the proportion diverted to the covert project.<br>
-                    Dark Compute Stock = Initial PRC Compute Stock × Proportion Diverted
+                    The PRC's stock of covert compute depends on total PRC compute stock at the agreement start and the proportion diverted to the covert project.
                 </div>
 
                 <div class="breakdown-plots-row">
@@ -92,7 +91,7 @@
                 </div>
 
                 <div class="section-description" style="margin-top: 40px;">
-                    Energy Requirements = Energy requirements of H100 × Energy efficiency relative to H100 × Initial PRC unreported chip stock
+                    We estimate the energy requirements of Chinese compute relative to an H100 by [TODO figure this out].
                 </div>
 
                 <div class="breakdown-plots-row">

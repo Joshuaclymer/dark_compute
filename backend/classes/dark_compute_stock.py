@@ -178,7 +178,19 @@ class PRCDarkComputeStock():
     def __init__(self, agreement_year, proportion_of_initial_compute_stock_to_divert, optimal_proportion_of_initial_compute_stock_to_divert, initial_compute_parameters: InitialPRCDarkComputeParameters, survival_parameters: SurvivalRateParameters):
         self.agreement_year = agreement_year
         self.initial_compute_parameters = initial_compute_parameters
-        assert proportion_of_initial_compute_stock_to_divert < self.initial_compute_parameters.proportion_of_prc_chip_stock_produced_domestically, "This model assumes that the PRC only diverts domestically-produced chips to a covert project. Therefore proportion to divert < proportion produced domestically."
+
+        # Calculate the domestic proportion for the agreement year using linear interpolation
+        prop_2026 = initial_compute_parameters.proportion_of_prc_chip_stock_produced_domestically_2026
+        prop_2030 = initial_compute_parameters.proportion_of_prc_chip_stock_produced_domestically_2030
+        if agreement_year <= 2026:
+            domestic_proportion = prop_2026
+        elif agreement_year >= 2030:
+            domestic_proportion = prop_2030
+        else:
+            t = (agreement_year - 2026) / (2030 - 2026)
+            domestic_proportion = prop_2026 + t * (prop_2030 - prop_2026)
+
+        assert proportion_of_initial_compute_stock_to_divert < domestic_proportion, "This model assumes that the PRC only diverts domestically-produced chips to a covert project. Therefore proportion to divert < proportion produced domestically."
         self.survival_parameters = survival_parameters
 
         # Sample growth rate once for this simulation

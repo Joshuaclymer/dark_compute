@@ -5,9 +5,11 @@ function plotDarkComputeModel(data) {
     // Plot all sections in order
 
     // 1. Plot top section (dashboard and main plots)
-    plotH100YearsTimeSeries(data);
-    plotProjectH100YearsCcdf(data);
+    // plotH100YearsTimeSeries(data);  // Commented out - replaced with H100-years CCDF
+    plotTimeToDetectionCcdf(data);
+    plotChipProductionReductionCcdf(data);
     plotAiRdReductionCcdf(data);
+    plotProjectH100YearsCcdf(data);
     updateDarkComputeModelDashboard(data);
 
     // 2. Plot rate of computation section

@@ -4,13 +4,13 @@ from backend.classes.covert_fab import CovertFab, PRCCovertFab, ProcessNode, Fab
 from backend.classes.dark_compute_stock import PRCDarkComputeStock
 from backend.classes.covert_datacenters import CovertPRCDatacenters
 from backend.util import lr_over_time_vs_num_workers
-from backend.paramaters import CovertProjectStrategy, CovertProjectParameters
+from backend.paramaters import CovertProjectProperties, CovertProjectParameters
 
 
 @dataclass
 class CovertProject:
     name : str
-    covert_project_strategy : CovertProjectStrategy
+    covert_project_properties : CovertProjectProperties
     agreement_year : float
     years : list
     covert_project_parameters : CovertProjectParameters
@@ -22,8 +22,8 @@ class CovertProject:
         # Initialize covert fab if strategy requires it and construction_start_year is set
         self.dark_compute_stock = PRCDarkComputeStock(
             agreement_year = self.agreement_year,
-            proportion_of_initial_compute_stock_to_divert = self.covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
-            optimal_proportion_of_initial_compute_stock_to_divert = self.covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
+            proportion_of_initial_compute_stock_to_divert = self.covert_project_properties.proportion_of_initial_compute_stock_to_divert,
+            optimal_proportion_of_initial_compute_stock_to_divert = self.covert_project_properties.proportion_of_initial_compute_stock_to_divert,
             initial_compute_parameters = self.covert_project_parameters.initial_compute_stock_parameters,
             survival_parameters = self.covert_project_parameters.survival_rate_parameters
         )
@@ -33,27 +33,25 @@ class CovertProject:
 
         # Calculate datacenter start year offset (relative to agreement year)
         # years_before is positive if construction starts before agreement, negative if after
-        years_before = self.covert_project_strategy.years_before_agreement_year_prc_starts_building_covert_datacenters
+        years_before = self.covert_project_properties.years_before_agreement_year_prc_starts_building_covert_datacenters
         datacenter_start_year_offset = -years_before
 
         self.covert_datacenters = CovertPRCDatacenters(
-            GW_per_initial_datacenter = self.covert_project_strategy.GW_per_initial_datacenter,
-            number_of_initial_datacenters = self.covert_project_strategy.number_of_initial_datacenters,
-            construction_labor = self.covert_project_strategy.datacenter_construction_labor,
+            construction_labor = self.covert_project_properties.datacenter_construction_labor,
             years_since_agreement_start = years_since_agreement_start,
             datacenter_parameters = self.covert_project_parameters.datacenter_model_parameters,
             project_parameters = self.covert_project_parameters,
             datacenter_start_year_offset = datacenter_start_year_offset
         )
 
-        if (self.covert_project_strategy.build_a_covert_fab):
+        if (self.covert_project_properties.build_a_covert_fab):
             try:
                 self.covert_fab = PRCCovertFab(
                     construction_start_year = self.agreement_year,
-                    construction_labor = self.covert_project_strategy.covert_fab_construction_labor,
-                    process_node = self.covert_project_strategy.covert_fab_process_node,
-                    proportion_of_prc_lithography_scanners_devoted_to_fab = self.covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted,
-                    operation_labor = self.covert_project_strategy.covert_fab_operating_labor,
+                    construction_labor = self.covert_project_properties.covert_fab_construction_labor,
+                    process_node = self.covert_project_properties.covert_fab_process_node,
+                    proportion_of_prc_lithography_scanners_devoted_to_fab = self.covert_project_properties.covert_fab_proportion_of_prc_lithography_scanners_devoted,
+                    operation_labor = self.covert_project_properties.covert_fab_operating_labor,
                     agreement_year = self.agreement_year,
                     years_since_agreement_start = years_since_agreement_start,
                     project_parameters = self.covert_project_parameters
@@ -70,8 +68,8 @@ class CovertProject:
             labor_at_year += self.covert_datacenters.get_operating_labor(year)
             # Add fab labor if it exists
             if self.covert_fab is not None:
-                labor_at_year += self.covert_project_strategy.covert_fab_construction_labor
-                labor_at_year += self.covert_project_strategy.covert_fab_operating_labor
+                labor_at_year += self.covert_project_properties.covert_fab_construction_labor
+                labor_at_year += self.covert_project_properties.covert_fab_operating_labor
             labor_by_year[year] = int(labor_at_year)
 
         self.lr_over_time_vs_num_workers = lr_over_time_vs_num_workers(

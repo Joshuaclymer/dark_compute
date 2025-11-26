@@ -20,7 +20,7 @@ app = Flask(__name__, template_folder='frontend')
 
 # Configure likelihood ratio thresholds for detection plots
 # Update this list to change all plots automatically
-LIKELIHOOD_RATIOS = [1, 3, 5]
+LIKELIHOOD_RATIOS = [1, 2, 4]
 
 # Create a global Parameters instance that stays synchronized with the sidebar
 app_params = Parameters(

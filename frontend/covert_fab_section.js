@@ -297,7 +297,38 @@ function updateDashboard(data) {
         // Update the section description with the percentage
         const fabPercentageSpan = document.getElementById('fabBuiltPercentage');
         if (fabPercentageSpan) {
-            fabPercentageSpan.textContent = data.prob_fab_built !== undefined ? ` (${(data.prob_fab_built * 100).toFixed(1)}% of simulations)` : '';
+            fabPercentageSpan.textContent = data.prob_fab_built !== undefined ? (data.prob_fab_built * 100).toFixed(1) : '--';
+        }
+
+        // Update the minimum process node in the description
+        const minProcessNodeSpan = document.getElementById('minProcessNode');
+        if (minProcessNodeSpan) {
+            const processNodeSelect = document.getElementById('process_node');
+            if (processNodeSelect) {
+                const strategy = processNodeSelect.value;
+                let minNode = '--';
+
+                // Extract minimum node from strategy
+                if (strategy === 'best_indigenous_gte_28nm') {
+                    minNode = '28';
+                } else if (strategy === 'best_indigenous_gte_14nm') {
+                    minNode = '14';
+                } else if (strategy === 'best_indigenous_gte_7nm') {
+                    minNode = '7';
+                } else if (strategy === 'best_indigenous') {
+                    minNode = '130'; // Best indigenous starts at worst case
+                } else if (strategy === 'nm130') {
+                    minNode = '130';
+                } else if (strategy === 'nm28') {
+                    minNode = '28';
+                } else if (strategy === 'nm14') {
+                    minNode = '14';
+                } else if (strategy === 'nm7') {
+                    minNode = '7';
+                }
+
+                minProcessNodeSpan.textContent = minNode;
+            }
         }
 
         // Update detection label with highest LR value
@@ -693,5 +724,121 @@ function updateParameterDisplays() {
     if (totalWorkersSpan) {
         totalWorkersSpan.textContent = totalWorkers.toLocaleString();
         // No click handler for total since it's computed from multiple inputs
+    }
+
+    // Update breakdown description parameter links
+
+    // Construction time parameters
+    const constructionTime5kInput = document.getElementById('construction_time_5k');
+    if (constructionTime5kInput) {
+        const spans = [
+            document.getElementById('param-construction-time-5k'),
+            document.getElementById('param-construction-time-100k')
+        ];
+        spans.forEach((span, index) => {
+            if (span) {
+                const inputId = index === 0 ? 'construction_time_5k' : 'construction_time_100k';
+                const input = document.getElementById(inputId);
+                if (input) {
+                    span.textContent = parseFloat(input.value).toFixed(1);
+                    span.onclick = () => {
+                        input.focus();
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    };
+                }
+            }
+        });
+    }
+
+    // Wafers per worker parameter
+    const wafersPerWorkerInput = document.getElementById('wafers_per_month_per_worker');
+    if (wafersPerWorkerInput) {
+        const span = document.getElementById('param-wafers-per-worker');
+        if (span) {
+            span.textContent = parseFloat(wafersPerWorkerInput.value).toFixed(1);
+            span.onclick = () => {
+                wafersPerWorkerInput.focus();
+                wafersPerWorkerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // Chips per wafer parameter
+    const chipsPerWaferInput = document.getElementById('chips_per_wafer');
+    if (chipsPerWaferInput) {
+        const span = document.getElementById('param-chips-per-wafer');
+        if (span) {
+            span.textContent = parseInt(chipsPerWaferInput.value);
+            span.onclick = () => {
+                chipsPerWaferInput.focus();
+                chipsPerWaferInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // Transistor density exponent parameters
+    const transistorDensityInput = document.getElementById('transistor_density_exponent');
+    if (transistorDensityInput) {
+        const spans = [
+            document.getElementById('param-transistor-density-exponent'),
+            document.getElementById('param-transistor-density-exponent-2')
+        ];
+        spans.forEach(span => {
+            if (span) {
+                span.textContent = parseFloat(transistorDensityInput.value).toFixed(1);
+                span.onclick = () => {
+                    transistorDensityInput.focus();
+                    transistorDensityInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                };
+            }
+        });
+    }
+
+    // Architecture efficiency parameter
+    const architectureEfficiencyInput = document.getElementById('architecture_efficiency');
+    if (architectureEfficiencyInput) {
+        const span = document.getElementById('param-architecture-efficiency');
+        if (span) {
+            span.textContent = parseFloat(architectureEfficiencyInput.value).toFixed(2);
+            span.onclick = () => {
+                architectureEfficiencyInput.focus();
+                architectureEfficiencyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // Watts per TPP exponent parameters
+    const wattsExponentBeforeInput = document.getElementById('watts_per_tpp_exponent_before_dennard');
+    const wattsExponentAfterInput = document.getElementById('watts_per_tpp_exponent_after_dennard');
+    if (wattsExponentBeforeInput && wattsExponentAfterInput) {
+        const spanBefore = document.getElementById('param-watts-exponent-before');
+        const spanAfter = document.getElementById('param-watts-exponent-after');
+        if (spanBefore) {
+            spanBefore.textContent = parseFloat(wattsExponentBeforeInput.value).toFixed(2);
+            spanBefore.onclick = () => {
+                wattsExponentBeforeInput.focus();
+                wattsExponentBeforeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+        if (spanAfter) {
+            spanAfter.textContent = parseFloat(wattsExponentAfterInput.value).toFixed(2);
+            spanAfter.onclick = () => {
+                wattsExponentAfterInput.focus();
+                wattsExponentAfterInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // H100 power parameter
+    const h100PowerInput = document.getElementById('h100_power_watts');
+    if (h100PowerInput) {
+        const span = document.getElementById('param-h100-power');
+        if (span) {
+            span.textContent = parseInt(h100PowerInput.value);
+            span.onclick = () => {
+                h100PowerInput.focus();
+                h100PowerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
     }
 }

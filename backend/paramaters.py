@@ -27,17 +27,15 @@ class SimulationSettings:
     num_simulations : int = 60
 
 @dataclass
-class CovertProjectStrategy:
+class CovertProjectProperties:
     run_a_covert_project : bool = True
 
     # Initial compute stock
     proportion_of_initial_compute_stock_to_divert : Optional[float] = 0.05
 
     # Data centers
-    GW_per_initial_datacenter : float = 5
-    number_of_initial_datacenters : float = 0.1
     datacenter_construction_labor : int = 10000
-    years_before_agreement_year_prc_starts_building_covert_datacenters : int = 0  # Years before agreement year to start building (0 = at agreement year)
+    years_before_agreement_year_prc_starts_building_covert_datacenters : int = 1  # Years before agreement year to start building (0 = at agreement year)
 
     # Covert fab
     build_a_covert_fab : bool = True
@@ -56,11 +54,20 @@ class InitialPRCDarkComputeParameters:
     total_prc_compute_stock_in_2025: float = 1e6
     energy_efficiency_relative_to_h100: float = 0.5
     annual_growth_rate_of_prc_compute_stock_p10: float = 1.3
-    annual_growth_rate_of_prc_compute_stock_p50: float = 2.0
+    annual_growth_rate_of_prc_compute_stock_p50: float = 2.2
     annual_growth_rate_of_prc_compute_stock_p90: float = 3.0
-    proportion_of_prc_chip_stock_produced_domestically: float = 0.7
+    proportion_of_prc_chip_stock_produced_domestically_2026: float = 0.0
+    proportion_of_prc_chip_stock_produced_domestically_2030: float = 0.7
 
     us_intelligence_median_error_in_estimate_of_prc_compute_stock: float = 0.07
+
+@dataclass
+class SlowdownCounterfactualParameters:
+    # Slowdown counterfactual parameters (for reference line in plots)
+    median_global_compute_in_2026: float = 2e7
+    median_global_compute_annual_rate_of_increase: float = 2.25
+    fraction_of_global_compute_for_single_ai_project: float = 0.2
+    fraction_of_prc_compute_spent_on_ai_rd_before_slowdown: float = 0.5
 
 @dataclass
 class SurvivalRateParameters:
@@ -146,6 +153,7 @@ class CovertProjectParameters:
     mean_detection_time_for_1000_workers: float = 3.42
     variance_of_detection_time_given_num_workers: float = 3.880
     initial_compute_stock_parameters: InitialPRCDarkComputeParameters = field(default_factory=InitialPRCDarkComputeParameters)
+    slowdown_counterfactual_parameters: SlowdownCounterfactualParameters = field(default_factory=SlowdownCounterfactualParameters)
     survival_rate_parameters: SurvivalRateParameters = field(default_factory=SurvivalRateParameters)
     datacenter_model_parameters: CovertDatacenterParameters = field(default_factory=CovertDatacenterParameters)
     covert_fab_parameters: CovertFabParameters = field(default_factory=CovertFabParameters)
@@ -160,7 +168,7 @@ def _set_nested_attr(obj, path, value):
 @dataclass
 class Parameters:
     simulation_settings : SimulationSettings
-    covert_project_strategy : CovertProjectStrategy
+    covert_project_properties : CovertProjectProperties
     covert_project_parameters : CovertProjectParameters
 
     def update_from_dict(self, data: dict):
@@ -172,7 +180,7 @@ class Parameters:
         """
         for field_name, value in data.items():
             # Skip special cases handled below
-            if field_name.startswith('covert_project_strategy.covert_fab_process_node'):
+            if field_name.startswith('covert_project_properties.covert_fab_process_node'):
                 continue
 
             # Set the value using dot notation
@@ -184,7 +192,7 @@ class Parameters:
                 pass
 
         # Handle process node mapping (special case because it has string values that map to enums)
-        if 'covert_project_strategy.covert_fab_process_node' in data:
+        if 'covert_project_properties.covert_fab_process_node' in data:
             process_node_map = {
                 'best_indigenous': 'best_indigenous',
                 'best_indigenous_gte_28nm': 'best_indigenous_gte_28nm',
@@ -196,7 +204,7 @@ class Parameters:
                 'nm14': ProcessNode.nm14,
                 'nm7': ProcessNode.nm7
             }
-            self.covert_project_strategy.covert_fab_process_node = process_node_map.get(data['covert_project_strategy.covert_fab_process_node'], data['covert_project_strategy.covert_fab_process_node'])
+            self.covert_project_properties.covert_fab_process_node = process_node_map.get(data['covert_project_properties.covert_fab_process_node'], data['covert_project_properties.covert_fab_process_node'])
 
     def to_dict(self):
         """

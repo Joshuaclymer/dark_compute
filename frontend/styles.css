@@ -184,16 +184,16 @@
             max-width: 100% !important;
         }
 
-        #computeCcdfPlot, #timeSeriesPlot, #h100YearsTimeSeriesPlot, #projectH100YearsCcdfPlot,
-        #datacenterCapacityCcdfPlot, #datacenterCombinedPlot,
+        #computeCcdfPlot, #timeSeriesPlot, #h100YearsTimeSeriesPlot, #chipProductionReductionCcdfPlot, #aiRdReductionCcdfPlot, #timeToDetectionCcdfPlot,
+        #projectH100YearsCcdfPlot, #datacenterCapacityCcdfPlot, #datacenterCombinedPlot,
         #initialDarkComputeDetectionPlot, #initialComputeStockPlot,
         #initialDarkComputePlot, #covertFabFlowPlot, #chipSurvivalPlot, #totalDarkComputePlot,
         #darkComputeEnergyPlot, #operationalDarkComputePlot, #datacenterCapacityPlot2, #datacenterCapacityBreakdownPlot {
             border: none !important;
         }
 
-        #computeCcdfPlot > div, #timeSeriesPlot > div, #h100YearsTimeSeriesPlot > div, #projectH100YearsCcdfPlot > div,
-        #datacenterCapacityCcdfPlot > div, #datacenterCombinedPlot > div,
+        #computeCcdfPlot > div, #timeSeriesPlot > div, #h100YearsTimeSeriesPlot > div, #chipProductionReductionCcdfPlot > div, #aiRdReductionCcdfPlot > div, #timeToDetectionCcdfPlot > div,
+        #projectH100YearsCcdfPlot > div, #datacenterCapacityCcdfPlot > div, #datacenterCombinedPlot > div,
         #initialDarkComputeDetectionPlot > div, #initialComputeStockPlot > div,
         #initialDarkComputePlot > div, #covertFabFlowPlot > div, #chipSurvivalPlot > div, #totalDarkComputePlot > div,
         #darkComputeEnergyPlot > div, #operationalDarkComputePlot > div, #datacenterCapacityPlot2 > div, #datacenterCapacityBreakdownPlot > div {
@@ -241,13 +241,22 @@
 
         .breakdown-item {
             text-align: left;
-            min-width: 200px;
-            flex: 1 1 200px;
+            min-width: 170px;
+            flex: 1 1 170px;
             display: flex;
             flex-direction: column;
             align-items: stretch;
             margin-top: 20px;
             margin-bottom: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .breakdown-item[style*="cursor: pointer"]:hover {
+            transform: scale(1.02);
+        }
+
+        .breakdown-item[style*="cursor: pointer"]:hover .breakdown-plot {
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
         }
 
         .breakdown-box-item {
@@ -363,7 +372,7 @@
             margin-left: auto;
             margin-right: auto;
             width: 100%;
-            max-width: 140px;
+            max-width: 170px;
         }
 
         .breakdown-box-inner {

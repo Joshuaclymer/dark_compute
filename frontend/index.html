@@ -6,11 +6,15 @@
     <title>Covert Compute Production Model</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="config.js"></script>
     <script src="utilities.js"></script>
     <script src="initial_stock_section.js"></script>
     <script src="covert_data_centers_section.js"></script>
     <script src="covert_fab_section.js"></script>
-    <script src="dark_compute_model_section.js"></script>
+    <script src="dark_compute_top_section.js"></script>
+    <script src="dark_compute_rate_section.js"></script>
+    <script src="dark_compute_detection_section.js"></script>
+    <script src="dark_compute_main.js"></script>
     <script>
         // Function to send errors to backend
         function logErrorToBackend(errorData) {
@@ -78,7 +82,9 @@
 
         <div id="plots" style="display: none;">
             <!-- Dark Compute Model Section -->
-            {% include 'dark_compute_model_section.html' %}
+            {% include 'dark_compute_top_section.html' %}
+            {% include 'dark_compute_rate_section.html' %}
+            {% include 'dark_compute_detection_section.html' %}
 
             <!-- Detailed Breakdown Sections (hidden on mobile) -->
             <div class="detailed-breakdown-sections">
@@ -167,18 +173,16 @@
                 'simulation_settings.time_step_years': parseFloat(document.getElementById('increment').value),
                 'simulation_settings.num_simulations': parseInt(document.getElementById('num_simulations').value),
 
-                // Covert project strategy
-                'covert_project_strategy.run_a_covert_project': document.getElementById('run_covert_project').checked,
-                'covert_project_strategy.proportion_of_initial_compute_stock_to_divert': parseFloat(document.getElementById('proportion_of_initial_chip_stock_to_divert').value),
-                'covert_project_strategy.GW_per_initial_datacenter': parseFloat(document.getElementById('GW_per_initial_datacenter').value),
-                'covert_project_strategy.number_of_initial_datacenters': parseFloat(document.getElementById('number_of_initial_datacenters').value),
-                'covert_project_strategy.datacenter_construction_labor': parseInt(document.getElementById('datacenter_construction_labor').value),
-                'covert_project_strategy.years_before_agreement_year_prc_starts_building_covert_datacenters': parseInt(document.getElementById('years_before_agreement_year_prc_starts_building_covert_datacenters').value),
-                'covert_project_strategy.build_a_covert_fab': document.getElementById('build_covert_fab').checked,
-                'covert_project_strategy.covert_fab_operating_labor': parseInt(document.getElementById('operating_labor').value),
-                'covert_project_strategy.covert_fab_construction_labor': parseInt(document.getElementById('construction_labor').value),
-                'covert_project_strategy.covert_fab_process_node': document.getElementById('process_node').value,
-                'covert_project_strategy.covert_fab_proportion_of_prc_lithography_scanners_devoted': parseFloat(document.getElementById('scanner_proportion').value),
+                // Covert project properties
+                'covert_project_properties.run_a_covert_project': document.getElementById('run_covert_project').checked,
+                'covert_project_properties.proportion_of_initial_compute_stock_to_divert': parseFloat(document.getElementById('proportion_of_initial_chip_stock_to_divert').value),
+                'covert_project_properties.datacenter_construction_labor': parseInt(document.getElementById('datacenter_construction_labor').value),
+                'covert_project_properties.years_before_agreement_year_prc_starts_building_covert_datacenters': parseInt(document.getElementById('years_before_agreement_year_prc_starts_building_covert_datacenters').value),
+                'covert_project_properties.build_a_covert_fab': document.getElementById('build_covert_fab').checked,
+                'covert_project_properties.covert_fab_operating_labor': parseInt(document.getElementById('operating_labor').value),
+                'covert_project_properties.covert_fab_construction_labor': parseInt(document.getElementById('construction_labor').value),
+                'covert_project_properties.covert_fab_process_node': document.getElementById('process_node').value,
+                'covert_project_properties.covert_fab_proportion_of_prc_lithography_scanners_devoted': parseFloat(document.getElementById('scanner_proportion').value),
 
                 // Covert project parameters - detection
                 'covert_project_parameters.p_project_exists': parseFloat(document.getElementById('covert_project_parameters.p_project_exists').value),
@@ -191,10 +195,17 @@
                 'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p10': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p10').value),
                 'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p50': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p50').value),
                 'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p90': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p90').value),
-                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically': parseFloat(document.getElementById('proportion_of_prc_chip_stock_produced_domestically').value),
+                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2026': parseFloat(document.getElementById('proportion_of_prc_chip_stock_produced_domestically_2026').value),
+                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2030': parseFloat(document.getElementById('proportion_of_prc_chip_stock_produced_domestically_2030').value),
                 'covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock': parseFloat(document.getElementById('us_intelligence_median_error_in_estimate_of_prc_compute_stock').value),
                 'covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100': parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value),
                 'covert_project_parameters.initial_compute_stock_parameters.h100_power_watts': parseFloat(document.getElementById('h100_power_watts').value),
+
+                // Slowdown counterfactual parameters
+                'covert_project_parameters.slowdown_counterfactual_parameters.median_global_compute_in_2026': parseFloat(document.getElementById('median_global_compute_in_2026').value) * 1e6,
+                'covert_project_parameters.slowdown_counterfactual_parameters.median_global_compute_annual_rate_of_increase': parseFloat(document.getElementById('median_global_compute_annual_rate_of_increase').value),
+                'covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_global_compute_for_single_ai_project': parseFloat(document.getElementById('fraction_of_global_compute_for_single_ai_project').value),
+                'covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_prc_compute_spent_on_ai_rd_before_slowdown': parseFloat(document.getElementById('fraction_of_prc_compute_spent_on_ai_rd_before_slowdown').value),
 
                 // Survival rate parameters
                 'covert_project_parameters.survival_rate_parameters.initial_hazard_rate_p50': parseFloat(document.getElementById('initial_hazard_rate_p50').value),
@@ -252,6 +263,424 @@
             };
         }
 
+        function plotCovertFabProductionBreakdown(data) {
+            // Plot compute breakdown
+            if (data.covert_fab && data.covert_fab.is_operational) {
+                const years = data.covert_fab.years;
+
+                // Proportion Operational - time series showing proportion
+                plotProportionOperational('isOperationalPlot', {
+                    proportion: data.covert_fab.is_operational.proportion
+                }, years, '#D4A574', 'Probability');
+
+                // Wafer Starts per Month - PDF
+                const waferStartsFinal = data.covert_fab.wafer_starts.individual.map(sim => sim[sim.length - 1]);
+                plotPDF('waferStartsPlot', waferStartsFinal, '#9B72B0', 'Wafers/Month');
+
+                // H100-sized Chips per Wafer - Display as a box (constant value)
+                const chipsPerWaferValue = data.covert_fab.chips_per_wafer.individual[0][0]; // Same for all sims
+                document.getElementById('chipsPerWaferPlot').innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <div class="breakdown-box-inner">${chipsPerWaferValue.toFixed(0)}</div>
+                        <div class="breakdown-label">Working H100-sized chips per wafer</div>
+                    </div>`;
+
+                // Attach hover effect to the newly created breakdown-box-inner
+                const chipsPerWaferInner = document.querySelector('#chipsPerWaferPlot .breakdown-box-inner');
+                if (chipsPerWaferInner) {
+                    chipsPerWaferInner.style.transition = 'all 0.2s ease';
+                    chipsPerWaferInner.addEventListener('mouseenter', () => {
+                        chipsPerWaferInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        chipsPerWaferInner.style.transform = 'scale(1.015)';
+                    });
+                    chipsPerWaferInner.addEventListener('mouseleave', () => {
+                        chipsPerWaferInner.style.boxShadow = '';
+                        chipsPerWaferInner.style.transform = '';
+                    });
+                }
+
+                // Transistor density relative to H100 - Bar plot at final timestep
+                const transistorDensityFinal = data.covert_fab.transistor_density.individual.map(sim => sim[sim.length - 1]);
+                const processNodes = data.covert_fab.process_node_by_sim;
+                plotBarByProcessNode('computePerChipPlot', transistorDensityFinal, processNodes, '#E8A863');
+
+                // Architecture Efficiency - Display as a box (constant value at agreement year)
+                const archEffValue = data.covert_fab.architecture_efficiency_at_agreement;
+                document.getElementById('architectureEfficiencyDisplay').innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <div class="breakdown-box-inner">${archEffValue.toFixed(2)}</div>
+                        <div class="breakdown-label">Architecture efficiency (relative to H100)</div>
+                    </div>`;
+
+                // Attach hover effect to the newly created breakdown-box-inner
+                const architectureEfficiencyInner = document.querySelector('#architectureEfficiencyDisplay .breakdown-box-inner');
+                if (architectureEfficiencyInner) {
+                    architectureEfficiencyInner.style.transition = 'all 0.2s ease';
+                    architectureEfficiencyInner.addEventListener('mouseenter', () => {
+                        architectureEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        architectureEfficiencyInner.style.transform = 'scale(1.015)';
+                    });
+                    architectureEfficiencyInner.addEventListener('mouseleave', () => {
+                        architectureEfficiencyInner.style.boxShadow = '';
+                        architectureEfficiencyInner.style.transform = '';
+                    });
+                }
+
+                // Total compute - time series over all timesteps
+                const totalComputeArray = data.covert_fab.is_operational.individual.map((opSim, simIdx) => {
+                    return opSim.map((isOp, timeIdx) => {
+                        return (isOp * data.covert_fab.wafer_starts.individual[simIdx][timeIdx] *
+                                data.covert_fab.architecture_efficiency.individual[simIdx][timeIdx] *
+                                data.covert_fab.compute_per_wafer_2022_arch.individual[simIdx][timeIdx]);
+                    });
+                });
+
+                // Calculate median and percentiles for total compute
+                const totalComputeMedian = years.map((_, i) => {
+                    const values = totalComputeArray.map(sim => sim[i]);
+                    return values.sort((a, b) => a - b)[Math.floor(values.length * 0.5)];
+                });
+                const totalComputeP25 = years.map((_, i) => {
+                    const values = totalComputeArray.map(sim => sim[i]);
+                    return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
+                });
+                const totalComputeP75 = years.map((_, i) => {
+                    const values = totalComputeArray.map(sim => sim[i]);
+                    return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
+                });
+
+                // Calculate y-axis maximum as 1.2 times the maximum 75th percentile value
+                const maxP75 = Math.max(...totalComputeP75);
+                const yMax = maxP75 * 1.2;
+
+                plotMedianWithPercentiles('totalComputePlot', {
+                    median: totalComputeMedian,
+                    p25: totalComputeP25,
+                    p75: totalComputeP75,
+                    individual: totalComputeArray
+                }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
+
+                // Plot energy breakdown
+                // 1. Compute produced per month (reuse from above)
+                plotMedianWithPercentiles('energyComputePerMonthPlot', {
+                    median: totalComputeMedian,
+                    p25: totalComputeP25,
+                    p75: totalComputeP75,
+                    individual: totalComputeArray
+                }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
+
+                // 2. Transistor density relative to H100 (reuse from above)
+                plotBarByProcessNode('energyTransistorDensityPlot', transistorDensityFinal, processNodes, '#E8A863');
+
+                // 3. Curve plot: Transistor density vs Energy efficiency
+                // Energy efficiency follows power law from fab_model.py:
+                // watts_per_tpp = H100_watts * (density_ratio)^exponent
+                // efficiency = 1 / (watts_per_tpp / H100_watts) = 1 / (density_ratio^exponent)
+
+                // Constants from fab_model.py
+                const H100_TRANSISTOR_DENSITY = 98.28;  // Million transistors per mm²
+                const DENNARD_THRESHOLD_DENSITY = 1.98;  // Million transistors per mm²
+                const EXPONENT_BEFORE_DENNARD = -2.006575;
+                const EXPONENT_AFTER_DENNARD = -0.909355;
+
+                // Use curve data from backend (calculated by Python)
+                const densityRangeRelative = data.covert_fab.watts_per_tpp_curve.density_relative;
+                const wattsPerTppCurve = data.covert_fab.watts_per_tpp_curve.watts_per_tpp_relative;
+                const dennardDataX = 1.98 / 98.28;
+
+                const xMin = 0.001;  // From your range
+                const xMax = 100;    // From your range
+
+                // Convert data coordinate to paper coordinate for log scale
+                const dennardPaperX = (Math.log10(dennardDataX) - Math.log10(xMin)) /
+                                    (Math.log10(xMax) - Math.log10(xMin));
+
+
+                // Create curve plot with actual simulation points overlaid
+                Plotly.newPlot('densityVsEfficiencyPlot', [
+                    {
+                        x: densityRangeRelative,
+                        y: wattsPerTppCurve,
+                        mode: 'lines',
+                        type: 'scatter',
+                        line: {
+                            color: '#74B3A8',
+                            width: 2
+                        },
+                        name: 'Power Law',
+                        hovertemplate: 'Density: %{x:.2g}x<br>Efficiency: %{y:.2g}x<extra></extra>'
+                    },
+                    {
+                        x: transistorDensityFinal,
+                        y: data.covert_fab.watts_per_tpp.individual.map(sim => sim[sim.length - 1]),
+                        mode: 'markers',
+                        type: 'scatter',
+                        marker: {
+                            size: 6,
+                            color: '#E8A863',
+                            opacity: 0.7
+                        },
+                        name: 'Simulations',
+                        hovertemplate: 'Density: %{x:.2g}x<br>Watts/TPP: %{y:.2g}x<extra></extra>'
+                    }
+                ], {
+                    xaxis: {
+                        title: 'Transistor Density (relative to H100)',
+                        titlefont: { size: 10 },
+                        tickfont: { size: 9 },
+                        type: 'log',
+                        range: [Math.log10(0.001), Math.log10(100)],
+                        automargin: true
+                    },
+                    yaxis: {
+                        title: 'Watts per TPP (relative to H100)',
+                        titlefont: { size: 10 },
+                        tickfont: { size: 9 },
+                        type: 'log',
+                        tickmode: 'array',
+                        tickvals: [0.01, 0.1, 1, 10, 100, 1000],
+                        automargin: true
+                    },
+                    shapes: [{
+                        type: 'line',
+                        x0: dennardPaperX,
+                        x1: dennardPaperX,
+                        y0: 0,
+                        y1: 1,
+                        xref: 'paper',
+                        yref: 'paper',
+                        line: {
+                            color: '#999',
+                            width: 1,
+                            dash: 'dot'
+                        }
+                    }],
+                    annotations: [{
+                        x: dennardPaperX + 0.02,
+                        y: 0.85,
+                        yref: 'paper',
+                        xref: 'paper',
+                        xanchor: 'left',
+                        yanchor: 'bottom',
+                        text: 'End of Dennard<br>Scaling',
+                        showarrow: false,
+                        align: "left",
+                        font: {
+                            size: 9,
+                            color: '#666',
+                        }
+                    }],
+                    margin: { l: 60, r: 10, t: 10, b: 65, pad: 10 },
+                    showlegend: false,
+                    hovermode: 'closest'
+                }, {displayModeBar: false, responsive: true});
+                setTimeout(() => Plotly.Plots.resize('densityVsEfficiencyPlot'), 50);
+
+                // 4. Display H100 energy requirements (from user input)
+                const h100PowerWatts = parseFloat(document.getElementById('h100_power_watts').value);
+                const h100EnergyWatts = h100PowerWatts; // Store in watts for calculations below
+                const h100EnergyKW = h100PowerWatts / 1000;
+                document.getElementById('h100EnergyDisplay').innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <div class="breakdown-box-inner">${h100EnergyKW.toFixed(2)} kW</div>
+                        <div class="breakdown-label">Energy requirements of H100</div>
+                    </div>`;
+
+                // Attach hover effect to the newly created breakdown-box-inner
+                const h100EnergyInner = document.querySelector('#h100EnergyDisplay .breakdown-box-inner');
+                if (h100EnergyInner) {
+                    h100EnergyInner.style.transition = 'all 0.2s ease';
+                    h100EnergyInner.addEventListener('mouseenter', () => {
+                        h100EnergyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        h100EnergyInner.style.transform = 'scale(1.015)';
+                    });
+                    h100EnergyInner.addEventListener('mouseleave', () => {
+                        h100EnergyInner.style.boxShadow = '';
+                        h100EnergyInner.style.transform = '';
+                    });
+                }
+
+                // 5. Calculate and plot energy requirements per month (GW/month)
+                // Energy = H100e_per_month × watts_per_TPP_relative × H100_energy
+                // Note: transistor_density is already factored into H100e calculation, don't multiply again!
+                const wattsPerTppBySimAndTime = data.covert_fab.watts_per_tpp.individual;
+
+                const energyPerMonthArray = totalComputeArray.map((simArray, simIdx) => {
+                    return simArray.map((h100ePerMonth, timeIdx) => {
+                        // h100ePerMonth is actual H100e count (not in thousands)
+                        const wattsPerTppRelative = wattsPerTppBySimAndTime[simIdx][timeIdx];
+
+                        // Energy (W) = H100e × watts_per_TPP_rel × H100_energy_watts
+                        const totalWatts = h100ePerMonth * wattsPerTppRelative * h100EnergyWatts;
+                        const energyGW = totalWatts / 1e9;
+                        return energyGW;
+                    });
+                });
+
+                const energyPerMonthMedian = years.map((_, i) => {
+                    const values = energyPerMonthArray.map(sim => sim[i]);
+                    return values.sort((a, b) => a - b)[Math.floor(values.length * 0.5)];
+                });
+                const energyPerMonthP25 = years.map((_, i) => {
+                    const values = energyPerMonthArray.map(sim => sim[i]);
+                    return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
+                });
+                const energyPerMonthP75 = years.map((_, i) => {
+                    const values = energyPerMonthArray.map(sim => sim[i]);
+                    return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
+                });
+
+                const maxEnergyP75 = Math.max(...energyPerMonthP75);
+                const yMaxEnergy = maxEnergyP75 * 1.2;
+
+                plotMedianWithPercentiles('energyPerMonthPlot', {
+                    median: energyPerMonthMedian,
+                    p25: energyPerMonthP25,
+                    p75: energyPerMonthP75,
+                    individual: energyPerMonthArray
+                }, years, '#5AA89B', 'GW/Month', [0, yMaxEnergy], false, true);
+            }
+        }
+
+        function plotStrengthOfEvidence(data) {
+            // Plot "Strength of Evidence of Covert Project" section
+            if (data.initial_stock && data.initial_stock.lr_prc_accounting_samples && data.dark_compute_model) {
+                const years = data.dark_compute_model.years;
+
+                // Get prior probability from parameters and calculate prior odds
+                const priorProb = parseFloat(document.getElementById('covert_project_parameters.p_project_exists').value);
+                const priorOddsProject = priorProb / (1 - priorProb);
+
+                // Display prior odds
+                document.getElementById('dashboardPriorProject').innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <div class="breakdown-box-inner">${priorOddsProject.toFixed(3)}</div>
+                        <div class="breakdown-label">Prior odds of<br>covert project</div>
+                    </div>`;
+
+                // Attach hover effect to the newly created breakdown-box-inner
+                const dashboardPriorProjectInner = document.querySelector('#dashboardPriorProject .breakdown-box-inner');
+                if (dashboardPriorProjectInner) {
+                    dashboardPriorProjectInner.style.transition = 'all 0.2s ease';
+                    dashboardPriorProjectInner.addEventListener('mouseenter', () => {
+                        dashboardPriorProjectInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        dashboardPriorProjectInner.style.transform = 'scale(1.015)';
+                    });
+                    dashboardPriorProjectInner.addEventListener('mouseleave', () => {
+                        dashboardPriorProjectInner.style.boxShadow = '';
+                        dashboardPriorProjectInner.style.transform = '';
+                    });
+                }
+
+                // Note: Individual LR component plots are now created in dark_compute_model_section.js
+                // This includes lrPrcAccountingPlot, lrSmeInventoryPlot, and lrReportedAssetsPlot
+
+                // 3. LR from other intelligence sources (same as lrOtherPlot)
+                const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
+                const lrOtherP25 = years.map((_, i) => {
+                    const values = lrOtherArray.map(sim => sim[i]);
+                    return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
+                });
+                const lrOtherP75 = years.map((_, i) => {
+                    const values = lrOtherArray.map(sim => sim[i]);
+                    return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
+                });
+                plotMedianWithPercentiles('lrOtherIntelPlot', {
+                    median: data.covert_fab.lr_other.median,
+                    p25: lrOtherP25,
+                    p75: lrOtherP75,
+                    individual: data.covert_fab.lr_other.individual
+                }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
+
+                // 4. Posterior probability of covert project
+                // Use backend data from US intelligence beliefs (same as Simulation Runs plot)
+                // Custom plotting to add threshold lines
+                const posteriorData = data.dark_compute_model.posterior_prob_project;
+
+                // Define thresholds from global config
+                const thresholds = DETECTION_CONFIG.getThresholds();
+
+                const traces = [
+                    {
+                        x: years,
+                        y: posteriorData.p75,
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: 'transparent' },
+                        showlegend: false,
+                        hoverinfo: 'skip'
+                    },
+                    {
+                        x: years,
+                        y: posteriorData.p25,
+                        type: 'scatter',
+                        mode: 'lines',
+                        fill: 'tonexty',
+                        fillcolor: 'rgba(91, 141, 190, 0.2)',
+                        line: { color: 'transparent' },
+                        showlegend: false,
+                        hoverinfo: 'skip'
+                    },
+                    {
+                        x: years,
+                        y: posteriorData.median,
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#5B8DBE', width: 2 },
+                        name: 'Posterior Probability',
+                        showlegend: false
+                    }
+                ];
+
+                // Add threshold lines
+                for (const threshold of thresholds) {
+                    const thresholdOdds = priorOddsProject * threshold.multiplier;
+                    const thresholdProb = thresholdOdds / (1 + thresholdOdds);
+
+                    traces.push({
+                        x: [years[0], years[years.length - 1]],
+                        y: [thresholdProb, thresholdProb],
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: threshold.color, width: 2, dash: 'dash' },
+                        name: `Detection (${threshold.multiplier}x)`,
+                        showlegend: true
+                    });
+                }
+
+                const layout = {
+                    xaxis: {
+                        title: 'Year',
+                        titlefont: { size: 10 },
+                        tickfont: { size: 9 }
+                    },
+                    yaxis: {
+                        title: 'Posterior Probability',
+                        titlefont: { size: 10 },
+                        tickfont: { size: 9 },
+                        tickformat: '.0%',
+                        range: [0, 1]
+                    },
+                    margin: { l: 50, r: 20, t: 15, b: 60 },
+                    height: 240,
+                    hovermode: 'x unified',
+                    showlegend: true,
+                    legend: {
+                        x: 0.98,
+                        y: 0.02,
+                        xanchor: 'right',
+                        yanchor: 'bottom',
+                        bgcolor: 'rgba(255, 255, 255, 0.8)',
+                        bordercolor: '#ccc',
+                        borderwidth: 1,
+                        font: { size: 9 }
+                    }
+                };
+
+                Plotly.newPlot('posteriorProbProjectPlot', traces, layout, {responsive: true, displayModeBar: false});
+            }
+        }
+
         async function runSimulation() {
             runButton.disabled = true;
             loadingDiv.classList.add('active');
@@ -279,17 +708,13 @@
 
                 // Plot main charts
                 plotTimeSeries(data);
-                plotH100YearsTimeSeries(data);
                 plotComputeCcdf(data);
                 updateDashboard(data);
-                plotDarkComputeModel(data);
+                plotDarkComputeModel(data);  // This now calls all dark compute model functions
                 plotDatacenterCombined(data);
                 plotDatacenterCapacityCcdf(data);
-                plotProjectH100YearsCcdf(data);
                 updateDatacenterDashboard(data);
                 populateDatacenterCapacityBreakdown(data);
-                createIntelligenceAccuracyPlot();
-                createDetectionLatencyPlot();
 
                 // Force resize after a brief delay to ensure plots fill containers
                 setTimeout(() => {
@@ -310,6 +735,8 @@
                     Plotly.Plots.resize('computeCcdfPlot');
                     Plotly.Plots.resize('datacenterCombinedPlot');
                     Plotly.Plots.resize('datacenterCapacityCcdfPlot');
+                    Plotly.Plots.resize('projectH100YearsCcdfPlot');
+                    Plotly.Plots.resize('aiRdReductionCcdfPlot');
                     Plotly.Plots.resize('intelligenceAccuracyPlot');
                     Plotly.Plots.resize('detectionLatencyPlot');
                     // Individual LR component plots are resized in dark_compute_model_section.js
@@ -361,422 +788,10 @@
                 }
 
                 // Plot "Strength of Evidence of Covert Project" section
-                if (data.initial_stock && data.initial_stock.lr_prc_accounting_samples && data.dark_compute_model) {
-                    const years = data.dark_compute_model.years;
+                plotStrengthOfEvidence(data);
 
-                    // Get prior probability from parameters and calculate prior odds
-                    const priorProb = parseFloat(document.getElementById('covert_project_parameters.p_project_exists').value);
-                    const priorOddsProject = priorProb / (1 - priorProb);
-
-                    // Display prior odds
-                    document.getElementById('dashboardPriorProject').innerHTML = `
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <div class="breakdown-box-inner">${priorOddsProject.toFixed(3)}</div>
-                            <div class="breakdown-label">Prior odds of<br>covert project</div>
-                        </div>`;
-
-                    // Attach hover effect to the newly created breakdown-box-inner
-                    const dashboardPriorProjectInner = document.querySelector('#dashboardPriorProject .breakdown-box-inner');
-                    if (dashboardPriorProjectInner) {
-                        dashboardPriorProjectInner.style.transition = 'all 0.2s ease';
-                        dashboardPriorProjectInner.addEventListener('mouseenter', () => {
-                            dashboardPriorProjectInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
-                            dashboardPriorProjectInner.style.transform = 'scale(1.015)';
-                        });
-                        dashboardPriorProjectInner.addEventListener('mouseleave', () => {
-                            dashboardPriorProjectInner.style.boxShadow = '';
-                            dashboardPriorProjectInner.style.transform = '';
-                        });
-                    }
-
-                    // Note: Individual LR component plots are now created in dark_compute_model_section.js
-                    // This includes lrPrcAccountingPlot, lrSmeInventoryPlot, and lrReportedAssetsPlot
-
-                    // 3. LR from other intelligence sources (same as lrOtherPlot)
-                    const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
-                    const lrOtherP25 = years.map((_, i) => {
-                        const values = lrOtherArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
-                    });
-                    const lrOtherP75 = years.map((_, i) => {
-                        const values = lrOtherArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
-                    });
-                    plotMedianWithPercentiles('lrOtherIntelPlot', {
-                        median: data.covert_fab.lr_other.median,
-                        p25: lrOtherP25,
-                        p75: lrOtherP75,
-                        individual: data.covert_fab.lr_other.individual
-                    }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
-
-                    // 4. Posterior probability of covert project
-                    // Use backend data from US intelligence beliefs (same as Simulation Runs plot)
-                    // Custom plotting to add threshold lines
-                    const posteriorData = data.dark_compute_model.posterior_prob_project;
-
-                    // Define thresholds with colors matching H100-Years plot
-                    const thresholds = [
-                        { multiplier: 1, color: '#9B7BB3', label: '1x update' },  // Purple
-                        { multiplier: 3, color: '#5B8DBE', label: '3x update' },  // Blue
-                        { multiplier: 5, color: '#5AA89B', label: '5x update' }   // Blue-green
-                    ];
-
-                    const traces = [
-                        {
-                            x: years,
-                            y: posteriorData.p75,
-                            type: 'scatter',
-                            mode: 'lines',
-                            line: { color: 'transparent' },
-                            showlegend: false,
-                            hoverinfo: 'skip'
-                        },
-                        {
-                            x: years,
-                            y: posteriorData.p25,
-                            type: 'scatter',
-                            mode: 'lines',
-                            fill: 'tonexty',
-                            fillcolor: 'rgba(91, 141, 190, 0.2)',
-                            line: { color: 'transparent' },
-                            showlegend: false,
-                            hoverinfo: 'skip'
-                        },
-                        {
-                            x: years,
-                            y: posteriorData.median,
-                            type: 'scatter',
-                            mode: 'lines',
-                            line: { color: '#5B8DBE', width: 2 },
-                            name: 'Posterior Probability',
-                            showlegend: false
-                        }
-                    ];
-
-                    // Add threshold lines
-                    for (const threshold of thresholds) {
-                        const thresholdOdds = priorOddsProject * threshold.multiplier;
-                        const thresholdProb = thresholdOdds / (1 + thresholdOdds);
-
-                        traces.push({
-                            x: [years[0], years[years.length - 1]],
-                            y: [thresholdProb, thresholdProb],
-                            type: 'scatter',
-                            mode: 'lines',
-                            line: { color: threshold.color, width: 2, dash: 'dash' },
-                            name: `Detection (${threshold.multiplier}x)`,
-                            showlegend: true
-                        });
-                    }
-
-                    const layout = {
-                        xaxis: {
-                            title: 'Year',
-                            titlefont: { size: 10 },
-                            tickfont: { size: 9 }
-                        },
-                        yaxis: {
-                            title: 'Posterior Probability',
-                            titlefont: { size: 10 },
-                            tickfont: { size: 9 },
-                            tickformat: '.0%',
-                            range: [0, 1]
-                        },
-                        margin: { l: 50, r: 20, t: 15, b: 60 },
-                        height: 240,
-                        hovermode: 'x unified',
-                        showlegend: true,
-                        legend: {
-                            x: 0.98,
-                            y: 0.02,
-                            xanchor: 'right',
-                            yanchor: 'bottom',
-                            bgcolor: 'rgba(255, 255, 255, 0.8)',
-                            bordercolor: '#ccc',
-                            borderwidth: 1,
-                            font: { size: 9 }
-                        }
-                    };
-
-                    Plotly.newPlot('posteriorProbProjectPlot', traces, layout, {responsive: true, displayModeBar: false});
-                }
-
-                // Plot compute breakdown
-                if (data.covert_fab && data.covert_fab.is_operational) {
-                    const years = data.covert_fab.years;
-
-                    // Proportion Operational - time series showing proportion
-                    plotProportionOperational('isOperationalPlot', {
-                        proportion: data.covert_fab.is_operational.proportion
-                    }, years, '#D4A574', 'Probability');
-
-                    // Wafer Starts per Month - PDF
-                    const waferStartsFinal = data.covert_fab.wafer_starts.individual.map(sim => sim[sim.length - 1]);
-                    plotPDF('waferStartsPlot', waferStartsFinal, '#9B72B0', 'Wafers/Month');
-
-                    // H100-sized Chips per Wafer - Display as a box (constant value)
-                    const chipsPerWaferValue = data.covert_fab.chips_per_wafer.individual[0][0]; // Same for all sims
-                    document.getElementById('chipsPerWaferPlot').innerHTML = `
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <div class="breakdown-box-inner">${chipsPerWaferValue.toFixed(0)}</div>
-                            <div class="breakdown-label">Working H100-sized chips per wafer</div>
-                        </div>`;
-
-                    // Attach hover effect to the newly created breakdown-box-inner
-                    const chipsPerWaferInner = document.querySelector('#chipsPerWaferPlot .breakdown-box-inner');
-                    if (chipsPerWaferInner) {
-                        chipsPerWaferInner.style.transition = 'all 0.2s ease';
-                        chipsPerWaferInner.addEventListener('mouseenter', () => {
-                            chipsPerWaferInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
-                            chipsPerWaferInner.style.transform = 'scale(1.015)';
-                        });
-                        chipsPerWaferInner.addEventListener('mouseleave', () => {
-                            chipsPerWaferInner.style.boxShadow = '';
-                            chipsPerWaferInner.style.transform = '';
-                        });
-                    }
-
-                    // Transistor density relative to H100 - Bar plot at final timestep
-                    const transistorDensityFinal = data.covert_fab.transistor_density.individual.map(sim => sim[sim.length - 1]);
-                    const processNodes = data.covert_fab.process_node_by_sim;
-                    plotBarByProcessNode('computePerChipPlot', transistorDensityFinal, processNodes, '#E8A863');
-
-                    // Architecture Efficiency - Display as a box (constant value at agreement year)
-                    const archEffValue = data.covert_fab.architecture_efficiency_at_agreement;
-                    document.getElementById('architectureEfficiencyDisplay').innerHTML = `
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <div class="breakdown-box-inner">${archEffValue.toFixed(2)}</div>
-                            <div class="breakdown-label">Architecture efficiency (relative to H100)</div>
-                        </div>`;
-
-                    // Attach hover effect to the newly created breakdown-box-inner
-                    const architectureEfficiencyInner = document.querySelector('#architectureEfficiencyDisplay .breakdown-box-inner');
-                    if (architectureEfficiencyInner) {
-                        architectureEfficiencyInner.style.transition = 'all 0.2s ease';
-                        architectureEfficiencyInner.addEventListener('mouseenter', () => {
-                            architectureEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
-                            architectureEfficiencyInner.style.transform = 'scale(1.015)';
-                        });
-                        architectureEfficiencyInner.addEventListener('mouseleave', () => {
-                            architectureEfficiencyInner.style.boxShadow = '';
-                            architectureEfficiencyInner.style.transform = '';
-                        });
-                    }
-
-                    // Total compute - time series over all timesteps
-                    const totalComputeArray = data.covert_fab.is_operational.individual.map((opSim, simIdx) => {
-                        return opSim.map((isOp, timeIdx) => {
-                            return (isOp * data.covert_fab.wafer_starts.individual[simIdx][timeIdx] *
-                                    data.covert_fab.architecture_efficiency.individual[simIdx][timeIdx] *
-                                    data.covert_fab.compute_per_wafer_2022_arch.individual[simIdx][timeIdx]);
-                        });
-                    });
-
-                    // Calculate median and percentiles for total compute
-                    const totalComputeMedian = years.map((_, i) => {
-                        const values = totalComputeArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.5)];
-                    });
-                    const totalComputeP25 = years.map((_, i) => {
-                        const values = totalComputeArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
-                    });
-                    const totalComputeP75 = years.map((_, i) => {
-                        const values = totalComputeArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
-                    });
-
-                    // Calculate y-axis maximum as 1.2 times the maximum 75th percentile value
-                    const maxP75 = Math.max(...totalComputeP75);
-                    const yMax = maxP75 * 1.2;
-
-                    plotMedianWithPercentiles('totalComputePlot', {
-                        median: totalComputeMedian,
-                        p25: totalComputeP25,
-                        p75: totalComputeP75,
-                        individual: totalComputeArray
-                    }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
-
-                    // Plot energy breakdown
-                    // 1. Compute produced per month (reuse from above)
-                    plotMedianWithPercentiles('energyComputePerMonthPlot', {
-                        median: totalComputeMedian,
-                        p25: totalComputeP25,
-                        p75: totalComputeP75,
-                        individual: totalComputeArray
-                    }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
-
-                    // 2. Transistor density relative to H100 (reuse from above)
-                    plotBarByProcessNode('energyTransistorDensityPlot', transistorDensityFinal, processNodes, '#E8A863');
-
-                    // 3. Curve plot: Transistor density vs Energy efficiency
-                    // Energy efficiency follows power law from fab_model.py:
-                    // watts_per_tpp = H100_watts * (density_ratio)^exponent
-                    // efficiency = 1 / (watts_per_tpp / H100_watts) = 1 / (density_ratio^exponent)
-
-                    // Constants from fab_model.py
-                    const H100_TRANSISTOR_DENSITY = 98.28;  // Million transistors per mm²
-                    const DENNARD_THRESHOLD_DENSITY = 1.98;  // Million transistors per mm²
-                    const EXPONENT_BEFORE_DENNARD = -2.006575;
-                    const EXPONENT_AFTER_DENNARD = -0.909355;
-
-                    // Use curve data from backend (calculated by Python)
-                    const densityRangeRelative = data.covert_fab.watts_per_tpp_curve.density_relative;
-                    const wattsPerTppCurve = data.covert_fab.watts_per_tpp_curve.watts_per_tpp_relative;
-                    const dennardDataX = 1.98 / 98.28;
-
-                    const xMin = 0.001;  // From your range
-                    const xMax = 100;    // From your range
-
-                    // Convert data coordinate to paper coordinate for log scale
-                    const dennardPaperX = (Math.log10(dennardDataX) - Math.log10(xMin)) / 
-                                        (Math.log10(xMax) - Math.log10(xMin));
-
-
-                    // Create curve plot with actual simulation points overlaid
-                    Plotly.newPlot('densityVsEfficiencyPlot', [
-                        {
-                            x: densityRangeRelative,
-                            y: wattsPerTppCurve,
-                            mode: 'lines',
-                            type: 'scatter',
-                            line: {
-                                color: '#74B3A8',
-                                width: 2
-                            },
-                            name: 'Power Law',
-                            hovertemplate: 'Density: %{x:.2g}x<br>Efficiency: %{y:.2g}x<extra></extra>'
-                        },
-                        {
-                            x: transistorDensityFinal,
-                            y: data.covert_fab.watts_per_tpp.individual.map(sim => sim[sim.length - 1]),
-                            mode: 'markers',
-                            type: 'scatter',
-                            marker: {
-                                size: 6,
-                                color: '#E8A863',
-                                opacity: 0.7
-                            },
-                            name: 'Simulations',
-                            hovertemplate: 'Density: %{x:.2g}x<br>Watts/TPP: %{y:.2g}x<extra></extra>'
-                        }
-                    ], {
-                        xaxis: {
-                            title: 'Transistor Density (relative to H100)',
-                            titlefont: { size: 10 },
-                            tickfont: { size: 9 },
-                            type: 'log',
-                            range: [Math.log10(0.001), Math.log10(100)],
-                            automargin: true
-                        },
-                        yaxis: {
-                            title: 'Watts per TPP (relative to H100)',
-                            titlefont: { size: 10 },
-                            tickfont: { size: 9 },
-                            type: 'log',
-                            tickmode: 'array',
-                            tickvals: [0.01, 0.1, 1, 10, 100, 1000],
-                            automargin: true
-                        },
-                        shapes: [{
-                            type: 'line',
-                            x0: dennardPaperX,
-                            x1: dennardPaperX,
-                            y0: 0,
-                            y1: 1,
-                            xref: 'paper',
-                            yref: 'paper',
-                            line: {
-                                color: '#999',
-                                width: 1,
-                                dash: 'dot'
-                            }
-                        }],
-                        annotations: [{
-                            x: dennardPaperX + 0.02,
-                            y: 0.85,
-                            yref: 'paper',
-                            xref: 'paper',
-                            xanchor: 'left',
-                            yanchor: 'bottom',
-                            text: 'End of Dennard<br>Scaling',
-                            showarrow: false,
-                            align: "left",
-                            font: {
-                                size: 9,
-                                color: '#666',
-                            }
-                        }],
-                        margin: { l: 60, r: 10, t: 10, b: 65, pad: 10 },
-                        showlegend: false,
-                        hovermode: 'closest'
-                    }, {displayModeBar: false, responsive: true});
-                    setTimeout(() => Plotly.Plots.resize('densityVsEfficiencyPlot'), 50);
-
-                    // 4. Display H100 energy requirements (from user input)
-                    const h100PowerWatts = parseFloat(document.getElementById('h100_power_watts').value);
-                    const h100EnergyWatts = h100PowerWatts; // Store in watts for calculations below
-                    const h100EnergyKW = h100PowerWatts / 1000;
-                    document.getElementById('h100EnergyDisplay').innerHTML = `
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <div class="breakdown-box-inner">${h100EnergyKW.toFixed(2)} kW</div>
-                            <div class="breakdown-label">Energy requirements of H100</div>
-                        </div>`;
-
-                    // Attach hover effect to the newly created breakdown-box-inner
-                    const h100EnergyInner = document.querySelector('#h100EnergyDisplay .breakdown-box-inner');
-                    if (h100EnergyInner) {
-                        h100EnergyInner.style.transition = 'all 0.2s ease';
-                        h100EnergyInner.addEventListener('mouseenter', () => {
-                            h100EnergyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
-                            h100EnergyInner.style.transform = 'scale(1.015)';
-                        });
-                        h100EnergyInner.addEventListener('mouseleave', () => {
-                            h100EnergyInner.style.boxShadow = '';
-                            h100EnergyInner.style.transform = '';
-                        });
-                    }
-
-                    // 5. Calculate and plot energy requirements per month (GW/month)
-                    // Energy = H100e_per_month × watts_per_TPP_relative × H100_energy
-                    // Note: transistor_density is already factored into H100e calculation, don't multiply again!
-                    const wattsPerTppBySimAndTime = data.covert_fab.watts_per_tpp.individual;
-
-                    const energyPerMonthArray = totalComputeArray.map((simArray, simIdx) => {
-                        return simArray.map((h100ePerMonth, timeIdx) => {
-                            // h100ePerMonth is actual H100e count (not in thousands)
-                            const wattsPerTppRelative = wattsPerTppBySimAndTime[simIdx][timeIdx];
-
-                            // Energy (W) = H100e × watts_per_TPP_rel × H100_energy_watts
-                            const totalWatts = h100ePerMonth * wattsPerTppRelative * h100EnergyWatts;
-                            const energyGW = totalWatts / 1e9;
-                            return energyGW;
-                        });
-                    });
-
-                    const energyPerMonthMedian = years.map((_, i) => {
-                        const values = energyPerMonthArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.5)];
-                    });
-                    const energyPerMonthP25 = years.map((_, i) => {
-                        const values = energyPerMonthArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
-                    });
-                    const energyPerMonthP75 = years.map((_, i) => {
-                        const values = energyPerMonthArray.map(sim => sim[i]);
-                        return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
-                    });
-
-                    const maxEnergyP75 = Math.max(...energyPerMonthP75);
-                    const yMaxEnergy = maxEnergyP75 * 1.2;
-
-                    plotMedianWithPercentiles('energyPerMonthPlot', {
-                        median: energyPerMonthMedian,
-                        p25: energyPerMonthP25,
-                        p75: energyPerMonthP75,
-                        individual: energyPerMonthArray
-                    }, years, '#5AA89B', 'GW/Month', [0, yMaxEnergy], false, true);
-                }
+                // Plot covert fab production breakdown
+                plotCovertFabProductionBreakdown(data);
 
                 // Check if project is running
                 const runCovertProject = document.getElementById('run_covert_project').checked;
@@ -797,6 +812,10 @@
                 plotsDiv.style.display = 'block';
                 loadingDiv.classList.remove('active');
                 setStatus(`Simulation complete! Ran ${data.num_simulations} simulations`, 'success');
+                // Update diagram arrows after layout is complete
+                setTimeout(() => {
+                    if (window.updateDiagramArrows) window.updateDiagramArrows();
+                }, 100);
             } catch (error) {
                 loadingDiv.classList.remove('active');
                 setStatus('Error: ' + error.message, 'error');
@@ -805,11 +824,64 @@
             }
         }
 
+        async function loadDefaultResults() {
+            // Try to load default cached results
+            try {
+                setStatus('Loading cached results...', 'info');
+                const response = await fetch('/get_default_results');
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Plot all sections with cached data
+                    plotInitialStock(data);
+                    plotTimeSeries(data);
+                    plotComputeCcdf(data);
+                    updateDashboard(data);
+                    plotDarkComputeModel(data);  // This now calls all dark compute model functions
+                    plotDatacenterCombined(data);
+                    plotDatacenterCapacityCcdf(data);
+                    updateDatacenterDashboard(data);
+                    populateDatacenterCapacityBreakdown(data);
+                    plotStrengthOfEvidence(data);
+                    plotCovertFabProductionBreakdown(data);
+
+                    // Force resize
+                    setTimeout(() => {
+                        Plotly.Plots.resize('initialDarkComputePlot');
+                        Plotly.Plots.resize('covertFabFlowPlot');
+                        Plotly.Plots.resize('chipSurvivalPlot');
+                        Plotly.Plots.resize('totalDarkComputePlot');
+                        Plotly.Plots.resize('initialDarkComputeDetectionPlot');
+                        Plotly.Plots.resize('initialComputeStockPlot');
+                        // Update diagram arrows after layout is complete
+                        if (window.updateDiagramArrows) window.updateDiagramArrows();
+                    }, 100);
+
+                    plotsDiv.style.display = 'block';
+                    loadingDiv.classList.remove('active');
+                    setStatus('Ran 1000 simulations', 'success');
+                    return true; // Successfully loaded cache
+                } else {
+                    // No cache available, will need to run simulation
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error loading cached results:', error);
+                return false;
+            }
+        }
+
         runButton.addEventListener('click', runSimulation);
 
-        // Run simulation automatically on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(runSimulation, 500); // Small delay to ensure page is fully loaded
+        // Load cached results or run simulation on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to ensure page is fully loaded
+            const cacheLoaded = await loadDefaultResults();
+            if (!cacheLoaded) {
+                // No cache available, run simulation
+                await runSimulation();
+            }
         });
 
         // Add Enter key listener to all input fields and select elements in sidebar
@@ -1124,7 +1196,7 @@
             'totalDarkComputePlot': null, // Output, not an input
 
             // Dark Compute Model Section - Data Center Capacity Breakdown
-            'datacenterCapacityPlot2': 'GW_per_initial_datacenter',
+            'datacenterCapacityPlot2': 'datacenter_construction_labor',
             'darkComputeEnergyPlot': 'h100_power_watts',
             'operationalDarkComputePlot': null, // Output, not an input
 

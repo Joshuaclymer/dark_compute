@@ -1,0 +1,170 @@
+<!-- Dark Compute Model - Top Section (Dashboard and Plots) -->
+<h1
+  style="
+    margin-top: 40px;
+    margin-bottom: 10px;
+    font-size: 32px;
+    font-weight: bold;
+    color: #333;
+  "
+>
+  Dark compute model
+</h1>
+<p style="margin-bottom: 30px; font-size: 16px; color: #666">
+  A model of how much computation a covert PRC AI project might be able to perform if it cheats an AI slowdown agreement. Predictions assume an agreement goes into force in <span id="param-agreement-year" class="param-link">2030</span>.
+</p>
+
+<!-- Dashboard and Plots in Same Flex -->
+<div
+  id="darkComputeTopSection"
+  style="
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+  "
+>
+  <!-- Dark Compute Dashboard -->
+  <div
+    class="dashboard"
+    style="
+      flex: 0 0 auto;
+      width: 240px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      justify-content: flex-start;
+    "
+  >
+    <div
+      class="plot-title"
+      style="
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin: 0 0 20px 0;
+      "
+    >
+      Median outcome
+    </div>
+
+    <div class="dashboard-item" style="margin: 0 0 20px 0;">
+      <div class="dashboard-value" id="dashboardMedianH100Years">--</div>
+      <div class="dashboard-label">Covert computation*</div>
+    </div>
+
+    <div class="dashboard-item" style="margin: 0 0 20px 0;">
+      <div class="dashboard-value" id="dashboardMedianTime">--</div>
+      <div class="dashboard-label">Time to detection*</div>
+    </div>
+
+    <div class="dashboard-item" style="margin: 0 0 20px 0;">
+      <div class="dashboard-value" id="dashboardAiRdReduction">--</div>
+      <div class="dashboard-label">Global AI R&D compute reduction*</div>
+    </div>
+
+    <div class="dashboard-item" style="margin: 0;">
+      <div class="dashboard-value" id="dashboardPrcReduction">--</div>
+      <div class="dashboard-label">PRC AI R&D compute<br>reduction*</div>
+    </div>
+  </div>
+
+  <!-- H100-Years CCDF Plot -->
+  <div
+    class="plot-container"
+    style="
+      flex: 1 1 200px;
+      min-width: 200px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    "
+  >
+    <div
+      class="plot-title"
+      style="
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        margin-top: 0;
+      "
+    >
+      Computation performed by covert project before detection
+    </div>
+    <div
+      id="projectH100YearsCcdfPlot"
+      class="plot"
+      style="flex: 1; min-height: 0"
+    ></div>
+  </div>
+
+  <!-- AI R&D Reduction CCDF Plot -->
+  <div
+    class="plot-container"
+    style="
+      flex: 1 1 200px;
+      min-width: 200px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    "
+  >
+    <div
+      class="plot-title"
+      style="
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        margin-top: 0;
+      "
+    >
+      Reduction in AI R&D compute due to slowdown*
+    </div>
+    <div
+      id="aiRdReductionCcdfPlot"
+      class="plot"
+      style="flex: 1; min-height: 0"
+    ></div>
+  </div>
+
+  <!-- H100-Years and Evidence Strength Over Time Plot -->
+  <div
+    class="plot-container"
+    style="
+      flex: 1 1 200px;
+      min-width: 200px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    "
+  >
+    <div
+      class="plot-title"
+      style="
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        margin-top: 0;
+      "
+    >
+      Simulation runs
+    </div>
+    <div
+      id="h100YearsTimeSeriesPlot"
+      class="plot"
+      style="flex: 1; min-height: 0"
+    ></div>
+  </div>
+</div>
+
+<p style="font-size: 12px; color: #666; margin-top: 15px; margin-bottom: 30px; font-style: italic;">
+  *Unless otherwise specified, US intelligence 'detects' a covert project after it receives >4x update that the project exists, after which, USG exits the AI slowdown agreement.
+</p>

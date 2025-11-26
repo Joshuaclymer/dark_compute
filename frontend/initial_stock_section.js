@@ -86,16 +86,16 @@ function plotInitialStock(data) {
             hovertemplate: '%{text}<extra></extra>'
         };
 
-        // Create global compute line (if available)
-        const globalComputeData = data.initial_stock.global_compute_over_time;
-        const globalComputeLine = globalComputeData ? {
+        // Create largest AI company compute line (if available)
+        const largestCompanyComputeData = data.initial_stock.largest_company_compute_over_time;
+        const largestCompanyComputeLine = largestCompanyComputeData ? {
             x: years,
-            y: globalComputeData,
+            y: largestCompanyComputeData,
             mode: 'lines',
             line: { color: '#E8A87C', width: 2, dash: 'dash' },
             type: 'scatter',
-            name: 'Global compute (median)',
-            hovertemplate: 'Year: %{x}<br>Global compute: %{y:.2s} H100e<extra></extra>'
+            name: 'Largest AI Company',
+            hovertemplate: 'Year: %{x}<br>Largest AI Company: %{y:.2s} H100e<extra></extra>'
         } : null;
 
         const layout = {
@@ -130,10 +130,10 @@ function plotInitialStock(data) {
             autosize: true
         };
 
-        // Build traces array, conditionally including global compute line
+        // Build traces array, conditionally including largest AI company compute line
         const traces = [shadedArea, p25Line, medianLine, p75Line, percentileRangeLegend, domesticLine];
-        if (globalComputeLine) {
-            traces.push(globalComputeLine);
+        if (largestCompanyComputeLine) {
+            traces.push(largestCompanyComputeLine);
         }
 
         Plotly.newPlot('prcComputeOverTimePlot', traces, layout, {displayModeBar: false, responsive: true});
@@ -197,7 +197,8 @@ function plotInitialStock(data) {
         }
 
         // Calculate energy for this compute stock
-        const h100PowerWatts = parseFloat(document.getElementById('h100_power_watts').value);
+        const h100PowerInput = document.getElementById('h100_power_watts');
+        const h100PowerWatts = h100PowerInput ? parseFloat(h100PowerInput.value) : 700;
         const energyGW = (p80DarkCompute * h100PowerWatts) / 1e9; // Convert watts to GW
 
         let energyText;
@@ -327,7 +328,8 @@ function plotInitialStock(data) {
     // Plot energy requirements breakdown
     if (data.initial_stock && data.initial_stock.initial_compute_stock_samples) {
         // Get H100 power from user input
-        const h100PowerWatts = parseFloat(document.getElementById('h100_power_watts').value);
+        const h100PowerInput2 = document.getElementById('h100_power_watts');
+        const h100PowerWatts = h100PowerInput2 ? parseFloat(h100PowerInput2.value) : 700;
         const h100PowerKW = h100PowerWatts / 1000;
 
         // Display H100 energy requirements
@@ -352,7 +354,8 @@ function plotInitialStock(data) {
         }
 
         // Get energy efficiency from user input
-        const energyEfficiency = parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value);
+        const energyEfficiencyInput = document.getElementById('energy_efficiency_relative_to_h100');
+        const energyEfficiency = energyEfficiencyInput ? parseFloat(energyEfficiencyInput.value) : 1.0;
 
         // Display energy efficiency
         document.getElementById('initialStockEnergyEfficiencyDisplay').innerHTML = `

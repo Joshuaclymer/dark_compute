@@ -166,100 +166,110 @@
         }
 
         function getParameters() {
+            // Helper function to safely get element value with debugging
+            function getValue(id, type = 'float') {
+                const el = document.getElementById(id);
+                if (!el) {
+                    const msg = `Element with id '${id}' not found!`;
+                    console.error(msg);
+                    throw new Error(msg);
+                }
+                if (type === 'float') return parseFloat(el.value);
+                if (type === 'int') return parseInt(el.value);
+                if (type === 'checked') return el.checked;
+                return el.value;
+            }
+
             return {
                 // Simulation settings (using dot notation for nested Parameters structure)
-                'simulation_settings.start_year': parseFloat(document.getElementById('agreement_year').value),
-                'simulation_settings.end_year': parseFloat(document.getElementById('end_year').value),
-                'simulation_settings.time_step_years': parseFloat(document.getElementById('increment').value),
-                'simulation_settings.num_simulations': parseInt(document.getElementById('num_simulations').value),
+                'simulation_settings.start_year': getValue('agreement_year'),
+                'simulation_settings.end_year': getValue('end_year'),
+                'simulation_settings.time_step_years': getValue('increment'),
+                'simulation_settings.num_simulations': getValue('num_simulations', 'int'),
 
                 // Covert project properties
-                'covert_project_properties.run_a_covert_project': document.getElementById('run_covert_project').checked,
-                'covert_project_properties.proportion_of_initial_compute_stock_to_divert': parseFloat(document.getElementById('proportion_of_initial_chip_stock_to_divert').value),
-                'covert_project_properties.datacenter_construction_labor': parseInt(document.getElementById('datacenter_construction_labor').value),
-                'covert_project_properties.years_before_agreement_year_prc_starts_building_covert_datacenters': parseInt(document.getElementById('years_before_agreement_year_prc_starts_building_covert_datacenters').value),
-                'covert_project_properties.build_a_covert_fab': document.getElementById('build_covert_fab').checked,
-                'covert_project_properties.covert_fab_operating_labor': parseInt(document.getElementById('operating_labor').value),
-                'covert_project_properties.covert_fab_construction_labor': parseInt(document.getElementById('construction_labor').value),
-                'covert_project_properties.covert_fab_process_node': document.getElementById('process_node').value,
-                'covert_project_properties.covert_fab_proportion_of_prc_lithography_scanners_devoted': parseFloat(document.getElementById('scanner_proportion').value),
+                'covert_project_properties.run_a_covert_project': getValue('run_covert_project', 'checked'),
+                'covert_project_properties.proportion_of_initial_compute_stock_to_divert': getValue('proportion_of_initial_chip_stock_to_divert'),
+                'covert_project_properties.datacenter_construction_labor': getValue('datacenter_construction_labor', 'int'),
+                'covert_project_properties.years_before_agreement_year_prc_starts_building_covert_datacenters': getValue('years_before_agreement_year_prc_starts_building_covert_datacenters', 'int'),
+                'covert_project_properties.build_a_covert_fab': getValue('build_covert_fab', 'checked'),
+                'covert_project_properties.covert_fab_operating_labor': getValue('operating_labor', 'int'),
+                'covert_project_properties.covert_fab_construction_labor': getValue('construction_labor', 'int'),
+                'covert_project_properties.covert_fab_process_node': getValue('process_node', 'string'),
+                'covert_project_properties.covert_fab_proportion_of_prc_lithography_scanners_devoted': getValue('scanner_proportion'),
 
                 // Covert project parameters - detection
-                'covert_project_parameters.p_project_exists': parseFloat(document.getElementById('covert_project_parameters.p_project_exists').value),
-                'covert_project_parameters.mean_detection_time_for_100_workers': parseFloat(document.getElementById('mean_detection_time_100').value),
-                'covert_project_parameters.mean_detection_time_for_1000_workers': parseFloat(document.getElementById('mean_detection_time_1000').value),
-                'covert_project_parameters.variance_of_detection_time_given_num_workers': parseFloat(document.getElementById('variance_detection_time').value),
+                'covert_project_parameters.p_project_exists': getValue('covert_project_parameters.p_project_exists'),
+                'covert_project_parameters.mean_detection_time_for_100_workers': getValue('mean_detection_time_100'),
+                'covert_project_parameters.mean_detection_time_for_1000_workers': getValue('mean_detection_time_1000'),
+                'covert_project_parameters.variance_of_detection_time_given_num_workers': getValue('variance_detection_time'),
 
                 // Initial PRC compute stock parameters
-                'covert_project_parameters.initial_compute_stock_parameters.total_prc_compute_stock_in_2025': parseFloat(document.getElementById('total_prc_compute_stock_in_2025').value) * 1e6,
-                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p10': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p10').value),
-                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p50': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p50').value),
-                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p90': parseFloat(document.getElementById('annual_growth_rate_of_prc_compute_stock_p90').value),
-                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2026': parseFloat(document.getElementById('proportion_of_prc_chip_stock_produced_domestically_2026').value),
-                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2030': parseFloat(document.getElementById('proportion_of_prc_chip_stock_produced_domestically_2030').value),
-                'covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock': parseFloat(document.getElementById('us_intelligence_median_error_in_estimate_of_prc_compute_stock').value),
-                'covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100': parseFloat(document.getElementById('energy_efficiency_relative_to_h100').value),
-                'covert_project_parameters.initial_compute_stock_parameters.h100_power_watts': parseFloat(document.getElementById('h100_power_watts').value),
+                'covert_project_parameters.initial_compute_stock_parameters.total_prc_compute_stock_in_2025': getValue('total_prc_compute_stock_in_2025') * 1e6,
+                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p10': getValue('annual_growth_rate_of_prc_compute_stock_p10'),
+                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p50': getValue('annual_growth_rate_of_prc_compute_stock_p50'),
+                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p90': getValue('annual_growth_rate_of_prc_compute_stock_p90'),
+                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2026': getValue('proportion_of_prc_chip_stock_produced_domestically_2026'),
+                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2030': getValue('proportion_of_prc_chip_stock_produced_domestically_2030'),
+                'covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock': getValue('us_intelligence_median_error_in_estimate_of_prc_compute_stock'),
+                'covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100': getValue('energy_efficiency_relative_to_h100'),
+                'covert_project_parameters.initial_compute_stock_parameters.h100_power_watts': getValue('h100_power_watts'),
 
-                // Slowdown counterfactual parameters
-                'covert_project_parameters.slowdown_counterfactual_parameters.median_global_compute_in_2026': parseFloat(document.getElementById('median_global_compute_in_2026').value) * 1e6,
-                'covert_project_parameters.slowdown_counterfactual_parameters.median_global_compute_annual_rate_of_increase': parseFloat(document.getElementById('median_global_compute_annual_rate_of_increase').value),
-                'covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_global_compute_for_single_ai_project': parseFloat(document.getElementById('fraction_of_global_compute_for_single_ai_project').value),
-                'covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_prc_compute_spent_on_ai_rd_before_slowdown': parseFloat(document.getElementById('fraction_of_prc_compute_spent_on_ai_rd_before_slowdown').value),
+                // Slowdown counterfactual parameters - not sent, backend uses default from paramaters.py
 
                 // Survival rate parameters
-                'covert_project_parameters.survival_rate_parameters.initial_hazard_rate_p50': parseFloat(document.getElementById('initial_hazard_rate_p50').value),
-                'covert_project_parameters.survival_rate_parameters.increase_of_hazard_rate_per_year_p50': parseFloat(document.getElementById('increase_of_hazard_rate_per_year_p50').value),
-                'covert_project_parameters.survival_rate_parameters.hazard_rate_p25_relative_to_p50': parseFloat(document.getElementById('hazard_rate_p25_relative_to_p50').value),
-                'covert_project_parameters.survival_rate_parameters.hazard_rate_p75_relative_to_p50': parseFloat(document.getElementById('hazard_rate_p75_relative_to_p50').value),
+                'covert_project_parameters.survival_rate_parameters.initial_hazard_rate_p50': getValue('initial_hazard_rate_p50'),
+                'covert_project_parameters.survival_rate_parameters.increase_of_hazard_rate_per_year_p50': getValue('increase_of_hazard_rate_per_year_p50'),
+                'covert_project_parameters.survival_rate_parameters.hazard_rate_p25_relative_to_p50': getValue('hazard_rate_p25_relative_to_p50'),
+                'covert_project_parameters.survival_rate_parameters.hazard_rate_p75_relative_to_p50': getValue('hazard_rate_p75_relative_to_p50'),
 
                 // Covert datacenter parameters
-                'covert_project_parameters.datacenter_model_parameters.max_proportion_of_PRC_energy_consumption': parseFloat(document.getElementById('max_proportion_of_PRC_energy_consumption').value),
-                'covert_project_parameters.datacenter_model_parameters.total_GW_of_PRC_energy_consumption': parseFloat(document.getElementById('total_GW_of_PRC_energy_consumption').value),
-                'covert_project_parameters.datacenter_model_parameters.MW_per_construction_worker_per_year': parseFloat(document.getElementById('MW_per_construction_worker_per_year').value),
-                'covert_project_parameters.datacenter_model_parameters.relative_sigma_mw_per_construction_worker_per_year': parseFloat(document.getElementById('relative_sigma_mw_per_construction_worker_per_year').value),
-                'covert_project_parameters.datacenter_model_parameters.operating_labor_per_MW': parseFloat(document.getElementById('operating_labor_per_MW').value),
-                'covert_project_parameters.datacenter_model_parameters.relative_sigma_operating_labor_per_MW': parseFloat(document.getElementById('relative_sigma_operating_labor_per_MW').value),
+                'covert_project_parameters.datacenter_model_parameters.max_proportion_of_PRC_energy_consumption': getValue('max_proportion_of_PRC_energy_consumption'),
+                'covert_project_parameters.datacenter_model_parameters.total_GW_of_PRC_energy_consumption': getValue('total_GW_of_PRC_energy_consumption'),
+                'covert_project_parameters.datacenter_model_parameters.MW_per_construction_worker_per_year': getValue('MW_per_construction_worker_per_year'),
+                'covert_project_parameters.datacenter_model_parameters.relative_sigma_mw_per_construction_worker_per_year': getValue('relative_sigma_mw_per_construction_worker_per_year'),
+                'covert_project_parameters.datacenter_model_parameters.operating_labor_per_MW': getValue('operating_labor_per_MW'),
+                'covert_project_parameters.datacenter_model_parameters.relative_sigma_operating_labor_per_MW': getValue('relative_sigma_operating_labor_per_MW'),
 
                 // Covert fab parameters - detection
-                'covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock': parseFloat(document.getElementById('proportion_diverted_sme').value),
+                'covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock': getValue('proportion_diverted_sme'),
 
                 // Covert fab parameters - production capacity
-                'covert_project_parameters.covert_fab_parameters.wafers_per_month_per_worker': parseFloat(document.getElementById('wafers_per_month_per_worker').value),
-                'covert_project_parameters.covert_fab_parameters.labor_productivity_relative_sigma': parseFloat(document.getElementById('labor_productivity_sigma').value),
-                'covert_project_parameters.covert_fab_parameters.wafers_per_month_per_lithography_scanner': parseFloat(document.getElementById('wafers_per_month_per_scanner').value),
-                'covert_project_parameters.covert_fab_parameters.scanner_productivity_relative_sigma': parseFloat(document.getElementById('scanner_productivity_sigma').value),
+                'covert_project_parameters.covert_fab_parameters.wafers_per_month_per_worker': getValue('wafers_per_month_per_worker'),
+                'covert_project_parameters.covert_fab_parameters.labor_productivity_relative_sigma': getValue('labor_productivity_sigma'),
+                'covert_project_parameters.covert_fab_parameters.wafers_per_month_per_lithography_scanner': getValue('wafers_per_month_per_scanner'),
+                'covert_project_parameters.covert_fab_parameters.scanner_productivity_relative_sigma': getValue('scanner_productivity_sigma'),
 
                 // Covert fab parameters - construction time
-                'covert_project_parameters.covert_fab_parameters.construction_time_for_5k_wafers_per_month': parseFloat(document.getElementById('construction_time_5k').value),
-                'covert_project_parameters.covert_fab_parameters.construction_time_for_100k_wafers_per_month': parseFloat(document.getElementById('construction_time_100k').value),
-                'covert_project_parameters.covert_fab_parameters.construction_time_relative_sigma': parseFloat(document.getElementById('construction_time_sigma').value),
-                'covert_project_parameters.covert_fab_parameters.construction_workers_per_1000_wafers_per_month': parseFloat(document.getElementById('construction_workers_per_1000').value),
+                'covert_project_parameters.covert_fab_parameters.construction_time_for_5k_wafers_per_month': getValue('construction_time_5k'),
+                'covert_project_parameters.covert_fab_parameters.construction_time_for_100k_wafers_per_month': getValue('construction_time_100k'),
+                'covert_project_parameters.covert_fab_parameters.construction_time_relative_sigma': getValue('construction_time_sigma'),
+                'covert_project_parameters.covert_fab_parameters.construction_workers_per_1000_wafers_per_month': getValue('construction_workers_per_1000'),
 
                 // Covert fab parameters - chip production
-                'covert_project_parameters.covert_fab_parameters.h100_sized_chips_per_wafer': parseFloat(document.getElementById('chips_per_wafer').value),
-                'covert_project_parameters.covert_fab_parameters.transistor_density_scaling_exponent': parseFloat(document.getElementById('transistor_density_exponent').value),
-                'covert_project_parameters.covert_fab_parameters.architecture_efficiency_improvement_per_year': parseFloat(document.getElementById('architecture_efficiency').value),
+                'covert_project_parameters.covert_fab_parameters.h100_sized_chips_per_wafer': getValue('chips_per_wafer'),
+                'covert_project_parameters.covert_fab_parameters.transistor_density_scaling_exponent': getValue('transistor_density_exponent'),
+                'covert_project_parameters.covert_fab_parameters.architecture_efficiency_improvement_per_year': getValue('architecture_efficiency'),
 
                 // Covert fab parameters - energy efficiency scaling
-                'covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended': parseFloat(document.getElementById('watts_per_tpp_exponent_before_dennard').value),
-                'covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended': parseFloat(document.getElementById('watts_per_tpp_exponent_after_dennard').value),
-                'covert_project_parameters.covert_fab_parameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2': parseFloat(document.getElementById('transistor_density_at_dennard_end').value),
+                'covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended': getValue('watts_per_tpp_exponent_before_dennard'),
+                'covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended': getValue('watts_per_tpp_exponent_after_dennard'),
+                'covert_project_parameters.covert_fab_parameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2': getValue('transistor_density_at_dennard_end'),
 
                 // Covert fab parameters - PRC scanner production
-                'covert_project_parameters.covert_fab_parameters.prc_lithography_scanners_produced_in_first_year': parseFloat(document.getElementById('prc_scanners_first_year').value),
-                'covert_project_parameters.covert_fab_parameters.prc_additional_lithography_scanners_produced_per_year': parseFloat(document.getElementById('prc_scanners_per_year').value),
-                'covert_project_parameters.covert_fab_parameters.prc_scanner_production_relative_sigma': parseFloat(document.getElementById('prc_scanner_production_sigma').value),
+                'covert_project_parameters.covert_fab_parameters.prc_lithography_scanners_produced_in_first_year': getValue('prc_scanners_first_year'),
+                'covert_project_parameters.covert_fab_parameters.prc_additional_lithography_scanners_produced_per_year': getValue('prc_scanners_per_year'),
+                'covert_project_parameters.covert_fab_parameters.prc_scanner_production_relative_sigma': getValue('prc_scanner_production_sigma'),
 
                 // Covert fab parameters - localization probabilities
-                'covert_project_parameters.covert_fab_parameters.localization_130nm_2025': parseFloat(document.getElementById('localization_130nm_2025').value),
-                'covert_project_parameters.covert_fab_parameters.localization_130nm_2031': parseFloat(document.getElementById('localization_130nm_2031').value),
-                'covert_project_parameters.covert_fab_parameters.localization_28nm_2025': parseFloat(document.getElementById('localization_28nm_2025').value),
-                'covert_project_parameters.covert_fab_parameters.localization_28nm_2031': parseFloat(document.getElementById('localization_28nm_2031').value),
-                'covert_project_parameters.covert_fab_parameters.localization_14nm_2025': parseFloat(document.getElementById('localization_14nm_2025').value),
-                'covert_project_parameters.covert_fab_parameters.localization_14nm_2031': parseFloat(document.getElementById('localization_14nm_2031').value),
-                'covert_project_parameters.covert_fab_parameters.localization_7nm_2025': parseFloat(document.getElementById('localization_7nm_2025').value),
-                'covert_project_parameters.covert_fab_parameters.localization_7nm_2031': parseFloat(document.getElementById('localization_7nm_2031').value)
+                'covert_project_parameters.covert_fab_parameters.localization_130nm_2025': getValue('localization_130nm_2025'),
+                'covert_project_parameters.covert_fab_parameters.localization_130nm_2031': getValue('localization_130nm_2031'),
+                'covert_project_parameters.covert_fab_parameters.localization_28nm_2025': getValue('localization_28nm_2025'),
+                'covert_project_parameters.covert_fab_parameters.localization_28nm_2031': getValue('localization_28nm_2031'),
+                'covert_project_parameters.covert_fab_parameters.localization_14nm_2025': getValue('localization_14nm_2025'),
+                'covert_project_parameters.covert_fab_parameters.localization_14nm_2031': getValue('localization_14nm_2031'),
+                'covert_project_parameters.covert_fab_parameters.localization_7nm_2025': getValue('localization_7nm_2025'),
+                'covert_project_parameters.covert_fab_parameters.localization_7nm_2031': getValue('localization_7nm_2031')
             };
         }
 
@@ -703,18 +713,32 @@
 
                 const data = await response.json();
 
+                // Wrapper to catch errors in individual plot functions
+                function safeCall(fn, name) {
+                    try {
+                        fn();
+                    } catch (e) {
+                        console.error(`Error in ${name}:`, e);
+                        const errorDiv = document.createElement('div');
+                        errorDiv.style.cssText = 'position:fixed;top:20px;right:20px;background:#ff4444;color:white;padding:15px;border-radius:5px;max-width:500px;z-index:10000;font-family:monospace;font-size:12px;white-space:pre-wrap;';
+                        errorDiv.innerHTML = `<strong>Error in ${name}:</strong>\n${e.message}\n\n<small>${e.stack}</small>`;
+                        document.body.appendChild(errorDiv);
+                        throw e; // Re-throw to stop execution
+                    }
+                }
+
                 // Plot Initial Stock section
-                plotInitialStock(data);
+                safeCall(() => plotInitialStock(data), 'plotInitialStock');
 
                 // Plot main charts
-                plotTimeSeries(data);
-                plotComputeCcdf(data);
-                updateDashboard(data);
-                plotDarkComputeModel(data);  // This now calls all dark compute model functions
-                plotDatacenterCombined(data);
-                plotDatacenterCapacityCcdf(data);
-                updateDatacenterDashboard(data);
-                populateDatacenterCapacityBreakdown(data);
+                safeCall(() => plotTimeSeries(data), 'plotTimeSeries');
+                safeCall(() => plotComputeCcdf(data), 'plotComputeCcdf');
+                safeCall(() => updateDashboard(data), 'updateDashboard');
+                safeCall(() => plotDarkComputeModel(data), 'plotDarkComputeModel');
+                safeCall(() => plotDatacenterCombined(data), 'plotDatacenterCombined');
+                safeCall(() => plotDatacenterCapacityCcdf(data), 'plotDatacenterCapacityCcdf');
+                safeCall(() => updateDatacenterDashboard(data), 'updateDatacenterDashboard');
+                safeCall(() => populateDatacenterCapacityBreakdown(data), 'populateDatacenterCapacityBreakdown');
 
                 // Force resize after a brief delay to ensure plots fill containers
                 setTimeout(() => {
@@ -790,10 +814,10 @@
                 }
 
                 // Plot "Strength of Evidence of Covert Project" section
-                plotStrengthOfEvidence(data);
+                safeCall(() => plotStrengthOfEvidence(data), 'plotStrengthOfEvidence');
 
                 // Plot covert fab production breakdown
-                plotCovertFabProductionBreakdown(data);
+                safeCall(() => plotCovertFabProductionBreakdown(data), 'plotCovertFabProductionBreakdown');
 
                 // Check if project is running
                 const runCovertProject = document.getElementById('run_covert_project').checked;
@@ -835,18 +859,32 @@
                 if (response.ok) {
                     const data = await response.json();
 
+                    // Wrapper to catch errors in individual plot functions
+                    function safeCall(fn, name) {
+                        try {
+                            fn();
+                        } catch (e) {
+                            console.error(`Error in ${name}:`, e);
+                            const errorDiv = document.createElement('div');
+                            errorDiv.style.cssText = 'position:fixed;top:20px;right:20px;background:#ff4444;color:white;padding:15px;border-radius:5px;max-width:500px;z-index:10000;font-family:monospace;font-size:12px;white-space:pre-wrap;';
+                            errorDiv.innerHTML = `<strong>Error in ${name}:</strong>\n${e.message}\n\n<small>${e.stack}</small>`;
+                            document.body.appendChild(errorDiv);
+                            throw e; // Re-throw to stop execution
+                        }
+                    }
+
                     // Plot all sections with cached data
-                    plotInitialStock(data);
-                    plotTimeSeries(data);
-                    plotComputeCcdf(data);
-                    updateDashboard(data);
-                    plotDarkComputeModel(data);  // This now calls all dark compute model functions
-                    plotDatacenterCombined(data);
-                    plotDatacenterCapacityCcdf(data);
-                    updateDatacenterDashboard(data);
-                    populateDatacenterCapacityBreakdown(data);
-                    plotStrengthOfEvidence(data);
-                    plotCovertFabProductionBreakdown(data);
+                    safeCall(() => plotInitialStock(data), 'plotInitialStock');
+                    safeCall(() => plotTimeSeries(data), 'plotTimeSeries');
+                    safeCall(() => plotComputeCcdf(data), 'plotComputeCcdf');
+                    safeCall(() => updateDashboard(data), 'updateDashboard');
+                    safeCall(() => plotDarkComputeModel(data), 'plotDarkComputeModel');
+                    safeCall(() => plotDatacenterCombined(data), 'plotDatacenterCombined');
+                    safeCall(() => plotDatacenterCapacityCcdf(data), 'plotDatacenterCapacityCcdf');
+                    safeCall(() => updateDatacenterDashboard(data), 'updateDatacenterDashboard');
+                    safeCall(() => populateDatacenterCapacityBreakdown(data), 'populateDatacenterCapacityBreakdown');
+                    safeCall(() => plotStrengthOfEvidence(data), 'plotStrengthOfEvidence');
+                    safeCall(() => plotCovertFabProductionBreakdown(data), 'plotCovertFabProductionBreakdown');
 
                     // Force resize
                     setTimeout(() => {

@@ -38,30 +38,18 @@ function plotH100YearsTimeSeries(data) {
     const agreementYearInput = document.getElementById('agreement_year');
     const agreementYear = agreementYearInput ? parseInt(agreementYearInput.value) : 2030;
 
-    // Calculate cumulative AI R&D H100-years over time
-    const globalCompute2026Input = document.getElementById('median_global_compute_in_2026');
-    const growthRateInput = document.getElementById('median_global_compute_annual_rate_of_increase');
-    const fractionInput = document.getElementById('fraction_of_global_compute_for_single_ai_project');
-
+    // Calculate cumulative AI R&D H100-years over time using backend data
+    // Largest company compute data is now sourced from AI Futures Project input_data.csv
     let aiRdH100Years = [];
-    if (globalCompute2026Input && growthRateInput && fractionInput) {
-        const globalCompute2026 = parseFloat(globalCompute2026Input.value) * 1e6;
-        const growthRate = parseFloat(growthRateInput.value);
-        const fractionOfGlobalCompute = parseFloat(fractionInput.value);
-
-        // Calculate global compute for each year
-        const globalComputeData = years.map(year => {
-            const yearsSince2026 = year - 2026;
-            return globalCompute2026 * Math.pow(growthRate, yearsSince2026);
-        });
-
+    const largestCompanyComputeData = data.initial_stock?.largest_company_compute_over_time;
+    if (largestCompanyComputeData && largestCompanyComputeData.length > 0) {
         // Calculate cumulative AI R&D H100-years using trapezoidal integration
         let cumulative = 0;
         aiRdH100Years = [0]; // Start at 0
         for (let i = 0; i < years.length - 1; i++) {
             const yearDuration = years[i + 1] - years[i];
-            const avgCompute = (globalComputeData[i] + globalComputeData[i + 1]) / 2;
-            cumulative += avgCompute * yearDuration * fractionOfGlobalCompute;
+            const avgCompute = (largestCompanyComputeData[i] + largestCompanyComputeData[i + 1]) / 2;
+            cumulative += avgCompute * yearDuration;
             aiRdH100Years.push(cumulative);
         }
     }
@@ -154,10 +142,10 @@ function plotH100YearsTimeSeries(data) {
             type: 'scatter',
             mode: 'lines',
             line: { color: aiRdColor, width: 3, dash: 'dash' },
-            name: `Global AI R&D H100-years if no slowdown`,
+            name: `Largest AI Company R&D H100-years if no slowdown`,
             yaxis: 'y2',
             customdata: aiRdH100Years.map(v => formatNumber(v)),
-            hovertemplate: 'Largest Project AI R&D H100-Years No Slowdown: %{customdata}<extra></extra>'
+            hovertemplate: 'Largest AI Company R&D H100-Years No Slowdown: %{customdata}<extra></extra>'
         }] : []),
         // PRC AI R&D computation if no slowdown (if calculated)
         ...(prcH100YearsNoSlowdown.length > 0 ? [{
@@ -261,8 +249,8 @@ function plotChipProductionReductionCcdf(data) {
             y: globalCcdf.map(d => d.y),
             type: 'scatter',
             mode: 'lines',
-            line: { color: '#E8A863', width: 2 },
-            name: 'Global AI Chip Production',
+            line: { color: '#5B8DBE', width: 2 },
+            name: 'Global Production',
             hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
         });
     }
@@ -275,7 +263,7 @@ function plotChipProductionReductionCcdf(data) {
             type: 'scatter',
             mode: 'lines',
             line: { color: '#C77CAA', width: 2 },
-            name: 'PRC AI Chip Production',
+            name: 'PRC Production',
             hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
         });
     }
@@ -326,25 +314,25 @@ function plotAiRdReductionCcdf(data) {
     const reductionData = data.dark_compute_model.ai_rd_reduction_ccdf;
     const primaryThreshold = DETECTION_CONFIG.PRIMARY_THRESHOLD;
 
-    // Check if we have the new structure (with global and prc keys)
-    const globalCcdf = reductionData.global ? reductionData.global[primaryThreshold] : reductionData[primaryThreshold];
+    // Check if we have the new structure (with largest_company and prc keys)
+    const largestCompanyCcdf = reductionData.largest_company ? reductionData.largest_company[primaryThreshold] : reductionData[primaryThreshold];
     const prcCcdf = reductionData.prc ? reductionData.prc[primaryThreshold] : null;
 
-    if (!globalCcdf || globalCcdf.length === 0) {
+    if (!largestCompanyCcdf || largestCompanyCcdf.length === 0) {
         document.getElementById('aiRdReductionCcdfPlot').innerHTML = `<p>No AI R&D reduction data available for ${primaryThreshold}x update</p>`;
         return;
     }
 
     const traces = [];
 
-    // Add global AI R&D reduction trace
+    // Add largest company AI R&D reduction trace
     traces.push({
-        x: globalCcdf.map(d => d.x),
-        y: globalCcdf.map(d => d.y),
+        x: largestCompanyCcdf.map(d => d.x),
+        y: largestCompanyCcdf.map(d => d.y),
         type: 'scatter',
         mode: 'lines',
         line: { color: '#E8A863', width: 2 },
-        name: 'Global AI R&D Compute',
+        name: 'Largest AI Company',
         hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
     });
 
@@ -356,7 +344,7 @@ function plotAiRdReductionCcdf(data) {
             type: 'scatter',
             mode: 'lines',
             line: { color: '#C77CAA', width: 2 },
-            name: 'PRC AI R&D Compute',
+            name: 'PRC Compute',
             hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
         });
     }
@@ -604,7 +592,7 @@ function updateDarkComputeModelDashboard(data) {
         document.getElementById('dashboardMedianTime').textContent = projectTimeMedian.toFixed(1) + ' years';
 
         // Calculate AI R&D reduction (updates dashboardAiRdReduction)
-        updateAiRdReduction(data, projectTimeMedian, projectH100YearsMedian);
+        updateAiRdReduction(data);
     }
 
     // Update chip production reduction from the CCDF data
@@ -631,117 +619,32 @@ function updateChipProductionReduction(data) {
     }
 }
 
-function updateAiRdReduction(data, projectTimeMedian, projectH100YearsMedian) {
+function updateAiRdReduction(data) {
   /**
-   * Calculate the ratio of average global operating AI chips to average covert project operating AI chips.
-   *
-   * This function:
-   * 1. Calculates the average number of operating AI chips (H100 equivalents) for the covert project
-   *    between the agreement year and detection year
-   * 2. Calculates the average number of AI chips operating globally (H100 equivalents)
-   *    in the same time period (using the fraction parameter for a single large AI project)
-   * 3. Returns the ratio: (global average operating AI chips) / (covert project average operating AI chips)
-   *
-   * This ratio represents how many times larger the global AI R&D compute is compared to the covert project.
+   * Get the median AI R&D reduction ratio from the backend CCDF data.
+   * This uses the same data as the "Reduction in AI R&D computation during agreement" plot.
    */
 
   try {
-    console.log('AI R&D Calculation Debug:');
-    console.log('data:', data);
-    console.log('projectTimeMedian:', projectTimeMedian);
+    const primaryThreshold = DETECTION_CONFIG.PRIMARY_THRESHOLD;
+    const reductionData = data.dark_compute_model?.ai_rd_reduction_ccdf;
 
-    // Check if data exists
-    if (!data.dark_compute_model) {
-      throw new Error('data.dark_compute_model is undefined or null');
+    if (reductionData && reductionData.largest_company && reductionData.largest_company[primaryThreshold]) {
+      const largestCompanyCcdf = reductionData.largest_company[primaryThreshold];
+      const medianReduction = getMedianFromCcdf(largestCompanyCcdf);
+
+      if (medianReduction !== null) {
+        const rounded = roundToSigFigs(medianReduction, 1);
+        document.getElementById('dashboardAiRdReduction').textContent = rounded + 'x';
+      } else {
+        document.getElementById('dashboardAiRdReduction').textContent = '--';
+      }
+    } else {
+      document.getElementById('dashboardAiRdReduction').textContent = '--';
     }
-
-    // Get the operational dark compute data (operating AI chips for covert project)
-    const operationalDarkCompute = data.dark_compute_model.operational_dark_compute;
-    if (!operationalDarkCompute || !operationalDarkCompute.median) {
-      throw new Error('operational_dark_compute data not found');
-    }
-
-    const years = data.dark_compute_model.years;
-    if (!years) {
-      throw new Error('years data not found');
-    }
-
-    // Get agreement year from input
-    const agreementYearInput = document.getElementById('agreement_year');
-    if (!agreementYearInput) {
-      throw new Error('Input element with id "agreement_year" not found');
-    }
-    const agreementYear = parseInt(agreementYearInput.value);
-
-    // Calculate detection year
-    const detectionYear = agreementYear + projectTimeMedian;
-
-    // Find the indices for agreement year and detection year
-    const agreementIdx = years.findIndex(y => y >= agreementYear);
-    const detectionIdx = years.findIndex(y => y >= detectionYear);
-
-    console.log('agreementYear:', agreementYear);
-    console.log('detectionYear:', detectionYear);
-    console.log('agreementIdx:', agreementIdx);
-    console.log('detectionIdx:', detectionIdx);
-
-    if (agreementIdx === -1) {
-      throw new Error(`Agreement year ${agreementYear} not found in years array`);
-    }
-
-    if (detectionIdx === -1) {
-      throw new Error(`Detection year ${detectionYear} not found in years array`);
-    }
-
-    // Calculate average operating AI chips for covert project between agreement and detection
-    let covertSum = 0;
-    let numPoints = 0;
-    for (let i = agreementIdx; i <= detectionIdx; i++) {
-      covertSum += operationalDarkCompute.median[i];
-      numPoints++;
-    }
-    const covertAverage = covertSum / numPoints;
-
-    // Get global compute parameters
-    const globalCompute2026Input = document.getElementById('median_global_compute_in_2026');
-    const growthRateInput = document.getElementById('median_global_compute_annual_rate_of_increase');
-    const fractionInput = document.getElementById('fraction_of_global_compute_for_single_ai_project');
-
-    if (!globalCompute2026Input || !growthRateInput || !fractionInput) {
-      throw new Error('Global compute parameter inputs not found');
-    }
-
-    const globalCompute2026 = parseFloat(globalCompute2026Input.value) * 1e6;
-    const growthRate = parseFloat(growthRateInput.value);
-    const fractionOfGlobalCompute = parseFloat(fractionInput.value);
-
-    // Calculate average global operating AI chips between agreement and detection
-    let globalSum = 0;
-    for (let i = agreementIdx; i <= detectionIdx; i++) {
-      const year = years[i];
-      const yearsSince2026 = year - 2026;
-      const globalCompute = globalCompute2026 * Math.pow(growthRate, yearsSince2026);
-      // Apply fraction for single large AI project
-      globalSum += globalCompute * fractionOfGlobalCompute;
-    }
-    const globalAverage = globalSum / numPoints;
-
-    // Calculate the ratio: global / covert
-    const ratio = globalAverage / covertAverage;
-
-    console.log('covertAverage:', covertAverage);
-    console.log('globalAverage:', globalAverage);
-    console.log('ratio:', ratio);
-
-    // Update dashboard display for AI R&D reduction (rounded to 1 sig fig)
-    const roundedRatio = roundToSigFigs(ratio, 1);
-    document.getElementById('dashboardAiRdReduction').textContent = roundedRatio + 'x';
 
   } catch (error) {
-    console.error('AI R&D Calculation Error:', error.message);
-    console.error('Full error:', error);
+    console.error('AI R&D Reduction Error:', error.message);
     document.getElementById('dashboardAiRdReduction').textContent = '--';
-    // Re-throw the error so it appears in the browser console
-    throw error;
   }
 }

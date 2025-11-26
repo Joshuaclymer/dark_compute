@@ -6,8 +6,190 @@ in app.py, with clear separation of concerns and minimal redundancy.
 """
 
 import numpy as np
+import csv
+import os
 from typing import List, Tuple, Dict, Any
 from backend.classes.dark_compute_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+
+
+# =============================================================================
+# LARGEST COMPANY COMPUTE TRAJECTORY (loaded from AI Futures Project input_data.csv)
+# =============================================================================
+
+# Cache for the loaded compute trajectory
+_cached_compute_trajectory = None
+
+def _load_compute_trajectory():
+    """Load the compute trajectory from input_data.csv (AI Futures Project).
+
+    Returns a dict with:
+        - time: array of years
+        - experiment_compute: array of AI R&D compute values (H100-years)
+        - inference_compute: array of inference compute values (H100-years)
+    """
+    global _cached_compute_trajectory
+    if _cached_compute_trajectory is not None:
+        return _cached_compute_trajectory
+
+    # Path to input_data.csv in the takeoff model directory
+    csv_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'takeoff_model', 'ai-futures-calculator', 'input_data.csv'
+    )
+
+    time = []
+    experiment_compute = []
+    inference_compute = []
+
+    with open(csv_path, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            time.append(float(row['time']))
+            experiment_compute.append(float(row['experiment_compute']))
+            inference_compute.append(float(row['inference_compute']))
+
+    _cached_compute_trajectory = {
+        'time': np.array(time),
+        'experiment_compute': np.array(experiment_compute),
+        'inference_compute': np.array(inference_compute)
+    }
+    return _cached_compute_trajectory
+
+
+def get_largest_company_ai_rd_compute(year: float) -> float:
+    """Get the largest company AI R&D compute (experiment_compute) for a given year.
+
+    Uses linear interpolation between data points in input_data.csv.
+    Returns experiment_compute in H100-years units.
+    """
+    trajectory = _load_compute_trajectory()
+    return float(np.interp(year, trajectory['time'], trajectory['experiment_compute']))
+
+
+def get_largest_company_compute_trajectory(years: List[float]) -> List[float]:
+    """Get the largest company AI R&D compute trajectory for a list of years.
+
+    Uses linear interpolation between data points in input_data.csv.
+    Returns experiment_compute values in H100-years units.
+    """
+    trajectory = _load_compute_trajectory()
+    return [float(np.interp(y, trajectory['time'], trajectory['experiment_compute'])) for y in years]
+
+
+# =============================================================================
+# GLOBAL COMPUTE PRODUCTION (loaded from global_compute_production.csv)
+# =============================================================================
+
+# Cache for global compute production data
+_cached_global_compute_production = None
+
+def _parse_compute_value(s):
+    """Parse a compute value string with optional K/M/B/T suffix."""
+    if not s:
+        return None
+    s = s.strip().replace(',', '')
+    multipliers = {'K': 1e3, 'M': 1e6, 'B': 1e9, 'T': 1e12}
+    for suffix, mult in multipliers.items():
+        if s.endswith(suffix):
+            try:
+                return float(s[:-1]) * mult
+            except ValueError:
+                return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def _load_global_compute_production():
+    """Load the global compute production data from global_compute_production.csv.
+
+    Returns a dict with:
+        - years: list of years
+        - cagr_stock: list of CAGR values for overall compute stock (H100e)
+        - compute_added: list of compute added values (H100e) per year
+        - total_stock: list of total H100e in world (no decay)
+    """
+    global _cached_global_compute_production
+    if _cached_global_compute_production is not None:
+        return _cached_global_compute_production
+
+    csv_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'global_compute_production.csv'
+    )
+
+    years = []
+    cagr_stock = []
+    compute_added = []
+    total_stock = []
+
+    with open(csv_path, 'r') as f:
+        reader = csv.reader(f)
+        # Skip header rows (first 3 rows: header + 2 metadata rows)
+        for _ in range(3):
+            next(reader)
+
+        for row in reader:
+            if len(row) > 0 and row[0]:
+                try:
+                    year = int(row[0])
+                    # Column F (index 5) is "CAGR overall compute stock (H100e)"
+                    cagr = float(row[5]) if row[5] else None
+                    # Column T (index 19) is "Compute added (H100e)"
+                    added = _parse_compute_value(row[19]) if len(row) > 19 else None
+                    # Column U (index 20) is "H100e in world, no decay"
+                    stock = _parse_compute_value(row[20]) if len(row) > 20 else None
+
+                    years.append(year)
+                    cagr_stock.append(cagr)
+                    compute_added.append(added)
+                    total_stock.append(stock)
+                except (ValueError, IndexError):
+                    continue
+
+    _cached_global_compute_production = {
+        'years': years,
+        'cagr_stock': cagr_stock,
+        'compute_added': compute_added,
+        'total_stock': total_stock
+    }
+    return _cached_global_compute_production
+
+
+def get_global_compute_stock(year: float) -> float:
+    """Get the global compute stock (H100e) for a given year.
+
+    Uses the "H100e in world, no decay" column from global_compute_production.csv.
+    Linearly interpolates between years.
+    """
+    data = _load_global_compute_production()
+
+    # Filter to valid entries
+    valid_years = []
+    valid_stocks = []
+    for y, s in zip(data['years'], data['total_stock']):
+        if s is not None:
+            valid_years.append(y)
+            valid_stocks.append(s)
+
+    if not valid_years:
+        return 0.0
+
+    return float(np.interp(year, valid_years, valid_stocks))
+
+
+def get_global_compute_production_between_years(start_year: float, end_year: float) -> float:
+    """Calculate total global compute production between two years.
+
+    Uses the change in global compute stock (H100e in world, no decay) between years.
+    Production = Stock(end_year) - Stock(start_year)
+    """
+    start_stock = get_global_compute_stock(start_year)
+    end_stock = get_global_compute_stock(end_year)
+    return max(0.0, end_stock - start_stock)
+
+
 from backend.classes.covert_fab import (
     estimate_architecture_efficiency_relative_to_h100,
     predict_watts_per_tpp_from_transistor_density,
@@ -567,22 +749,13 @@ def extract_prc_compute_over_time(years, initial_compute_parameters):
     return prc_compute_by_year_by_sample
 
 
-def extract_global_compute_over_time(years, slowdown_counterfactual_parameters):
-    """Extract global compute stock over time based on median growth parameters.
+def extract_largest_company_compute_over_time(years):
+    """Extract largest company AI R&D compute over time from AI Futures Project data.
 
-    This calculates the expected global compute stock for each year based on
-    the 2026 baseline and median annual growth rate.
+    Returns experiment_compute values from input_data.csv, which represents
+    the largest company AI R&D compute trajectory in H100-years units.
     """
-    global_compute_2026 = slowdown_counterfactual_parameters.median_global_compute_in_2026
-    growth_rate = slowdown_counterfactual_parameters.median_global_compute_annual_rate_of_increase
-
-    global_compute_over_time = []
-    for year in years:
-        years_since_2026 = year - 2026
-        global_stock = global_compute_2026 * (growth_rate ** years_since_2026)
-        global_compute_over_time.append(global_stock)
-
-    return global_compute_over_time
+    return get_largest_company_compute_trajectory(years)
 
 
 def interpolate_domestic_proportion(year, initial_compute_parameters):
@@ -1115,23 +1288,20 @@ def extract_individual_project_detection_data(simulation_results, agreement_year
 
 
 def extract_ai_rd_reduction_ccdfs(simulation_results, years, agreement_year, likelihood_ratios, app_params):
-    """Calculate CCDFs for global and PRC AI R&D compute reduction at different detection thresholds.
+    """Calculate CCDFs for largest company and PRC AI R&D compute reduction at different detection thresholds.
 
     For each simulation and detection threshold:
     1. Calculate detection year based on likelihood ratio
-    2. Calculate average covert project operating compute from agreement to detection
-    3. Calculate average global and PRC AI R&D compute (no slowdown counterfactual) for same period
-    4. Return ratios: (AI R&D) / (covert project operating compute)
+    2. Calculate total covert project H100-years from agreement to detection
+    3. Calculate total largest company and PRC AI R&D H100-years (no slowdown counterfactual) for same period
+    4. Return ratios: (AI R&D H100-years) / (covert project H100-years)
 
     This represents how much larger AI R&D compute would be without the slowdown.
     """
-    global_reduction_ccdfs = {}
+    largest_company_reduction_ccdfs = {}
     prc_reduction_ccdfs = {}
 
     slowdown_params = app_params.covert_project_parameters.slowdown_counterfactual_parameters
-    global_compute_2026 = slowdown_params.median_global_compute_in_2026
-    growth_rate = slowdown_params.median_global_compute_annual_rate_of_increase
-    fraction_for_ai_project = slowdown_params.fraction_of_global_compute_for_single_ai_project
 
     # PRC parameters
     initial_compute_params = app_params.covert_project_parameters.initial_compute_stock_parameters
@@ -1140,7 +1310,7 @@ def extract_ai_rd_reduction_ccdfs(simulation_results, years, agreement_year, lik
     prc_ai_rd_fraction = slowdown_params.fraction_of_prc_compute_spent_on_ai_rd_before_slowdown
 
     for lr in likelihood_ratios:
-        global_reduction_ratios = []
+        largest_company_reduction_ratios = []
         prc_reduction_ratios = []
 
         for covert_projects, detectors in simulation_results:
@@ -1152,80 +1322,70 @@ def extract_ai_rd_reduction_ccdfs(simulation_results, years, agreement_year, lik
             if detection_year is None:
                 detection_year = max(sim_years)
 
-            # Find indices for agreement and detection years
-            agreement_idx = next((i for i, y in enumerate(sim_years) if y >= agreement_year), 0)
-            detection_idx = next((i for i, y in enumerate(sim_years) if y >= detection_year), len(sim_years) - 1)
+            # Calculate total covert project H100-years from agreement to detection
+            # Using the h100_years_to_date method which properly integrates operational compute over time
+            covert_h100_years = covert_project.h100_years_to_date(detection_year, sim_years)
 
-            # Calculate average covert project operating compute
-            covert_sum = 0
-            num_points = 0
-            for i in range(agreement_idx, detection_idx + 1):
-                year = sim_years[i]
-                operational_compute = covert_project.operational_dark_compute(year)
-                covert_sum += operational_compute.total_h100e_tpp()
-                num_points += 1
-
-            if num_points == 0:
+            if covert_h100_years <= 0:
                 continue
 
-            covert_average = covert_sum / num_points
+            # Calculate total largest company AI R&D H100-years (no slowdown counterfactual)
+            # get_largest_company_ai_rd_compute returns H100-years per year, so we sum over time steps
+            # Need to integrate over time: sum of (H100-years/year * time_step)
+            largest_company_h100_years = 0
+            years_in_range = [y for y in sim_years if agreement_year <= y <= detection_year]
+            for i in range(len(years_in_range) - 1):
+                year = years_in_range[i]
+                next_year = years_in_range[i + 1]
+                time_step = next_year - year
+                # get_largest_company_ai_rd_compute returns H100-years (cumulative compute for a training run)
+                # We interpret this as the compute capacity available at that year
+                largest_company_h100_years += get_largest_company_ai_rd_compute(year) * time_step
 
-            # Calculate average global AI R&D compute (no slowdown counterfactual)
-            global_sum = 0
-            for i in range(agreement_idx, detection_idx + 1):
-                year = sim_years[i]
-                years_since_2026 = year - 2026
-                global_compute = global_compute_2026 * (growth_rate ** years_since_2026)
-                # Apply fraction for single large AI project
-                global_sum += global_compute * fraction_for_ai_project
-
-            global_average = global_sum / num_points
-
-            # Calculate average PRC AI R&D compute (no slowdown counterfactual)
-            prc_sum = 0
-            for i in range(agreement_idx, detection_idx + 1):
-                year = sim_years[i]
+            # Calculate total PRC AI R&D H100-years (no slowdown counterfactual)
+            prc_h100_years = 0
+            for i in range(len(years_in_range) - 1):
+                year = years_in_range[i]
+                next_year = years_in_range[i + 1]
+                time_step = next_year - year
                 years_since_2025 = year - 2025
                 prc_compute = prc_compute_2025 * (prc_growth_rate ** years_since_2025)
-                # Apply fraction for PRC AI R&D
-                prc_sum += prc_compute * prc_ai_rd_fraction
+                # Apply fraction for PRC AI R&D and multiply by time step
+                prc_h100_years += prc_compute * prc_ai_rd_fraction * time_step
 
-            prc_average = prc_sum / num_points
+            # Calculate reduction ratios (H100-years / H100-years)
+            if covert_h100_years > 0:
+                largest_company_ratio = largest_company_h100_years / covert_h100_years
+                largest_company_reduction_ratios.append(largest_company_ratio)
 
-            # Calculate reduction ratios
-            if covert_average > 0:
-                global_ratio = global_average / covert_average
-                global_reduction_ratios.append(global_ratio)
-
-                prc_ratio = prc_average / covert_average
+                prc_ratio = prc_h100_years / covert_h100_years
                 prc_reduction_ratios.append(prc_ratio)
 
         # Calculate CCDFs for this threshold
-        global_reduction_ccdfs[lr] = calculate_ccdf(global_reduction_ratios)
+        largest_company_reduction_ccdfs[lr] = calculate_ccdf(largest_company_reduction_ratios)
         prc_reduction_ccdfs[lr] = calculate_ccdf(prc_reduction_ratios)
 
-    return {"global": global_reduction_ccdfs, "prc": prc_reduction_ccdfs}
+    return {"largest_company": largest_company_reduction_ccdfs, "prc": prc_reduction_ccdfs}
 
 
 def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement_year, likelihood_ratios, app_params):
-    """Calculate CCDFs for global and PRC AI chip production reduction at different detection thresholds.
+    """Calculate CCDFs for global, largest company and PRC AI chip production reduction at different detection thresholds.
 
     For each simulation and detection threshold:
     1. Calculate detection year based on likelihood ratio
     2. Calculate total covert fab chip production from agreement to detection (PRC with slowdown)
     3. Calculate total global chip production (no slowdown counterfactual) for same period
-    4. Calculate total PRC chip production (no slowdown counterfactual) for same period
-    5. Return ratios: (counterfactual production) / (covert fab production)
+    4. Calculate total largest company chip production (no slowdown counterfactual) for same period
+    5. Calculate total PRC chip production (no slowdown counterfactual) for same period
+    6. Return ratios: (counterfactual production) / (covert fab production)
 
     Chip production is calculated as the change in stock from start to end of period.
     For exponentially growing stock S(t) = S_0 * g^t, production = S(end) - S(start).
+    Global production uses data from global_compute_production.csv.
     """
     global_production_ccdfs = {}
+    largest_company_production_ccdfs = {}
     prc_production_ccdfs = {}
-
-    slowdown_params = app_params.covert_project_parameters.slowdown_counterfactual_parameters
-    global_compute_2026 = slowdown_params.median_global_compute_in_2026
-    global_growth_rate = slowdown_params.median_global_compute_annual_rate_of_increase
 
     # PRC parameters
     initial_compute_params = app_params.covert_project_parameters.initial_compute_stock_parameters
@@ -1234,6 +1394,7 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
 
     for lr in likelihood_ratios:
         global_production_ratios = []
+        largest_company_production_ratios = []
         prc_production_ratios = []
 
         for covert_projects, detectors in simulation_results:
@@ -1274,12 +1435,15 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
                 continue
 
             # Calculate global chip production from agreement to detection (no slowdown)
+            # Uses data from global_compute_production.csv
+            global_production = get_global_compute_production_between_years(agreement_year, detection_year)
+
+            # Calculate largest company chip production from agreement to detection (no slowdown)
             # Production = Stock(detection) - Stock(agreement)
-            years_since_2026_agreement = agreement_year - 2026
-            years_since_2026_detection = detection_year - 2026
-            global_stock_at_agreement = global_compute_2026 * (global_growth_rate ** years_since_2026_agreement)
-            global_stock_at_detection = global_compute_2026 * (global_growth_rate ** years_since_2026_detection)
-            global_production = global_stock_at_detection - global_stock_at_agreement
+            # Uses experiment_compute from AI Futures Project input_data.csv
+            largest_company_stock_at_agreement = get_largest_company_ai_rd_compute(agreement_year)
+            largest_company_stock_at_detection = get_largest_company_ai_rd_compute(detection_year)
+            largest_company_production = largest_company_stock_at_detection - largest_company_stock_at_agreement
 
             # Calculate PRC chip production from agreement to detection (no slowdown)
             years_since_2025_agreement = agreement_year - 2025
@@ -1289,46 +1453,41 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
             prc_production = prc_stock_at_detection - prc_stock_at_agreement
 
             # Calculate reduction ratios
-            global_ratio = global_production / covert_fab_production
-            global_production_ratios.append(global_ratio)
+            if global_production > 0:
+                global_ratio = global_production / covert_fab_production
+                global_production_ratios.append(global_ratio)
+
+            largest_company_ratio = largest_company_production / covert_fab_production
+            largest_company_production_ratios.append(largest_company_ratio)
 
             prc_ratio = prc_production / covert_fab_production
             prc_production_ratios.append(prc_ratio)
 
         # Calculate CCDFs for this threshold
         global_production_ccdfs[lr] = calculate_ccdf(global_production_ratios)
+        largest_company_production_ccdfs[lr] = calculate_ccdf(largest_company_production_ratios)
         prc_production_ccdfs[lr] = calculate_ccdf(prc_production_ratios)
 
-    return {"global": global_production_ccdfs, "prc": prc_production_ccdfs}
+    return {"global": global_production_ccdfs, "largest_company": largest_company_production_ccdfs, "prc": prc_production_ccdfs}
 
 
 def extract_takeoff_slowdown_trajectories(simulation_results, years, agreement_year, app_params):
     """Extract compute trajectories for AI takeoff slowdown analysis.
 
     Returns two time series of STOCK (instantaneous capacity):
-    1. Global AI R&D compute stock (no slowdown counterfactual)
+    1. Largest company AI R&D compute stock (no slowdown counterfactual)
     2. Median covert project operational compute stock (with slowdown)
 
     Both in units of H100-equivalents (stock, not cumulative flow).
     The takeoff model expects stock values at each time point.
     Also predicts milestone times using the takeoff model.
     """
-    slowdown_params = app_params.covert_project_parameters.slowdown_counterfactual_parameters
-    global_compute_2026 = slowdown_params.median_global_compute_in_2026
-    growth_rate = slowdown_params.median_global_compute_annual_rate_of_increase
-    fraction_for_ai_project = slowdown_params.fraction_of_global_compute_for_single_ai_project
-
     # Extend years range for trajectory prediction (need to go beyond simulation end)
     extended_years = list(range(int(years[0]), int(years[-1]) + 16))  # Extend 15 years beyond
 
-    # 1. Global AI R&D compute STOCK trajectory (no slowdown)
-    # This is the instantaneous stock of H100e available for AI R&D at each year
-    global_ai_rd_stock = []
-    for year in extended_years:
-        years_since_2026 = year - 2026
-        global_stock = global_compute_2026 * (growth_rate ** years_since_2026)
-        # Apply fraction for single large AI project
-        global_ai_rd_stock.append(global_stock * fraction_for_ai_project)
+    # 1. Largest company AI R&D compute STOCK trajectory (no slowdown)
+    # Uses experiment_compute from AI Futures Project input_data.csv
+    largest_company_ai_rd_stock = get_largest_company_compute_trajectory([float(y) for y in extended_years])
 
     # 2. Covert project operational compute STOCK (median across simulations)
     # This is the instantaneous stock of operational H100e at each year
@@ -1377,11 +1536,11 @@ def extract_takeoff_slowdown_trajectories(simulation_results, years, agreement_y
         # The takeoff model expects H100-years as input, which represents compute stock
         # Our H100e TPP values are already stock values and can be used directly
         years_array = np.array(extended_years, dtype=float)
-        global_array = np.array(global_ai_rd_stock, dtype=float)
+        global_array = np.array(largest_company_ai_rd_stock, dtype=float)
         covert_array = np.array(covert_median_stock, dtype=float)
 
         print(f"Predicting trajectories: years {years_array[0]} to {years_array[-1]}")
-        print(f"Global stock range: {global_array[0]:.2e} to {global_array[-1]:.2e} H100e")
+        print(f"Largest company stock range: {global_array[0]:.2e} to {global_array[-1]:.2e} H100e")
         print(f"Covert stock range: {covert_array[0]:.2e} to {covert_array[-1]:.2e} H100e")
 
         # Use TrajectoryPredictor to get full trajectory including time series
@@ -1468,7 +1627,7 @@ def extract_takeoff_slowdown_trajectories(simulation_results, years, agreement_y
 
     return {
         'years': extended_years,
-        'global_ai_rd_stock': global_ai_rd_stock,
+        'largest_company_ai_rd_stock': largest_company_ai_rd_stock,
         'covert_stock': covert_median_stock.tolist(),
         'milestones_global': milestones_global,
         'milestones_covert': milestones_covert,
@@ -1585,9 +1744,8 @@ def extract_plot_data(model, app_params):
             domestic_compute_for_sim.append(compute * proportion_domestic)
         prc_domestic_compute_by_sim.append(domestic_compute_for_sim)
 
-    # Calculate global compute over time (median values for reference line)
-    slowdown_counterfactual_parameters = app_params.covert_project_parameters.slowdown_counterfactual_parameters
-    global_compute_over_time = extract_global_compute_over_time(prc_compute_years, slowdown_counterfactual_parameters)
+    # Calculate largest company AI R&D compute over time (from AI Futures Project data)
+    largest_company_compute_over_time = extract_largest_company_compute_over_time(prc_compute_years)
 
     # Calculate interpolated domestic proportion for each year
     proportion_domestic_by_year = [
@@ -1796,7 +1954,7 @@ def extract_plot_data(model, app_params):
             **initial_stock_data,
             "prc_compute_over_time": fmt_pct(prc_compute_over_time_by_sim),
             "prc_domestic_compute_over_time": fmt_pct(prc_domestic_compute_by_sim),
-            "global_compute_over_time": global_compute_over_time,
+            "largest_company_compute_over_time": largest_company_compute_over_time,
             "prc_compute_years": prc_compute_years,
             "proportion_domestic_by_year": proportion_domestic_by_year,
             "years": years_array.tolist(),

@@ -10,7 +10,8 @@ from copy import deepcopy
 from backend.classes.covert_project import CovertProject
 from backend.classes.covert_fab import set_localization_probabilities
 from backend.classes.dark_compute_stock import Compute
-from backend.paramaters import CovertProjectProperties, Parameters
+from backend.classes.takeoff_model import TakeoffModel
+from backend.paramaters import CovertProjectProperties, ModelParameters, SimulationSettings
 
 @dataclass
 class DetectorStrategy:
@@ -73,19 +74,28 @@ class Simulation:
 
     def __init__(
             self,
-            year_us_prc_agreement_goes_into_force : float,
             covert_projects: dict[str, CovertProject],
-            detectors: dict[str, Detector]
+            detectors: dict[str, Detector],
+            takeoff_model: TakeoffModel,
+            simulation_settings: SimulationSettings,
+            agreement_start_year: float
         ):
-        self.year_us_prc_agreement_goes_into_force = year_us_prc_agreement_goes_into_force
         self.covert_projects = covert_projects
         self.detectors = detectors
+        self.takeoff_model = takeoff_model
+        self.simulation_settings = simulation_settings
 
-    def run_simulation(self, end_year : float, increment: float = 0.01):
+        # Store agreement start year and calculate end year
+        self.agreement_start_year = agreement_start_year
+        self.simulation_end_year = agreement_start_year + simulation_settings.num_years_to_simulate
+
+    def run_simulation(self):
+        """Run the simulation from agreement start year to simulation end year."""
+        increment = self.simulation_settings.time_step_years
 
         # Run the simulation from the agreement year to the end year
-        current_year = self.year_us_prc_agreement_goes_into_force + increment
-        while current_year <= end_year:
+        current_year = self.agreement_start_year + increment
+        while current_year <= self.simulation_end_year:
             for project in self.covert_projects.values():
 
                 # ========== Add fab production to dark compute stock if fab exists ==========
@@ -102,13 +112,13 @@ class Simulation:
                 project_lr = project.get_cumulative_evidence_of_covert_project(current_year)
 
                 # ========== Update detector beliefs with cumulative likelihood ratios ==========
-                for detector_name, detector in self.detectors.items():
+                for _, detector in self.detectors.items():
                     # Update project existence probability with cumulative LR
                     detector.beliefs_about_projects[project.name].update_p_project_exists_from_cumulative_lr(
                         year=current_year,
                         cumulative_likelihood_ratio=project_lr,
                     )
-                
+
             current_year += increment
         return self.covert_projects, self.detectors
 
@@ -118,11 +128,11 @@ class Simulation:
 # ============================================================================
 
 class Model:
-    def __init__(self, params: 'Parameters'):
-        """Initialize Model with a Parameters object.
+    def __init__(self, params: 'ModelParameters'):
+        """Initialize Model with a ModelParameters object.
 
         Args:
-            params: Parameters object containing all simulation settings
+            params: ModelParameters object containing all simulation settings
         """
         # Extract values from params
         self.parameters = params
@@ -142,12 +152,19 @@ class Model:
 
         self.simulation_results = []
 
-    def _init_covert_projects(self):
+        # Initialize takeoff model once (Monte Carlo sampling happens at init)
+        self.takeoff_model = self._init_takeoff_model()
+
+    def _init_covert_projects(self, agreement_year: float, simulation_end_year: float):
         """Create a new set of covert projects with fresh random sampling.
 
         This method should be called for each simulation to ensure that
         random parameters (like detection times, localization years, etc.)
         are independently sampled for each simulation run.
+
+        Args:
+            agreement_year: The year when the agreement starts (may be determined by takeoff model)
+            simulation_end_year: The year when the simulation ends
 
         Returns:
             dict: Dictionary of covert project names to CovertProject instances
@@ -157,32 +174,74 @@ class Model:
 
         # Calculate years array from simulation settings
         import numpy as np
-        start_year = self.parameters.simulation_settings.start_year
-        end_year = self.parameters.simulation_settings.end_year
         time_step = self.parameters.simulation_settings.time_step_years
-        years = list(np.arange(start_year, end_year + time_step, time_step))
+        years = list(np.arange(agreement_year, simulation_end_year + time_step, time_step))
 
         # Use the actual PRC strategy (not the US's beliefs about it)
         return {
             "prc_covert_project" : CovertProject(
                 name = "prc_covert_project",
                 covert_project_properties = self.parameters.covert_project_properties,
-                agreement_year = self.parameters.simulation_settings.start_year,
+                agreement_year = agreement_year,
                 years = years,
                 covert_project_parameters = self.parameters.covert_project_parameters
             )
         }
 
-    def run_simulations(self, num_simulations : int):
+    def _init_takeoff_model(self) -> TakeoffModel:
+        """Initialize the TakeoffModel based on current parameters.
+
+        Returns:
+            TakeoffModel: Initialized takeoff model with Monte Carlo samples
+        """
+        num_samples = self.parameters.simulation_settings.num_simulations
+        return TakeoffModel(num_samples=num_samples)
+
+    def _determine_agreement_start_year(self) -> float:
+        """Determine when the agreement starts based on simulation settings.
+
+        If start_agreement_at_what_ai_rnd_speedup is set, use the takeoff model
+        to find when AI R&D speedup reaches that threshold. Otherwise, use the
+        specific year provided.
+
+        Returns:
+            float: The year when the agreement starts
+        """
+        settings = self.parameters.simulation_settings
+        if settings.start_agreement_at_what_ai_rnd_speedup is not None:
+            # Use takeoff model to find when speedup threshold is reached
+            result = self.takeoff_model.get_agreement_start_year(
+                settings.start_agreement_at_what_ai_rnd_speedup
+            )
+            if result['median'] is not None:
+                return result['median']
+            else:
+                # Fallback to specific year if takeoff model fails
+                return settings.start_agreement_at_specific_year or 2031
+        else:
+            # Use specific year
+            return settings.start_agreement_at_specific_year or 2031
+
+    def run_simulations(self, num_simulations: int):
+        """Run multiple simulations.
+
+        Args:
+            num_simulations: Number of simulations to run
+        """
+        # Determine agreement start year once (shared across simulations)
+        agreement_year = self._determine_agreement_start_year()
+        simulation_end_year = agreement_year + self.parameters.simulation_settings.num_years_to_simulate
 
         for _ in range(num_simulations):
             simulation = Simulation(
-                year_us_prc_agreement_goes_into_force = self.parameters.simulation_settings.start_year,
-                covert_projects = self._init_covert_projects(),  # Create fresh projects with new random sampling
-                detectors = deepcopy(self.initial_detectors)
+                covert_projects = self._init_covert_projects(
+                    agreement_year=agreement_year,
+                    simulation_end_year=simulation_end_year
+                ),
+                detectors = deepcopy(self.initial_detectors),
+                takeoff_model = self.takeoff_model,
+                simulation_settings = self.parameters.simulation_settings,
+                agreement_start_year = agreement_year
             )
-            covert_projects, detectors = simulation.run_simulation(
-                end_year = self.parameters.simulation_settings.end_year,
-                increment = self.parameters.simulation_settings.time_step_years
-            )
+            covert_projects, detectors = simulation.run_simulation()
             self.simulation_results.append((covert_projects, detectors))

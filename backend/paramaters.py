@@ -21,8 +21,10 @@ class ProcessNodeStrategy(Enum):
 
 @dataclass
 class SimulationSettings:
-    start_year : int = 2031
-    end_year : int = 2038
+    model_takeoff: bool = False
+    start_agreement_at_what_ai_rnd_speedup: Optional[float] = 2.0 # can also be a milestone like "AC" or "SAR" or None if starting agreement at a specific year
+    start_agreement_at_specific_year : Optional[int] = 2031
+    num_years_to_simulate : float = 7.0  # Number of years from agreement start to simulate
     time_step_years : float = 0.1
     num_simulations : int = 60
 
@@ -163,35 +165,9 @@ def _set_nested_attr(obj, path, value):
         obj = getattr(obj, part)
     setattr(obj, parts[-1], value)
 
-@dataclass
-class PCatastropheParameters:
-    p_ai_takeover_1_month: float = 0.15 # time is adjusted for research speed
-    p_ai_takeover_1_year: float = 0.10
-    p_ai_takeover_10_years: float = 0.05
-
-    p_human_power_grabs_1_month: float = 0.40 # time is NOT adjusted for research speed
-    p_human_power_grabs_1_year: float = 0.20
-    p_human_power_grabs_10_years: float = 0.10
 
 @dataclass
-class ProxyProject:
-    compute_cap_as_percentile_of_PRC_operational_covert_compute: float = 0.7 #70th percentile
-    frequency_cap_is_updated_in_years: float = 1.0
-
-@dataclass
-class SoftwareProliferation:
-    weight_stealing_times: list = field(default_factory=lambda: ["SC"]) #Options: "SC", "SAR", 2027, or 2030
-    stealing_algorithms_up_to: str = "SAR" # Options: "SC", "SAR"
-
-@dataclass
-class SlowdownParameters:
-    monte_carlo_samples: int = 1
-    PCatastrophe_parameters: PCatastropheParameters = field(default_factory=PCatastropheParameters)
-    proxy_project: ProxyProject = field(default_factory=ProxyProject)
-    software_proliferation: SoftwareProliferation = field(default_factory=SoftwareProliferation)
-
-@dataclass
-class Parameters:
+class ModelParameters:
     simulation_settings : SimulationSettings
     covert_project_properties : CovertProjectProperties
     covert_project_parameters : CovertProjectParameters
@@ -199,7 +175,7 @@ class Parameters:
     def update_from_dict(self, data: dict):
         """
         Update parameters from request data using dot notation.
-        Field names with dots (e.g., 'simulation_settings.start_year') are automatically
+        Field names with dots (e.g., 'simulation_settings.start_agreement_at_specific_year') are automatically
         converted to nested attribute access.
         Returns True if survival rate parameters changed (requires metalog cache clear).
         """
@@ -213,7 +189,7 @@ class Parameters:
                 _set_nested_attr(self, field_name, value)
 
             except AttributeError:
-                # Field doesn't exist in Parameters - skip it (e.g., p_project_exists, p_fab_exists)
+                # Field doesn't exist in ModelParameters - skip it (e.g., p_project_exists, p_fab_exists)
                 pass
 
         # Handle process node mapping (special case because it has string values that map to enums)
@@ -233,7 +209,7 @@ class Parameters:
 
     def to_dict(self):
         """
-        Convert Parameters to a dictionary using dot notation for nested fields.
+        Convert ModelParameters to a dictionary using dot notation for nested fields.
         Automatically flattens the nested dataclass structure.
         """
         def flatten_dataclass(obj, prefix=''):
@@ -259,3 +235,34 @@ class Parameters:
 
         return flatten_dataclass(self)
     
+@dataclass
+class PCatastropheParameters:
+    p_ai_takeover_t1: float = 0.40 # time is adjusted for safety research speed
+    p_ai_takeover_t2: float = 0.15
+    p_ai_takeover_t3: float = 0.05
+
+    p_human_power_grabs_t1: float = 0.40 # time is NOT adjusted for research speed
+    p_human_power_grabs_t2: float = 0.20
+    p_human_power_grabs_t3: float = 0.10
+
+    # Safety research speedup = capability_speedup ^ safety_speedup_exponent
+    # e.g., exponent=0.5 means safety speedup is sqrt of capability speedup
+    safety_speedup_exponent: float = 0.5
+
+@dataclass
+class ProxyProject:
+    compute_cap_as_percentile_of_PRC_operational_covert_compute: float = 0.7 #70th percentile
+    frequency_cap_is_updated_in_years: float = 1.0
+
+@dataclass
+class SoftwareProliferation:
+    weight_stealing_times: list = field(default_factory=lambda: ["SC"]) #Options: "SC", "SAR", 2027, or 2030
+    stealing_algorithms_up_to: str = "SAR" # Options: "SC", "SAR"
+
+@dataclass
+class SlowdownPageParameters:
+    monte_carlo_samples: int = 1
+    ai_rnd_speedup_at_agreement_start: float = 2.0
+    PCatastrophe_parameters: PCatastropheParameters = field(default_factory=PCatastropheParameters)
+    proxy_project: ProxyProject = field(default_factory=ProxyProject)
+    software_proliferation: SoftwareProliferation = field(default_factory=SoftwareProliferation)

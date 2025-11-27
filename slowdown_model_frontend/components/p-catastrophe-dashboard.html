@@ -1,0 +1,33 @@
+<!-- P(Catastrophe) Dashboard Component -->
+<div class="p-catastrophe-dashboard-section" style="background: white; border-radius: 8px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
+    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 15px; color: #222; text-align: center;">
+        P(Catastrophe) from Trajectory
+    </h2>
+    <p style="text-align: center; color: #666; margin-bottom: 20px; font-size: 13px;">
+        Computed from AC to SAR handoff duration based on the trajectory above
+    </p>
+
+    <div id="pCatastropheDashboard" style="display: flex; gap: 25px; justify-content: center; flex-wrap: wrap;">
+        <!-- Global Trajectory Card -->
+        <div style="flex: 1; min-width: 280px; max-width: 420px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 10px; padding: 20px; border-left: 4px solid #2A623D;">
+            <h3 style="font-size: 14px; font-weight: 600; color: #2A623D; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 10px; height: 10px; background: #2A623D; border-radius: 50%; display: inline-block;"></span>
+                Global AI R&D (No Slowdown)
+            </h3>
+            <div id="globalTrajectoryStats">
+                <p style="color: #888; font-style: italic;">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Covert Trajectory Card -->
+        <div style="flex: 1; min-width: 280px; max-width: 420px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 10px; padding: 20px; border-left: 4px solid #8B4513;">
+            <h3 style="font-size: 14px; font-weight: 600; color: #8B4513; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 10px; height: 10px; background: #8B4513; border-radius: 50%; display: inline-block;"></span>
+                PRC Covert AI R&D
+            </h3>
+            <div id="covertTrajectoryStats">
+                <p style="color: #888; font-style: italic;">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>

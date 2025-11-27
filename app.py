@@ -1,10 +1,13 @@
-from flask import Flask, render_template, jsonify, request, send_file
+from flask import Flask, render_template, jsonify, request, send_file, Response
 from backend.model import Model
 from backend.paramaters import (
     CovertProjectProperties,
     CovertProjectParameters,
     SimulationSettings,
-    Parameters
+    Parameters,
+    SlowdownParameters,
+    PCatastropheParameters,
+    SoftwareProliferation
 )
 from backend.serve_data_for_dark_compute_model import extract_plot_data
 from backend import util
@@ -83,10 +86,20 @@ def slowdown():
     """Serve the AI development slowdown model page."""
     return send_file('slowdown_model_frontend/slowdown_model.html')
 
+@app.route('/slowdown_v2')
+def slowdown_v2():
+    """Serve the AI development slowdown model page (v2 componentized version)."""
+    return send_file('slowdown_model_frontend/slowdown_model_v2.html')
+
 @app.route('/slowdown_model_frontend/<path:filename>')
 def serve_slowdown_files(filename):
     """Serve files from the slowdown_model_frontend directory."""
     return send_file(f'slowdown_model_frontend/{filename}')
+
+@app.route('/slowdown_model_frontend/components/<path:filename>')
+def serve_slowdown_component_files(filename):
+    """Serve files from the slowdown_model_frontend/components directory."""
+    return send_file(f'slowdown_model_frontend/components/{filename}')
 
 @app.route('/<path:filename>')
 def serve_html(filename):
@@ -135,31 +148,175 @@ def get_default_results():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+def _parse_slowdown_params_from_request() -> SlowdownParameters:
+    """Parse SlowdownParameters from query arguments."""
+    # Monte Carlo samples
+    num_mc_samples = int(request.args.get('num_mc_samples', 3))
+
+    # P(Catastrophe) parameters
+    p_cat_params = PCatastropheParameters(
+        p_ai_takeover_1_month=float(request.args.get('p_ai_takeover_1_month', 0.15)),
+        p_ai_takeover_1_year=float(request.args.get('p_ai_takeover_1_year', 0.10)),
+        p_ai_takeover_10_years=float(request.args.get('p_ai_takeover_10_years', 0.05)),
+        p_human_power_grabs_1_month=float(request.args.get('p_human_power_grabs_1_month', 0.40)),
+        p_human_power_grabs_1_year=float(request.args.get('p_human_power_grabs_1_year', 0.20)),
+        p_human_power_grabs_10_years=float(request.args.get('p_human_power_grabs_10_years', 0.10))
+    )
+
+    # Software proliferation parameters
+    weight_stealing_val = request.args.get('weight_stealing', 'SC')
+    algorithm_stealing_val = request.args.get('algorithm_stealing', 'SAR')
+
+    # Convert 'none' to empty list for weight stealing
+    if weight_stealing_val == 'none':
+        weight_stealing_times = []
+    else:
+        weight_stealing_times = [weight_stealing_val]
+
+    # Convert 'none' to None for algorithm stealing
+    if algorithm_stealing_val == 'none':
+        stealing_algorithms_up_to = None
+    else:
+        stealing_algorithms_up_to = algorithm_stealing_val
+
+    software_proliferation = SoftwareProliferation(
+        weight_stealing_times=weight_stealing_times,
+        stealing_algorithms_up_to=stealing_algorithms_up_to
+    )
+
+    return SlowdownParameters(
+        monte_carlo_samples=num_mc_samples,
+        PCatastrophe_parameters=p_cat_params,
+        software_proliferation=software_proliferation
+    )
+
+
 @app.route('/get_slowdown_model_data')
 def get_slowdown_model_data():
-    """Get AI takeoff slowdown model data with default parameters."""
+    """Get AI takeoff slowdown model data."""
     try:
-        from backend.serve_data_for_slowdown_model import extract_takeoff_slowdown_trajectories
+        from backend.serve_slowdown_model import get_slowdown_model_data as compute_slowdown_data
 
-        # Use default parameters
-        params = Parameters(
-            simulation_settings=SimulationSettings(),
-            covert_project_properties=CovertProjectProperties(),
-            covert_project_parameters=CovertProjectParameters()
-        )
+        # Parse slowdown parameters from query arguments
+        slowdown_params = _parse_slowdown_params_from_request()
 
-        # Extract takeoff trajectories
-        trajectories = extract_takeoff_slowdown_trajectories(params)
+        # Get cached simulation data from default cache or most recent cache
+        cached_simulation_data = load_default_cache()
 
-        return jsonify({
-            'takeoff_trajectories': trajectories,
-            'agreement_year': params.simulation_settings.start_year
-        })
+        # If no default cache, try to load the most recent cache file
+        if not cached_simulation_data:
+            import glob
+            cache_files = glob.glob(os.path.join(CACHE_DIR, '*.json'))
+            cache_files = [f for f in cache_files if not f.endswith('default.json')]
+            if cache_files:
+                most_recent = max(cache_files, key=os.path.getmtime)
+                try:
+                    with open(most_recent, 'r') as f:
+                        cache_data = json.load(f)
+                    cached_simulation_data = cache_data.get('results', cache_data)
+                    print(f"Using most recent cache: {most_recent}", flush=True)
+                except Exception as e:
+                    print(f"Error loading cache file: {e}", flush=True)
+
+        # Compute all slowdown model data with the parsed parameters
+        result = compute_slowdown_data(cached_simulation_data, slowdown_params=slowdown_params)
+        return jsonify(result)
+
     except Exception as e:
         print(f"ERROR computing slowdown model data: {e}", flush=True)
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/get_slowdown_model_data_stream')
+def get_slowdown_model_data_stream():
+    """Stream AI takeoff slowdown model data with progress updates via Server-Sent Events."""
+    # Parse slowdown parameters from query arguments BEFORE entering the generator
+    # (request context is not available inside the generator after the response starts)
+    slowdown_params = _parse_slowdown_params_from_request()
+
+    def generate():
+        import queue
+        import threading
+
+        progress_queue = queue.Queue()
+
+        def progress_callback(current, total, trajectory_name):
+            progress_queue.put({
+                'type': 'progress',
+                'current': current,
+                'total': total,
+                'trajectory': trajectory_name
+            })
+
+        def status_callback(status_message):
+            progress_queue.put({
+                'type': 'status',
+                'message': status_message
+            })
+
+        def compute_data():
+            try:
+                from backend.serve_slowdown_model import get_slowdown_model_data_with_progress
+
+                # Get cached simulation data
+                status_callback("Loading cached covert compute data...")
+                cached_simulation_data = load_default_cache()
+                if not cached_simulation_data:
+                    import glob as glob_module
+                    cache_files = glob_module.glob(os.path.join(CACHE_DIR, '*.json'))
+                    cache_files = [f for f in cache_files if not f.endswith('default.json')]
+                    if cache_files:
+                        most_recent = max(cache_files, key=os.path.getmtime)
+                        try:
+                            with open(most_recent, 'r') as f:
+                                cache_data = json.load(f)
+                            cached_simulation_data = cache_data.get('results', cache_data)
+                        except Exception as e:
+                            print(f"Error loading cache file: {e}", flush=True)
+
+                result = get_slowdown_model_data_with_progress(
+                    cached_simulation_data,
+                    slowdown_params=slowdown_params,
+                    progress_callback=progress_callback,
+                    status_callback=status_callback
+                )
+                progress_queue.put({'type': 'complete', 'data': result})
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                progress_queue.put({'type': 'error', 'error': str(e)})
+
+        # Start computation in background thread
+        thread = threading.Thread(target=compute_data)
+        thread.start()
+
+        # Stream progress updates
+        while True:
+            try:
+                msg = progress_queue.get(timeout=60)  # 60 second timeout
+                if msg['type'] == 'progress':
+                    yield f"data: {json.dumps(msg)}\n\n"
+                elif msg['type'] == 'status':
+                    yield f"data: {json.dumps(msg)}\n\n"
+                elif msg['type'] == 'complete':
+                    yield f"data: {json.dumps(msg)}\n\n"
+                    break
+                elif msg['type'] == 'error':
+                    yield f"data: {json.dumps(msg)}\n\n"
+                    break
+            except queue.Empty:
+                # Send keepalive
+                yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
+
+        thread.join()
+
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no'
+    })
+
 
 @app.route('/run_simulation', methods=['POST'])
 def run_simulation():

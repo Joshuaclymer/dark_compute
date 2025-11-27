@@ -1,0 +1,125 @@
+/* Slowdown Model Component Styles */
+
+/* Override body styles for this page */
+body {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+.slowdown-sidebar {
+    width: 320px;
+    min-width: 280px;
+    max-width: 380px;
+    background-color: #f5f5f5;
+    padding: 20px;
+    overflow-y: auto;
+    border-right: 1px solid #ddd;
+    flex-shrink: 0;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+.slowdown-sidebar h1 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.slowdown-sidebar h2 {
+    font-size: 14px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #555;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+}
+
+.slowdown-sidebar .param-group {
+    margin-bottom: 12px;
+}
+
+.slowdown-sidebar .param-group label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: #666;
+}
+
+.slowdown-sidebar .param-group input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 12px;
+    box-sizing: border-box;
+}
+
+.slowdown-sidebar .param-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.slowdown-sidebar .param-row {
+    display: flex;
+    gap: 10px;
+}
+
+.slowdown-sidebar .param-row .param-group {
+    flex: 1;
+}
+
+.slowdown-sidebar button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+.slowdown-sidebar button:hover {
+    background-color: #0056b3;
+}
+
+.slowdown-main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 40px;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+    .slowdown-sidebar {
+        width: 260px;
+        min-width: 220px;
+        padding: 15px;
+    }
+    .slowdown-main-content {
+        padding: 15px 20px;
+    }
+}
+
+@media (max-width: 700px) {
+    body {
+        flex-direction: column;
+    }
+    .slowdown-sidebar {
+        width: 100%;
+        max-width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+        max-height: 40vh;
+    }
+    .slowdown-main-content {
+        padding: 15px;
+    }
+}

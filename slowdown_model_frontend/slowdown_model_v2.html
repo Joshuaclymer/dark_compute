@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Takeoff Trajectory</title>
+    <link rel="stylesheet" href="/frontend/styles.css">
+    <link rel="stylesheet" href="/slowdown_model_frontend/components/styles.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar - loaded from component -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <div class="slowdown-main-content">
+        <!-- Header - loaded from component -->
+        <div id="header-container"></div>
+
+        <!-- Takeoff Trajectory Plot - loaded from component -->
+        <div id="takeoff-trajectory-container"></div>
+
+        <!-- P(Catastrophe) Dashboard - loaded from component -->
+        <div id="p-catastrophe-dashboard-container"></div>
+
+        <!-- Compute Over Time Plot - loaded from component -->
+        <div id="compute-plot-container"></div>
+
+        <!-- P(Catastrophe) Plots - loaded from component -->
+        <div id="p-catastrophe-plots-container"></div>
+
+        <!-- Explanation Section - loaded from component -->
+        <div id="explanation-container"></div>
+    </div>
+
+    <!-- Load component JavaScript files -->
+    <script src="/slowdown_model_frontend/components/sidebar.js"></script>
+    <script src="/slowdown_model_frontend/components/takeoff-trajectory-plot.js"></script>
+    <script src="/slowdown_model_frontend/components/p-catastrophe-dashboard.js"></script>
+    <script src="/slowdown_model_frontend/components/compute-plot.js"></script>
+    <script src="/slowdown_model_frontend/components/p-catastrophe-plots.js"></script>
+    <script src="/slowdown_model_frontend/components/data-loader.js"></script>
+
+    <!-- Main application script -->
+    <script src="/slowdown_model_frontend/slowdown_model_v2.js"></script>
+</body>
+</html>

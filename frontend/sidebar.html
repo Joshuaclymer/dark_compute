@@ -340,23 +340,13 @@
         <input type="number" id="scanner_proportion" value="{{ defaults['covert_project_properties.covert_fab_proportion_of_prc_lithography_scanners_devoted'] }}" step="0.001">
     </div>
 
+    <!-- Slowdown Counterfactual section commented out
     <h2>Slowdown Counterfactual</h2>
-    <div class="param-group">
-        <label for="median_global_compute_in_2026">Median global compute in 2026 (millions of H100e)</label>
-        <input type="number" id="median_global_compute_in_2026" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.median_global_compute_in_2026'] / 1e6 }}" step="1">
-    </div>
-    <div class="param-group">
-        <label for="median_global_compute_annual_rate_of_increase">Median global compute annual rate of increase (multiplicative)</label>
-        <input type="number" id="median_global_compute_annual_rate_of_increase" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.median_global_compute_annual_rate_of_increase'] }}" step="0.1">
-    </div>
-    <div class="param-group">
-        <label for="fraction_of_global_compute_for_single_ai_project">Fraction of global compute spent on AI R&D for a single project</label>
-        <input type="number" id="fraction_of_global_compute_for_single_ai_project" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_global_compute_for_single_ai_project'] }}" step="0.0001" min="0" max="1">
-    </div>
     <div class="param-group">
         <label for="fraction_of_prc_compute_spent_on_ai_rd_before_slowdown">Fraction of PRC compute spent on AI R&D before slowdown</label>
         <input type="number" id="fraction_of_prc_compute_spent_on_ai_rd_before_slowdown" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_prc_compute_spent_on_ai_rd_before_slowdown'] }}" step="0.01" min="0" max="1">
     </div>
+    -->
 
     <h2>Detection parameters</h2>
 

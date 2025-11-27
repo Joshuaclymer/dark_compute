@@ -6,3 +6,4 @@ pandas>=2.1.0
 gunicorn>=21.0.0
 pymetalog>=0.2.0
 seaborn>=0.12.0
+joblib>=1.3.0

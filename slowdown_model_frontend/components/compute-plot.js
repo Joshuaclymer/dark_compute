@@ -50,7 +50,52 @@ function plotCovertCompute(data) {
         });
     }
 
-    // Add largest company compute if available
+    // Add US Frontier compute: largest company until agreement year, then proxy project after
+    // This represents US AI development conditional on a slowdown
+    if (largestCompanyData && largestCompanyData.years && largestCompanyData.compute) {
+        // Filter largest company data to only include years up to (and including) agreement year
+        const preAgreementYears = [];
+        const preAgreementCompute = [];
+        for (let i = 0; i < largestCompanyData.years.length; i++) {
+            if (largestCompanyData.years[i] <= agreement_year) {
+                preAgreementYears.push(largestCompanyData.years[i]);
+                preAgreementCompute.push(largestCompanyData.compute[i]);
+            }
+        }
+
+        // Get post-agreement US Frontier data (from proxy project)
+        let postAgreementYears = [];
+        let postAgreementCompute = [];
+        if (proxyProjectData && proxyProjectData.years && proxyProjectData.compute) {
+            for (let i = 0; i < proxyProjectData.years.length; i++) {
+                if (proxyProjectData.years[i] > agreement_year) {
+                    postAgreementYears.push(proxyProjectData.years[i]);
+                    postAgreementCompute.push(proxyProjectData.compute[i]);
+                }
+            }
+        }
+
+        // Combine pre and post agreement data
+        const usFrontierYears = [...preAgreementYears, ...postAgreementYears];
+        const usFrontierCompute = [...preAgreementCompute, ...postAgreementCompute];
+
+        if (usFrontierYears.length > 0) {
+            traces.push({
+                x: usFrontierYears,
+                y: usFrontierCompute,
+                type: 'scatter',
+                mode: 'lines',
+                line: {
+                    color: '#4169E1',
+                    width: 3
+                },
+                name: 'US Frontier (with slowdown)',
+                hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
+            });
+        }
+    }
+
+    // Add largest company compute (no slowdown baseline) - full trajectory
     if (largestCompanyData && largestCompanyData.years && largestCompanyData.compute) {
         traces.push({
             x: largestCompanyData.years,
@@ -59,26 +104,10 @@ function plotCovertCompute(data) {
             mode: 'lines',
             line: {
                 color: '#2A623D',
-                width: 3
-            },
-            name: 'Largest Company Compute',
-            hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
-        });
-    }
-
-    // Add proxy project compute if available (step-change curve)
-    if (proxyProjectData && proxyProjectData.years && proxyProjectData.compute) {
-        traces.push({
-            x: proxyProjectData.years,
-            y: proxyProjectData.compute,
-            type: 'scatter',
-            mode: 'lines',
-            line: {
-                color: '#4169E1',
                 width: 3,
-                shape: 'hv'  // Horizontal then vertical - creates step pattern
+                dash: 'dash'
             },
-            name: 'Proxy Project',
+            name: 'Largest U.S. Company (no slowdown)',
             hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
         });
     }

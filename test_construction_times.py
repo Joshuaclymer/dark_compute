@@ -3,7 +3,7 @@ Quick diagnostic script to test construction finish time variance.
 """
 import numpy as np
 from backend.model import Model
-from backend.paramaters import Parameters, SimulationSettings, CovertProjectStrategy, CovertProjectParameters
+from backend.paramaters import Parameters, SimulationSettings, CovertProjectProperties, CovertProjectParameters
 
 # Create parameters with small number of simulations for quick test
 params = Parameters(
@@ -13,7 +13,7 @@ params = Parameters(
         time_step_years=0.1,
         num_simulations=20
     ),
-    covert_project_strategy=CovertProjectStrategy(),
+    covert_project_properties=CovertProjectProperties(),
     covert_project_parameters=CovertProjectParameters()
 )
 

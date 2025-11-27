@@ -6,12 +6,9 @@ for a "proxy project" that approximates PRC covert capabilities based
 on a percentile of the covert compute distribution.
 """
 
-from typing import Dict, Any, Optional, List, Tuple, TYPE_CHECKING
+from typing import Dict, Any, Optional, List
 
 from backend.paramaters import ProxyProject
-
-if TYPE_CHECKING:
-    from backend.paramaters import Parameters
 
 
 def compute_proxy_project_compute(
@@ -91,26 +88,23 @@ def compute_proxy_project_compute(
 
 def compute_proxy_project_trajectory(
     covert_compute_data: Optional[Dict[str, Any]],
-    params: 'Parameters',
     proxy_project_params: Optional[ProxyProject] = None
-) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
-    """Compute proxy project compute and AI R&D speedup trajectory.
+) -> Optional[Dict[str, Any]]:
+    """Compute proxy project compute trajectory.
 
     The proxy project's cap is based on a percentile of the PRC covert compute distribution
     and is updated at a specified frequency (creating step changes).
 
     Args:
         covert_compute_data: Cached simulation data with covert compute info
-        params: Main simulation parameters
         proxy_project_params: ProxyProject parameters (uses defaults if None)
 
     Returns:
-        Tuple of (proxy_project_data, proxy_project_trajectories)
+        Dictionary with 'years' and 'compute' lists for the proxy project compute,
+        or None if insufficient data
     """
-    from .trajectories import extract_takeoff_slowdown_trajectories
-
     if not covert_compute_data:
-        return None, None
+        return None
 
     post_years = covert_compute_data.get('years', [])
     operational = covert_compute_data.get('operational_dark_compute', {})
@@ -125,7 +119,7 @@ def compute_proxy_project_trajectory(
         covert_compute_percentiles['p75'] = operational['p75']
 
     if not post_years or not covert_compute_percentiles:
-        return None, None
+        return None
 
     # Compute proxy project compute (use provided params or defaults)
     if proxy_project_params is None:
@@ -136,41 +130,4 @@ def compute_proxy_project_trajectory(
         proxy_project_params
     )
 
-    if not proxy_project_data or not proxy_project_data.get('years') or not proxy_project_data.get('compute'):
-        return proxy_project_data, None
-
-    # Compute proxy project AI R&D speedup trajectory
-    # Need to combine pre-agreement PRC compute with post-agreement proxy project compute
-    prc_years = covert_compute_data.get('prc_compute_years', [])
-    prc_compute = covert_compute_data.get('prc_compute_over_time', {})
-    prc_median = prc_compute.get('median', [])
-
-    proxy_years = proxy_project_data['years']
-    proxy_compute = proxy_project_data['compute']
-
-    # Combine: pre-agreement PRC compute + post-agreement proxy project compute
-    if prc_years and prc_median:
-        first_proxy_year = proxy_years[0] if proxy_years else float('inf')
-        combined_proxy_years = []
-        combined_proxy_compute = []
-
-        # Add pre-agreement years (before the agreement starts)
-        for i, year in enumerate(prc_years):
-            if year < first_proxy_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(prc_median[i])
-
-        # Add post-agreement proxy project years
-        combined_proxy_years.extend(proxy_years)
-        combined_proxy_compute.extend(proxy_compute)
-
-        proxy_project_trajectories = extract_takeoff_slowdown_trajectories(
-            params, combined_proxy_years, combined_proxy_compute
-        )
-    else:
-        # No pre-agreement data, just use proxy project data
-        proxy_project_trajectories = extract_takeoff_slowdown_trajectories(
-            params, proxy_years, proxy_compute
-        )
-
-    return proxy_project_data, proxy_project_trajectories
+    return proxy_project_data

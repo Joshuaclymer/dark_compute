@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 165" preserveAspectRatio="xMidYMin meet">
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#999"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="540" height="150" rx="8" fill="#f9f9f9" stroke="#e0e0e0" stroke-width="1"/>
+
+  <!-- "selected to maximize" label -->
+  <text x="247" y="22" text-anchor="middle" font-size="10" font-style="italic" fill="#666" font-family="system-ui, -apple-system, sans-serif">Selected to maximize</text>
+
+  <!-- Feedback arrow from Project properties to label -->
+  <path d="M 70 38 L 70 18 L 192 18" stroke="#999" stroke-width="1.5" fill="none" stroke-dasharray="5,3"/>
+
+  <!-- Feedback arrow from label to Covert computation -->
+  <path d="M 303 18 L 475 18 L 475 38" stroke="#999" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
+
+  <!-- Project properties box - widened -->
+  <rect x="15" y="40" width="115" height="45" rx="5" fill="white" stroke="#9B7BB3" stroke-width="2"/>
+  <text x="72" y="58" text-anchor="middle" font-size="11" font-weight="600" fill="#333" font-family="system-ui, -apple-system, sans-serif">Project properties</text>
+  <text x="72" y="72" text-anchor="middle" font-size="9" fill="#888" font-family="system-ui, -apple-system, sans-serif">(e.g. # of workers)</text>
+
+  <!-- Time box -->
+  <rect x="15" y="95" width="115" height="35" rx="5" fill="white" stroke="#aaa" stroke-width="2"/>
+  <text x="72" y="117" text-anchor="middle" font-size="11" font-weight="600" fill="#333" font-family="system-ui, -apple-system, sans-serif">Time</text>
+
+  <!-- Arrow 1 -->
+  <text x="150" y="90" text-anchor="middle" font-size="18" fill="#999" font-family="system-ui, -apple-system, sans-serif">→</text>
+
+  <!-- Model box -->
+  <rect x="170" y="55" width="70" height="50" rx="5" fill="white" stroke="#5AA89B" stroke-width="2"/>
+  <text x="205" y="85" text-anchor="middle" font-size="12" font-weight="600" fill="#333" font-family="system-ui, -apple-system, sans-serif">Model</text>
+
+  <!-- Arrow 2 -->
+  <text x="260" y="90" text-anchor="middle" font-size="18" fill="#999" font-family="system-ui, -apple-system, sans-serif">→</text>
+
+  <!-- Rate of computation box -->
+  <rect x="280" y="40" width="110" height="30" rx="5" fill="white" stroke="#E8A863" stroke-width="2"/>
+  <text x="335" y="60" text-anchor="middle" font-size="10" font-weight="600" fill="#333" font-family="system-ui, -apple-system, sans-serif">Rate of computation</text>
+
+  <!-- Detection likelihood box -->
+  <rect x="280" y="80" width="110" height="30" rx="5" fill="white" stroke="#E8A863" stroke-width="2"/>
+  <text x="335" y="100" text-anchor="middle" font-size="10" font-weight="600" fill="#333" font-family="system-ui, -apple-system, sans-serif">Detection likelihood</text>
+
+  <!-- Arrow 3 -->
+  <text x="410" y="90" text-anchor="middle" font-size="18" fill="#999" font-family="system-ui, -apple-system, sans-serif">→</text>
+
+  <!-- Covert computation box -->
+  <rect x="430" y="50" width="95" height="55" rx="5" fill="white" stroke="#D4A574" stroke-width="2"/>
+  <text x="477" y="75" text-anchor="middle" font-size="11" font-weight="600" fill="#333" font-family="system-ui, -apple-system, sans-serif">Covert</text>
+  <text x="477" y="90" text-anchor="middle" font-size="11" font-weight="600" fill="#333" font-family="system-ui, -apple-system, sans-serif">computation</text>
+</svg>

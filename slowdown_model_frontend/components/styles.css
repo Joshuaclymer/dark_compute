@@ -123,3 +123,24 @@ body {
         padding: 15px;
     }
 }
+
+/* Override main styles.css rules that conflict with Plotly */
+#slowdownPlot .plot-container,
+#covertComputePlot .plot-container,
+#covertUncertaintyPlot .plot-container,
+#pAiTakeoverPlot .plot-container,
+#pHumanPowerGrabsPlot .plot-container {
+    border: none;
+    padding: 0;
+    background: transparent;
+    overflow: visible;
+}
+
+#slowdownPlot,
+#covertComputePlot,
+#covertUncertaintyPlot,
+#pAiTakeoverPlot,
+#pHumanPowerGrabsPlot {
+    height: 450px;
+    width: 100%;
+}

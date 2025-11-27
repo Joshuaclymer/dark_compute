@@ -1,6 +1,27 @@
 // Slowdown Model v2 - Main Application Script
 // This file assembles all components and initializes the application
 
+// Global error handler - log all errors to console and server
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('Global error:', message, 'at', source, lineno, colno);
+    console.error('Stack:', error ? error.stack : 'no stack');
+    fetch('/log_client_error', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message, source, lineno, colno, stack: error ? error.stack : null })
+    }).catch(() => {});
+    return false;
+};
+
+window.onunhandledrejection = function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    fetch('/log_client_error', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: 'Unhandled promise rejection', reason: String(event.reason) })
+    }).catch(() => {});
+};
+
 // Load HTML components into their containers
 async function loadComponents() {
     const components = [
@@ -9,6 +30,7 @@ async function loadComponents() {
         { id: 'takeoff-trajectory-container', path: '/slowdown_model_frontend/components/takeoff-trajectory-plot.html' },
         { id: 'p-catastrophe-dashboard-container', path: '/slowdown_model_frontend/components/p-catastrophe-dashboard.html' },
         { id: 'compute-plot-container', path: '/slowdown_model_frontend/components/compute-plot.html' },
+        { id: 'covert-uncertainty-container', path: '/slowdown_model_frontend/components/covert-uncertainty-plot.html' },
         { id: 'p-catastrophe-plots-container', path: '/slowdown_model_frontend/components/p-catastrophe-plots.html' },
         { id: 'explanation-container', path: '/slowdown_model_frontend/components/explanation.html' }
     ];
@@ -37,6 +59,7 @@ async function loadComponents() {
 function plotAllCharts(data) {
     plotTakeoffModel(data);
     plotCovertCompute(data);
+    plotCovertUncertainty(data);
     plotPCatastropheFromData(data);
     renderPCatastropheDashboard(data);
 }

@@ -6,10 +6,7 @@ including PRC covert compute, largest company compute, and no-slowdown
 counterfactual trajectories.
 """
 
-from typing import Dict, Any, Optional, List, Tuple, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from backend.paramaters import Parameters
+from typing import Dict, Any, Optional, List, Tuple
 
 
 def combine_prc_and_covert_compute(
@@ -93,10 +90,9 @@ def get_largest_company_compute() -> Optional[Dict[str, Any]]:
 
 def compute_prc_no_slowdown_trajectory(
     covert_compute_data: Optional[Dict[str, Any]],
-    covert_years: Optional[List[float]],
-    params: 'Parameters'
-) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
-    """Compute PRC no-slowdown trajectory by extrapolating pre-agreement growth.
+    covert_years: Optional[List[float]]
+) -> Optional[Dict[str, Any]]:
+    """Compute PRC no-slowdown compute by extrapolating pre-agreement growth.
 
     This represents a counterfactual where PRC compute continues to grow
     at its pre-agreement rate without any slowdown from agreements.
@@ -104,22 +100,20 @@ def compute_prc_no_slowdown_trajectory(
     Args:
         covert_compute_data: Cached simulation data with covert compute info
         covert_years: Combined covert compute years (to determine end year)
-        params: Main simulation parameters
 
     Returns:
-        Tuple of (prc_no_slowdown_data, prc_no_slowdown_trajectories)
+        Dictionary with 'years' and 'median' lists for the compute trajectory,
+        or None if insufficient data
     """
-    from .trajectories import extract_takeoff_slowdown_trajectories
-
     if not covert_compute_data:
-        return None, None
+        return None
 
     prc_years = covert_compute_data.get('prc_compute_years', [])
     prc_compute = covert_compute_data.get('prc_compute_over_time', {})
     prc_median = prc_compute.get('median', [])
 
     if not prc_years or not prc_median or len(prc_years) < 2:
-        return None, None
+        return None
 
     # Calculate average growth rate from the existing data
     growth_rates = []
@@ -141,14 +135,7 @@ def compute_prc_no_slowdown_trajectory(
         extended_years.append(current_year)
         extended_median.append(current_compute)
 
-    prc_no_slowdown_data = {
+    return {
         'years': extended_years,
         'median': extended_median
     }
-
-    # Compute AI R&D speedup trajectory
-    prc_no_slowdown_trajectories = extract_takeoff_slowdown_trajectories(
-        params, extended_years, extended_median
-    )
-
-    return prc_no_slowdown_data, prc_no_slowdown_trajectories

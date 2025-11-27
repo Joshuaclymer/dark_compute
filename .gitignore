@@ -22,3 +22,7 @@ ENV/
 # Big datasets
 analysis/covert_data_centers/sizes_of_buildings_in_china/East_Asian_buildings.zip
 analysis/covert_data_centers/sizes_of_buildings_in_china/extracted_datacache/
+analysis/covert_data_centers/sizes_of_buildings_in_china/extracted_data/
+
+# Cache files
+cache/

@@ -21,8 +21,8 @@ class ProcessNodeStrategy(Enum):
 
 @dataclass
 class SimulationSettings:
-    start_year : int = 2030
-    end_year : int = 2037
+    start_year : int = 2031
+    end_year : int = 2038
     time_step_years : float = 0.1
     num_simulations : int = 60
 
@@ -51,7 +51,7 @@ class InitialPRCDarkComputeParameters:
     h100_power_watts: float = 700  # Total power consumption of NVIDIA H100 GPU
 
     # PRC compute stock
-    total_prc_compute_stock_in_2025: float = 1e6
+    total_prc_compute_stock_in_2025: float = 1e5
     energy_efficiency_relative_to_h100: float = 0.5
     annual_growth_rate_of_prc_compute_stock_p10: float = 1.3
     annual_growth_rate_of_prc_compute_stock_p50: float = 2.2
@@ -64,9 +64,7 @@ class InitialPRCDarkComputeParameters:
 @dataclass
 class SlowdownCounterfactualParameters:
     # Slowdown counterfactual parameters (for reference line in plots)
-    median_global_compute_in_2026: float = 2e7
-    median_global_compute_annual_rate_of_increase: float = 2.25
-    fraction_of_global_compute_for_single_ai_project: float = 0.2
+    # Note: Global AI R&D compute is now sourced from AI Futures Project input_data.csv
     fraction_of_prc_compute_spent_on_ai_rd_before_slowdown: float = 0.5
 
 @dataclass
@@ -166,6 +164,33 @@ def _set_nested_attr(obj, path, value):
     setattr(obj, parts[-1], value)
 
 @dataclass
+class PCatastropheParameters:
+    p_ai_takeover_1_month: float = 0.15 # time is adjusted for research speed
+    p_ai_takeover_1_year: float = 0.10
+    p_ai_takeover_10_years: float = 0.05
+
+    p_human_power_grabs_1_month: float = 0.40 # time is NOT adjusted for research speed
+    p_human_power_grabs_1_year: float = 0.20
+    p_human_power_grabs_10_years: float = 0.10
+
+@dataclass
+class ProxyProject:
+    compute_cap_as_percentile_of_PRC_operational_covert_compute: float = 0.7 #70th percentile
+    frequency_cap_is_updated_in_years: float = 1.0
+
+@dataclass
+class SoftwareProliferation:
+    weight_stealing_times: list = field(default_factory=lambda: ["SC"]) #Options: "SC", "SAR", 2027, or 2030
+    stealing_algorithms_up_to: str = "SAR" # Options: "SC", "SAR"
+
+@dataclass
+class SlowdownParameters:
+    monte_carlo_samples: int = 1
+    PCatastrophe_parameters: PCatastropheParameters = field(default_factory=PCatastropheParameters)
+    proxy_project: ProxyProject = field(default_factory=ProxyProject)
+    software_proliferation: SoftwareProliferation = field(default_factory=SoftwareProliferation)
+
+@dataclass
 class Parameters:
     simulation_settings : SimulationSettings
     covert_project_properties : CovertProjectProperties
@@ -233,4 +258,4 @@ class Parameters:
             return result
 
         return flatten_dataclass(self)
-
+    

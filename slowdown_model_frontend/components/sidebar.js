@@ -1,28 +1,31 @@
 // Sidebar Component JavaScript
 
+// Helper to safely get element value with fallback
+function getElementValue(id, fallback) {
+    const el = document.getElementById(id);
+    return el ? (el.value || fallback) : fallback;
+}
+
 // Collect all sidebar parameters and return as query string
 function collectSidebarParams() {
     const params = new URLSearchParams();
 
     // Monte Carlo samples
-    params.set('num_mc_samples', document.getElementById('num_mc_samples').value || '3');
+    params.set('num_mc_samples', getElementValue('num_mc_samples', '1'));
 
     // P(AI Takeover) parameters
-    params.set('p_ai_takeover_1_month', document.getElementById('p_ai_takeover_1_month').value || '0.15');
-    params.set('p_ai_takeover_1_year', document.getElementById('p_ai_takeover_1_year').value || '0.10');
-    params.set('p_ai_takeover_10_years', document.getElementById('p_ai_takeover_10_years').value || '0.05');
+    params.set('p_ai_takeover_1_month', getElementValue('p_ai_takeover_1_month', '0.15'));
+    params.set('p_ai_takeover_1_year', getElementValue('p_ai_takeover_1_year', '0.10'));
+    params.set('p_ai_takeover_10_years', getElementValue('p_ai_takeover_10_years', '0.05'));
 
     // P(Human Power Grabs) parameters
-    params.set('p_human_power_grabs_1_month', document.getElementById('p_human_power_grabs_1_month').value || '0.40');
-    params.set('p_human_power_grabs_1_year', document.getElementById('p_human_power_grabs_1_year').value || '0.20');
-    params.set('p_human_power_grabs_10_years', document.getElementById('p_human_power_grabs_10_years').value || '0.10');
+    params.set('p_human_power_grabs_1_month', getElementValue('p_human_power_grabs_1_month', '0.40'));
+    params.set('p_human_power_grabs_1_year', getElementValue('p_human_power_grabs_1_year', '0.20'));
+    params.set('p_human_power_grabs_10_years', getElementValue('p_human_power_grabs_10_years', '0.10'));
 
     // Software proliferation parameters
-    const weightStealing = document.getElementById('weight_stealing_enabled').value;
-    params.set('weight_stealing', weightStealing);
-
-    const algorithmStealing = document.getElementById('algorithm_stealing_enabled').value;
-    params.set('algorithm_stealing', algorithmStealing);
+    params.set('weight_stealing', getElementValue('weight_stealing_enabled', 'SC'));
+    params.set('algorithm_stealing', getElementValue('algorithm_stealing_enabled', 'SAR'));
 
     return params.toString();
 }

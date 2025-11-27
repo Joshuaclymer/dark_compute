@@ -5,7 +5,16 @@ This module consolidates all computation for the /get_slowdown_model_data endpoi
 importing from specialized component modules.
 """
 
-from typing import Dict, Any, Optional
+import time
+from typing import Dict, Any, Optional, List, Tuple
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing as mp
+
+try:
+    from joblib import Parallel, delayed
+    JOBLIB_AVAILABLE = True
+except ImportError:
+    JOBLIB_AVAILABLE = False
 
 from backend.paramaters import (
     Parameters,
@@ -15,8 +24,7 @@ from backend.paramaters import (
     SlowdownParameters,
 )
 
-from .trajectories import extract_takeoff_slowdown_trajectories
-from .monte_carlo import run_monte_carlo_trajectories, DEFAULT_MC_SAMPLES
+from .monte_carlo import run_monte_carlo_trajectories, run_deterministic_trajectory, DEFAULT_MC_SAMPLES
 from .p_catastrophe import (
     compute_p_catastrophe_from_trajectories,
     get_p_catastrophe_curve_data,
@@ -27,6 +35,36 @@ from .compute_curves import (
     compute_prc_no_slowdown_trajectory,
 )
 from .proxy_project import compute_proxy_project_trajectory
+
+
+def _build_trajectories_from_mc(
+    global_mc: Optional[Dict[str, Any]],
+    covert_mc: Optional[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Convert Monte Carlo results to the trajectory format expected by P(catastrophe) computation.
+
+    Args:
+        global_mc: Monte Carlo results for global trajectory
+        covert_mc: Monte Carlo results for covert trajectory
+
+    Returns:
+        Dictionary in the format expected by compute_p_catastrophe_from_trajectories
+    """
+    result = {}
+
+    # Extract global trajectory data from Monte Carlo results
+    if global_mc:
+        result['trajectory_times'] = global_mc.get('trajectory_times', [])
+        result['global_ai_speedup'] = global_mc.get('speedup_percentiles', {}).get('median', [])
+        result['milestones_global'] = global_mc.get('milestones_median', {})
+
+    # Extract covert trajectory data from Monte Carlo results
+    if covert_mc:
+        result['covert_trajectory_times'] = covert_mc.get('trajectory_times', [])
+        result['covert_ai_speedup'] = covert_mc.get('speedup_percentiles', {}).get('median', [])
+        result['milestones_covert'] = covert_mc.get('milestones_median', {})
+
+    return result
 
 
 def get_slowdown_model_data(
@@ -89,13 +127,6 @@ def get_slowdown_model_data(
     # Combine pre-agreement PRC compute with post-agreement covert compute
     covert_years, covert_median = combine_prc_and_covert_compute(covert_compute_data)
 
-    # Status update: Initializing takeoff model
-    if status_callback:
-        status_callback("Initializing takeoff model (this takes a moment)...")
-
-    # Extract takeoff trajectories (global + covert) - legacy single-trajectory version
-    trajectories = extract_takeoff_slowdown_trajectories(params, covert_years, covert_median)
-
     # Build combined covert data for the frontend plot
     combined_covert_data = None
     if covert_years and covert_median:
@@ -107,121 +138,165 @@ def get_slowdown_model_data(
     # Get largest company compute trajectory
     largest_company_data = get_largest_company_compute()
 
-    # Compute PRC no-slowdown trajectory (extrapolate pre-agreement growth)
-    prc_no_slowdown_data, prc_no_slowdown_trajectories = compute_prc_no_slowdown_trajectory(
-        covert_compute_data, covert_years, params
+    # Compute PRC no-slowdown compute (extrapolate pre-agreement growth)
+    prc_no_slowdown_data = compute_prc_no_slowdown_trajectory(
+        covert_compute_data, covert_years
     )
 
-    # Compute proxy project compute and trajectory
-    proxy_project_data, proxy_project_trajectories = compute_proxy_project_trajectory(
-        covert_compute_data, params, proxy_project_params
+    # Compute proxy project compute
+    proxy_project_data = compute_proxy_project_trajectory(
+        covert_compute_data, proxy_project_params
     )
 
-    # === Run Monte Carlo simulations for uncertainty bands ===
+    # === Run Monte Carlo simulations for uncertainty bands (in parallel) ===
     if status_callback:
-        status_callback(f"Running Monte Carlo simulations ({num_mc_samples} samples)...")
-    print(f"Running Monte Carlo simulations ({num_mc_samples} samples) for trajectory uncertainty...")
+        status_callback(f"Running Monte Carlo simulations ({num_mc_samples} samples) in parallel...")
+    print(f"Running Monte Carlo simulations ({num_mc_samples} samples) for trajectory uncertainty (parallel)...")
 
-    # Helper to create progress callback wrapper that tracks cumulative progress across all trajectories
-    def make_trajectory_callback(trajectory_name: str, offset: int):
-        """Create a callback for a specific trajectory that reports cumulative progress."""
-        def callback(current, total):
-            if progress_callback:
-                progress_callback(offset + current, num_mc_samples * 4, trajectory_name)
-        return callback
+    # Use time-based seed for different results each run
+    base_seed = int(time.time())
 
-    # 1. Global AI R&D (no slowdown) - use global compute (None for covert compute)
-    global_mc = run_monte_carlo_trajectories(
-        None, None,
-        num_samples=num_mc_samples,
-        seed=42,
-        progress_callback=make_trajectory_callback('Global AI R&D', 0)
-    )
+    # Prepare all trajectory configs for parallel execution
+    trajectory_configs = []
 
-    # 2. PRC Covert AI R&D - use the combined covert compute trajectory
-    covert_mc = None
+    # 1. Global AI R&D (no slowdown)
+    trajectory_configs.append({
+        'name': 'global',
+        'years': None,
+        'values': None,
+        'seed': base_seed
+    })
+
+    # 2. PRC Covert AI R&D
     if covert_years and covert_median:
-        covert_mc = run_monte_carlo_trajectories(
-            covert_years, covert_median,
-            num_samples=num_mc_samples,
-            seed=43,
-            progress_callback=make_trajectory_callback('PRC Covert AI R&D', num_mc_samples)
-        )
+        trajectory_configs.append({
+            'name': 'covert',
+            'years': covert_years,
+            'values': covert_median,
+            'seed': base_seed + 1
+        })
 
-    # 3. PRC No-Slowdown - use the extrapolated pre-agreement growth trajectory
-    prc_no_slowdown_mc = None
+    # 3. PRC No-Slowdown
     if prc_no_slowdown_data and prc_no_slowdown_data.get('years') and prc_no_slowdown_data.get('median'):
-        prc_no_slowdown_mc = run_monte_carlo_trajectories(
-            prc_no_slowdown_data['years'],
-            prc_no_slowdown_data['median'],
-            num_samples=num_mc_samples,
-            seed=44,
-            progress_callback=make_trajectory_callback('PRC No-Slowdown', num_mc_samples * 2)
-        )
+        trajectory_configs.append({
+            'name': 'prc_no_slowdown',
+            'years': prc_no_slowdown_data['years'],
+            'values': prc_no_slowdown_data['median'],
+            'seed': base_seed + 2
+        })
 
-    # 4. Proxy Project - use the proxy project compute trajectory
-    proxy_mc = None
+    # 4. US Frontier (proxy_project) - use largest company compute until agreement year,
+    #    then proxy project compute after (matches the compute over time plot)
     if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
-        # Combine pre-agreement PRC compute with post-agreement proxy project compute
-        prc_years = covert_compute_data.get('prc_compute_years', []) if covert_compute_data else []
-        prc_compute = covert_compute_data.get('prc_compute_over_time', {}) if covert_compute_data else {}
-        prc_median_list = prc_compute.get('median', [])
+        agreement_year = params.simulation_settings.start_year
+
+        # Get largest company compute for pre-agreement period
+        lc_years = largest_company_data.get('years', []) if largest_company_data else []
+        lc_compute = largest_company_data.get('compute', []) if largest_company_data else []
 
         proxy_years = proxy_project_data['years']
         proxy_compute = proxy_project_data['compute']
 
-        if prc_years and prc_median_list:
-            first_proxy_year = proxy_years[0] if proxy_years else float('inf')
-            combined_proxy_years = []
-            combined_proxy_compute = []
-            for i, year in enumerate(prc_years):
-                if year < first_proxy_year:
-                    combined_proxy_years.append(year)
-                    combined_proxy_compute.append(prc_median_list[i])
-            combined_proxy_years.extend(proxy_years)
-            combined_proxy_compute.extend(proxy_compute)
-            proxy_mc = run_monte_carlo_trajectories(
-                combined_proxy_years,
-                combined_proxy_compute,
-                num_samples=num_mc_samples,
-                seed=45,
-                progress_callback=make_trajectory_callback('Proxy Project', num_mc_samples * 3)
+        # Build combined trajectory: largest company until agreement, then proxy project after
+        combined_proxy_years = []
+        combined_proxy_compute = []
+
+        # Add largest company compute up to and including agreement year
+        for i, year in enumerate(lc_years):
+            if year <= agreement_year:
+                combined_proxy_years.append(year)
+                combined_proxy_compute.append(lc_compute[i])
+
+        # Add proxy project compute after agreement year
+        for i, year in enumerate(proxy_years):
+            if year > agreement_year:
+                combined_proxy_years.append(year)
+                combined_proxy_compute.append(proxy_compute[i])
+
+        if combined_proxy_years:
+            trajectory_configs.append({
+                'name': 'proxy_project',
+                'years': combined_proxy_years,
+                'values': combined_proxy_compute,
+                'seed': base_seed + 3
+            })
+
+    # Run trajectories sequentially, each using full parallelism via joblib
+    # (nested parallelism with ThreadPoolExecutor + joblib causes thrashing)
+    mc_results = {}
+
+    # Map internal names to display names
+    trajectory_display_names = {
+        'global': 'Largest U.S. Company',
+        'covert': 'PRC Covert AI R&D',
+        'prc_no_slowdown': 'PRC (no slowdown)',
+        'proxy_project': 'US Frontier'
+    }
+
+    total_trajectories = len(trajectory_configs)
+    for idx, config in enumerate(trajectory_configs):
+        display_name = trajectory_display_names.get(config['name'], config['name'])
+
+        # Report which trajectory is starting
+        if progress_callback:
+            progress_callback(
+                idx,
+                total_trajectories,
+                f"Running {display_name}... ({idx}/{total_trajectories})"
             )
-        else:
-            proxy_mc = run_monte_carlo_trajectories(
-                proxy_years,
-                proxy_compute,
-                num_samples=num_mc_samples,
-                seed=45,
-                progress_callback=make_trajectory_callback('Proxy Project', num_mc_samples * 3)
+
+        # Run MC simulation with full parallelism
+        result = run_monte_carlo_trajectories(
+            config['years'],
+            config['values'],
+            num_samples=num_mc_samples,
+            seed=config['seed'],
+            progress_callback=None
+        )
+        mc_results[config['name']] = result
+
+        # Report completion
+        if progress_callback:
+            progress_callback(
+                idx + 1,
+                total_trajectories,
+                f"Completed {display_name} ({idx + 1}/{total_trajectories})"
             )
+
+    # Extract results
+    global_mc = mc_results.get('global')
+    covert_mc = mc_results.get('covert')
+    prc_no_slowdown_mc = mc_results.get('prc_no_slowdown')
+    proxy_mc = mc_results.get('proxy_project')
 
     print("Monte Carlo simulations complete.")
 
     # Report completion if we have a progress callback
+    num_trajectories = len(trajectory_configs)
     if progress_callback:
-        progress_callback(num_mc_samples * 4, num_mc_samples * 4, 'complete')
+        progress_callback(num_trajectories, num_trajectories, 'All trajectories complete')
 
     # Status update: Computing P(catastrophe)
     if status_callback:
         status_callback("Computing P(catastrophe) from trajectory milestones...")
 
+    # Convert Monte Carlo data to trajectory format for P(catastrophe) computation
+    # Use the median trajectory from global and covert Monte Carlo runs
+    trajectories_for_p_cat = _build_trajectories_from_mc(global_mc, covert_mc)
+
     # Compute P(catastrophe) from trajectory milestones
-    p_catastrophe_results = compute_p_catastrophe_from_trajectories(trajectories, p_cat_params)
+    p_catastrophe_results = compute_p_catastrophe_from_trajectories(trajectories_for_p_cat, p_cat_params)
 
     # Get P(catastrophe) curve data for plotting
     p_catastrophe_curves = get_p_catastrophe_curve_data(p_cat_params)
 
     return {
-        'takeoff_trajectories': trajectories,
         'agreement_year': params.simulation_settings.start_year,
         'covert_compute_data': covert_compute_data,
         'combined_covert_compute': combined_covert_data,
         'largest_company_compute': largest_company_data,
         'prc_no_slowdown_compute': prc_no_slowdown_data,
-        'prc_no_slowdown_trajectories': prc_no_slowdown_trajectories,
         'proxy_project_compute': proxy_project_data,
-        'proxy_project_trajectories': proxy_project_trajectories,
         # Monte Carlo uncertainty data
         'monte_carlo': {
             'global': global_mc,
@@ -251,3 +326,272 @@ def get_slowdown_model_data_with_progress(
         progress_callback=progress_callback,
         status_callback=status_callback
     )
+
+
+def _run_deterministic_wrapper(args: Tuple) -> Tuple[str, Optional[Dict[str, Any]]]:
+    """Wrapper for running deterministic trajectory in parallel."""
+    name, years, values = args
+    result = run_deterministic_trajectory(years, values)
+    return name, result
+
+
+def get_trajectory_data_fast(
+    cached_simulation_data: Optional[Dict[str, Any]] = None,
+    slowdown_params: Optional[SlowdownParameters] = None,
+) -> Dict[str, Any]:
+    """Get trajectory data quickly using deterministic runs (no MC uncertainty).
+
+    This runs all 4 trajectories in parallel using joblib for maximum speed.
+    Used for the AI R&D Speedup Trajectory plot which only needs medians.
+
+    Args:
+        cached_simulation_data: Optional cached simulation results
+        slowdown_params: SlowdownParameters object
+
+    Returns:
+        Dictionary containing trajectory data with medians only (no MC bands)
+    """
+    if slowdown_params is None:
+        slowdown_params = SlowdownParameters()
+
+    proxy_project_params = slowdown_params.proxy_project
+    p_cat_params = slowdown_params.PCatastrophe_parameters
+
+    params = Parameters(
+        simulation_settings=SimulationSettings(),
+        covert_project_properties=CovertProjectProperties(),
+        covert_project_parameters=CovertProjectParameters()
+    )
+
+    # Extract covert compute data
+    covert_compute_data = None
+    if cached_simulation_data and 'dark_compute_model' in cached_simulation_data:
+        dark_compute_model = cached_simulation_data['dark_compute_model']
+        initial_stock = cached_simulation_data.get('initial_stock', {})
+        covert_compute_data = {
+            'years': dark_compute_model.get('years', []),
+            'operational_dark_compute': dark_compute_model.get('operational_dark_compute', {}),
+            'prc_compute_years': initial_stock.get('prc_compute_years', []),
+            'prc_compute_over_time': initial_stock.get('prc_compute_over_time', {})
+        }
+
+    covert_years, covert_median = combine_prc_and_covert_compute(covert_compute_data)
+    combined_covert_data = {'years': covert_years, 'median': covert_median} if covert_years and covert_median else None
+
+    largest_company_data = get_largest_company_compute()
+    prc_no_slowdown_data = compute_prc_no_slowdown_trajectory(covert_compute_data, covert_years)
+    proxy_project_data = compute_proxy_project_trajectory(covert_compute_data, proxy_project_params)
+
+    # Build trajectory configs
+    trajectory_args = []
+    agreement_year = params.simulation_settings.start_year
+
+    # 1. Global (no slowdown)
+    trajectory_args.append(('global', None, None))
+
+    # 2. PRC Covert
+    if covert_years and covert_median:
+        trajectory_args.append(('covert', covert_years, covert_median))
+
+    # 3. PRC No-Slowdown
+    if prc_no_slowdown_data and prc_no_slowdown_data.get('years') and prc_no_slowdown_data.get('median'):
+        trajectory_args.append(('prc_no_slowdown', prc_no_slowdown_data['years'], prc_no_slowdown_data['median']))
+
+    # 4. US Frontier (proxy_project)
+    if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
+        lc_years = largest_company_data.get('years', []) if largest_company_data else []
+        lc_compute = largest_company_data.get('compute', []) if largest_company_data else []
+        proxy_years = proxy_project_data['years']
+        proxy_compute = proxy_project_data['compute']
+
+        combined_proxy_years = []
+        combined_proxy_compute = []
+        for i, year in enumerate(lc_years):
+            if year <= agreement_year:
+                combined_proxy_years.append(year)
+                combined_proxy_compute.append(lc_compute[i])
+        for i, year in enumerate(proxy_years):
+            if year > agreement_year:
+                combined_proxy_years.append(year)
+                combined_proxy_compute.append(proxy_compute[i])
+
+        if combined_proxy_years:
+            trajectory_args.append(('proxy_project', combined_proxy_years, combined_proxy_compute))
+
+    # Run all 4 trajectories in parallel using joblib
+    print(f"Running {len(trajectory_args)} deterministic trajectories in parallel...", flush=True)
+    num_workers = max(1, mp.cpu_count() - 1)
+
+    if JOBLIB_AVAILABLE and len(trajectory_args) > 1:
+        results = Parallel(n_jobs=min(num_workers, len(trajectory_args)), backend='loky', verbose=0)(
+            delayed(_run_deterministic_wrapper)(args) for args in trajectory_args
+        )
+        trajectory_results = {name: result for name, result in results if result is not None}
+    else:
+        trajectory_results = {}
+        for args in trajectory_args:
+            name, result = _run_deterministic_wrapper(args)
+            if result is not None:
+                trajectory_results[name] = result
+
+    print(f"Completed {len(trajectory_results)} trajectories", flush=True)
+
+    # Convert deterministic results to MC-like format (for frontend compatibility)
+    def to_mc_format(det_result):
+        if not det_result:
+            return None
+        return {
+            'trajectory_times': det_result.get('trajectory_times', []),
+            'speedup_percentiles': {
+                'p25': det_result.get('speedup', []),
+                'median': det_result.get('speedup', []),
+                'p75': det_result.get('speedup', [])
+            },
+            'milestones_median': det_result.get('milestones', {}),
+            'asi_times': {'median': det_result.get('asi_time', 1e308)}
+        }
+
+    global_mc = to_mc_format(trajectory_results.get('global'))
+    covert_mc = to_mc_format(trajectory_results.get('covert'))
+    prc_no_slowdown_mc = to_mc_format(trajectory_results.get('prc_no_slowdown'))
+    proxy_mc = to_mc_format(trajectory_results.get('proxy_project'))
+
+    # Compute P(catastrophe)
+    trajectories_for_p_cat = _build_trajectories_from_mc(global_mc, covert_mc)
+    p_catastrophe_results = compute_p_catastrophe_from_trajectories(trajectories_for_p_cat, p_cat_params)
+    p_catastrophe_curves = get_p_catastrophe_curve_data(p_cat_params)
+
+    return {
+        'agreement_year': params.simulation_settings.start_year,
+        'covert_compute_data': covert_compute_data,
+        'combined_covert_compute': combined_covert_data,
+        'largest_company_compute': largest_company_data,
+        'prc_no_slowdown_compute': prc_no_slowdown_data,
+        'proxy_project_compute': proxy_project_data,
+        'monte_carlo': {
+            'global': global_mc,
+            'covert': covert_mc,
+            'prc_no_slowdown': prc_no_slowdown_mc,
+            'proxy_project': proxy_mc
+        },
+        'p_catastrophe': p_catastrophe_results,
+        'p_catastrophe_curves': p_catastrophe_curves
+    }
+
+
+def get_uncertainty_data(
+    cached_simulation_data: Optional[Dict[str, Any]] = None,
+    slowdown_params: Optional[SlowdownParameters] = None,
+    progress_callback: Optional[callable] = None,
+) -> Dict[str, Any]:
+    """Get uncertainty data with full MC simulations for covert and proxy_project only.
+
+    This is for the Covert Compute Prediction Uncertainty plot.
+
+    Args:
+        cached_simulation_data: Optional cached simulation results
+        slowdown_params: SlowdownParameters object
+        progress_callback: Optional callback for progress updates
+
+    Returns:
+        Dictionary containing MC uncertainty data for covert and proxy_project
+    """
+    if slowdown_params is None:
+        slowdown_params = SlowdownParameters()
+
+    num_mc_samples = slowdown_params.monte_carlo_samples
+    proxy_project_params = slowdown_params.proxy_project
+
+    params = Parameters(
+        simulation_settings=SimulationSettings(),
+        covert_project_properties=CovertProjectProperties(),
+        covert_project_parameters=CovertProjectParameters()
+    )
+
+    # Extract covert compute data
+    covert_compute_data = None
+    if cached_simulation_data and 'dark_compute_model' in cached_simulation_data:
+        dark_compute_model = cached_simulation_data['dark_compute_model']
+        initial_stock = cached_simulation_data.get('initial_stock', {})
+        covert_compute_data = {
+            'years': dark_compute_model.get('years', []),
+            'operational_dark_compute': dark_compute_model.get('operational_dark_compute', {}),
+            'prc_compute_years': initial_stock.get('prc_compute_years', []),
+            'prc_compute_over_time': initial_stock.get('prc_compute_over_time', {})
+        }
+
+    covert_years, covert_median = combine_prc_and_covert_compute(covert_compute_data)
+    largest_company_data = get_largest_company_compute()
+    proxy_project_data = compute_proxy_project_trajectory(covert_compute_data, proxy_project_params)
+
+    base_seed = int(time.time())
+    agreement_year = params.simulation_settings.start_year
+
+    # Only run MC for covert and proxy_project (the two curves in the uncertainty plot)
+    trajectory_configs = []
+
+    if covert_years and covert_median:
+        trajectory_configs.append({
+            'name': 'covert',
+            'years': covert_years,
+            'values': covert_median,
+            'seed': base_seed + 1
+        })
+
+    if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
+        lc_years = largest_company_data.get('years', []) if largest_company_data else []
+        lc_compute = largest_company_data.get('compute', []) if largest_company_data else []
+        proxy_years = proxy_project_data['years']
+        proxy_compute = proxy_project_data['compute']
+
+        combined_proxy_years = []
+        combined_proxy_compute = []
+        for i, year in enumerate(lc_years):
+            if year <= agreement_year:
+                combined_proxy_years.append(year)
+                combined_proxy_compute.append(lc_compute[i])
+        for i, year in enumerate(proxy_years):
+            if year > agreement_year:
+                combined_proxy_years.append(year)
+                combined_proxy_compute.append(proxy_compute[i])
+
+        if combined_proxy_years:
+            trajectory_configs.append({
+                'name': 'proxy_project',
+                'years': combined_proxy_years,
+                'values': combined_proxy_compute,
+                'seed': base_seed + 3
+            })
+
+    trajectory_display_names = {
+        'covert': 'PRC Covert AI R&D',
+        'proxy_project': 'US Frontier'
+    }
+
+    mc_results = {}
+    total = len(trajectory_configs)
+
+    for idx, config in enumerate(trajectory_configs):
+        display_name = trajectory_display_names.get(config['name'], config['name'])
+        if progress_callback:
+            progress_callback(idx, total, f"Running {display_name}...")
+
+        result = run_monte_carlo_trajectories(
+            config['years'],
+            config['values'],
+            num_samples=num_mc_samples,
+            seed=config['seed'],
+            progress_callback=None
+        )
+        mc_results[config['name']] = result
+
+        if progress_callback:
+            progress_callback(idx + 1, total, f"Completed {display_name}")
+
+    return {
+        'agreement_year': params.simulation_settings.start_year,
+        'monte_carlo': {
+            'covert': mc_results.get('covert'),
+            'proxy_project': mc_results.get('proxy_project')
+        }
+    }

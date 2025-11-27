@@ -1,6 +1,39 @@
 // Takeoff Trajectory Plot Component JavaScript
 
+// Helper function to create a median-only trace (no uncertainty bands)
+function createMedianTrace(mcData, color, name, startYear, endYear, lineStyle = 'solid') {
+    if (!mcData || !mcData.trajectory_times || !mcData.speedup_percentiles) {
+        return [];
+    }
+
+    const times = mcData.trajectory_times;
+    const median = mcData.speedup_percentiles.median;
+
+    // Filter to year range
+    const indices = times.map((t, i) => ({t, i})).filter(d => d.t >= startYear && d.t <= endYear);
+    const filteredTimes = indices.map(d => times[d.i]);
+    const filteredMedian = indices.map(d => median[d.i]);
+
+    return [
+        // Median line only
+        {
+            x: filteredTimes,
+            y: filteredMedian,
+            type: 'scatter',
+            mode: 'lines',
+            line: {
+                color: color,
+                width: 3,
+                dash: lineStyle === 'dash' ? 'dash' : undefined
+            },
+            name: name,
+            hovertemplate: 'Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>'
+        }
+    ];
+}
+
 // Helper function to create a percentile band trace (filled area between p25 and p75)
+// Used by the uncertainty plot
 function createPercentileBand(mcData, color, name, startYear, endYear, lineStyle = 'solid') {
     if (!mcData || !mcData.trajectory_times || !mcData.speedup_percentiles) {
         return [];
@@ -102,24 +135,12 @@ function extractMilestoneData(milestones, startYear, endYear) {
 }
 
 function plotTakeoffModel(data) {
-    if (!data.takeoff_trajectories) {
-        document.getElementById('slowdownPlot').innerHTML = '<p style="text-align: center; color: #e74c3c;">No trajectory data available</p>';
-        return;
-    }
-
-    const trajectories = data.takeoff_trajectories;
-    const milestones_global = trajectories.milestones_global;
-    const trajectory_times = trajectories.trajectory_times;
-    const global_ai_speedup = trajectories.global_ai_speedup;
-    const covert_ai_speedup = trajectories.covert_ai_speedup;
-    const covert_trajectory_times = trajectories.covert_trajectory_times;
-    const milestones_covert = trajectories.milestones_covert;
-
     // Get Monte Carlo data
     const mc = data.monte_carlo || {};
 
-    if (!milestones_global || !trajectory_times || !global_ai_speedup) {
-        document.getElementById('slowdownPlot').innerHTML = '<p style="text-align: center; color: #e74c3c;">Trajectory prediction failed - missing AI speedup data</p>';
+    // Check for required Monte Carlo data
+    if (!mc.global || !mc.global.trajectory_times || !mc.global.speedup_percentiles) {
+        document.getElementById('slowdownPlot').innerHTML = '<p style="text-align: center; color: #e74c3c;">No trajectory data available</p>';
         return;
     }
 
@@ -127,99 +148,51 @@ function plotTakeoffModel(data) {
     const agreement_year = data.agreement_year;
 
     // Filter trajectory data to start from 2026 (to show full trendline)
-    // and end at the simulation end year (from covert compute data)
+    // and end at the simulation end year (from covert compute data or MC trajectory times)
     const startYear = 2026;
     const combinedData = data.combined_covert_compute;
+    const mcTrajectoryTimes = mc.global.trajectory_times;
     const simulationEndYear = combinedData && combinedData.years && combinedData.years.length > 0
         ? combinedData.years[combinedData.years.length - 1]
-        : trajectory_times[trajectory_times.length - 1];
+        : mcTrajectoryTimes[mcTrajectoryTimes.length - 1];
     const endYear = simulationEndYear;
 
     const traces = [];
 
-    // Add Global AI R&D with Monte Carlo percentile bands
-    if (mc.global) {
-        traces.push(...createPercentileBand(mc.global, '#2A623D', 'Global AI R&D (no slowdown)', startYear, endYear));
+    // Add Largest U.S. Company median line only (no uncertainty bands on main plot)
+    traces.push(...createMedianTrace(mc.global, '#2A623D', 'Largest U.S. Company (no slowdown)', startYear, endYear));
 
-        // Global milestone markers (from MC median run - aligned with the plotted line)
-        const milestoneDataGlobal = extractMilestoneData(mc.global.milestones_median, startYear, endYear);
-        if (milestoneDataGlobal.length > 0) {
-            traces.push({
-                x: milestoneDataGlobal.map(m => m.time),
-                y: milestoneDataGlobal.map(m => m.speedup),
-                type: 'scatter',
-                mode: 'markers+text',
-                marker: {
-                    color: '#2A623D',
-                    size: 10,
-                    line: {
-                        color: 'white',
-                        width: 2
-                    }
-                },
-                text: milestoneDataGlobal.map(m => m.label),
-                textposition: 'top center',
-                textfont: {
-                    size: 11,
-                    color: '#2A623D',
-                    family: 'Arial, sans-serif'
-                },
-                hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
-                showlegend: false
-            });
-        }
-    } else {
-        // Fallback to legacy single-trajectory mode
-        const filteredData = trajectory_times.map((time, i) => ({
-            time,
-            speedup: global_ai_speedup[i]
-        })).filter(d => d.time >= startYear && d.time <= endYear);
-
+    // Global milestone markers (from MC median run - aligned with the plotted line)
+    const milestoneDataGlobal = extractMilestoneData(mc.global.milestones_median, startYear, endYear);
+    if (milestoneDataGlobal.length > 0) {
         traces.push({
-            x: filteredData.map(d => d.time),
-            y: filteredData.map(d => d.speedup),
+            x: milestoneDataGlobal.map(m => m.time),
+            y: milestoneDataGlobal.map(m => m.speedup),
             type: 'scatter',
-            mode: 'lines',
-            line: {
+            mode: 'markers+text',
+            marker: {
                 color: '#2A623D',
-                width: 3
+                size: 10,
+                line: {
+                    color: 'white',
+                    width: 2
+                }
             },
-            name: 'Global AI R&D (no slowdown)',
-            hovertemplate: 'Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>'
+            text: milestoneDataGlobal.map(m => m.label),
+            textposition: 'top center',
+            textfont: {
+                size: 11,
+                color: '#2A623D',
+                family: 'Arial, sans-serif'
+            },
+            hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
+            showlegend: false
         });
-
-        // Global milestone markers (using legacy trajectory milestones)
-        const milestoneDataGlobal = extractMilestoneData(milestones_global, startYear, endYear);
-        if (milestoneDataGlobal.length > 0) {
-            traces.push({
-                x: milestoneDataGlobal.map(m => m.time),
-                y: milestoneDataGlobal.map(m => m.speedup),
-                type: 'scatter',
-                mode: 'markers+text',
-                marker: {
-                    color: '#2A623D',
-                    size: 10,
-                    line: {
-                        color: 'white',
-                        width: 2
-                    }
-                },
-                text: milestoneDataGlobal.map(m => m.label),
-                textposition: 'top center',
-                textfont: {
-                    size: 11,
-                    color: '#2A623D',
-                    family: 'Arial, sans-serif'
-                },
-                hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
-                showlegend: false
-            });
-        }
     }
 
-    // Add PRC covert trajectory with Monte Carlo percentile bands
+    // Add PRC covert trajectory median line only
     if (mc.covert) {
-        traces.push(...createPercentileBand(mc.covert, '#8B4513', 'PRC Covert AI R&D', startYear, endYear));
+        traces.push(...createMedianTrace(mc.covert, '#8B4513', 'PRC Covert AI R&D', startYear, endYear));
 
         // PRC covert milestone markers (from MC median run - aligned with the plotted line)
         const milestoneDataCovert = extractMilestoneData(mc.covert.milestones_median, startYear, endYear);
@@ -248,59 +221,11 @@ function plotTakeoffModel(data) {
                 showlegend: false
             });
         }
-    } else if (covert_ai_speedup && covert_ai_speedup.length > 0 && covert_trajectory_times && covert_trajectory_times.length > 0) {
-        // Fallback to legacy single-trajectory mode
-        const filteredCovertData = covert_trajectory_times.map((time, i) => ({
-            time,
-            speedup: covert_ai_speedup[i]
-        })).filter(d => d.time >= startYear && d.time <= endYear);
-
-        // PRC covert trajectory line
-        traces.push({
-            x: filteredCovertData.map(d => d.time),
-            y: filteredCovertData.map(d => d.speedup),
-            type: 'scatter',
-            mode: 'lines',
-            line: {
-                color: '#8B4513',
-                width: 3
-            },
-            name: 'PRC Covert AI R&D',
-            hovertemplate: 'Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>'
-        });
-
-        // PRC covert milestone markers (using legacy trajectory milestones)
-        const milestoneDataCovert = extractMilestoneData(milestones_covert, startYear, endYear);
-        if (milestoneDataCovert.length > 0) {
-            traces.push({
-                x: milestoneDataCovert.map(m => m.time),
-                y: milestoneDataCovert.map(m => m.speedup),
-                type: 'scatter',
-                mode: 'markers+text',
-                marker: {
-                    color: '#8B4513',
-                    size: 10,
-                    line: {
-                        color: 'white',
-                        width: 2
-                    }
-                },
-                text: milestoneDataCovert.map(m => m.label),
-                textposition: 'bottom center',
-                textfont: {
-                    size: 11,
-                    color: '#8B4513',
-                    family: 'Arial, sans-serif'
-                },
-                hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
-                showlegend: false
-            });
-        }
     }
 
-    // Add PRC no-slowdown trajectory with Monte Carlo percentile bands
+    // Add PRC no-slowdown trajectory median line only
     if (mc.prc_no_slowdown) {
-        traces.push(...createPercentileBand(mc.prc_no_slowdown, '#D2691E', 'PRC AI R&D (no slowdown)', startYear, endYear, 'dash'));
+        traces.push(...createMedianTrace(mc.prc_no_slowdown, '#D2691E', 'PRC AI R&D (no slowdown)', startYear, endYear, 'dash'));
 
         // PRC no-slowdown milestone markers (from MC median run - aligned with the plotted line)
         const milestoneDataNoSlowdown = extractMilestoneData(mc.prc_no_slowdown.milestones_median, startYear, endYear);
@@ -330,139 +255,18 @@ function plotTakeoffModel(data) {
                 showlegend: false
             });
         }
-    } else {
-        // Fallback to legacy single-trajectory mode
-        const prcNoSlowdownTrajectories = data.prc_no_slowdown_trajectories;
-        if (prcNoSlowdownTrajectories && prcNoSlowdownTrajectories.covert_ai_speedup && prcNoSlowdownTrajectories.covert_trajectory_times) {
-            const noSlowdownSpeedup = prcNoSlowdownTrajectories.covert_ai_speedup;
-            const noSlowdownTimes = prcNoSlowdownTrajectories.covert_trajectory_times;
-
-            const filteredNoSlowdownData = noSlowdownTimes.map((time, i) => ({
-                time,
-                speedup: noSlowdownSpeedup[i]
-            })).filter(d => d.time >= startYear && d.time <= endYear);
-
-            // PRC no-slowdown trajectory line (dashed)
-            traces.push({
-                x: filteredNoSlowdownData.map(d => d.time),
-                y: filteredNoSlowdownData.map(d => d.speedup),
-                type: 'scatter',
-                mode: 'lines',
-                line: {
-                    color: '#D2691E',
-                    width: 3,
-                    dash: 'dash'
-                },
-                name: 'PRC AI R&D (no slowdown)',
-                hovertemplate: 'Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>'
-            });
-
-        // Extract no-slowdown milestone data for markers
-        const milestones_no_slowdown = prcNoSlowdownTrajectories.milestones_covert;
-        const milestoneDataNoSlowdown = [];
-        if (milestones_no_slowdown) {
-            for (const [key, label] of Object.entries(milestoneNames)) {
-                if (milestones_no_slowdown[key]) {
-                    const time = milestones_no_slowdown[key].time;
-                    const progress_multiplier = milestones_no_slowdown[key].progress_multiplier;
-
-                    if (progress_multiplier && !isNaN(progress_multiplier) && time >= startYear && time <= endYear) {
-                        milestoneDataNoSlowdown.push({
-                            key: key,
-                            label: label,
-                            time: time,
-                            speedup: progress_multiplier
-                        });
-                    }
-                }
-            }
-        }
-
-        // PRC no-slowdown milestone markers
-        if (milestoneDataNoSlowdown.length > 0) {
-            traces.push({
-                x: milestoneDataNoSlowdown.map(m => m.time),
-                y: milestoneDataNoSlowdown.map(m => m.speedup),
-                type: 'scatter',
-                mode: 'markers+text',
-                marker: {
-                    color: '#D2691E',
-                    size: 10,
-                    symbol: 'diamond',
-                    line: {
-                        color: 'white',
-                        width: 2
-                    }
-                },
-                text: milestoneDataNoSlowdown.map(m => m.label),
-                textposition: 'top center',
-                textfont: {
-                    size: 11,
-                    color: '#D2691E',
-                    family: 'Arial, sans-serif'
-                },
-                hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
-                showlegend: false
-            });
-        }
-        }
     }
 
-    // Add Proxy Project trajectory with Monte Carlo percentile bands
+    // Add US Frontier trajectory median line only
     if (mc.proxy_project) {
-        traces.push(...createPercentileBand(mc.proxy_project, '#4169E1', 'Proxy Project AI R&D', startYear, endYear));
-    } else {
-        // Fallback to legacy single-trajectory mode
-        const proxyProjectTrajectories = data.proxy_project_trajectories;
-    if (proxyProjectTrajectories && proxyProjectTrajectories.covert_ai_speedup && proxyProjectTrajectories.covert_trajectory_times) {
-        const proxySpeedup = proxyProjectTrajectories.covert_ai_speedup;
-        const proxyTimes = proxyProjectTrajectories.covert_trajectory_times;
+        traces.push(...createMedianTrace(mc.proxy_project, '#4169E1', 'US Frontier AI R&D', startYear, endYear));
 
-        const filteredProxyData = proxyTimes.map((time, i) => ({
-            time,
-            speedup: proxySpeedup[i]
-        })).filter(d => d.time >= startYear && d.time <= endYear);
-
-        // Proxy Project trajectory line (step-change pattern)
-        traces.push({
-            x: filteredProxyData.map(d => d.time),
-            y: filteredProxyData.map(d => d.speedup),
-            type: 'scatter',
-            mode: 'lines',
-            line: {
-                color: '#4169E1',
-                width: 3
-            },
-            name: 'Proxy Project AI R&D',
-            hovertemplate: 'Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>'
-        });
-
-        // Extract proxy project milestone data for markers
-        const milestones_proxy = proxyProjectTrajectories.milestones_covert;
-        const milestoneDataProxy = [];
-        if (milestones_proxy) {
-            for (const [key, label] of Object.entries(milestoneNames)) {
-                if (milestones_proxy[key]) {
-                    const time = milestones_proxy[key].time;
-                    const progress_multiplier = milestones_proxy[key].progress_multiplier;
-
-                    if (progress_multiplier && !isNaN(progress_multiplier) && time >= startYear && time <= endYear) {
-                        milestoneDataProxy.push({
-                            key: key,
-                            label: label,
-                            time: time,
-                            speedup: progress_multiplier
-                        });
-                    }
-                }
-            }
-        }
-
-        // Proxy Project milestone markers
-        if (milestoneDataProxy.length > 0) {
+        // US Frontier milestone markers (from MC median run - aligned with the plotted line)
+        const milestoneDataUSFrontier = extractMilestoneData(mc.proxy_project.milestones_median, startYear, endYear);
+        if (milestoneDataUSFrontier.length > 0) {
             traces.push({
-                x: milestoneDataProxy.map(m => m.time),
-                y: milestoneDataProxy.map(m => m.speedup),
+                x: milestoneDataUSFrontier.map(m => m.time),
+                y: milestoneDataUSFrontier.map(m => m.speedup),
                 type: 'scatter',
                 mode: 'markers+text',
                 marker: {
@@ -474,8 +278,8 @@ function plotTakeoffModel(data) {
                         width: 2
                     }
                 },
-                text: milestoneDataProxy.map(m => m.label),
-                textposition: 'bottom center',
+                text: milestoneDataUSFrontier.map(m => m.label),
+                textposition: 'top center',
                 textfont: {
                     size: 11,
                     color: '#4169E1',
@@ -484,7 +288,6 @@ function plotTakeoffModel(data) {
                 hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
                 showlegend: false
             });
-        }
         }
     }
 
@@ -520,7 +323,12 @@ function plotTakeoffModel(data) {
         plot_bgcolor: '#fafafa'
     };
 
+    console.log('Calling Plotly.newPlot with', traces.length, 'traces');
+    console.log('First trace x length:', traces[0]?.x?.length, 'y length:', traces[0]?.y?.length);
+    console.log('First trace x sample:', traces[0]?.x?.slice(0, 3));
+    console.log('First trace y sample:', traces[0]?.y?.slice(0, 3));
     Plotly.newPlot('slowdownPlot', traces, layout, {displayModeBar: false, responsive: true});
+    console.log('Plotly.newPlot completed');
 }
 
 // Show loading indicator with progress bar
@@ -550,7 +358,15 @@ function updateTakeoffProgress(current, total, trajectoryName) {
         progressBar.style.width = progressPercent + '%';
     }
     if (progressText) {
-        progressText.textContent = `${trajectoryName}: ${current} of ${total} simulations`;
+        progressText.textContent = trajectoryName;
+    }
+}
+
+// Update status text (for non-progress status messages)
+function updateTakeoffStatus(message) {
+    const progressText = document.getElementById('progressText');
+    if (progressText) {
+        progressText.textContent = message;
     }
 }
 
@@ -571,6 +387,7 @@ if (typeof module !== 'undefined' && module.exports) {
         plotTakeoffModel,
         showTakeoffLoadingIndicator,
         updateTakeoffProgress,
+        updateTakeoffStatus,
         showTakeoffError
     };
 }

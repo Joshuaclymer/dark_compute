@@ -14,8 +14,27 @@ from backend import util
 import json
 import os
 import hashlib
+import math
 
 app = Flask(__name__, template_folder='frontend')
+
+
+def sanitize_for_json(obj):
+    """Recursively sanitize an object for JSON serialization.
+
+    Replaces float('inf'), float('-inf'), and float('nan') with None,
+    since these are not valid JSON values.
+    """
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isinf(obj) or math.isnan(obj):
+            return None
+        return obj
+    else:
+        return obj
 
 # Cache directory
 CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
@@ -84,11 +103,6 @@ def index():
 @app.route('/slowdown')
 def slowdown():
     """Serve the AI development slowdown model page."""
-    return send_file('slowdown_model_frontend/slowdown_model.html')
-
-@app.route('/slowdown_v2')
-def slowdown_v2():
-    """Serve the AI development slowdown model page (v2 componentized version)."""
     return send_file('slowdown_model_frontend/slowdown_model_v2.html')
 
 @app.route('/slowdown_model_frontend/<path:filename>')
@@ -104,14 +118,20 @@ def serve_slowdown_component_files(filename):
 @app.route('/<path:filename>')
 def serve_html(filename):
     """Serve HTML, JS, CSS, and SVG files from the frontend directory."""
+    # If the path already starts with 'frontend/', don't prepend it again
+    if filename.startswith('frontend/'):
+        filepath = filename
+    else:
+        filepath = f'frontend/{filename}'
+
     if filename.endswith('.html') and filename != 'index.html':
-        return send_file(f'frontend/{filename}')
+        return send_file(filepath)
     if filename.endswith('.js'):
-        return send_file(f'frontend/{filename}')
+        return send_file(filepath)
     if filename.endswith('.css'):
-        return send_file(f'frontend/{filename}')
+        return send_file(filepath)
     if filename.endswith('.svg'):
-        return send_file(f'frontend/{filename}', mimetype='image/svg+xml')
+        return send_file(filepath, mimetype='image/svg+xml')
     return '', 404
 
 @app.route('/log_client_error', methods=['POST'])
@@ -191,6 +211,45 @@ def _parse_slowdown_params_from_request() -> SlowdownParameters:
     )
 
 
+@app.route('/get_trajectory_data_fast')
+def get_trajectory_data_fast():
+    """Get trajectory data quickly using deterministic runs (no MC uncertainty).
+
+    This endpoint returns all 4 trajectories in parallel using deterministic runs.
+    Used for the AI R&D Speedup Trajectory plot which only needs medians.
+    """
+    try:
+        from backend.serve_slowdown_model import get_trajectory_data_fast as compute_fast_data
+
+        # Parse slowdown parameters from query arguments
+        slowdown_params = _parse_slowdown_params_from_request()
+
+        # Get cached simulation data
+        cached_simulation_data = load_default_cache()
+        if not cached_simulation_data:
+            import glob
+            cache_files = glob.glob(os.path.join(CACHE_DIR, '*.json'))
+            cache_files = [f for f in cache_files if not f.endswith('default.json')]
+            if cache_files:
+                most_recent = max(cache_files, key=os.path.getmtime)
+                try:
+                    with open(most_recent, 'r') as f:
+                        cache_data = json.load(f)
+                    cached_simulation_data = cache_data.get('results', cache_data)
+                except Exception as e:
+                    print(f"Error loading cache file: {e}", flush=True)
+
+        result = compute_fast_data(cached_simulation_data, slowdown_params=slowdown_params)
+        sanitized_result = sanitize_for_json(result)
+        return jsonify(sanitized_result)
+
+    except Exception as e:
+        print(f"ERROR computing fast trajectory data: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/get_slowdown_model_data')
 def get_slowdown_model_data():
     """Get AI takeoff slowdown model data."""
@@ -220,7 +279,9 @@ def get_slowdown_model_data():
 
         # Compute all slowdown model data with the parsed parameters
         result = compute_slowdown_data(cached_simulation_data, slowdown_params=slowdown_params)
-        return jsonify(result)
+        # Sanitize result to remove inf/nan values that aren't valid JSON
+        sanitized_result = sanitize_for_json(result)
+        return jsonify(sanitized_result)
 
     except Exception as e:
         print(f"ERROR computing slowdown model data: {e}", flush=True)
@@ -282,7 +343,9 @@ def get_slowdown_model_data_stream():
                     progress_callback=progress_callback,
                     status_callback=status_callback
                 )
-                progress_queue.put({'type': 'complete', 'data': result})
+                # Sanitize result to remove inf/nan values that aren't valid JSON
+                sanitized_result = sanitize_for_json(result)
+                progress_queue.put({'type': 'complete', 'data': sanitized_result})
             except Exception as e:
                 import traceback
                 traceback.print_exc()
@@ -308,6 +371,88 @@ def get_slowdown_model_data_stream():
                     break
             except queue.Empty:
                 # Send keepalive
+                yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
+
+        thread.join()
+
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no'
+    })
+
+
+@app.route('/get_uncertainty_data_stream')
+def get_uncertainty_data_stream():
+    """Stream uncertainty data with MC simulations for covert and proxy_project only.
+
+    This is for the Covert Compute Prediction Uncertainty plot.
+    Runs in parallel with get_trajectory_data_fast.
+    """
+    # Parse slowdown parameters before entering generator
+    slowdown_params = _parse_slowdown_params_from_request()
+
+    def generate():
+        import queue
+        import threading
+
+        progress_queue = queue.Queue()
+
+        def progress_callback(current, total, trajectory_name):
+            progress_queue.put({
+                'type': 'progress',
+                'current': current,
+                'total': total,
+                'trajectory': trajectory_name
+            })
+
+        def compute_data():
+            try:
+                from backend.serve_slowdown_model import get_uncertainty_data
+
+                # Get cached simulation data
+                cached_simulation_data = load_default_cache()
+                if not cached_simulation_data:
+                    import glob as glob_module
+                    cache_files = glob_module.glob(os.path.join(CACHE_DIR, '*.json'))
+                    cache_files = [f for f in cache_files if not f.endswith('default.json')]
+                    if cache_files:
+                        most_recent = max(cache_files, key=os.path.getmtime)
+                        try:
+                            with open(most_recent, 'r') as f:
+                                cache_data = json.load(f)
+                            cached_simulation_data = cache_data.get('results', cache_data)
+                        except Exception as e:
+                            print(f"Error loading cache file: {e}", flush=True)
+
+                result = get_uncertainty_data(
+                    cached_simulation_data,
+                    slowdown_params=slowdown_params,
+                    progress_callback=progress_callback
+                )
+                sanitized_result = sanitize_for_json(result)
+                progress_queue.put({'type': 'complete', 'data': sanitized_result})
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                progress_queue.put({'type': 'error', 'error': str(e)})
+
+        # Start computation in background thread
+        thread = threading.Thread(target=compute_data)
+        thread.start()
+
+        # Stream progress updates
+        while True:
+            try:
+                msg = progress_queue.get(timeout=60)
+                if msg['type'] == 'progress':
+                    yield f"data: {json.dumps(msg)}\n\n"
+                elif msg['type'] == 'complete':
+                    yield f"data: {json.dumps(msg)}\n\n"
+                    break
+                elif msg['type'] == 'error':
+                    yield f"data: {json.dumps(msg)}\n\n"
+                    break
+            except queue.Empty:
                 yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
 
         thread.join()

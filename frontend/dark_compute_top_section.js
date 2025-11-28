@@ -245,8 +245,8 @@ function plotChipProductionReductionCcdf(data) {
     // Threshold for "no production" (values >= this are considered infinite)
     const noProductionThreshold = 1e11;
 
-    // Filter out "no production" values and find max real value
-    let maxRealValue = 1;
+    // Filter out "no production" values and find min real value (after inversion)
+    let minRealValue = 1;
     let noProductionProportion = 0;
 
     // Add global AI chip production reduction trace
@@ -254,7 +254,9 @@ function plotChipProductionReductionCcdf(data) {
         const filteredGlobal = globalCcdf.filter(d => d.x < noProductionThreshold);
 
         if (filteredGlobal.length > 0) {
-            maxRealValue = Math.max(maxRealValue, ...filteredGlobal.map(d => d.x));
+            // Invert x values: if original is 10x, inverted is 1/10 = 0.1
+            const invertedX = filteredGlobal.map(d => 1 / d.x);
+            minRealValue = Math.min(minRealValue, ...invertedX);
             // The last point in the filtered CCDF has y = P(X > last_x)
             // So P(X >= threshold) is approximately the y-value of the last point below threshold
             // Plus a small adjustment since CCDF is P(X > x), not P(X >= x)
@@ -267,13 +269,14 @@ function plotChipProductionReductionCcdf(data) {
 
         if (filteredGlobal.length > 0) {
             traces.push({
-                x: filteredGlobal.map(d => d.x),
+                x: filteredGlobal.map(d => 1 / d.x),
                 y: filteredGlobal.map(d => d.y),
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#5B8DBE', width: 2 },
-                name: 'Reduction relative to<br>global production',
-                hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+                name: 'Relative to global production<br>(no slowdown)',
+                customdata: filteredGlobal.map(d => d.x >= 1000 ? (d.x/1000).toFixed(0) + 'K' : d.x.toFixed(0)),
+                hovertemplate: 'Ratio: 1/%{customdata}x<br>P(≤x): %{y:.3f}<extra></extra>'
             });
         }
     }
@@ -283,27 +286,29 @@ function plotChipProductionReductionCcdf(data) {
         const filteredPrc = prcCcdf.filter(d => d.x < noProductionThreshold);
 
         if (filteredPrc.length > 0) {
-            maxRealValue = Math.max(maxRealValue, ...filteredPrc.map(d => d.x));
+            const invertedX = filteredPrc.map(d => 1 / d.x);
+            minRealValue = Math.min(minRealValue, ...invertedX);
             traces.push({
-                x: filteredPrc.map(d => d.x),
+                x: invertedX,
                 y: filteredPrc.map(d => d.y),
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#C77CAA', width: 2 },
-                name: 'Reduction relative to<br>PRC production',
-                hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+                name: 'Relative to PRC production<br>(no slowdown)',
+                customdata: filteredPrc.map(d => d.x >= 1000 ? (d.x/1000).toFixed(0) + 'K' : d.x.toFixed(0)),
+                hovertemplate: 'Ratio: 1/%{customdata}x<br>P(≤x): %{y:.3f}<extra></extra>'
             });
         }
     }
 
-    // Calculate the position for "No production" tick (2x beyond max real value in log space)
-    const noProductionX = maxRealValue * 100;
+    // Calculate the position for "No production" annotation (beyond min real value in log space)
+    const noProductionX = minRealValue / 100;
 
     // Add a horizontal dotted line for "No production" simulations if there are any
     if (noProductionProportion > 0) {
         // Add the dotted line (hidden from legend)
         traces.push({
-            x: [1, noProductionX * 2],
+            x: [1, noProductionX / 2],
             y: [noProductionProportion, noProductionProportion],
             type: 'scatter',
             mode: 'lines',
@@ -311,9 +316,9 @@ function plotChipProductionReductionCcdf(data) {
             showlegend: false,
             hovertemplate: `No covert chip production<br>P = ${noProductionProportion.toFixed(3)}<extra></extra>`
         });
-        // Add text annotation at the right end of the line
+        // Add text annotation at the right end of the line (which is visually on the right since axis is reversed)
         traces.push({
-            x: [maxRealValue * 8],
+            x: [minRealValue],
             y: [noProductionProportion - 0.04],
             type: 'scatter',
             mode: 'text',
@@ -325,23 +330,32 @@ function plotChipProductionReductionCcdf(data) {
         });
     }
 
-    // Create custom tick values and labels
-    const tickvals = [1, 10, 100, 1000, 10000];
-    const ticktext = ['1x', '10x', '100x', '1Kx', '10Kx'];
+    // Create custom tick values and labels (inverted: 1, 1/10, 1/100, etc.)
+    // Add tick values down to minRealValue for grid lines, but only label up to 1/10,000x
+    const tickvals = [1, 0.1, 0.01, 0.001, 0.0001];
+    const ticktext = ['1x', '1/10x', '1/100x', '1/1,000x', '1/10,000x'];
+
+    // Add unlabeled ticks for grid lines beyond 1/10,000x down to minRealValue
+    let extendVal = 0.00001;
+    while (extendVal >= minRealValue * 0.5) {
+        tickvals.push(extendVal);
+        ticktext.push('');
+        extendVal /= 10;
+    }
 
     const layout = {
         xaxis: {
-            title: { text: "Chip production if no agreement<br>/ covert chip production during agreement", standoff: 20 },
+            title: { text: "Covert chip production during agreement<br>/ chip production if no agreement", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
-            range: [Math.log10(1), Math.log10(maxRealValue * 10)],
+            range: [Math.log10(1), Math.log10(minRealValue * 0.5)],
             automargin: true,
             tickvals: tickvals,
             ticktext: ticktext
         },
         yaxis: {
-            title: 'P(Reduction > x)',
+            title: 'P(Ratio < x)',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             range: [0, 1],
@@ -391,8 +405,8 @@ function plotAiRdReductionCcdf(data) {
     // Threshold for filtering out infinite values
     const noComputeThreshold = 1e11;
 
-    // Filter out infinite values and find max real value
-    let maxRealValue = 10;
+    // Filter out infinite values and find min real value (after inversion)
+    let minRealValue = 1;
     let noComputeProportion = 0;
 
     // Add largest company AI R&D reduction trace
@@ -400,19 +414,22 @@ function plotAiRdReductionCcdf(data) {
         const filteredLargestCompany = largestCompanyCcdf.filter(d => d.x < noComputeThreshold);
 
         if (filteredLargestCompany.length > 0) {
-            maxRealValue = Math.max(maxRealValue, ...filteredLargestCompany.map(d => d.x));
+            // Invert x values: if original is 100x, inverted is 1/100 = 0.01
+            const invertedX = filteredLargestCompany.map(d => 1 / d.x);
+            minRealValue = Math.min(minRealValue, ...invertedX);
             // The last point in the filtered CCDF has y = P(X > last_x)
             // So P(X >= threshold) is approximately the y-value of the last point below threshold
             const lastFilteredPoint = filteredLargestCompany[filteredLargestCompany.length - 1];
             noComputeProportion = lastFilteredPoint.y;
             traces.push({
-                x: filteredLargestCompany.map(d => d.x),
+                x: invertedX,
                 y: filteredLargestCompany.map(d => d.y),
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#E8A863', width: 2 },
-                name: 'Reduction relative to<br>largest AI company',
-                hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+                name: 'Relative to largest<br>AI company (no slowdown)',
+                customdata: filteredLargestCompany.map(d => d.x >= 1000 ? (d.x/1000).toFixed(0) + 'K' : d.x.toFixed(0)),
+                hovertemplate: 'Ratio: 1/%{customdata}x<br>P(≤x): %{y:.3f}<extra></extra>'
             });
         } else {
             // All points are >= threshold, so 100% are "no compute"
@@ -425,15 +442,17 @@ function plotAiRdReductionCcdf(data) {
         const filteredPrc = prcCcdf.filter(d => d.x < noComputeThreshold);
 
         if (filteredPrc.length > 0) {
-            maxRealValue = Math.max(maxRealValue, ...filteredPrc.map(d => d.x));
+            const invertedX = filteredPrc.map(d => 1 / d.x);
+            minRealValue = Math.min(minRealValue, ...invertedX);
             traces.push({
-                x: filteredPrc.map(d => d.x),
+                x: invertedX,
                 y: filteredPrc.map(d => d.y),
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#C77CAA', width: 2 },
-                name: 'Reduction relative to PRC',
-                hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+                name: 'Relative to PRC (no slowdown)',
+                customdata: filteredPrc.map(d => d.x >= 1000 ? (d.x/1000).toFixed(0) + 'K' : d.x.toFixed(0)),
+                hovertemplate: 'Ratio: 1/%{customdata}x<br>P(≤x): %{y:.3f}<extra></extra>'
             });
         }
     }
@@ -442,7 +461,7 @@ function plotAiRdReductionCcdf(data) {
     if (noComputeProportion > 0) {
         // Add the dotted line (hidden from legend)
         traces.push({
-            x: [10, maxRealValue * 10],
+            x: [1, minRealValue * 0.5],
             y: [noComputeProportion, noComputeProportion],
             type: 'scatter',
             mode: 'lines',
@@ -450,9 +469,9 @@ function plotAiRdReductionCcdf(data) {
             showlegend: false,
             hovertemplate: `No covert computation<br>P = ${noComputeProportion.toFixed(3)}<extra></extra>`
         });
-        // Add text annotation at the right end of the line
+        // Add text annotation at the right end of the line (visually on right since axis is reversed)
         traces.push({
-            x: [maxRealValue * 8],
+            x: [minRealValue],
             y: [noComputeProportion - 0.04],
             type: 'scatter',
             mode: 'text',
@@ -464,18 +483,32 @@ function plotAiRdReductionCcdf(data) {
         });
     }
 
+    // Create custom tick values and labels (inverted: 1, 1/10, 1/100, etc.)
+    // Add tick values down to minRealValue for grid lines, but only label up to 1/10,000x
+    const tickvals = [1, 0.1, 0.01, 0.001, 0.0001];
+    const ticktext = ['1x', '1/10x', '1/100x', '1/1,000x', '1/10,000x'];
+
+    // Add unlabeled ticks for grid lines beyond 1/10,000x down to minRealValue
+    let extendVal = 0.00001;
+    while (extendVal >= minRealValue * 0.5) {
+        tickvals.push(extendVal);
+        ticktext.push('');
+        extendVal /= 10;
+    }
+
     const layout = {
         xaxis: {
-            title: { text: "Computation if no agreement<br>/ covert computation during agreement", standoff: 20 },
+            title: { text: "Covert computation during agreement<br>/ computation if no agreement", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
-            range: [Math.log10(10), null],
+            range: [Math.log10(1), Math.log10(minRealValue * 0.5)],
             automargin: true,
-            ticksuffix: 'x'
+            tickvals: tickvals,
+            ticktext: ticktext
         },
         yaxis: {
-            title: 'P(Reduction > x)',
+            title: 'P(Ratio < x)',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             range: [0, 1],

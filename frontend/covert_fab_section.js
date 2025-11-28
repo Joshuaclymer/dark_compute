@@ -352,11 +352,22 @@ function updateParameterDisplays() {
         return num.toFixed(0);
     }
 
+    // Update agreement year display in header (do this first, unconditionally)
+    const agreementYearInput = document.getElementById('agreement_year');
+    const agreementYearSpan = document.getElementById('param-agreement-year');
+    if (agreementYearInput && agreementYearSpan) {
+        const agreementYear = parseFloat(agreementYearInput.value);
+        agreementYearSpan.textContent = agreementYear.toFixed(0);
+        agreementYearSpan.onclick = () => {
+            agreementYearInput.focus();
+            agreementYearInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+    }
+
     // Update initial PRC compute stock
     const prcComputeInput = document.getElementById('total_prc_compute_stock_in_2025');
     const initialDiversionInput = document.getElementById('proportion_of_initial_chip_stock_to_divert');
-    const agreementYearInput = document.getElementById('agreement_year');
-    const growthRateInput = document.getElementById('annual_growth_rate_of_prc_compute_stock');
+    const growthRateInput = document.getElementById('annual_growth_rate_of_prc_compute_stock_p50');
 
     if (prcComputeInput && initialDiversionInput && agreementYearInput && growthRateInput) {
         // Calculate PRC compute at agreement year
@@ -364,18 +375,6 @@ function updateParameterDisplays() {
         const agreementYear = parseFloat(agreementYearInput.value);
         const growthRate = parseFloat(growthRateInput.value);
         const yearsFromBase = agreementYear - 2025;
-
-        // Update agreement year display
-        const agreementYearSpan = document.getElementById('param-agreement-year');
-        if (agreementYearSpan) {
-            agreementYearSpan.textContent = agreementYear.toFixed(0);
-            agreementYearSpan.onclick = () => {
-                if (agreementYearInput) {
-                    agreementYearInput.focus();
-                    agreementYearInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            };
-        }
 
         // Grow the stock to the agreement year
         const prcComputeAtAgreement = prcCompute2025 * Math.pow(growthRate, yearsFromBase);

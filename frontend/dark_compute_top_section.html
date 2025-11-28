@@ -77,8 +77,8 @@
   <div
     class="plot-container"
     style="
-      flex: 1 1 200px;
-      min-width: 200px;
+      flex: 1 1 300px;
+      min-width: 300px;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -107,8 +107,8 @@
   <div
     class="plot-container"
     style="
-      flex: 1 1 200px;
-      min-width: 200px;
+      flex: 1 1 300px;
+      min-width: 300px;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -133,64 +133,74 @@
     ></div>
   </div>
 
-  <!-- H100-Years CCDF Plot -->
+  <!-- Wrapper for last two plots so they wrap together -->
   <div
-    class="plot-container"
     style="
-      flex: 1 1 200px;
-      min-width: 200px;
-      padding: 20px;
+      flex: 2 1 620px;
+      min-width: 620px;
       display: flex;
-      flex-direction: column;
+      gap: 20px;
     "
   >
+    <!-- H100-Years CCDF Plot -->
     <div
-      class="plot-title"
+      class="plot-container"
       style="
-        text-align: center;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 8px;
-        margin-bottom: 10px;
-        margin-top: 0;
+        flex: 1 1 300px;
+        min-width: 300px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
       "
     >
-      Reduction in AI chip production during agreement*
+      <div
+        class="plot-title"
+        style="
+          text-align: center;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 8px;
+          margin-bottom: 10px;
+          margin-top: 0;
+        "
+      >
+        Reduction in AI chip production during agreement*
+      </div>
+      <div
+        id="chipProductionReductionCcdfPlot"
+        class="plot"
+        style="flex: 1; min-height: 0"
+      ></div>
     </div>
-    <div
-      id="chipProductionReductionCcdfPlot"
-      class="plot"
-      style="flex: 1; min-height: 0"
-    ></div>
-  </div>
 
-  <!-- AI R&D Reduction CCDF Plot -->
-  <div
-    class="plot-container"
-    style="
-      flex: 1 1 200px;
-      min-width: 200px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-    "
-  >
+    <!-- AI R&D Reduction CCDF Plot -->
     <div
-      class="plot-title"
+      class="plot-container"
       style="
-        text-align: center;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 8px;
-        margin-bottom: 10px;
-        margin-top: 0;
+        flex: 1 1 300px;
+        min-width: 300px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
       "
     >
-      Reduction in AI R&D computation during agreement*
+      <div
+        class="plot-title"
+        style="
+          text-align: center;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 8px;
+          margin-bottom: 10px;
+          margin-top: 0;
+        "
+      >
+        Reduction in AI R&D computation during agreement*
+      </div>
+      <div
+        id="aiRdReductionCcdfPlot"
+        class="plot"
+        style="flex: 1; min-height: 0"
+      ></div>
     </div>
-    <div
-      id="aiRdReductionCcdfPlot"
-      class="plot"
-      style="flex: 1; min-height: 0"
-    ></div>
   </div>
 
   <!-- H100-Years and Evidence Strength Over Time Plot (COMMENTED OUT)

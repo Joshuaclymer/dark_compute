@@ -148,21 +148,38 @@ function plotTakeoffModel(data) {
     const agreement_year = data.agreement_year;
 
     // Filter trajectory data to start from 2026 (to show full trendline)
-    // and end at the simulation end year (from covert compute data or MC trajectory times)
     const startYear = 2026;
-    const combinedData = data.combined_covert_compute;
-    const mcTrajectoryTimes = mc.global.trajectory_times;
-    const simulationEndYear = combinedData && combinedData.years && combinedData.years.length > 0
-        ? combinedData.years[combinedData.years.length - 1]
-        : mcTrajectoryTimes[mcTrajectoryTimes.length - 1];
-    const endYear = simulationEndYear;
+
+    // Find the latest ASI milestone time across all trajectories
+    let latestAsiTime = null;
+    const trajectories = [mc.global, mc.covert, mc.prc_no_slowdown, mc.proxy_project];
+    for (const traj of trajectories) {
+        if (traj && traj.milestones_median && traj.milestones_median.ASI) {
+            const asiTime = traj.milestones_median.ASI.time;
+            if (asiTime && (latestAsiTime === null || asiTime > latestAsiTime)) {
+                latestAsiTime = asiTime;
+            }
+        }
+    }
+
+    // Calculate end year: min of (latest ASI * 1.2) or (agreement_year + 10)
+    const asiBasedEnd = latestAsiTime ? latestAsiTime * 1.2 : Infinity;
+    const agreementBasedEnd = agreement_year ? agreement_year + 10 : Infinity;
+    const endYear = Math.min(asiBasedEnd, agreementBasedEnd);
 
     const traces = [];
 
-    // Add Largest U.S. Company median line only (no uncertainty bands on main plot)
-    traces.push(...createMedianTrace(mc.global, '#2A623D', 'Largest U.S. Company (no slowdown)', startYear, endYear));
+    // Color scheme: blue for US, purple/red for PRC
+    const usColor = '#5B8DBE';    // Blue for US
+    const prcColor = '#C77CAA';   // Purple/pink for PRC
 
-    // Global milestone markers (from MC median run - aligned with the plotted line)
+    // Legend order: US no slowdown, PRC no slowdown, US slowdown, PRC slowdown
+    // Add traces in this order for correct legend ordering
+
+    // 1. US no slowdown (dashed) - Largest U.S. Company
+    traces.push(...createMedianTrace(mc.global, usColor, 'US (no slowdown)', startYear, endYear, 'dash'));
+
+    // Global milestone markers
     const milestoneDataGlobal = extractMilestoneData(mc.global.milestones_median, startYear, endYear);
     if (milestoneDataGlobal.length > 0) {
         traces.push({
@@ -171,7 +188,7 @@ function plotTakeoffModel(data) {
             type: 'scatter',
             mode: 'markers+text',
             marker: {
-                color: '#2A623D',
+                color: usColor,
                 size: 10,
                 line: {
                     color: 'white',
@@ -182,7 +199,7 @@ function plotTakeoffModel(data) {
             textposition: 'top center',
             textfont: {
                 size: 11,
-                color: '#2A623D',
+                color: usColor,
                 family: 'Arial, sans-serif'
             },
             hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
@@ -190,44 +207,11 @@ function plotTakeoffModel(data) {
         });
     }
 
-    // Add PRC covert trajectory median line only
-    if (mc.covert) {
-        traces.push(...createMedianTrace(mc.covert, '#8B4513', 'PRC Covert AI R&D', startYear, endYear));
-
-        // PRC covert milestone markers (from MC median run - aligned with the plotted line)
-        const milestoneDataCovert = extractMilestoneData(mc.covert.milestones_median, startYear, endYear);
-        if (milestoneDataCovert.length > 0) {
-            traces.push({
-                x: milestoneDataCovert.map(m => m.time),
-                y: milestoneDataCovert.map(m => m.speedup),
-                type: 'scatter',
-                mode: 'markers+text',
-                marker: {
-                    color: '#8B4513',
-                    size: 10,
-                    line: {
-                        color: 'white',
-                        width: 2
-                    }
-                },
-                text: milestoneDataCovert.map(m => m.label),
-                textposition: 'bottom center',
-                textfont: {
-                    size: 11,
-                    color: '#8B4513',
-                    family: 'Arial, sans-serif'
-                },
-                hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
-                showlegend: false
-            });
-        }
-    }
-
-    // Add PRC no-slowdown trajectory median line only
+    // 2. PRC no slowdown (dashed)
     if (mc.prc_no_slowdown) {
-        traces.push(...createMedianTrace(mc.prc_no_slowdown, '#D2691E', 'PRC AI R&D (no slowdown)', startYear, endYear, 'dash'));
+        traces.push(...createMedianTrace(mc.prc_no_slowdown, prcColor, 'PRC (no slowdown)', startYear, endYear, 'dash'));
 
-        // PRC no-slowdown milestone markers (from MC median run - aligned with the plotted line)
+        // PRC no-slowdown milestone markers
         const milestoneDataNoSlowdown = extractMilestoneData(mc.prc_no_slowdown.milestones_median, startYear, endYear);
         if (milestoneDataNoSlowdown.length > 0) {
             traces.push({
@@ -236,7 +220,7 @@ function plotTakeoffModel(data) {
                 type: 'scatter',
                 mode: 'markers+text',
                 marker: {
-                    color: '#D2691E',
+                    color: prcColor,
                     size: 10,
                     symbol: 'diamond',
                     line: {
@@ -248,7 +232,7 @@ function plotTakeoffModel(data) {
                 textposition: 'top center',
                 textfont: {
                     size: 11,
-                    color: '#D2691E',
+                    color: prcColor,
                     family: 'Arial, sans-serif'
                 },
                 hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
@@ -257,11 +241,11 @@ function plotTakeoffModel(data) {
         }
     }
 
-    // Add US Frontier trajectory median line only
+    // 3. US slowdown (solid) - US Frontier AI R&D
     if (mc.proxy_project) {
-        traces.push(...createMedianTrace(mc.proxy_project, '#4169E1', 'US Frontier AI R&D', startYear, endYear));
+        traces.push(...createMedianTrace(mc.proxy_project, usColor, 'US (slowdown)', startYear, endYear));
 
-        // US Frontier milestone markers (from MC median run - aligned with the plotted line)
+        // US Frontier milestone markers
         const milestoneDataUSFrontier = extractMilestoneData(mc.proxy_project.milestones_median, startYear, endYear);
         if (milestoneDataUSFrontier.length > 0) {
             traces.push({
@@ -270,7 +254,7 @@ function plotTakeoffModel(data) {
                 type: 'scatter',
                 mode: 'markers+text',
                 marker: {
-                    color: '#4169E1',
+                    color: usColor,
                     size: 10,
                     symbol: 'square',
                     line: {
@@ -282,7 +266,7 @@ function plotTakeoffModel(data) {
                 textposition: 'top center',
                 textfont: {
                     size: 11,
-                    color: '#4169E1',
+                    color: usColor,
                     family: 'Arial, sans-serif'
                 },
                 hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
@@ -291,12 +275,63 @@ function plotTakeoffModel(data) {
         }
     }
 
+    // 4. PRC slowdown (solid) - PRC Covert AI R&D
+    if (mc.covert) {
+        traces.push(...createMedianTrace(mc.covert, prcColor, 'PRC (slowdown)', startYear, endYear));
+
+        // PRC covert milestone markers
+        const milestoneDataCovert = extractMilestoneData(mc.covert.milestones_median, startYear, endYear);
+        if (milestoneDataCovert.length > 0) {
+            traces.push({
+                x: milestoneDataCovert.map(m => m.time),
+                y: milestoneDataCovert.map(m => m.speedup),
+                type: 'scatter',
+                mode: 'markers+text',
+                marker: {
+                    color: prcColor,
+                    size: 10,
+                    line: {
+                        color: 'white',
+                        width: 2
+                    }
+                },
+                text: milestoneDataCovert.map(m => m.label),
+                textposition: 'bottom center',
+                textfont: {
+                    size: 11,
+                    color: prcColor,
+                    family: 'Arial, sans-serif'
+                },
+                hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
+                showlegend: false
+            });
+        }
+    }
+
+    // Add a dummy trace for the agreement line legend entry
+    if (agreement_year) {
+        traces.push({
+            x: [null],
+            y: [null],
+            type: 'scatter',
+            mode: 'lines',
+            line: {
+                color: '#888',
+                width: 2,
+                dash: 'dot'
+            },
+            name: 'Agreement start',
+            showlegend: true
+        });
+    }
+
     const layout = {
         xaxis: {
             title: 'Year',
             titlefont: { size: 11 },
             tickfont: { size: 10 },
-            automargin: true
+            automargin: true,
+            range: [startYear, endYear]
         },
         yaxis: {
             title: 'AI R&D Speedup',
@@ -307,9 +342,9 @@ function plotTakeoffModel(data) {
         },
         showlegend: true,
         legend: {
-            x: 0.98,
+            x: 0.02,
             y: 0.98,
-            xanchor: 'right',
+            xanchor: 'left',
             yanchor: 'top',
             bgcolor: 'rgba(255,255,255,0.8)',
             bordercolor: '#ccc',
@@ -318,7 +353,20 @@ function plotTakeoffModel(data) {
         hovermode: 'closest',
         margin: { l: 55, r: 0, t: 0, b: 60 },
         paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)'
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        shapes: agreement_year ? [{
+            type: 'line',
+            x0: agreement_year,
+            x1: agreement_year,
+            y0: 0,
+            y1: 1,
+            yref: 'paper',
+            line: {
+                color: '#888',
+                width: 2,
+                dash: 'dot'
+            }
+        }] : []
     };
 
     console.log('Calling Plotly.newPlot with', traces.length, 'traces');
@@ -332,10 +380,60 @@ function plotTakeoffModel(data) {
     }
     Plotly.newPlot('slowdownPlot', traces, layout, {displayModeBar: false, responsive: true});
     console.log('Plotly.newPlot completed');
+
+    // Match plot heights to dashboard height after plot is created
+    setTimeout(() => {
+        const dashboard = document.querySelector('#agreementTopSection .dashboard');
+        const plotContainers = document.querySelectorAll('#agreementTopSection .plot-container');
+        if (dashboard && plotContainers.length > 0) {
+            const dashboardHeight = dashboard.offsetHeight;
+            plotContainers.forEach(container => {
+                container.style.height = dashboardHeight + 'px';
+                // Also set height on the plot div inside
+                const plotDiv = container.querySelector('.plot');
+                if (plotDiv) {
+                    // Account for the title height and padding
+                    const titleDiv = container.querySelector('.plot-title');
+                    const titleHeight = titleDiv ? titleDiv.offsetHeight : 0;
+                    const plotHeight = dashboardHeight - titleHeight - 50; // 50 for padding/margins
+                    plotDiv.style.height = plotHeight + 'px';
+                }
+            });
+            // Force resize after setting height
+            setTimeout(() => {
+                Plotly.Plots.resize('slowdownPlot');
+                // Also resize other plots in the section if they exist
+                if (document.getElementById('agreementRiskPlot')) {
+                    Plotly.Plots.resize('agreementRiskPlot');
+                }
+                if (document.getElementById('agreementCapsPlot')) {
+                    Plotly.Plots.resize('agreementCapsPlot');
+                }
+            }, 50);
+        }
+    }, 150);
 }
 
-// Show loading indicator with progress bar
+// Show simple loading indicator (text only) and size container to match dashboard
 function showTakeoffLoadingIndicator() {
+    const plotContainer = document.getElementById('slowdownPlot');
+    if (plotContainer) {
+        plotContainer.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">Loading...</p>';
+    }
+
+    // Size the container to match dashboard height immediately
+    const dashboard = document.querySelector('#agreementTopSection .dashboard');
+    const plotContainers = document.querySelectorAll('#agreementTopSection .plot-container');
+    if (dashboard && plotContainers.length > 0) {
+        const dashboardHeight = dashboard.offsetHeight;
+        plotContainers.forEach(container => {
+            container.style.height = dashboardHeight + 'px';
+        });
+    }
+}
+
+// Show loading indicator with progress bar (kept for future use)
+function showTakeoffLoadingIndicatorWithProgress() {
     const plotContainer = document.getElementById('slowdownPlot');
     if (plotContainer) {
         plotContainer.innerHTML = `
@@ -389,6 +487,7 @@ if (typeof module !== 'undefined' && module.exports) {
         extractMilestoneData,
         plotTakeoffModel,
         showTakeoffLoadingIndicator,
+        showTakeoffLoadingIndicatorWithProgress,
         updateTakeoffProgress,
         updateTakeoffStatus,
         showTakeoffError

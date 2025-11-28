@@ -86,6 +86,7 @@
             }
         }
 
+
         .top-plots {
             display: grid;
             grid-template-columns: minmax(200px, 300px) 1fr 1fr;
@@ -177,11 +178,15 @@
             width: 100% !important;
             max-width: 100% !important;
             height: 364px;
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
         }
 
         .plot > div {
             width: 100% !important;
             max-width: 100% !important;
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
         }
 
         #computeCcdfPlot, #timeSeriesPlot, #h100YearsTimeSeriesPlot, #chipProductionReductionCcdfPlot, #aiRdReductionCcdfPlot, #timeToDetectionCcdfPlot,

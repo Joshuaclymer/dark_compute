@@ -197,7 +197,7 @@ function plotH100YearsTimeSeries(data) {
             tracegroupgap: 20
         },
         hovermode: 'x unified',
-        margin: { l: 55, r: 55, t: 0, b: 60 },
+        margin: { l: 55, r: 55, t: 0, b: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -272,7 +272,7 @@ function plotChipProductionReductionCcdf(data) {
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#5B8DBE', width: 2 },
-                name: 'Global Production',
+                name: 'Reduction relative to<br>global production',
                 hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
             });
         }
@@ -290,7 +290,7 @@ function plotChipProductionReductionCcdf(data) {
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#C77CAA', width: 2 },
-                name: 'PRC Production',
+                name: 'Reduction relative to<br>PRC production',
                 hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
             });
         }
@@ -301,14 +301,27 @@ function plotChipProductionReductionCcdf(data) {
 
     // Add a horizontal dotted line for "No production" simulations if there are any
     if (noProductionProportion > 0) {
+        // Add the dotted line (hidden from legend)
         traces.push({
             x: [1, noProductionX * 2],
             y: [noProductionProportion, noProductionProportion],
             type: 'scatter',
             mode: 'lines',
             line: { color: '#888', width: 2, dash: 'dot' },
-            name: `No covert chip production (${(noProductionProportion * 100).toFixed(0)}%)`,
+            showlegend: false,
             hovertemplate: `No covert chip production<br>P = ${noProductionProportion.toFixed(3)}<extra></extra>`
+        });
+        // Add text annotation at the right end of the line
+        traces.push({
+            x: [maxRealValue * 8],
+            y: [noProductionProportion - 0.04],
+            type: 'scatter',
+            mode: 'text',
+            text: ['No covert chip production'],
+            textposition: 'middle left',
+            textfont: { size: 10, color: '#888' },
+            showlegend: false,
+            hoverinfo: 'skip'
         });
     }
 
@@ -318,7 +331,7 @@ function plotChipProductionReductionCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: "No-agreement production<br>/ covert production",
+            title: { text: "Production if no agreement<br>/ covert production in agreement", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
@@ -340,12 +353,13 @@ function plotChipProductionReductionCcdf(data) {
             y: 0.02,
             xanchor: 'right',
             yanchor: 'bottom',
+            font: { size: 10 },
             bgcolor: 'rgba(255,255,255,0.8)',
             bordercolor: '#ccc',
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 55, r: 0, t: 0, b: 60 },
+        margin: { l: 55, r: 0, t: 0, b: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -397,7 +411,7 @@ function plotAiRdReductionCcdf(data) {
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#E8A863', width: 2 },
-                name: 'Largest AI Company',
+                name: 'Reduction relative to<br>largest AI company',
                 hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
             });
         } else {
@@ -418,7 +432,7 @@ function plotAiRdReductionCcdf(data) {
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#C77CAA', width: 2 },
-                name: 'PRC Compute',
+                name: 'Reduction relative to PRC',
                 hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
             });
         }
@@ -426,20 +440,33 @@ function plotAiRdReductionCcdf(data) {
 
     // Add a horizontal dotted line for "No computation" simulations if there are any
     if (noComputeProportion > 0) {
+        // Add the dotted line (hidden from legend)
         traces.push({
             x: [10, maxRealValue * 10],
             y: [noComputeProportion, noComputeProportion],
             type: 'scatter',
             mode: 'lines',
             line: { color: '#888', width: 2, dash: 'dot' },
-            name: `No covert computation (${(noComputeProportion * 100).toFixed(0)}%)`,
+            showlegend: false,
             hovertemplate: `No covert computation<br>P = ${noComputeProportion.toFixed(3)}<extra></extra>`
+        });
+        // Add text annotation at the right end of the line
+        traces.push({
+            x: [maxRealValue * 8],
+            y: [noComputeProportion - 0.04],
+            type: 'scatter',
+            mode: 'text',
+            text: ['No covert computation'],
+            textposition: 'middle left',
+            textfont: { size: 10, color: '#888' },
+            showlegend: false,
+            hoverinfo: 'skip'
         });
     }
 
     const layout = {
         xaxis: {
-            title: "No-agreement computation<br>/ covert computation",
+            title: { text: "Computation if no agreement<br>/ covert computation in agreement", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
@@ -460,12 +487,13 @@ function plotAiRdReductionCcdf(data) {
             y: 0.98,
             xanchor: 'right',
             yanchor: 'top',
+            font: { size: 10 },
             bgcolor: 'rgba(255,255,255,0.8)',
             bordercolor: '#ccc',
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 55, r: 0, t: 0, b: 60 },
+        margin: { l: 55, r: 0, t: 0, b: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -513,7 +541,7 @@ function plotProjectH100YearsCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: "Average AI chips covert<br>project operates before detection (H100 equivalents)",
+            title: { text: "Average AI chips covert project<br>operates before detection<br>(H100 equivalents)", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
@@ -532,12 +560,13 @@ function plotProjectH100YearsCcdf(data) {
             y: 0.98,
             xanchor: 'right',
             yanchor: 'top',
+            font: { size: 10 },
             bgcolor: 'rgba(255,255,255,0.8)',
             bordercolor: '#ccc',
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 55, r: 0, t: 0, b: 60 },
+        margin: { l: 55, r: 0, t: 0, b: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };
@@ -616,7 +645,7 @@ function plotTimeToDetectionCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: "Years until detection",
+            title: { text: "Years until detection", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             automargin: true,
@@ -635,12 +664,13 @@ function plotTimeToDetectionCcdf(data) {
             y: 0.98,
             xanchor: 'right',
             yanchor: 'top',
+            font: { size: 10 },
             bgcolor: 'rgba(255,255,255,0.8)',
             bordercolor: '#ccc',
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 55, r: 0, t: 0, b: 60 },
+        margin: { l: 55, r: 0, t: 0, b: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
     };

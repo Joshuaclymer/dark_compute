@@ -135,7 +135,11 @@ body {
 
 /* Ensure all Plotly plot containers in the slowdown page have proper dimensions */
 .slowdown-main-content [id$="Plot"] {
-    height: 450px;
     width: 100%;
-    min-height: 350px;
+    min-height: 200px;
+}
+
+/* Plots in agreementTopSection should inherit height from JS */
+#agreementTopSection .plot {
+    height: 100%;
 }

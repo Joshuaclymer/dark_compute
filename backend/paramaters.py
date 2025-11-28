@@ -22,7 +22,7 @@ class ProcessNodeStrategy(Enum):
 @dataclass
 class SimulationSettings:
     start_agreement_at_what_ai_rnd_speedup: Optional[float] = None # can also be a milestone like "AC" or "SAR" or None if starting agreement at a specific year
-    start_agreement_at_specific_year : Optional[int] = 2031
+    start_agreement_at_specific_year : Optional[int] = 2030
     num_years_to_simulate : float = 7.0  # Number of years from agreement start to simulate
     time_step_years : float = 0.1
     num_simulations : int = 60

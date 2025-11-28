@@ -845,6 +845,10 @@
                 plotsDiv.style.display = 'block';
                 loadingDiv.classList.remove('active');
                 setStatus(`Simulation complete! Ran ${data.num_simulations} simulations`, 'success');
+                // Update parameter displays (e.g., agreement year in header)
+                if (typeof updateParameterDisplays === 'function') {
+                    updateParameterDisplays();
+                }
                 // Update diagram arrows after layout is complete
                 setTimeout(() => {
                     if (window.updateDiagramArrows) window.updateDiagramArrows();

@@ -247,19 +247,23 @@ function plotChipProductionReductionCcdf(data) {
 
     // Filter out "no production" values and find max real value
     let maxRealValue = 1;
-    let noProductionCount = 0;
-    let totalCount = 0;
+    let noProductionProportion = 0;
 
     // Add global AI chip production reduction trace
     if (globalCcdf && globalCcdf.length > 0) {
         const filteredGlobal = globalCcdf.filter(d => d.x < noProductionThreshold);
-        const noProductionGlobal = globalCcdf.filter(d => d.x >= noProductionThreshold);
 
         if (filteredGlobal.length > 0) {
             maxRealValue = Math.max(maxRealValue, ...filteredGlobal.map(d => d.x));
+            // The last point in the filtered CCDF has y = P(X > last_x)
+            // So P(X >= threshold) is approximately the y-value of the last point below threshold
+            // Plus a small adjustment since CCDF is P(X > x), not P(X >= x)
+            const lastFilteredPoint = filteredGlobal[filteredGlobal.length - 1];
+            noProductionProportion = lastFilteredPoint.y;
+        } else {
+            // All points are >= threshold, so 100% are "no production"
+            noProductionProportion = 1.0;
         }
-        noProductionCount = noProductionGlobal.length;
-        totalCount = globalCcdf.length;
 
         if (filteredGlobal.length > 0) {
             traces.push({
@@ -294,18 +298,17 @@ function plotChipProductionReductionCcdf(data) {
 
     // Calculate the position for "No production" tick (2x beyond max real value in log space)
     const noProductionX = maxRealValue * 100;
-    const noProductionProportion = totalCount > 0 ? noProductionCount / totalCount : 0;
 
     // Add a horizontal dotted line for "No production" simulations if there are any
-    if (noProductionCount > 0) {
+    if (noProductionProportion > 0) {
         traces.push({
             x: [1, noProductionX * 2],
             y: [noProductionProportion, noProductionProportion],
             type: 'scatter',
             mode: 'lines',
             line: { color: '#888', width: 2, dash: 'dot' },
-            name: `No covert production (${(noProductionProportion * 100).toFixed(0)}%)`,
-            hovertemplate: `No covert production<br>${noProductionCount} of ${totalCount} simulations<br>P = ${noProductionProportion.toFixed(3)}<extra></extra>`
+            name: `No covert chip production (${(noProductionProportion * 100).toFixed(0)}%)`,
+            hovertemplate: `No covert chip production<br>P = ${noProductionProportion.toFixed(3)}<extra></extra>`
         });
     }
 
@@ -371,26 +374,23 @@ function plotAiRdReductionCcdf(data) {
 
     const traces = [];
 
-    // Threshold for "no compute" (values >= this are considered infinite)
+    // Threshold for filtering out infinite values
     const noComputeThreshold = 1e11;
 
-    // Filter out "no compute" values and find max real value
+    // Filter out infinite values and find max real value
     let maxRealValue = 10;
-    let noComputeCount = 0;
-    let totalCount = 0;
+    let noComputeProportion = 0;
 
     // Add largest company AI R&D reduction trace
     if (largestCompanyCcdf && largestCompanyCcdf.length > 0) {
         const filteredLargestCompany = largestCompanyCcdf.filter(d => d.x < noComputeThreshold);
-        const noComputeLargestCompany = largestCompanyCcdf.filter(d => d.x >= noComputeThreshold);
 
         if (filteredLargestCompany.length > 0) {
             maxRealValue = Math.max(maxRealValue, ...filteredLargestCompany.map(d => d.x));
-        }
-        noComputeCount = noComputeLargestCompany.length;
-        totalCount = largestCompanyCcdf.length;
-
-        if (filteredLargestCompany.length > 0) {
+            // The last point in the filtered CCDF has y = P(X > last_x)
+            // So P(X >= threshold) is approximately the y-value of the last point below threshold
+            const lastFilteredPoint = filteredLargestCompany[filteredLargestCompany.length - 1];
+            noComputeProportion = lastFilteredPoint.y;
             traces.push({
                 x: filteredLargestCompany.map(d => d.x),
                 y: filteredLargestCompany.map(d => d.y),
@@ -400,6 +400,9 @@ function plotAiRdReductionCcdf(data) {
                 name: 'Largest AI Company',
                 hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
             });
+        } else {
+            // All points are >= threshold, so 100% are "no compute"
+            noComputeProportion = 1.0;
         }
     }
 
@@ -421,20 +424,16 @@ function plotAiRdReductionCcdf(data) {
         }
     }
 
-    // Calculate the position for "No compute" tick (2x beyond max real value in log space)
-    const noComputeX = maxRealValue * 100;
-    const noComputeProportion = totalCount > 0 ? noComputeCount / totalCount : 0;
-
-    // Add a horizontal dotted line for "No compute" simulations if there are any
-    if (noComputeCount > 0) {
+    // Add a horizontal dotted line for "No computation" simulations if there are any
+    if (noComputeProportion > 0) {
         traces.push({
             x: [10, maxRealValue * 10],
             y: [noComputeProportion, noComputeProportion],
             type: 'scatter',
             mode: 'lines',
             line: { color: '#888', width: 2, dash: 'dot' },
-            name: `No covert compute (${(noComputeProportion * 100).toFixed(0)}%)`,
-            hovertemplate: `No covert compute<br>${noComputeCount} of ${totalCount} simulations<br>P = ${noComputeProportion.toFixed(3)}<extra></extra>`
+            name: `No covert computation (${(noComputeProportion * 100).toFixed(0)}%)`,
+            hovertemplate: `No covert computation<br>P = ${noComputeProportion.toFixed(3)}<extra></extra>`
         });
     }
 

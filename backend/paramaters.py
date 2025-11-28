@@ -25,7 +25,7 @@ class SimulationSettings:
     start_agreement_at_specific_year : Optional[int] = 2030
     num_years_to_simulate : float = 7.0  # Number of years from agreement start to simulate
     time_step_years : float = 0.1
-    num_simulations : int = 60
+    num_simulations : int = 200
 
     def validate(self):
         """Validate simulation settings parameters."""

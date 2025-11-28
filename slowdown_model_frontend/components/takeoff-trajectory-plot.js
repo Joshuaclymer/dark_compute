@@ -294,39 +294,42 @@ function plotTakeoffModel(data) {
     const layout = {
         xaxis: {
             title: 'Year',
-            titlefont: { size: 14 },
-            tickfont: { size: 12 },
-            automargin: true,
-            gridcolor: '#e0e0e0',
-            showgrid: true
+            titlefont: { size: 11 },
+            tickfont: { size: 10 },
+            automargin: true
         },
         yaxis: {
-            title: 'AI Software R&D Uplift (relative to human baseline)',
-            titlefont: { size: 14 },
-            tickfont: { size: 12 },
-            automargin: true,
+            title: 'AI R&D Speedup',
+            titlefont: { size: 13 },
+            tickfont: { size: 10 },
             type: 'log',
-            gridcolor: '#e0e0e0',
-            showgrid: true
+            automargin: true
         },
         showlegend: true,
         legend: {
-            x: 0.02,
+            x: 0.98,
             y: 0.98,
-            bgcolor: 'rgba(255, 255, 255, 0.8)',
-            bordercolor: '#ddd',
+            xanchor: 'right',
+            yanchor: 'top',
+            bgcolor: 'rgba(255,255,255,0.8)',
+            bordercolor: '#ccc',
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 100, r: 40, t: 40, b: 80 },
+        margin: { l: 55, r: 0, t: 0, b: 60 },
         paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: '#fafafa'
+        plot_bgcolor: 'rgba(0,0,0,0)'
     };
 
     console.log('Calling Plotly.newPlot with', traces.length, 'traces');
     console.log('First trace x length:', traces[0]?.x?.length, 'y length:', traces[0]?.y?.length);
     console.log('First trace x sample:', traces[0]?.x?.slice(0, 3));
     console.log('First trace y sample:', traces[0]?.y?.slice(0, 3));
+    // Clear any loading indicator before plotting
+    const plotContainer = document.getElementById('slowdownPlot');
+    if (plotContainer) {
+        plotContainer.innerHTML = '';
+    }
     Plotly.newPlot('slowdownPlot', traces, layout, {displayModeBar: false, responsive: true});
     console.log('Plotly.newPlot completed');
 }

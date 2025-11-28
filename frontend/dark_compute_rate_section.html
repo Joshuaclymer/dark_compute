@@ -24,15 +24,15 @@
         max-width: 1500px;
       "
     >
-      The amount of computation a covert project performs depends on strategic choices, such as how many AI chips to divert, how many workers to involve, etc. These properties affect both the <strong>rate of computation</strong> and <strong>detection likelihood</strong>, which trade-off against each other: if the PRC diverts more chips to the covert effort, it can perform computation faster, but will be discovered earlier. So we identify the <span
+      The amount of computation a covert project performs depends on strategic choices, such as how many AI chips to divert, how many workers to involve, etc. These properties affect both the <strong>rate of computation</strong> and <strong>detection likelihood</strong>, which trade-off against each other. For example, if the PRC diverts more chips to the covert effort, it can perform computation faster, but will be discovered earlier. So we identify the <span
       class="param-link"
       onclick="const section = document.getElementById('covert-project-properties-section'); if (section) { section.scrollIntoView({ behavior: 'smooth', block: 'center' }); }"
-      >project properties</span> that balance this tradeoff and maximize the median computation performed before detection.
+      >project properties</span> that balance this tradeoff and maximize the median computation performed before detection. Then, we predict how much covert computation this worst-case PRC project might perform (see figure).
       <br><br>
-      The sections below explain the core component of this model, which is how we map <span
+      The sections below explain how we map <span
       class="param-link"
       onclick="const section = document.getElementById('covert-project-properties-section'); if (section) { section.scrollIntoView({ behavior: 'smooth', block: 'center' }); }"
-      >project properties</span> to the <strong>rate of computation</strong> and <strong>detection likelihood</strong> at any given time.
+      >project properties</span> to the <strong>rate of computation</strong> and <strong>detection likelihood</strong> at any given time, which is the core of our model.
     </div>
 
     <!-- Diagram as SVG -->
@@ -71,7 +71,7 @@
           <div style="position: relative">
             <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
             <div class="section-description" style="max-width: 900px; text-align: left">
-              The project's <strong>stock of AI chips</strong> is equal to the <em>initial stock</em> diverted to the project, plus the <em>AI chips later acquired</em> after the agreement is in force, multiplied by the <em>fraction of chips that survive</em> degradation and failure. Click on the plots below to see more details.
+              The project's <strong>stock of AI chips</strong> is equal to the <em>initial stock</em> diverted to the project, plus the <em>AI chips later acquired</em> after the agreement is in force, multiplied by the <em>fraction of chips that survive</em> degradation and failure.
             </div>
           </div>
 
@@ -116,7 +116,12 @@
           <div class="operator">
             +
           </div>
-          <div class="breakdown-item" style="cursor: pointer;" onclick="document.getElementById('covertFabTopSection').scrollIntoView({ behavior: 'smooth', block: 'start' });">
+          <div class="breakdown-item" style="cursor: pointer; position: relative;" onclick="document.getElementById('covertFabTopSection').scrollIntoView({ behavior: 'smooth', block: 'start' });">
+            <!-- Animated arrow hint -->
+            <div id="clickHintArrow" class="click-hint-arrow" style="top: -30px; left: 50%; transform: translateX(-50%);">
+              <div class="hint-text">Click plots for details</div>
+              <div class="arrow">↓</div>
+            </div>
             <div
               id="covertFabFlowPlot"
               class="breakdown-plot"
@@ -184,7 +189,7 @@
             class="section-description"
             style="max-width: 900px; text-align: left"
           >
-            The capacity of <strong>covert datacenters</strong> limits how many AI chips the project can operate.
+            The capacity of <strong>covert datacenters</strong> limits how many AI chips the project can operate, and depends on the number of construction workers involved in building them.
           </div>
         </div>
 

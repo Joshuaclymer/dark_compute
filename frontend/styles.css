@@ -525,3 +525,48 @@
                 display: none;
             }
         }
+
+        /* Animated arrow hint for clickable plots */
+        .click-hint-arrow {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            animation: bounceArrow 2s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .click-hint-arrow .arrow {
+            font-size: 16px;
+            color: #888;
+            opacity: 0.8;
+        }
+
+        .click-hint-arrow .hint-text {
+            font-size: 10px;
+            color: #666;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            background: transparent;
+            padding: 0;
+        }
+
+        @keyframes bounceArrow {
+            0%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .click-hint-arrow {
+                display: none;
+            }
+        }

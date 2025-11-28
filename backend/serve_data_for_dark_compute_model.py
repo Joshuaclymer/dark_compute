@@ -887,24 +887,35 @@ def extract_fab_compute_at_detection(simulation_results, years, threshold):
 def calculate_ccdf(values):
     """Calculate complementary cumulative distribution function (CCDF).
 
-    Creates one point for every simulation where the fab was built.
+    Returns points for unique x values only, for smooth linear interpolation.
+    For each unique x, the CCDF value is P(X > x) = (count of values > x) / total.
     """
     if not values:
         return []
 
     values_sorted = np.sort(values)
     total_count = len(values_sorted)
-    x_values = []
+
+    # Get unique x values and their CCDFs
+    # For CCDF at x, we want P(X > x), which is the proportion of values strictly greater than x
+    unique_x = []
     ccdf_y = []
 
+    prev_x = None
     for i, x in enumerate(values_sorted):
-        # CCDF at x = (number of values > x) / total
-        num_greater = total_count - (i + 1)
-        ccdf = num_greater / total_count
-        x_values.append(float(x))
-        ccdf_y.append(float(ccdf))
+        if x != prev_x:
+            # New unique x value - CCDF is proportion of values > x
+            num_greater = total_count - (i + 1)
+            ccdf = num_greater / total_count
+            unique_x.append(float(x))
+            ccdf_y.append(float(ccdf))
+            prev_x = x
+        # For duplicate x values, just update the last y (will be lower)
+        else:
+            num_greater = total_count - (i + 1)
+            ccdf_y[-1] = num_greater / total_count
 
-    return [{"x": x, "y": y} for x, y in zip(x_values, ccdf_y)]
+    return [{"x": x, "y": y} for x, y in zip(unique_x, ccdf_y)]
 
 
 def calculate_smoothed_ccdf(values, num_points=100, floor_value=0.0):

@@ -607,7 +607,7 @@ function plotTimeToDetectionCcdf(data) {
                     y: filteredCcdf.map(d => d.y),
                     type: 'scatter',
                     mode: 'lines',
-                    line: { color: threshold.color, width: 2, shape: 'hv' },
+                    line: { color: threshold.color, width: 2 },
                     name: `"Detection" = ${threshold.label}`,
                     hovertemplate: 'Years: %{x:.1f}<br>P(≥x): %{y:.3f}<extra></extra>'
                 });

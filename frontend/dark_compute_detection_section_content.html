@@ -1,0 +1,209 @@
+<!-- Dark Compute Model - Detection Likelihood Section (inner content) -->
+<!-- US Estimated Likelihood of PRC Covert Project -->
+<div
+  style="
+    position: relative;
+    padding-bottom: 0px;
+    padding-top: 10px;
+  "
+>
+  <h3
+    style="
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #333;
+    "
+  >
+    Predicting the likelihood of detection
+  </h3>
+  <div
+    class="section-description"
+    style="max-width: 900px; text-align: left"
+  >
+    We don't directly predict the likelihood of 'detection' at each time step. Instead, we model how much <em>confidence</em> US intelligence has that a covert PRC AI project exists. Once this confidence exceeds some threshold (we chose a <span id="detection-threshold-text"></span>x increase in odds), then a project is 'detected,' after which the US exits the bilateral AI slowdown agreement.<br><br>
+    The <em>confidence</em> US intelligence agencies gain for the existence of a covert project comes from two sources: <strong>discrepancies</strong> between reported and estimated quantities of semiconductor assets, and <strong>direct observations of covert operations </strong>(via IMGINT, HUMINT, SIGINT, etc).
+  </div>
+
+  <!-- Continuous outline for both detection subsections -->
+  <div style="border-left: 2px solid #ccc; padding-left: 25px; margin-left: 5px; margin-top: 20px;">
+    <!-- Initial discrepancies subsection -->
+    <div style="position: relative">
+      <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
+      <div class="section-description" style="max-width: 900px; text-align: left">
+        At the start of an AI slowdown agreement, the PRC government reports quantities of key assets, such as its <em>AI chip stock</em> and <em>semiconductor manufacturing equipment (SME)</em>. If these reported quantities are lower than the quantities US intelligence estimates the PRC has, then this <strong>discrepancy</strong> provides evidence that assets were diverted to a covert project.
+      </div>
+    </div>
+
+  <div
+    style="
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 40px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+      max-width: 100%;
+    "
+  >
+    <div class="breakdown-item">
+      <div id="lrPrcAccountingPlot" class="breakdown-plot" style="height: 240px"></div>
+      <div class="breakdown-label" style="text-align: center; font-size: 11px">
+        Evidence from discrepancies between reported and estimated PRC chip stock
+      </div>
+      <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+        Assuming there is a median discrepancy of <span id="param-diversion-initial-prc" class="param-link">5</span>% (the fraction of chips the PRC diverted), and the median error of US estimate of PRC chip stock is <span id="param-error-prc-compute" class="param-link">20</span>%
+      </div>
+    </div>
+    <div class="operator">
+      ×
+    </div>
+    <div class="breakdown-item">
+      <div id="lrSmeInventoryPlot" class="breakdown-plot" style="height: 240px"></div>
+      <div class="breakdown-label" style="text-align: center; font-size: 11px">
+        Evidence from discrepancies between reported and estimated PRC SME stock
+      </div>
+      <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+        Assuming there is a median discrepancy of <span id="param-diversion-sme-prc" class="param-link">10</span>% (the fraction of SME the PRC diverted), and the median error of US estimate of PRC SME stock is <span id="param-error-prc-sme" class="param-link">20</span>%
+      </div>
+    </div>
+    <div class="operator">
+      =
+    </div>
+    <div class="breakdown-item">
+      <div id="lrReportedAssetsInitialPlot" class="breakdown-plot" style="height: 240px"></div>
+      <div class="breakdown-label" style="text-align: center; font-size: 11px">
+        Combined evidence from reported assets
+      </div>
+      <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+        The product of evidence from chip stock and SME stock discrepancies, assuming these evidence sources are conditionally independent
+      </div>
+    </div>
+  </div>
+
+  <!-- Ongoing intelligence subsection (still within the same border) -->
+  <div style="position: relative; margin-top: 20px;">
+    <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
+    <div
+      class="section-description"
+      style="max-width: 900px; text-align: left"
+    >
+      The US also receives <strong>direct evidence of covert operations</strong> from networks of spies, satellite imagery, compromised devices, etc. We multiply these updates<sup
+        class="footnote-link"
+        style="
+          cursor: pointer;
+          color: #0066cc;
+          font-weight: 600;
+        "
+        data-footnote="This assumes these sources of evidence are conditionally independent, meaning that conditioning on a PRC covert project existing (or not existing), the likelihood of seeing one type of evidence is independent of seeing the other."
+      >[2]</sup> to estimate the odds US intelligence agencies provide for a covert project over time.
+    </div>
+  </div>
+
+  <div class="breakdown-plots-row" style="margin-top: 40px;">
+    <div class="breakdown-box-item">
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <div id="dashboardPriorProject" class="breakdown-box">
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 10px;
+            "
+          >
+            <div>--</div>
+            <div class="breakdown-label">
+              Prior odds of<br />covert project
+            </div>
+          </div>
+        </div>
+        <div class="operator-inline">
+          ×
+        </div>
+      </div>
+    </div>
+    <div class="operator">
+      ×
+    </div>
+    <div class="breakdown-item">
+      <div id="lrReportedAssetsPlot" class="breakdown-plot"></div>
+      <div class="breakdown-label">
+        Evidence from reported assets
+      </div>
+      <div class="breakdown-description">
+        Combined likelihood ratio from initial chip diversion and diverted SME (see above).
+      </div>
+    </div>
+    <div class="operator">×</div>
+    <div class="breakdown-item">
+      <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
+      <div class="breakdown-label">
+        Direct evidence of covert operations
+      </div>
+      <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+        Assuming <span id="param-total-workers" style="font-weight: bold;">X</span> workers are involved in the project (<span id="param-datacenter-construction-workers" class="param-link">X</span> constructing datacenters, <span id="param-datacenter-operating-workers" class="param-link">X</span> operating datacenters, <span id="param-fab-construction-workers" class="param-link">X</span> constructing a fab, <span id="param-fab-operating-workers" class="param-link">X</span> operating a fab)
+      </div>
+    </div>
+    <div
+      class="operator arrow-operator"
+      style="
+        position: relative;
+        height: 240px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      "
+    >
+      <div
+        style="
+          font-size: 9px;
+          text-align: center;
+          color: #888;
+          line-height: 1.3;
+          margin-bottom: 5px;
+        "
+      >
+        Convert to<br />probability
+      </div>
+      <div style="font-size: 20px; color: #666">→</div>
+    </div>
+    <div class="breakdown-item">
+      <div id="posteriorProbProjectPlot" class="breakdown-plot"></div>
+      <div class="breakdown-label">
+        Posterior probability of<br />covert project
+      </div>
+    </div>
+  </div>
+
+  <!-- Historical Evidence subsection (still within the same border) -->
+  <div style="margin-top: 60px;">
+    <div class="section-description" style="max-width: 900px; text-align: left; margin-bottom: 40px;">
+      How did we model intelligence gathering if many relevant details are classified? We use two main pieces of (unclassified) historical data: (1) the accuracy of intelligence estimates of weapon quantities, such as ICBMs, nuclear warheads, etc and (2) the speed at which intelligence agencies identified covert nuclear operations:
+    </div>
+  </div>
+
+  <!-- Images Row -->
+  <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; margin-top: 40px;">
+    <!-- Intelligence Accuracy Image -->
+    <div style="flex: 1; min-width: 200px; max-width: 900px;">
+      <div id="intelligenceAccuracyPlot" style="width: 100%; height: 320px;"></div>
+      <div style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
+        Historical accuracy of intelligence estimates of military asset counts, used to model PRC chip stock and SME estimation errors
+      </div>
+    </div>
+
+    <!-- Nuclear Detection Speed Image -->
+    <div style="flex: 1; min-width: 200px; max-width: 900px;">
+      <div id="detectionLatencyPlot" style="width: 100%; height: 320px;"></div>
+      <div style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
+        Historical detection speed of covert nuclear operations, used to model direct observations of covert activity.
+      </div>
+    </div>
+  </div>
+
+  </div>
+  <!-- End continuous outline -->
+</div>
+<!-- End of Dark Compute Detection Section Content -->

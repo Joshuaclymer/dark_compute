@@ -331,7 +331,7 @@ function plotChipProductionReductionCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: { text: "Production if no agreement<br>/ covert production in agreement", standoff: 20 },
+            title: { text: "Chip production if no agreement<br>/ covert chip production during agreement", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
@@ -466,7 +466,7 @@ function plotAiRdReductionCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: { text: "Computation if no agreement<br>/ covert computation in agreement", standoff: 20 },
+            title: { text: "Computation if no agreement<br>/ covert computation during agreement", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
@@ -533,7 +533,7 @@ function plotProjectH100YearsCcdf(data) {
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: threshold.color, width: 2 },
-                name: `"Detection" = ${threshold.label}`,
+                name: `"Detection" is a ${threshold.label}`,
                 hovertemplate: 'Avg H100e: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>'
             });
         }
@@ -541,7 +541,7 @@ function plotProjectH100YearsCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: { text: "Average AI chips covert project<br>operates before detection<br>(H100 equivalents)", standoff: 20 },
+            title: { text: "Average quantity of AI chips covert project<br>operates before detection<br>(H100 equivalents)", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
@@ -636,7 +636,7 @@ function plotTimeToDetectionCcdf(data) {
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: threshold.color, width: 2 },
-                    name: `"Detection" = ${threshold.label}`,
+                    name: `"Detection" is a ${threshold.label}`,
                     hovertemplate: 'Years: %{x:.1f}<br>P(≥x): %{y:.3f}<extra></extra>'
                 });
             }
@@ -645,14 +645,14 @@ function plotTimeToDetectionCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: { text: "Years until detection", standoff: 20 },
+            title: { text: "Detection latency (years)", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             automargin: true,
             range: [0, maxRealTime * 1.1]
         },
         yaxis: {
-            title: 'P(Time to detection > x)',
+            title: 'P(Detection latency > x)',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             range: [0, 1],

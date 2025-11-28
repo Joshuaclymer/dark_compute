@@ -24,5 +24,6 @@ analysis/covert_data_centers/sizes_of_buildings_in_china/East_Asian_buildings.zi
 analysis/covert_data_centers/sizes_of_buildings_in_china/extracted_datacache/
 analysis/covert_data_centers/sizes_of_buildings_in_china/extracted_data/
 
-# Cache files
+# Cache files (except default.json which is needed for initial page load)
 cache/
+!cache/default.json

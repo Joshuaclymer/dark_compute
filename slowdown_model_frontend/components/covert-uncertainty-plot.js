@@ -27,7 +27,7 @@ function updateCovertUncertaintyProgress(current, total, trajectoryName) {
         progressBar.style.width = progressPercent + '%';
     }
     if (progressText) {
-        progressText.textContent = trajectoryName;
+        progressText.textContent = `${trajectoryName} (${current}/${total} - ${Math.round(progressPercent)}%)`;
     }
 }
 

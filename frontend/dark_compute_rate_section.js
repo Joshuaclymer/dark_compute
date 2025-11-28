@@ -59,7 +59,7 @@ function plotDarkComputeRateSection(data) {
                 title: 'Year',
                 titlefont: { size: 10 },
                 tickfont: { size: 9 },
-                range: [years[0], 2037]
+                range: [years[0], years[years.length - 1]]
             },
             yaxis: {
                 title: 'H100 equivalents (FLOPS)',
@@ -131,7 +131,7 @@ function plotDarkComputeRateSection(data) {
                 title: 'Year',
                 titlefont: { size: 10 },
                 tickfont: { size: 9 },
-                range: [years[0], 2037]
+                range: [years[0], years[years.length - 1]]
             },
             yaxis: {
                 title: 'Surviving Fraction',
@@ -206,7 +206,7 @@ function plotDarkComputeRateSection(data) {
             hovermode: 'x unified'
         };
 
-        layout.xaxis.range = [years[0], 2037];
+        layout.xaxis.range = [years[0], years[years.length - 1]];
 
         Plotly.newPlot('totalDarkComputePlot', traces, layout, {responsive: true});
     }
@@ -295,7 +295,7 @@ function plotDarkComputeRateSection(data) {
             hovermode: 'x unified'
         };
 
-        layout.xaxis.range = [years[0], 2037];
+        layout.xaxis.range = [years[0], years[years.length - 1]];
 
         Plotly.newPlot('datacenterCapacityPlot2', traces, layout, {responsive: true, displayModeBar: false});
         setTimeout(() => Plotly.Plots.resize('datacenterCapacityPlot2'), 50);
@@ -443,7 +443,7 @@ function plotDarkComputeRateSection(data) {
             }
         };
 
-        layout.xaxis.range = [years[0], 2037];
+        layout.xaxis.range = [years[0], years[years.length - 1]];
 
         Plotly.newPlot('darkComputeEnergyPlot', traces, layout, {responsive: true, displayModeBar: false});
         setTimeout(() => Plotly.Plots.resize('darkComputeEnergyPlot'), 50);
@@ -510,7 +510,7 @@ function plotDarkComputeRateSection(data) {
             hovermode: 'x unified'
         };
 
-        layout.xaxis.range = [years[0], 2037];
+        layout.xaxis.range = [years[0], years[years.length - 1]];
 
         Plotly.newPlot('operationalDarkComputePlot', traces, layout, {responsive: true, displayModeBar: false});
         setTimeout(() => Plotly.Plots.resize('operationalDarkComputePlot'), 50);
@@ -592,7 +592,7 @@ function plotDarkComputeRateSection(data) {
             hovermode: 'x unified'
         };
 
-        layout.xaxis.range = [years[0], 2037];
+        layout.xaxis.range = [years[0], years[years.length - 1]];
 
         Plotly.newPlot('covertComputationPlot', traces, layout, {responsive: true, displayModeBar: false});
         setTimeout(() => Plotly.Plots.resize('covertComputationPlot'), 50);

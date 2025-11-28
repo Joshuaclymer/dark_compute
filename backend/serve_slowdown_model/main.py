@@ -17,17 +17,24 @@ except ImportError:
     JOBLIB_AVAILABLE = False
 
 from backend.paramaters import (
-    Parameters,
+    ModelParameters,
     SimulationSettings,
     CovertProjectProperties,
     CovertProjectParameters,
-    SlowdownParameters,
+    SlowdownPageParameters,
 )
 
-from .monte_carlo import run_monte_carlo_trajectories, run_deterministic_trajectory, DEFAULT_MC_SAMPLES
+from .monte_carlo import (
+    run_monte_carlo_trajectories,
+    run_deterministic_trajectory,
+    run_monte_carlo_batch_with_progress,
+    DEFAULT_MC_SAMPLES,
+)
 from .p_catastrophe import (
     compute_p_catastrophe_from_trajectories,
     get_p_catastrophe_curve_data,
+    compute_p_catastrophe_over_time,
+    compute_optimal_compute_cap_over_time,
 )
 from .compute_curves import (
     combine_prc_and_covert_compute,
@@ -69,7 +76,7 @@ def _build_trajectories_from_mc(
 
 def get_slowdown_model_data(
     cached_simulation_data: Optional[Dict[str, Any]] = None,
-    slowdown_params: Optional[SlowdownParameters] = None,
+    slowdown_params: Optional[SlowdownPageParameters] = None,
     progress_callback: Optional[callable] = None,
     status_callback: Optional[callable] = None
 ) -> Dict[str, Any]:
@@ -88,8 +95,8 @@ def get_slowdown_model_data(
         cached_simulation_data: Optional cached simulation results containing:
             - dark_compute_model: Dict with 'years', 'operational_dark_compute', etc.
             - initial_stock: Dict with 'prc_compute_years', 'prc_compute_over_time', etc.
-        slowdown_params: SlowdownParameters object containing all slowdown model settings.
-            If None, uses default SlowdownParameters().
+        slowdown_params: SlowdownPageParameters object containing all slowdown model settings.
+            If None, uses default SlowdownPageParameters().
         progress_callback: Optional callback function(current, total, trajectory_name) for progress updates
         status_callback: Optional callback function(status_message) for status updates
 
@@ -98,14 +105,14 @@ def get_slowdown_model_data(
     """
     # Use provided parameters or defaults
     if slowdown_params is None:
-        slowdown_params = SlowdownParameters()
+        slowdown_params = SlowdownPageParameters()
 
     num_mc_samples = slowdown_params.monte_carlo_samples
     proxy_project_params = slowdown_params.proxy_project
     p_cat_params = slowdown_params.PCatastrophe_parameters
 
     # Use default simulation parameters
-    params = Parameters(
+    params = ModelParameters(
         simulation_settings=SimulationSettings(),
         covert_project_properties=CovertProjectProperties(),
         covert_project_parameters=CovertProjectParameters()
@@ -188,7 +195,7 @@ def get_slowdown_model_data(
     # 4. US Frontier (proxy_project) - use largest company compute until agreement year,
     #    then proxy project compute after (matches the compute over time plot)
     if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
-        agreement_year = params.simulation_settings.start_year
+        agreement_year = params.simulation_settings.start_agreement_at_specific_year
 
         # Get largest company compute for pre-agreement period
         lc_years = largest_company_data.get('years', []) if largest_company_data else []
@@ -290,8 +297,22 @@ def get_slowdown_model_data(
     # Get P(catastrophe) curve data for plotting
     p_catastrophe_curves = get_p_catastrophe_curve_data(p_cat_params)
 
+    # Compute P(catastrophe) over time during the slowdown (using US Frontier trajectory)
+    p_catastrophe_over_time = compute_p_catastrophe_over_time(
+        proxy_mc,
+        params.simulation_settings.start_agreement_at_specific_year,
+        p_cat_params
+    )
+
+    # Compute optimal compute cap over time
+    optimal_compute_cap_over_time = compute_optimal_compute_cap_over_time(
+        p_catastrophe_over_time,
+        covert_compute_data,
+        params.simulation_settings.start_agreement_at_specific_year
+    )
+
     return {
-        'agreement_year': params.simulation_settings.start_year,
+        'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
         'covert_compute_data': covert_compute_data,
         'combined_covert_compute': combined_covert_data,
         'largest_company_compute': largest_company_data,
@@ -306,13 +327,15 @@ def get_slowdown_model_data(
         },
         # P(catastrophe) data
         'p_catastrophe': p_catastrophe_results,
-        'p_catastrophe_curves': p_catastrophe_curves
+        'p_catastrophe_curves': p_catastrophe_curves,
+        'p_catastrophe_over_time': p_catastrophe_over_time,
+        'optimal_compute_cap_over_time': optimal_compute_cap_over_time
     }
 
 
 def get_slowdown_model_data_with_progress(
     cached_simulation_data: Optional[Dict[str, Any]] = None,
-    slowdown_params: Optional[SlowdownParameters] = None,
+    slowdown_params: Optional[SlowdownPageParameters] = None,
     progress_callback: Optional[callable] = None,
     status_callback: Optional[callable] = None
 ) -> Dict[str, Any]:
@@ -337,7 +360,7 @@ def _run_deterministic_wrapper(args: Tuple) -> Tuple[str, Optional[Dict[str, Any
 
 def get_trajectory_data_fast(
     cached_simulation_data: Optional[Dict[str, Any]] = None,
-    slowdown_params: Optional[SlowdownParameters] = None,
+    slowdown_params: Optional[SlowdownPageParameters] = None,
 ) -> Dict[str, Any]:
     """Get trajectory data quickly using deterministic runs (no MC uncertainty).
 
@@ -346,18 +369,18 @@ def get_trajectory_data_fast(
 
     Args:
         cached_simulation_data: Optional cached simulation results
-        slowdown_params: SlowdownParameters object
+        slowdown_params: SlowdownPageParameters object
 
     Returns:
         Dictionary containing trajectory data with medians only (no MC bands)
     """
     if slowdown_params is None:
-        slowdown_params = SlowdownParameters()
+        slowdown_params = SlowdownPageParameters()
 
     proxy_project_params = slowdown_params.proxy_project
     p_cat_params = slowdown_params.PCatastrophe_parameters
 
-    params = Parameters(
+    params = ModelParameters(
         simulation_settings=SimulationSettings(),
         covert_project_properties=CovertProjectProperties(),
         covert_project_parameters=CovertProjectParameters()
@@ -384,7 +407,7 @@ def get_trajectory_data_fast(
 
     # Build trajectory configs
     trajectory_args = []
-    agreement_year = params.simulation_settings.start_year
+    agreement_year = params.simulation_settings.start_agreement_at_specific_year
 
     # 1. Global (no slowdown)
     trajectory_args.append(('global', None, None))
@@ -461,8 +484,22 @@ def get_trajectory_data_fast(
     p_catastrophe_results = compute_p_catastrophe_from_trajectories(trajectories_for_p_cat, p_cat_params)
     p_catastrophe_curves = get_p_catastrophe_curve_data(p_cat_params)
 
+    # Compute P(catastrophe) over time during the slowdown (using US Frontier trajectory)
+    p_catastrophe_over_time = compute_p_catastrophe_over_time(
+        proxy_mc,
+        params.simulation_settings.start_agreement_at_specific_year,
+        p_cat_params
+    )
+
+    # Compute optimal compute cap over time
+    optimal_compute_cap_over_time = compute_optimal_compute_cap_over_time(
+        p_catastrophe_over_time,
+        covert_compute_data,
+        params.simulation_settings.start_agreement_at_specific_year
+    )
+
     return {
-        'agreement_year': params.simulation_settings.start_year,
+        'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
         'covert_compute_data': covert_compute_data,
         'combined_covert_compute': combined_covert_data,
         'largest_company_compute': largest_company_data,
@@ -475,34 +512,37 @@ def get_trajectory_data_fast(
             'proxy_project': proxy_mc
         },
         'p_catastrophe': p_catastrophe_results,
-        'p_catastrophe_curves': p_catastrophe_curves
+        'p_catastrophe_curves': p_catastrophe_curves,
+        'p_catastrophe_over_time': p_catastrophe_over_time,
+        'optimal_compute_cap_over_time': optimal_compute_cap_over_time
     }
 
 
 def get_uncertainty_data(
     cached_simulation_data: Optional[Dict[str, Any]] = None,
-    slowdown_params: Optional[SlowdownParameters] = None,
+    slowdown_params: Optional[SlowdownPageParameters] = None,
     progress_callback: Optional[callable] = None,
 ) -> Dict[str, Any]:
     """Get uncertainty data with full MC simulations for covert and proxy_project only.
 
     This is for the Covert Compute Prediction Uncertainty plot.
+    Uses a single parallel pool for all MC samples with real-time progress updates.
 
     Args:
         cached_simulation_data: Optional cached simulation results
-        slowdown_params: SlowdownParameters object
-        progress_callback: Optional callback for progress updates
+        slowdown_params: SlowdownPageParameters object
+        progress_callback: Optional callback(completed, total, message) for progress updates
 
     Returns:
         Dictionary containing MC uncertainty data for covert and proxy_project
     """
     if slowdown_params is None:
-        slowdown_params = SlowdownParameters()
+        slowdown_params = SlowdownPageParameters()
 
     num_mc_samples = slowdown_params.monte_carlo_samples
     proxy_project_params = slowdown_params.proxy_project
 
-    params = Parameters(
+    params = ModelParameters(
         simulation_settings=SimulationSettings(),
         covert_project_properties=CovertProjectProperties(),
         covert_project_parameters=CovertProjectParameters()
@@ -525,9 +565,9 @@ def get_uncertainty_data(
     proxy_project_data = compute_proxy_project_trajectory(covert_compute_data, proxy_project_params)
 
     base_seed = int(time.time())
-    agreement_year = params.simulation_settings.start_year
+    agreement_year = params.simulation_settings.start_agreement_at_specific_year
 
-    # Only run MC for covert and proxy_project (the two curves in the uncertainty plot)
+    # Build trajectory configs for batch processing
     trajectory_configs = []
 
     if covert_years and covert_median:
@@ -535,7 +575,7 @@ def get_uncertainty_data(
             'name': 'covert',
             'years': covert_years,
             'values': covert_median,
-            'seed': base_seed + 1
+            'seed_offset': 100  # Offset to differentiate from proxy_project seeds
         })
 
     if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
@@ -560,36 +600,19 @@ def get_uncertainty_data(
                 'name': 'proxy_project',
                 'years': combined_proxy_years,
                 'values': combined_proxy_compute,
-                'seed': base_seed + 3
+                'seed_offset': 200  # Different offset from covert
             })
 
-    trajectory_display_names = {
-        'covert': 'PRC Covert AI R&D',
-        'proxy_project': 'US Frontier'
-    }
-
-    mc_results = {}
-    total = len(trajectory_configs)
-
-    for idx, config in enumerate(trajectory_configs):
-        display_name = trajectory_display_names.get(config['name'], config['name'])
-        if progress_callback:
-            progress_callback(idx, total, f"Running {display_name}...")
-
-        result = run_monte_carlo_trajectories(
-            config['years'],
-            config['values'],
-            num_samples=num_mc_samples,
-            seed=config['seed'],
-            progress_callback=None
-        )
-        mc_results[config['name']] = result
-
-        if progress_callback:
-            progress_callback(idx + 1, total, f"Completed {display_name}")
+    # Run all MC samples in a single parallel pool with real-time progress
+    mc_results = run_monte_carlo_batch_with_progress(
+        trajectory_configs=trajectory_configs,
+        num_samples=num_mc_samples,
+        base_seed=base_seed,
+        progress_callback=progress_callback
+    )
 
     return {
-        'agreement_year': params.simulation_settings.start_year,
+        'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
         'monte_carlo': {
             'covert': mc_results.get('covert'),
             'proxy_project': mc_results.get('proxy_project')

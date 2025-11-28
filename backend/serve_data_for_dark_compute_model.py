@@ -1117,14 +1117,63 @@ def extract_project_h100_years_ccdfs(simulation_results, years, agreement_year, 
     return project_h100_years_ccdfs
 
 
+def extract_average_covert_compute_ccdfs(simulation_results, years, agreement_year, likelihood_ratios):
+    """Calculate CCDFs for average covert compute operated from agreement to detection.
+
+    For each simulation and detection threshold:
+    1. Calculate detection year based on likelihood ratio
+    2. Compute average operational dark compute (Operating AI chips) from agreement year to detection
+    3. Return CCDF of these averages
+
+    Average is calculated as: total H100-years / time duration = time-weighted average operational compute
+    """
+    average_compute_ccdfs = {}
+
+    for lr in likelihood_ratios:
+        average_compute_at_threshold = []
+
+        for covert_projects, detectors in simulation_results:
+            covert_project = covert_projects["prc_covert_project"]
+            sim_years = covert_project.years
+
+            # Calculate detection year for this simulation
+            detection_year = calculate_project_detection_year(covert_project, sim_years, lr)
+            if detection_year is None:
+                detection_year = max(sim_years)
+
+            # Calculate time duration from agreement to detection
+            time_duration = detection_year - agreement_year
+            if time_duration <= 0:
+                # If detection at or before agreement, average is 0
+                average_compute_at_threshold.append(0.0)
+                continue
+
+            # Calculate total H100-years from agreement to detection
+            h100_years = calculate_h100_years_until_detection(covert_project, sim_years, detection_year)
+
+            # Average operational compute = total H100-years / time duration
+            # This gives us the time-weighted average of operational AI chips
+            average_compute = h100_years / time_duration
+            average_compute_at_threshold.append(average_compute)
+
+        average_compute_ccdfs[lr] = calculate_ccdf(average_compute_at_threshold)
+
+    return average_compute_ccdfs
+
+
 def extract_project_time_to_detection_ccdfs(simulation_results, years, agreement_year, likelihood_ratios):
-    """Calculate CCDFs for time to detection (length of slowdown) at different detection thresholds."""
+    """Calculate CCDFs for time to detection (length of slowdown) at different detection thresholds.
+
+    Uses all simulations. Simulations where detection never happens get a large value (1000 years)
+    to represent "never detected", which can be filtered and displayed separately in the frontend.
+    """
     time_to_detection_ccdfs = {}
+
+    # Large value to represent "never detected"
+    NEVER_DETECTED_VALUE = 1000
 
     for lr in likelihood_ratios:
         time_at_threshold = []
-        num_never_detected = 0
-        total_sims = len(simulation_results)
 
         for covert_projects, detectors in simulation_results:
             covert_project = covert_projects["prc_covert_project"]
@@ -1134,20 +1183,14 @@ def extract_project_time_to_detection_ccdfs(simulation_results, years, agreement
 
             detection_year = calculate_project_detection_year(covert_project, sim_years, lr)
             if detection_year is None:
-                # Detection never happened - don't include in time distribution
-                num_never_detected += 1
+                # Detection never happened - use large value
+                time_at_threshold.append(NEVER_DETECTED_VALUE)
             else:
                 # Time to detection is detection year minus agreement year
                 time_to_detection = detection_year - agreement_year
                 time_at_threshold.append(time_to_detection)
 
-        # Calculate the proportion that are never detected - CCDF should plateau here
-        never_detected_proportion = num_never_detected / total_sims if total_sims > 0 else 0
-
-        time_to_detection_ccdfs[lr] = calculate_smoothed_ccdf(
-            time_at_threshold,
-            floor_value=never_detected_proportion
-        )
+        time_to_detection_ccdfs[lr] = calculate_ccdf(time_at_threshold)
 
     return time_to_detection_ccdfs
 
@@ -1326,9 +1369,6 @@ def extract_ai_rd_reduction_ccdfs(simulation_results, years, agreement_year, lik
             # Using the h100_years_to_date method which properly integrates operational compute over time
             covert_h100_years = covert_project.h100_years_to_date(detection_year, sim_years)
 
-            if covert_h100_years <= 0:
-                continue
-
             # Calculate total largest company AI R&D H100-years (no slowdown counterfactual)
             # get_largest_company_ai_rd_compute returns H100-years per year, so we sum over time steps
             # Need to integrate over time: sum of (H100-years/year * time_step)
@@ -1354,7 +1394,12 @@ def extract_ai_rd_reduction_ccdfs(simulation_results, years, agreement_year, lik
                 prc_h100_years += prc_compute * prc_ai_rd_fraction * time_step
 
             # Calculate reduction ratios (H100-years / H100-years)
-            if covert_h100_years > 0:
+            # If no covert compute, use a large value to represent "infinite" reduction
+            if covert_h100_years <= 0:
+                large_reduction = 1e12
+                largest_company_reduction_ratios.append(large_reduction)
+                prc_reduction_ratios.append(large_reduction)
+            else:
                 largest_company_ratio = largest_company_h100_years / covert_h100_years
                 largest_company_reduction_ratios.append(largest_company_ratio)
 
@@ -1430,10 +1475,6 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
                         prod_at_detection = 0.0
                 covert_fab_production = prod_at_detection - prod_at_agreement
 
-            # Skip if no production
-            if covert_fab_production <= 0:
-                continue
-
             # Calculate global chip production from agreement to detection (no slowdown)
             # Uses data from global_compute_production.csv
             global_production = get_global_compute_production_between_years(agreement_year, detection_year)
@@ -1453,15 +1494,26 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
             prc_production = prc_stock_at_detection - prc_stock_at_agreement
 
             # Calculate reduction ratios
-            if global_production > 0:
-                global_ratio = global_production / covert_fab_production
-                global_production_ratios.append(global_ratio)
+            # If no covert fab production, use a large value to represent "infinite" reduction
+            if covert_fab_production <= 0:
+                # Use a very large value (1e12) to represent infinite reduction
+                # This will appear on the far right of the CCDF
+                large_reduction = 1e12
+                global_production_ratios.append(large_reduction)
+                largest_company_production_ratios.append(large_reduction)
+                prc_production_ratios.append(large_reduction)
+            else:
+                if global_production > 0:
+                    global_ratio = global_production / covert_fab_production
+                    global_production_ratios.append(global_ratio)
+                else:
+                    global_production_ratios.append(0.0)
 
-            largest_company_ratio = largest_company_production / covert_fab_production
-            largest_company_production_ratios.append(largest_company_ratio)
+                largest_company_ratio = largest_company_production / covert_fab_production
+                largest_company_production_ratios.append(largest_company_ratio)
 
-            prc_ratio = prc_production / covert_fab_production
-            prc_production_ratios.append(prc_ratio)
+                prc_ratio = prc_production / covert_fab_production
+                prc_production_ratios.append(prc_ratio)
 
         # Calculate CCDFs for this threshold
         global_production_ccdfs[lr] = calculate_ccdf(global_production_ratios)
@@ -1677,7 +1729,7 @@ def extract_plot_data(model, app_params):
     if not model.simulation_results:
         return {"error": "No simulation results"}
 
-    agreement_year = app_params.simulation_settings.start_year
+    agreement_year = app_params.simulation_settings.start_agreement_at_specific_year
     years = get_years_from_simulation(model.simulation_results)
     years_array = np.array(years)
 
@@ -1800,6 +1852,13 @@ def extract_plot_data(model, app_params):
                 model.simulation_results, years, agreement_year, likelihood_ratios, p_project_exists
             ),
             "likelihood_ratios": likelihood_ratios,
+
+            # -------------------------------------------------------------------
+            # Average Covert Compute Operated CCDF Plot
+            # -------------------------------------------------------------------
+            "average_covert_compute_ccdf": extract_average_covert_compute_ccdfs(
+                model.simulation_results, years, agreement_year, likelihood_ratios
+            ),
 
             # -------------------------------------------------------------------
             # AI R&D Reduction CCDF Plot

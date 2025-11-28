@@ -11,11 +11,11 @@ import sys
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from backend.paramaters import Parameters
+    from backend.paramaters import ModelParameters
 
 
 def extract_takeoff_slowdown_trajectories(
-    app_params: 'Parameters',
+    app_params: 'ModelParameters',
     covert_compute_years: Optional[List[float]] = None,
     covert_compute_median: Optional[List[float]] = None
 ) -> Dict[str, Any]:
@@ -37,7 +37,7 @@ def extract_takeoff_slowdown_trajectories(
         Dictionary with trajectory arrays and milestone information
     """
     # Define time range from agreement year forward
-    agreement_year = app_params.simulation_settings.start_year
+    agreement_year = app_params.simulation_settings.start_agreement_at_specific_year
 
     # Predict milestones using takeoff model with its default parameters
     milestones_global = None

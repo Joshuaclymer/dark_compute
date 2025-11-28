@@ -630,7 +630,7 @@ function updateParameterDisplays() {
     const fabConstructionInput = document.getElementById('construction_labor');
     const fabOperatingInput = document.getElementById('operating_labor');
     // mwPerWorkerInput is already declared above at line 777
-    const endYearInput = document.getElementById('end_year');
+    const numYearsInput = document.getElementById('num_years_to_simulate');
     // agreementYearInput is already declared above at line 601
 
     let totalWorkers = 0;
@@ -644,14 +644,12 @@ function updateParameterDisplays() {
         totalWorkers += dcConstruction;
     }
 
-    // Calculate datacenter operating workers at end year
-    if (dcOperatingPerMWInput && mwPerWorkerInput && dcConstructionInput && endYearInput && agreementYearInput) {
+    // Calculate datacenter operating workers at end of simulation
+    if (dcOperatingPerMWInput && mwPerWorkerInput && dcConstructionInput && numYearsInput) {
         const operatingPerMW = parseFloat(dcOperatingPerMWInput.value);
         const mwPerWorkerPerYear = parseFloat(mwPerWorkerInput.value);
         const workers = parseInt(dcConstructionInput.value);
-        const endYear = parseInt(endYearInput.value);
-        const agreementYear = parseInt(agreementYearInput.value);
-        const yearsOfConstruction = endYear - agreementYear;
+        const yearsOfConstruction = parseFloat(numYearsInput.value);
 
         // Total MW capacity = workers * MW_per_worker_per_year * years
         const totalMW = workers * mwPerWorkerPerYear * yearsOfConstruction;

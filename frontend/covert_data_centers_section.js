@@ -448,7 +448,7 @@ function populateDatacenterCapacityBreakdown(data) {
             hovermode: 'x unified'
         };
 
-        layout.xaxis.range = [years[0], 2037];
+        layout.xaxis.range = [years[0], years[years.length - 1]];
 
         Plotly.newPlot('datacenterCapacityBreakdownPlot', traces, layout, {responsive: true, displayModeBar: false});
         setTimeout(() => Plotly.Plots.resize('datacenterCapacityBreakdownPlot'), 50);

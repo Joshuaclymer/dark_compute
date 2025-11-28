@@ -5,6 +5,16 @@ function plotPAiTakeover(data) {
     const durations = data.durations;
     const pTakeover = data.p_ai_takeover;
     const anchors = data.anchor_points.ai_takeover;
+    const anchorTimes = data.anchor_times;
+
+    // Format anchor time labels
+    const formatAnchorLabel = (timeYears) => {
+        if (timeYears < 1) {
+            const months = Math.round(timeYears * 12);
+            return months === 1 ? '1 month' : `${months} months`;
+        }
+        return timeYears === 1 ? '1 year' : `${timeYears} years`;
+    };
 
     const traces = [
         // Main curve
@@ -22,8 +32,8 @@ function plotPAiTakeover(data) {
         },
         // Anchor points
         {
-            x: [1/12, 1, 10],
-            y: [anchors['1_month'], anchors['1_year'], anchors['10_years']],
+            x: [anchorTimes.t1, anchorTimes.t2, anchorTimes.t3],
+            y: [anchors['t1'], anchors['t2'], anchors['t3']],
             type: 'scatter',
             mode: 'markers',
             marker: {
@@ -36,7 +46,7 @@ function plotPAiTakeover(data) {
             },
             name: 'Parameter anchors',
             hovertemplate: '%{text}<br>P(Takeover): %{y:.2f}<extra></extra>',
-            text: ['1 month', '1 year', '10 years']
+            text: [formatAnchorLabel(anchorTimes.t1), formatAnchorLabel(anchorTimes.t2), formatAnchorLabel(anchorTimes.t3)]
         }
     ];
 
@@ -45,9 +55,10 @@ function plotPAiTakeover(data) {
             title: 'Research-Speed-Adjusted Handoff Duration (years)',
             titlefont: { size: 13 },
             tickfont: { size: 11 },
-            type: 'log',
             gridcolor: '#e0e0e0',
-            showgrid: true
+            showgrid: true,
+            type: 'log',
+            range: [Math.log10(anchorTimes.t1), Math.log10(20)]
         },
         yaxis: {
             title: 'P(AI Takeover)',
@@ -80,6 +91,16 @@ function plotPHumanPowerGrabs(data) {
     const durations = data.durations;
     const pPowerGrabs = data.p_human_power_grabs;
     const anchors = data.anchor_points.human_power_grabs;
+    const anchorTimes = data.anchor_times;
+
+    // Format anchor time labels
+    const formatAnchorLabel = (timeYears) => {
+        if (timeYears < 1) {
+            const months = Math.round(timeYears * 12);
+            return months === 1 ? '1 month' : `${months} months`;
+        }
+        return timeYears === 1 ? '1 year' : `${timeYears} years`;
+    };
 
     const traces = [
         // Main curve
@@ -97,8 +118,8 @@ function plotPHumanPowerGrabs(data) {
         },
         // Anchor points
         {
-            x: [1/12, 1, 10],
-            y: [anchors['1_month'], anchors['1_year'], anchors['10_years']],
+            x: [anchorTimes.t1, anchorTimes.t2, anchorTimes.t3],
+            y: [anchors['t1'], anchors['t2'], anchors['t3']],
             type: 'scatter',
             mode: 'markers',
             marker: {
@@ -111,7 +132,7 @@ function plotPHumanPowerGrabs(data) {
             },
             name: 'Parameter anchors',
             hovertemplate: '%{text}<br>P(Power Grabs): %{y:.2f}<extra></extra>',
-            text: ['1 month', '1 year', '10 years']
+            text: [formatAnchorLabel(anchorTimes.t1), formatAnchorLabel(anchorTimes.t2), formatAnchorLabel(anchorTimes.t3)]
         }
     ];
 
@@ -120,9 +141,10 @@ function plotPHumanPowerGrabs(data) {
             title: 'Handoff Duration (years)',
             titlefont: { size: 13 },
             tickfont: { size: 11 },
-            type: 'log',
             gridcolor: '#e0e0e0',
-            showgrid: true
+            showgrid: true,
+            type: 'log',
+            range: [Math.log10(anchorTimes.t1), Math.log10(20)]
         },
         yaxis: {
             title: 'P(Human Power Grabs)',

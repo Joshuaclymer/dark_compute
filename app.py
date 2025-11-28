@@ -4,8 +4,8 @@ from backend.paramaters import (
     CovertProjectProperties,
     CovertProjectParameters,
     SimulationSettings,
-    Parameters,
-    SlowdownParameters,
+    ModelParameters,
+    SlowdownPageParameters,
     PCatastropheParameters,
     SoftwareProliferation
 )
@@ -87,8 +87,8 @@ def load_default_cache():
         return results
     return None
 
-# Create a global Parameters instance that stays synchronized with the sidebar
-app_params = Parameters(
+# Create a global ModelParameters instance that stays synchronized with the sidebar
+app_params = ModelParameters(
     simulation_settings=SimulationSettings(),
     covert_project_properties=CovertProjectProperties(),
     covert_project_parameters=CovertProjectParameters()
@@ -168,19 +168,20 @@ def get_default_results():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-def _parse_slowdown_params_from_request() -> SlowdownParameters:
-    """Parse SlowdownParameters from query arguments."""
+def _parse_slowdown_params_from_request() -> SlowdownPageParameters:
+    """Parse SlowdownPageParameters from query arguments."""
     # Monte Carlo samples
     num_mc_samples = int(request.args.get('num_mc_samples', 3))
 
     # P(Catastrophe) parameters
     p_cat_params = PCatastropheParameters(
-        p_ai_takeover_1_month=float(request.args.get('p_ai_takeover_1_month', 0.15)),
-        p_ai_takeover_1_year=float(request.args.get('p_ai_takeover_1_year', 0.10)),
-        p_ai_takeover_10_years=float(request.args.get('p_ai_takeover_10_years', 0.05)),
-        p_human_power_grabs_1_month=float(request.args.get('p_human_power_grabs_1_month', 0.40)),
-        p_human_power_grabs_1_year=float(request.args.get('p_human_power_grabs_1_year', 0.20)),
-        p_human_power_grabs_10_years=float(request.args.get('p_human_power_grabs_10_years', 0.10))
+        p_ai_takeover_t1=float(request.args.get('p_ai_takeover_t1', 0.40)),
+        p_ai_takeover_t2=float(request.args.get('p_ai_takeover_t2', 0.15)),
+        p_ai_takeover_t3=float(request.args.get('p_ai_takeover_t3', 0.05)),
+        p_human_power_grabs_t1=float(request.args.get('p_human_power_grabs_t1', 0.40)),
+        p_human_power_grabs_t2=float(request.args.get('p_human_power_grabs_t2', 0.20)),
+        p_human_power_grabs_t3=float(request.args.get('p_human_power_grabs_t3', 0.10)),
+        safety_speedup_exponent=float(request.args.get('safety_speedup_exponent', 0.5))
     )
 
     # Software proliferation parameters
@@ -204,7 +205,7 @@ def _parse_slowdown_params_from_request() -> SlowdownParameters:
         stealing_algorithms_up_to=stealing_algorithms_up_to
     )
 
-    return SlowdownParameters(
+    return SlowdownPageParameters(
         monte_carlo_samples=num_mc_samples,
         PCatastrophe_parameters=p_cat_params,
         software_proliferation=software_proliferation
@@ -488,23 +489,23 @@ def run_simulation():
     print(f"\n{'='*80}", flush=True)
     print(f"RECEIVED PARAMETERS:", flush=True)
     print(f"  num_simulations: {data.get('simulation_settings.num_simulations', 'NOT PROVIDED')}", flush=True)
-    print(f"  start_year: {data.get('simulation_settings.start_year', 'NOT PROVIDED')}", flush=True)
-    print(f"  end_year: {data.get('simulation_settings.end_year', 'NOT PROVIDED')}", flush=True)
-    print(f"{'='*80}\n", flush=True)
-
-    # Update app_params with values from request
-    app_params.update_from_dict(data)
-
-    # Debug: Log parameters after update
-    print(f"\n{'='*80}", flush=True)
-    print(f"PARAMETERS AFTER UPDATE:", flush=True)
-    print(f"  num_simulations: {app_params.simulation_settings.num_simulations}", flush=True)
-    print(f"  start_year: {app_params.simulation_settings.start_year}", flush=True)
-    print(f"  end_year: {app_params.simulation_settings.end_year}", flush=True)
+    print(f"  start_agreement_at_specific_year: {data.get('simulation_settings.start_agreement_at_specific_year', 'NOT PROVIDED')}", flush=True)
+    print(f"  num_years_to_simulate: {data.get('simulation_settings.num_years_to_simulate', 'NOT PROVIDED')}", flush=True)
     print(f"{'='*80}\n", flush=True)
 
     try:
-        # Create model with Parameters object
+        # Update app_params with values from request
+        app_params.update_from_dict(data)
+
+        # Debug: Log parameters after update
+        print(f"\n{'='*80}", flush=True)
+        print(f"PARAMETERS AFTER UPDATE:", flush=True)
+        print(f"  num_simulations: {app_params.simulation_settings.num_simulations}", flush=True)
+        print(f"  start_agreement_at_specific_year: {app_params.simulation_settings.start_agreement_at_specific_year}", flush=True)
+        print(f"  num_years_to_simulate: {app_params.simulation_settings.num_years_to_simulate}", flush=True)
+        print(f"{'='*80}\n", flush=True)
+
+        # Create model with ModelParameters object
         model = Model(app_params)
 
         # Run simulations

@@ -46,7 +46,7 @@ function plotDarkComputeDetectionSection(data) {
                     title: 'Year',
                     titlefont: { size: 10 },
                     tickfont: { size: 9 },
-                    range: [years[0], 2037]
+                    range: [years[0], years[years.length - 1]]
                 },
                 yaxis: {
                     title: 'Likelihood Ratio',
@@ -152,7 +152,7 @@ function plotDarkComputeDetectionSection(data) {
                     title: 'Year',
                     titlefont: { size: 10 },
                     tickfont: { size: 9 },
-                    range: [years[0], 2037]
+                    range: [years[0], years[years.length - 1]]
                 },
                 yaxis: {
                     title: 'Probability',

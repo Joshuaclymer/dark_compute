@@ -29,6 +29,8 @@ async function loadComponents() {
         { id: 'header-container', path: '/slowdown_model_frontend/components/header.html' },
         { id: 'takeoff-trajectory-container', path: '/slowdown_model_frontend/components/takeoff-trajectory-plot.html' },
         { id: 'p-catastrophe-dashboard-container', path: '/slowdown_model_frontend/components/p-catastrophe-dashboard.html' },
+        { id: 'p-catastrophe-over-time-container', path: '/slowdown_model_frontend/components/p-catastrophe-over-time-plot.html' },
+        { id: 'optimal-compute-cap-container', path: '/slowdown_model_frontend/components/optimal-compute-cap-plot.html' },
         { id: 'compute-plot-container', path: '/slowdown_model_frontend/components/compute-plot.html' },
         { id: 'covert-uncertainty-container', path: '/slowdown_model_frontend/components/covert-uncertainty-plot.html' },
         { id: 'p-catastrophe-plots-container', path: '/slowdown_model_frontend/components/p-catastrophe-plots.html' },
@@ -61,6 +63,8 @@ function plotAllCharts(data) {
     plotCovertCompute(data);
     plotCovertUncertainty(data);
     plotPCatastropheFromData(data);
+    plotPCatastropheOverTime(data);
+    plotOptimalComputeCapOverTime(data);
     renderPCatastropheDashboard(data);
 }
 

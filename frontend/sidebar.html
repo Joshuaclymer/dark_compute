@@ -272,11 +272,11 @@
     <h2>Simulation Settings</h2>
     <div class="param-group">
         <label for="agreement_year">Agreement start year</label>
-        <input type="number" id="agreement_year" value="{{ defaults['simulation_settings.start_year'] }}" step="0.1">
+        <input type="number" id="agreement_year" value="{{ defaults['simulation_settings.start_agreement_at_specific_year'] }}" step="1" min="2026" max="2031">
     </div>
     <div class="param-group">
-        <label for="end_year">End year</label>
-        <input type="number" id="end_year" value="{{ defaults['simulation_settings.end_year'] }}" step="0.1">
+        <label for="num_years_to_simulate">Number of years to simulate</label>
+        <input type="number" id="num_years_to_simulate" value="{{ defaults['simulation_settings.num_years_to_simulate'] }}" step="0.5" min="1">
     </div>
     <div class="param-group">
         <label for="increment">Time increment (years)</label>

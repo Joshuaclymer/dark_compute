@@ -13,23 +13,32 @@
         <input type="number" id="num_mc_samples" value="1" step="10" min="1" max="500">
     </div>
 
+    <h2>Safety Research Speedup</h2>
+    <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
+        Safety speedup = capability_speedup ^ exponent. E.g., 0.5 means safety speedup is sqrt of capability speedup.
+    </p>
+    <div class="param-group">
+        <label for="safety_speedup_exponent">Exponent</label>
+        <input type="number" id="safety_speedup_exponent" value="0.5" step="0.1" min="0" max="2">
+    </div>
+
     <h2>P(AI Takeover)</h2>
     <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
-        Probability of AI takeover given the research-speed-adjusted handoff duration (time between AC and SAR).
+        Probability of AI takeover given the safety-research-speed-adjusted handoff duration (time between AC and SAR).
     </p>
     <div class="param-row">
         <div class="param-group">
-            <label for="p_ai_takeover_1_month">At 1 month</label>
-            <input type="number" id="p_ai_takeover_1_month" value="0.15" step="0.01" min="0" max="1">
+            <label for="p_ai_takeover_t1">At 1 month</label>
+            <input type="number" id="p_ai_takeover_t1" value="0.40" step="0.01" min="0" max="1">
         </div>
         <div class="param-group">
-            <label for="p_ai_takeover_1_year">At 1 year</label>
-            <input type="number" id="p_ai_takeover_1_year" value="0.10" step="0.01" min="0" max="1">
+            <label for="p_ai_takeover_t2">At 1 year</label>
+            <input type="number" id="p_ai_takeover_t2" value="0.15" step="0.01" min="0" max="1">
         </div>
     </div>
     <div class="param-group">
-        <label for="p_ai_takeover_10_years">At 10 years</label>
-        <input type="number" id="p_ai_takeover_10_years" value="0.05" step="0.01" min="0" max="1">
+        <label for="p_ai_takeover_t3">At 10 years</label>
+        <input type="number" id="p_ai_takeover_t3" value="0.05" step="0.01" min="0" max="1">
     </div>
 
     <h2>P(Human Power Grabs)</h2>
@@ -38,17 +47,17 @@
     </p>
     <div class="param-row">
         <div class="param-group">
-            <label for="p_human_power_grabs_1_month">At 1 month</label>
-            <input type="number" id="p_human_power_grabs_1_month" value="0.40" step="0.01" min="0" max="1">
+            <label for="p_human_power_grabs_t1">At 1 month</label>
+            <input type="number" id="p_human_power_grabs_t1" value="0.40" step="0.01" min="0" max="1">
         </div>
         <div class="param-group">
-            <label for="p_human_power_grabs_1_year">At 1 year</label>
-            <input type="number" id="p_human_power_grabs_1_year" value="0.20" step="0.01" min="0" max="1">
+            <label for="p_human_power_grabs_t2">At 1 year</label>
+            <input type="number" id="p_human_power_grabs_t2" value="0.20" step="0.01" min="0" max="1">
         </div>
     </div>
     <div class="param-group">
-        <label for="p_human_power_grabs_10_years">At 10 years</label>
-        <input type="number" id="p_human_power_grabs_10_years" value="0.10" step="0.01" min="0" max="1">
+        <label for="p_human_power_grabs_t3">At 10 years</label>
+        <input type="number" id="p_human_power_grabs_t3" value="0.10" step="0.01" min="0" max="1">
     </div>
 
     <h2>Software Proliferation</h2>

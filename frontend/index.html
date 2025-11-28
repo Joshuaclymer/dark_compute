@@ -182,8 +182,8 @@
 
             return {
                 // Simulation settings (using dot notation for nested Parameters structure)
-                'simulation_settings.start_year': getValue('agreement_year'),
-                'simulation_settings.end_year': getValue('end_year'),
+                'simulation_settings.start_agreement_at_specific_year': getValue('agreement_year'),
+                'simulation_settings.num_years_to_simulate': getValue('num_years_to_simulate'),
                 'simulation_settings.time_step_years': getValue('increment'),
                 'simulation_settings.num_simulations': getValue('num_simulations', 'int'),
 
@@ -708,7 +708,14 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Simulation failed');
+                    let errorMessage = 'Simulation failed';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        console.error('Could not parse error response:', e);
+                    }
+                    throw new Error(errorMessage);
                 }
 
                 const data = await response.json();

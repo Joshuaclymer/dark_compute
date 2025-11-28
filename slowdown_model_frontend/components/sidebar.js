@@ -13,15 +13,18 @@ function collectSidebarParams() {
     // Monte Carlo samples
     params.set('num_mc_samples', getElementValue('num_mc_samples', '1'));
 
+    // Safety research speedup exponent
+    params.set('safety_speedup_exponent', getElementValue('safety_speedup_exponent', '0.5'));
+
     // P(AI Takeover) parameters
-    params.set('p_ai_takeover_1_month', getElementValue('p_ai_takeover_1_month', '0.15'));
-    params.set('p_ai_takeover_1_year', getElementValue('p_ai_takeover_1_year', '0.10'));
-    params.set('p_ai_takeover_10_years', getElementValue('p_ai_takeover_10_years', '0.05'));
+    params.set('p_ai_takeover_t1', getElementValue('p_ai_takeover_t1', '0.40'));
+    params.set('p_ai_takeover_t2', getElementValue('p_ai_takeover_t2', '0.15'));
+    params.set('p_ai_takeover_t3', getElementValue('p_ai_takeover_t3', '0.05'));
 
     // P(Human Power Grabs) parameters
-    params.set('p_human_power_grabs_1_month', getElementValue('p_human_power_grabs_1_month', '0.40'));
-    params.set('p_human_power_grabs_1_year', getElementValue('p_human_power_grabs_1_year', '0.20'));
-    params.set('p_human_power_grabs_10_years', getElementValue('p_human_power_grabs_10_years', '0.10'));
+    params.set('p_human_power_grabs_t1', getElementValue('p_human_power_grabs_t1', '0.40'));
+    params.set('p_human_power_grabs_t2', getElementValue('p_human_power_grabs_t2', '0.20'));
+    params.set('p_human_power_grabs_t3', getElementValue('p_human_power_grabs_t3', '0.10'));
 
     // Software proliferation parameters
     params.set('weight_stealing', getElementValue('weight_stealing_enabled', 'SC'));

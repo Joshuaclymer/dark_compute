@@ -14,6 +14,9 @@
 
     <!-- Main Content -->
     <div class="slowdown-main-content">
+        <!-- Agreement Section - loaded from component -->
+        <div id="agreement-section-container"></div>
+
         <!-- Header - loaded from component -->
         <div id="header-container"></div>
 
@@ -22,6 +25,12 @@
 
         <!-- P(Catastrophe) Dashboard - loaded from component -->
         <div id="p-catastrophe-dashboard-container"></div>
+
+        <!-- P(Catastrophe) Over Time Plot - loaded from component -->
+        <div id="p-catastrophe-over-time-container"></div>
+
+        <!-- Optimal Compute Cap Over Time Plot - loaded from component -->
+        <div id="optimal-compute-cap-container"></div>
 
         <!-- Compute Over Time Plot - loaded from component -->
         <div id="compute-plot-container"></div>
@@ -37,9 +46,12 @@
     </div>
 
     <!-- Load component JavaScript files -->
+    <script src="/slowdown_model_frontend/components/agreement-section.js"></script>
     <script src="/slowdown_model_frontend/components/sidebar.js"></script>
     <script src="/slowdown_model_frontend/components/takeoff-trajectory-plot.js"></script>
     <script src="/slowdown_model_frontend/components/p-catastrophe-dashboard.js"></script>
+    <script src="/slowdown_model_frontend/components/p-catastrophe-over-time-plot.js"></script>
+    <script src="/slowdown_model_frontend/components/optimal-compute-cap-plot.js"></script>
     <script src="/slowdown_model_frontend/components/compute-plot.js"></script>
     <script src="/slowdown_model_frontend/components/covert-uncertainty-plot.js"></script>
     <script src="/slowdown_model_frontend/components/p-catastrophe-plots.js"></script>

@@ -183,6 +183,14 @@ async function loadAllSlowdownData(options = {}) {
                 if (typeof plotPCatastropheFromData === 'function') {
                     plotPCatastropheFromData(data);
                 }
+                // Render P(catastrophe) over time plot
+                if (typeof plotPCatastropheOverTime === 'function') {
+                    plotPCatastropheOverTime(data);
+                }
+                // Render optimal compute cap over time plot
+                if (typeof plotOptimalComputeCapOverTime === 'function') {
+                    plotOptimalComputeCapOverTime(data);
+                }
                 if (onTrajectoryComplete) {
                     onTrajectoryComplete(data);
                 }

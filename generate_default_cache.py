@@ -7,7 +7,7 @@ Run this with: python3 generate_default_cache.py [num_simulations]
 import sys
 import json
 from backend.model import Model
-from backend.paramaters import Parameters, SimulationSettings, CovertProjectProperties, CovertProjectParameters
+from backend.paramaters import ModelParameters, SimulationSettings, CovertProjectProperties, CovertProjectParameters
 from backend.serve_data_for_dark_compute_model import extract_plot_data
 from app import save_default_cache
 
@@ -17,7 +17,7 @@ def generate_cache(num_simulations=10):
 
     # Create default parameters
     sim_settings = SimulationSettings(num_simulations=num_simulations)
-    app_params = Parameters(
+    app_params = ModelParameters(
         simulation_settings=sim_settings,
         covert_project_properties=CovertProjectProperties(),
         covert_project_parameters=CovertProjectParameters()

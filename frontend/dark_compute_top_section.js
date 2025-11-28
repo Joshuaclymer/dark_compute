@@ -242,31 +242,76 @@ function plotChipProductionReductionCcdf(data) {
 
     const traces = [];
 
+    // Threshold for "no production" (values >= this are considered infinite)
+    const noProductionThreshold = 1e11;
+
+    // Filter out "no production" values and find max real value
+    let maxRealValue = 1;
+    let noProductionCount = 0;
+    let totalCount = 0;
+
     // Add global AI chip production reduction trace
     if (globalCcdf && globalCcdf.length > 0) {
-        traces.push({
-            x: globalCcdf.map(d => d.x),
-            y: globalCcdf.map(d => d.y),
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: '#5B8DBE', width: 2 },
-            name: 'Global Production',
-            hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
-        });
+        const filteredGlobal = globalCcdf.filter(d => d.x < noProductionThreshold);
+        const noProductionGlobal = globalCcdf.filter(d => d.x >= noProductionThreshold);
+
+        if (filteredGlobal.length > 0) {
+            maxRealValue = Math.max(maxRealValue, ...filteredGlobal.map(d => d.x));
+        }
+        noProductionCount = noProductionGlobal.length;
+        totalCount = globalCcdf.length;
+
+        if (filteredGlobal.length > 0) {
+            traces.push({
+                x: filteredGlobal.map(d => d.x),
+                y: filteredGlobal.map(d => d.y),
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#5B8DBE', width: 2 },
+                name: 'Global Production',
+                hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+            });
+        }
     }
 
     // Add PRC AI chip production reduction trace
     if (prcCcdf && prcCcdf.length > 0) {
+        const filteredPrc = prcCcdf.filter(d => d.x < noProductionThreshold);
+
+        if (filteredPrc.length > 0) {
+            maxRealValue = Math.max(maxRealValue, ...filteredPrc.map(d => d.x));
+            traces.push({
+                x: filteredPrc.map(d => d.x),
+                y: filteredPrc.map(d => d.y),
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#C77CAA', width: 2 },
+                name: 'PRC Production',
+                hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+            });
+        }
+    }
+
+    // Calculate the position for "No production" tick (2x beyond max real value in log space)
+    const noProductionX = maxRealValue * 100;
+    const noProductionProportion = totalCount > 0 ? noProductionCount / totalCount : 0;
+
+    // Add a horizontal dotted line for "No production" simulations if there are any
+    if (noProductionCount > 0) {
         traces.push({
-            x: prcCcdf.map(d => d.x),
-            y: prcCcdf.map(d => d.y),
+            x: [1, noProductionX * 2],
+            y: [noProductionProportion, noProductionProportion],
             type: 'scatter',
             mode: 'lines',
-            line: { color: '#C77CAA', width: 2 },
-            name: 'PRC Production',
-            hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+            line: { color: '#888', width: 2, dash: 'dot' },
+            name: `No covert production (${(noProductionProportion * 100).toFixed(0)}%)`,
+            hovertemplate: `No covert production<br>${noProductionCount} of ${totalCount} simulations<br>P = ${noProductionProportion.toFixed(3)}<extra></extra>`
         });
     }
+
+    // Create custom tick values and labels
+    const tickvals = [1, 10, 100, 1000, 10000];
+    const ticktext = ['1x', '10x', '100x', '1Kx', '10Kx'];
 
     const layout = {
         xaxis: {
@@ -274,9 +319,10 @@ function plotChipProductionReductionCcdf(data) {
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
-            range: [Math.log10(1), null],  // Start at 1x reduction
+            range: [Math.log10(1), Math.log10(maxRealValue * 10)],
             automargin: true,
-            ticksuffix: 'x'
+            tickvals: tickvals,
+            ticktext: ticktext
         },
         yaxis: {
             title: 'P(Reduction > x)',
@@ -288,9 +334,9 @@ function plotChipProductionReductionCcdf(data) {
         showlegend: true,
         legend: {
             x: 0.98,
-            y: 0.98,
+            y: 0.02,
             xanchor: 'right',
-            yanchor: 'top',
+            yanchor: 'bottom',
             bgcolor: 'rgba(255,255,255,0.8)',
             bordercolor: '#ccc',
             borderwidth: 1
@@ -325,27 +371,70 @@ function plotAiRdReductionCcdf(data) {
 
     const traces = [];
 
+    // Threshold for "no compute" (values >= this are considered infinite)
+    const noComputeThreshold = 1e11;
+
+    // Filter out "no compute" values and find max real value
+    let maxRealValue = 10;
+    let noComputeCount = 0;
+    let totalCount = 0;
+
     // Add largest company AI R&D reduction trace
-    traces.push({
-        x: largestCompanyCcdf.map(d => d.x),
-        y: largestCompanyCcdf.map(d => d.y),
-        type: 'scatter',
-        mode: 'lines',
-        line: { color: '#E8A863', width: 2 },
-        name: 'Largest AI Company',
-        hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
-    });
+    if (largestCompanyCcdf && largestCompanyCcdf.length > 0) {
+        const filteredLargestCompany = largestCompanyCcdf.filter(d => d.x < noComputeThreshold);
+        const noComputeLargestCompany = largestCompanyCcdf.filter(d => d.x >= noComputeThreshold);
+
+        if (filteredLargestCompany.length > 0) {
+            maxRealValue = Math.max(maxRealValue, ...filteredLargestCompany.map(d => d.x));
+        }
+        noComputeCount = noComputeLargestCompany.length;
+        totalCount = largestCompanyCcdf.length;
+
+        if (filteredLargestCompany.length > 0) {
+            traces.push({
+                x: filteredLargestCompany.map(d => d.x),
+                y: filteredLargestCompany.map(d => d.y),
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#E8A863', width: 2 },
+                name: 'Largest AI Company',
+                hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+            });
+        }
+    }
 
     // Add PRC AI R&D reduction trace if available
     if (prcCcdf && prcCcdf.length > 0) {
+        const filteredPrc = prcCcdf.filter(d => d.x < noComputeThreshold);
+
+        if (filteredPrc.length > 0) {
+            maxRealValue = Math.max(maxRealValue, ...filteredPrc.map(d => d.x));
+            traces.push({
+                x: filteredPrc.map(d => d.x),
+                y: filteredPrc.map(d => d.y),
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#C77CAA', width: 2 },
+                name: 'PRC Compute',
+                hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+            });
+        }
+    }
+
+    // Calculate the position for "No compute" tick (2x beyond max real value in log space)
+    const noComputeX = maxRealValue * 100;
+    const noComputeProportion = totalCount > 0 ? noComputeCount / totalCount : 0;
+
+    // Add a horizontal dotted line for "No compute" simulations if there are any
+    if (noComputeCount > 0) {
         traces.push({
-            x: prcCcdf.map(d => d.x),
-            y: prcCcdf.map(d => d.y),
+            x: [10, maxRealValue * 10],
+            y: [noComputeProportion, noComputeProportion],
             type: 'scatter',
             mode: 'lines',
-            line: { color: '#C77CAA', width: 2 },
-            name: 'PRC Compute',
-            hovertemplate: 'Reduction: %{x:.1f}x<br>P(≥x): %{y:.3f}<extra></extra>'
+            line: { color: '#888', width: 2, dash: 'dot' },
+            name: `No covert compute (${(noComputeProportion * 100).toFixed(0)}%)`,
+            hovertemplate: `No covert compute<br>${noComputeCount} of ${totalCount} simulations<br>P = ${noComputeProportion.toFixed(3)}<extra></extra>`
         });
     }
 
@@ -355,7 +444,7 @@ function plotAiRdReductionCcdf(data) {
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
-            range: [Math.log10(10), null],  // Start at 10x reduction
+            range: [Math.log10(10), null],
             automargin: true,
             ticksuffix: 'x'
         },
@@ -387,7 +476,7 @@ function plotAiRdReductionCcdf(data) {
 }
 
 function plotProjectH100YearsCcdf(data) {
-    if (!data.dark_compute_model || !data.dark_compute_model.h100_years_ccdf) {
+    if (!data.dark_compute_model || !data.dark_compute_model.average_covert_compute_ccdf) {
         document.getElementById('projectH100YearsCcdfPlot').innerHTML = '<p>No detection data available</p>';
         return;
     }
@@ -409,7 +498,7 @@ function plotProjectH100YearsCcdf(data) {
     const thresholdsReversed = [...thresholds].reverse();
 
     for (const threshold of thresholdsReversed) {
-        const ccdf = data.dark_compute_model.h100_years_ccdf[threshold.value];
+        const ccdf = data.dark_compute_model.average_covert_compute_ccdf[threshold.value];
         if (ccdf && ccdf.length > 0) {
             traces.push({
                 x: ccdf.map(d => d.x),
@@ -418,21 +507,21 @@ function plotProjectH100YearsCcdf(data) {
                 mode: 'lines',
                 line: { color: threshold.color, width: 2 },
                 name: `"Detection" = ${threshold.label}`,
-                hovertemplate: 'H100-years: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>'
+                hovertemplate: 'Avg H100e: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>'
             });
         }
     }
 
     const layout = {
         xaxis: {
-            title: "H100-years of covert computation",
-            titlefont: { size: 13 },
+            title: "Average AI chips covert<br>project operates before detection (H100 equivalents)",
+            titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
             automargin: true
         },
         yaxis: {
-            title: 'P(H100-years > x)',
+            title: 'P(Avg compute > x)',
             titlefont: { size: 13 },
             tickfont: { size: 10 },
             range: [0, 1],
@@ -456,6 +545,25 @@ function plotProjectH100YearsCcdf(data) {
 
     Plotly.newPlot('projectH100YearsCcdfPlot', traces, layout, {displayModeBar: false, responsive: true});
     setTimeout(() => Plotly.Plots.resize('projectH100YearsCcdfPlot'), 50);
+
+    // Match plot heights to dashboard height after plots are created
+    setTimeout(() => {
+        const dashboard = document.querySelector('#darkComputeTopSection .dashboard');
+        const plotContainers = document.querySelectorAll('#darkComputeTopSection .plot-container');
+        if (dashboard && plotContainers.length > 0) {
+            const dashboardHeight = dashboard.offsetHeight;
+            plotContainers.forEach(container => {
+                container.style.height = dashboardHeight + 'px';
+            });
+            // Force resize after setting height
+            setTimeout(() => {
+                Plotly.Plots.resize('projectH100YearsCcdfPlot');
+                Plotly.Plots.resize('timeToDetectionCcdfPlot');
+                Plotly.Plots.resize('chipProductionReductionCcdfPlot');
+                Plotly.Plots.resize('aiRdReductionCcdfPlot');
+            }, 50);
+        }
+    }, 150);
 }
 
 function plotTimeToDetectionCcdf(data) {
@@ -477,30 +585,43 @@ function plotTimeToDetectionCcdf(data) {
         };
     });
 
+    // Threshold for "never detected" (values >= this are considered infinite)
+    const neverDetectedThreshold = 100;
+
+    // Track max real time
+    let maxRealTime = 7;
+
     // Reverse thresholds for legend order (highest to lowest)
     const thresholdsReversed = [...thresholds].reverse();
 
     for (const threshold of thresholdsReversed) {
         const ccdf = data.dark_compute_model.time_to_detection_ccdf[threshold.value];
         if (ccdf && ccdf.length > 0) {
-            traces.push({
-                x: ccdf.map(d => d.x),
-                y: ccdf.map(d => d.y),
-                type: 'scatter',
-                mode: 'lines',
-                line: { color: threshold.color, width: 2 },
-                name: `"Detection" = ${threshold.label}`,
-                hovertemplate: 'Years: %{x:.1f}<br>P(≥x): %{y:.3f}<extra></extra>'
-            });
+            // Filter out "never detected" values
+            const filteredCcdf = ccdf.filter(d => d.x < neverDetectedThreshold);
+
+            if (filteredCcdf.length > 0) {
+                maxRealTime = Math.max(maxRealTime, ...filteredCcdf.map(d => d.x));
+                traces.push({
+                    x: filteredCcdf.map(d => d.x),
+                    y: filteredCcdf.map(d => d.y),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: threshold.color, width: 2 },
+                    name: `"Detection" = ${threshold.label}`,
+                    hovertemplate: 'Years: %{x:.1f}<br>P(≥x): %{y:.3f}<extra></extra>'
+                });
+            }
         }
     }
 
     const layout = {
         xaxis: {
             title: "Years until detection",
-            titlefont: { size: 13 },
+            titlefont: { size: 11 },
             tickfont: { size: 10 },
-            automargin: true
+            automargin: true,
+            range: [0, maxRealTime * 1.1]
         },
         yaxis: {
             title: 'P(Time to detection > x)',
@@ -595,27 +716,50 @@ function updateDarkComputeModelDashboard(data) {
         updateAiRdReduction(data);
     }
 
-    // Update chip production reduction from the CCDF data
-    updateChipProductionReduction(data);
+    // Update covert chips produced from fab data
+    updateCovertChipsProduced(data);
 }
 
-function updateChipProductionReduction(data) {
-    // Get the median from the global chip production reduction CCDF
-    const primaryThreshold = DETECTION_CONFIG.PRIMARY_THRESHOLD;
-    const reductionData = data.dark_compute_model?.chip_production_reduction_ccdf;
+function updateCovertChipsProduced(data) {
+    // Get the covert fab chip production (H100e) for simulations with fabs
+    const fabChipData = data.covert_fab?.individual_h100e_before_detection;
+    const fabBuiltMask = data.covert_fab?.fab_built;
+    // Use fabBuiltMask length as the number of simulations (one entry per simulation)
+    const numSimulations = fabBuiltMask?.length;
 
-    if (reductionData && reductionData.global && reductionData.global[primaryThreshold]) {
-        const globalCcdf = reductionData.global[primaryThreshold];
-        const medianReduction = getMedianFromCcdf(globalCcdf);
-
-        if (medianReduction !== null) {
-            const rounded = roundToSigFigs(medianReduction, 1);
-            document.getElementById('dashboardPrcReduction').textContent = rounded + 'x';
-        } else {
-            document.getElementById('dashboardPrcReduction').textContent = '--';
+    if (fabBuiltMask && numSimulations) {
+        // Build full array with 0 for simulations without fab
+        const allChips = [];
+        let fabDataIdx = 0;
+        for (let i = 0; i < numSimulations; i++) {
+            if (fabBuiltMask[i]) {
+                allChips.push(fabChipData[fabDataIdx] || 0);
+                fabDataIdx++;
+            } else {
+                allChips.push(0);
+            }
         }
+
+        // Calculate median
+        const sorted = [...allChips].sort((a, b) => a - b);
+        const medianIdx = Math.floor(sorted.length / 2);
+        const medianChips = sorted[medianIdx];
+
+        // Format with K, M, B suffixes
+        let formattedValue;
+        if (medianChips >= 1e9) {
+            formattedValue = (medianChips / 1e9).toFixed(1).replace(/\.0$/, '') + 'B H100e';
+        } else if (medianChips >= 1e6) {
+            formattedValue = (medianChips / 1e6).toFixed(1).replace(/\.0$/, '') + 'M H100e';
+        } else if (medianChips >= 1e3) {
+            formattedValue = (medianChips / 1e3).toFixed(0) + 'K H100e';
+        } else {
+            formattedValue = Math.round(medianChips) + ' H100e';
+        }
+
+        document.getElementById('dashboardCovertChipsProduced').textContent = formattedValue;
     } else {
-        document.getElementById('dashboardPrcReduction').textContent = '--';
+        document.getElementById('dashboardCovertChipsProduced').textContent = '--';
     }
 }
 

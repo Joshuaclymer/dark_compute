@@ -125,22 +125,17 @@ body {
 }
 
 /* Override main styles.css rules that conflict with Plotly */
-#slowdownPlot .plot-container,
-#covertComputePlot .plot-container,
-#covertUncertaintyPlot .plot-container,
-#pAiTakeoverPlot .plot-container,
-#pHumanPowerGrabsPlot .plot-container {
+/* Use attribute selector to match any element with ID ending in "Plot" */
+.slowdown-main-content [id$="Plot"] .plot-container {
     border: none;
     padding: 0;
     background: transparent;
     overflow: visible;
 }
 
-#slowdownPlot,
-#covertComputePlot,
-#covertUncertaintyPlot,
-#pAiTakeoverPlot,
-#pHumanPowerGrabsPlot {
+/* Ensure all Plotly plot containers in the slowdown page have proper dimensions */
+.slowdown-main-content [id$="Plot"] {
     height: 450px;
     width: 100%;
+    min-height: 350px;
 }

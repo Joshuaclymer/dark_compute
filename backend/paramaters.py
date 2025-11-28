@@ -21,12 +21,21 @@ class ProcessNodeStrategy(Enum):
 
 @dataclass
 class SimulationSettings:
-    model_takeoff: bool = False
-    start_agreement_at_what_ai_rnd_speedup: Optional[float] = 2.0 # can also be a milestone like "AC" or "SAR" or None if starting agreement at a specific year
+    start_agreement_at_what_ai_rnd_speedup: Optional[float] = None # can also be a milestone like "AC" or "SAR" or None if starting agreement at a specific year
     start_agreement_at_specific_year : Optional[int] = 2031
     num_years_to_simulate : float = 7.0  # Number of years from agreement start to simulate
     time_step_years : float = 0.1
     num_simulations : int = 60
+
+    def validate(self):
+        """Validate simulation settings parameters."""
+        if self.start_agreement_at_specific_year is not None:
+            if self.start_agreement_at_specific_year < 2026:
+                raise ValueError(f"Agreement start year must be at least 2026 (got {self.start_agreement_at_specific_year})")
+            if self.start_agreement_at_specific_year > 2031:
+                raise ValueError(f"Agreement start year must be at most 2031 (got {self.start_agreement_at_specific_year})")
+        if self.num_years_to_simulate < 1:
+            raise ValueError(f"Number of years to simulate must be at least 1 (got {self.num_years_to_simulate})")
 
 @dataclass
 class CovertProjectProperties:
@@ -206,6 +215,9 @@ class ModelParameters:
                 'nm7': ProcessNode.nm7
             }
             self.covert_project_properties.covert_fab_process_node = process_node_map.get(data['covert_project_properties.covert_fab_process_node'], data['covert_project_properties.covert_fab_process_node'])
+
+        # Validate parameters after update
+        self.simulation_settings.validate()
 
     def to_dict(self):
         """

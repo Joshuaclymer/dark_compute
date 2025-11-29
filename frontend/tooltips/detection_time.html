@@ -1,6 +1,6 @@
 <strong>Detection Time</strong><br><br>
-These parameters model the relationship between workforce size and time to detection. We estimated them using historical data from ~12 covert nuclear weapons programs over the past 50 years, tracking the number of high-context workers and time until detection.<br><br>
-<img src="/static/detection_latency.png" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;" alt="Detection latency vs workers"><br><br>
+We model the relationship between workforce size and time to detection. We estimated them using historical data from 12 covert nuclear weapons programs over the past 50 years, tracking the number of high-context workers and time until detection.<br><br>
+<div id="tooltipDetectionLatencyPlot" data-plot="detection-latency" style="width: 100%; max-width: 500px; height: 320px;"></div><br>
 <strong>Model:</strong><br>
 Detection time follows a log-normal distribution where the mean scales logarithmically with workforce size:<br><br>
 μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100)<br><br>

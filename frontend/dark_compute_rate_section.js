@@ -141,7 +141,7 @@ function plotDarkComputeRateSection(data) {
             },
             margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
-            hovermode: 'x unified'
+            hovermode: 'x unified',
         };
 
         Plotly.newPlot('chipSurvivalPlot', traces, layout, {responsive: true});
@@ -203,7 +203,7 @@ function plotDarkComputeRateSection(data) {
             },
             margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
-            hovermode: 'x unified'
+            hovermode: 'x unified',
         };
 
         layout.xaxis.range = [years[0], years[years.length - 1]];
@@ -292,7 +292,7 @@ function plotDarkComputeRateSection(data) {
             },
             margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
-            hovermode: 'x unified'
+            hovermode: 'x unified',
         };
 
         layout.xaxis.range = [years[0], years[years.length - 1]];
@@ -507,7 +507,7 @@ function plotDarkComputeRateSection(data) {
             },
             margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
-            hovermode: 'x unified'
+            hovermode: 'x unified',
         };
 
         layout.xaxis.range = [years[0], years[years.length - 1]];
@@ -589,7 +589,7 @@ function plotDarkComputeRateSection(data) {
             },
             margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
-            hovermode: 'x unified'
+            hovermode: 'x unified',
         };
 
         layout.xaxis.range = [years[0], years[years.length - 1]];

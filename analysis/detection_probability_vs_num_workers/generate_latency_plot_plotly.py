@@ -6,6 +6,9 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import pickle
+import sys
+sys.path.insert(0, '..')
+from plotly_style import STYLE, apply_common_layout, save_plot, save_html
 
 # Load the saved Bayesian model data
 with open('model_bayesian_data.pkl', 'rb') as f:
@@ -75,13 +78,6 @@ y_median = np.median(pred_samples, axis=0)
 y_low = np.percentile(pred_samples, 25, axis=0)
 y_high = np.percentile(pred_samples, 75, axis=0)
 
-# Theme colors matching the frontend
-colors = {
-    'line': '#5B8DBE',
-    'fill': 'rgba(91, 141, 190, 0.2)',
-    'points': '#5B8DBE'
-}
-
 # Create figure
 fig = go.Figure()
 
@@ -101,7 +97,7 @@ fig.add_trace(go.Scatter(
     mode='lines',
     line=dict(width=0),
     fill='tonexty',
-    fillcolor=colors['fill'],
+    fillcolor='rgba(91, 141, 190, 0.2)',
     showlegend=False,
     hoverinfo='skip'
 ))
@@ -111,7 +107,7 @@ fig.add_trace(go.Scatter(
     x=x_pred,
     y=y_median,
     mode='lines',
-    line=dict(color=colors['line'], width=2),
+    line=dict(color=STYLE['blue'], width=STYLE['line_width']),
     name='Median prediction',
     hovertemplate='workers: %{x}<br>years: %{y:.1f}<extra></extra>'
 ))
@@ -122,8 +118,8 @@ fig.add_trace(go.Scatter(
     y=df_clean['Detection Latency (years)'],
     mode='markers',
     marker=dict(
-        size=8,
-        color=colors['points'],
+        size=STYLE['marker_size'],
+        color=STYLE['blue'],
         line=dict(color='white', width=1)
     ),
     name='Historical cases',
@@ -131,45 +127,25 @@ fig.add_trace(go.Scatter(
     hovertemplate='%{text}<br>workers: %{x}<br>years: %{y:.1f}<extra></extra>'
 ))
 
-# Update layout
-fig.update_layout(
-    xaxis=dict(
-        title=dict(text='nuclear-role workers', font=dict(size=13)),
-        type='log',
-        tickfont=dict(size=10),
-        tickvals=[100, 1000, 10000],
-        ticktext=['100', '1,000', '10,000'],
-        gridcolor='rgba(128, 128, 128, 0.2)'
-    ),
-    yaxis=dict(
-        title=dict(text='detection latency (years)', font=dict(size=13)),
-        tickfont=dict(size=10),
-        rangemode='tozero',
-        gridcolor='rgba(128, 128, 128, 0.2)'
-    ),
-    showlegend=True,
-    legend=dict(
-        x=0.02,
-        y=0.98,
-        xanchor='left',
-        yanchor='top',
-        bgcolor='rgba(255, 255, 255, 0.8)',
-        bordercolor='#ccc',
-        borderwidth=1,
-        font=dict(size=10)
-    ),
-    hovermode='closest',
-    plot_bgcolor='white',
-    paper_bgcolor='white',
-    margin=dict(l=60, r=20, t=20, b=60),
-    height=350,
-    width=600
+apply_common_layout(
+    fig,
+    xaxis_title='nuclear-role workers',
+    yaxis_title='detection latency (years)',
+    xaxis_log=True,
+    legend_position='top_left',
+    show_legend=True
 )
 
-# Save as static image
-fig.write_image('detection_latency_vs_workers_bayesian.png', width=600, height=350, scale=2)
-print("Plot saved as 'detection_latency_vs_workers_bayesian.png'")
+fig.update_xaxes(
+    tickvals=[100, 1000, 10000],
+    ticktext=['100', '1,000', '10,000']
+)
+fig.update_yaxes(rangemode='tozero')
 
-# Also save as HTML for reference
-fig.write_html('detection_latency_vs_workers_bayesian.html')
-print("Interactive plot saved as 'detection_latency_vs_workers_bayesian.html'")
+save_plot(fig, 'detection_latency_vs_workers_bayesian.png')
+save_plot(fig, 'detection_latency.png')
+save_html(fig, 'detection_latency_vs_workers_bayesian.html')
+save_html(fig, 'detection_latency.html')
+
+print("Plot saved as 'detection_latency_vs_workers_bayesian.png'")
+print("Plot saved as 'detection_latency.png'")

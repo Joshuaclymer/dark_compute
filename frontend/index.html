@@ -76,8 +76,7 @@
 
     <div class="main-content">
         <div class="loading active" id="loading">
-            <h2>Running Simulation...</h2>
-            <p>This may take a few moments.</p>
+            <div class="loading-spinner"></div>
         </div>
 
         <div id="plots" style="display: none;">
@@ -90,7 +89,7 @@
                 <!-- Initial Stock Section -->
                 {% include 'initial_stock_section.html' %}
 
-                <!-- Covert Data Centers Section -->
+                <!-- Covert Datacenters Section -->
                 {% include 'covert_data_centers_section.html' %}
 
                 <!-- Covert Fab Section -->
@@ -1099,6 +1098,16 @@
 
                 globalTooltip.innerHTML = content;
 
+                // Render any embedded plots in the tooltip
+                const detectionLatencyPlot = globalTooltip.querySelector('[data-plot="detection-latency"]');
+                if (detectionLatencyPlot) {
+                    createDetectionLatencyPlot(detectionLatencyPlot.id);
+                }
+                const intelligenceAccuracyPlot = globalTooltip.querySelector('[data-plot="intelligence-accuracy"]');
+                if (intelligenceAccuracyPlot) {
+                    createIntelligenceAccuracyPlot(intelligenceAccuracyPlot.id);
+                }
+
                 // Get the position of the element
                 const rect = element.getBoundingClientRect();
 
@@ -1305,7 +1314,7 @@
             'chipSurvivalPlot': 'increase_of_hazard_rate_per_year_p50',
             'totalDarkComputePlot': null, // Output, not an input
 
-            // Dark Compute Model Section - Data Center Capacity Breakdown
+            // Dark Compute Model Section - Datacenter Capacity Breakdown
             'datacenterCapacityPlot2': '#covertDataCentersSection', // Scroll to section
             'darkComputeEnergyPlot': 'h100_power_watts',
             'operationalDarkComputePlot': null, // Output, not an input
@@ -1332,7 +1341,7 @@
             // Initial Stock Section - Intelligence Evidence Breakdown
             'lrPrcAccountingPlot': 'us_intelligence_median_error_in_estimate_of_prc_compute_stock',
 
-            // Covert Data Centers Section - Capacity Breakdown
+            // Covert Datacenters Section - Capacity Breakdown
             'totalPrcEnergyDisplay': 'total_GW_of_PRC_energy_consumption',
             'maxProportionEnergyDisplay': 'max_proportion_of_PRC_energy_consumption',
             'datacenterWorkersDisplay': 'datacenter_construction_labor',

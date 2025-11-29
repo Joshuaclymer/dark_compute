@@ -1,4 +1,4 @@
-// JavaScript for Covert Data Centers section
+// JavaScript for Covert Datacenters section
 
 function plotDatacenterCombined(data) {
     if (!data.dark_compute_model || !data.dark_compute_model.datacenter_capacity) return;
@@ -445,7 +445,7 @@ function populateDatacenterCapacityBreakdown(data) {
             },
             margin: { l: 50, r: 20, t: 15, b: 60 },
             height: 250,
-            hovermode: 'x unified'
+            hovermode: 'x unified',
         };
 
         layout.xaxis.range = [years[0], years[years.length - 1]];

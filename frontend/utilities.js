@@ -9,6 +9,13 @@
 // ============================================================================
 
 const HoverConfig = {
+    // NOTE: Hover label visual styling (bgcolor, border, text color) is defined in styles.css
+    // using !important rules to ensure consistency. The CSS selectors are:
+    //   .hoverlayer .hovertext path { fill, stroke }
+    //   .hoverlayer .hovertext text { fill }
+    //
+    // This HoverConfig object is kept for hovermode settings only.
+
     // For time series plots with x-axis (e.g., line charts over time)
     // This creates the unified vertical hover line effect
     timeSeries: {
@@ -296,7 +303,7 @@ function plotMedianWithPercentiles(divId, data, years, color, yAxisLabel = '', y
             font: { size: 10 }
         },
         margin: { l: 50, r: 10, t: 10, b: 55, pad: 10 },
-        hovermode: 'x'
+        hovermode: 'x',
     };
 
     Plotly.newPlot(divId, traces, layout, {displayModeBar: false, responsive: true});
@@ -396,7 +403,7 @@ function plotProportionOperational(divId, data, years, color, yAxisLabel = '') {
         },
         showlegend: false,
         margin: { l: 50, r: 10, t: 10, b: 55, pad: 10 },
-        hovermode: 'x'
+        hovermode: 'x',
     };
 
     Plotly.newPlot(divId, [trace], layout, {displayModeBar: false, responsive: true});

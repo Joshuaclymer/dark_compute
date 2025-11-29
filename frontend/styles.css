@@ -17,17 +17,18 @@
             max-width: calc(100vw - 20px);
             max-height: 80vh;
             overflow-y: auto;
-            background-color: #333;
-            color: #fff;
+            background-color: #fff;
+            color: #333;
             text-align: left;
             padding: 15px;
             border-radius: 6px;
+            border: 1px solid #ddd;
             z-index: 10000;
             opacity: 0;
             transition: opacity 0.3s;
-            font-size: 12px;
+            font-size: 13px;
             line-height: 1.6;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
             pointer-events: none;
             visibility: hidden;
         }
@@ -37,24 +38,61 @@
         }
 
         #globalTooltip * {
-            color: #fff !important;
+            color: #333 !important;
         }
 
-        /* Force Plotly hover labels to use white text */
+        #globalTooltip strong {
+            color: #222 !important;
+            font-weight: 600;
+        }
+
+        #globalTooltip a {
+            color: #0066cc !important;
+        }
+
+        #globalTooltip a:hover {
+            color: #0052a3 !important;
+        }
+
+        #globalTooltip button {
+            margin-top: 10px !important;
+            padding: 8px 14px !important;
+            background-color: #fff !important;
+            color: #333 !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+        }
+
+        #globalTooltip button:hover {
+            background-color: #f5f5f5 !important;
+            border-color: #ccc !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.12) !important;
+        }
+
+        /* Force Plotly hover labels - white background, grey border, grey text */
         .hoverlayer .hovertext path {
-            fill: #333 !important;
+            fill: white !important;
+            stroke: #cccccc !important;
+            stroke-width: 1px !important;
         }
 
         .hoverlayer .hovertext text {
-            fill: #fff !important;
+            fill: #666666 !important;
         }
 
         g.hovertext path {
-            fill: #333 !important;
+            fill: white !important;
+            stroke: #cccccc !important;
+            stroke-width: 1px !important;
         }
 
         g.hovertext text {
-            fill: #fff !important;
+            fill: #666666 !important;
         }
 
         #globalTooltip::before {
@@ -64,7 +102,19 @@
             left: -8px;
             border-width: 8px;
             border-style: solid;
-            border-color: transparent #333 transparent transparent;
+            border-color: transparent #fff transparent transparent;
+            filter: drop-shadow(-2px 0 1px rgba(0,0,0,0.06));
+        }
+
+        #globalTooltip::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: -9px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: transparent #ddd transparent transparent;
+            z-index: -1;
         }
 
         #globalTooltip.visible {
@@ -78,6 +128,7 @@
             flex-direction: column;
             padding: 10px 2vw 20px 2vw;
             overflow-y: auto;
+            position: relative;
         }
 
         @media (max-width: 768px) {
@@ -454,12 +505,34 @@
 
         .loading {
             display: none;
-            text-align: center;
-            padding: 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
         }
 
         .loading.active {
-            display: block;
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .section-description {

@@ -567,7 +567,7 @@ function plotProjectH100YearsCcdf(data) {
                 mode: 'lines',
                 line: { color: threshold.color, width: 2 },
                 name: `"Detection" is a ${threshold.label}`,
-                hovertemplate: 'Avg H100e: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>'
+                hovertemplate: 'Avg H100e: %{x:.0f}<br>P(≥x): %{y:.3f}<extra></extra>',
             });
         }
     }

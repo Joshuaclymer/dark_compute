@@ -127,7 +127,7 @@ function plotInitialStock(data) {
             margin: { l: 50, r: 20, t: 10, b: 55, pad: 10 },
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            autosize: true
+            autosize: true,
         };
 
         // Build traces array, conditionally including largest AI company compute line
@@ -261,7 +261,7 @@ function plotInitialStock(data) {
             margin: { l: 55, r: 0, t: 0, b: 60 },
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            autosize: true
+            autosize: true,
         };
 
         Plotly.newPlot('initialDarkComputeDetectionPlot', [barTrace], barLayout, {displayModeBar: false, responsive: true});

@@ -1,9 +1,23 @@
-<!-- P(Catastrophe) Over Time Plot Component -->
+<!-- Risk Breakdown Plot Component -->
 <div class="p-catastrophe-over-time-section" style="margin-bottom: 30px;">
-    <div style="background: white; border-radius: 8px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 15px; color: #222; text-align: center;">
-            P(Catastrophe) vs Duration of Slowdown
-        </h2>
-        <div id="pCatastropheOverTimePlot" style="width: 100%; height: 400px;"></div>
+    <div class="breakdown-plots-row" style="align-items: center;">
+        <div class="breakdown-item" style="min-width: 200px; flex: 1 1 200px;">
+            <div id="riskNoSlowdownPlot" class="breakdown-plot" style="height: 300px;"></div>
+            <div class="breakdown-label">Risk without slowdown</div>
+        </div>
+        <div class="operator" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+            <div style="font-size: 24px; font-weight: bold; color: #666;">−</div>
+        </div>
+        <div class="breakdown-item" style="min-width: 200px; flex: 1 1 200px;">
+            <div id="riskWithSlowdownPlot" class="breakdown-plot" style="height: 300px;"></div>
+            <div class="breakdown-label">Risk with slowdown</div>
+        </div>
+        <div class="operator" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+            <div style="font-size: 24px; font-weight: bold; color: #666;">=</div>
+        </div>
+        <div class="breakdown-item" style="min-width: 200px; flex: 1 1 200px;">
+            <div id="riskReductionResultPlot" class="breakdown-plot" style="height: 300px;"></div>
+            <div class="breakdown-label">Risk reduction</div>
+        </div>
     </div>
 </div>

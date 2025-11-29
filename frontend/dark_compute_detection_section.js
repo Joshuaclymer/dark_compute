@@ -161,7 +161,7 @@ function plotDarkComputeDetectionSection(data) {
                     tickformat: '.0%',
                     range: [0, 1]
                 },
-                margin: { l: 50, r: 20, t: 10, b: 40 },
+                margin: { l: 50, r: 20, t: 15, b: 50 },
                 height: 240,
                 hovermode: 'x unified',
                 showlegend: true,
@@ -178,6 +178,7 @@ function plotDarkComputeDetectionSection(data) {
             };
 
             Plotly.newPlot('posteriorProbProjectPlot', traces, layout, {responsive: true, displayModeBar: false});
+            setTimeout(() => Plotly.Plots.resize('posteriorProbProjectPlot'), 50);
         }
     }
 
@@ -374,6 +375,7 @@ function createDetectionLatencyPlot() {
     };
 
     Plotly.newPlot('detectionLatencyPlot', traces, layout, { responsive: true, displayModeBar: false });
+    setTimeout(() => Plotly.Plots.resize('detectionLatencyPlot'), 50);
 }
 
 function createIntelligenceAccuracyPlot() {

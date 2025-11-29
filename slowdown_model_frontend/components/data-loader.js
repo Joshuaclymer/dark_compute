@@ -29,6 +29,9 @@ async function loadTrajectoryDataFast(options = {}) {
         if (typeof showTakeoffLoadingIndicator === 'function') {
             showTakeoffLoadingIndicator();
         }
+        if (typeof showAgreementRiskLoadingIndicator === 'function') {
+            showAgreementRiskLoadingIndicator();
+        }
 
         const response = await fetch(`/get_trajectory_data_fast?${queryParams}`);
         if (!response.ok) {
@@ -165,6 +168,9 @@ async function loadAllSlowdownData(options = {}) {
         if (typeof showCovertUncertaintyLoadingIndicator === 'function') {
             showCovertUncertaintyLoadingIndicator();
         }
+        if (typeof showAgreementRiskLoadingIndicator === 'function') {
+            showAgreementRiskLoadingIndicator();
+        }
 
         // Start both requests in parallel
         const trajectoryPromise = loadTrajectoryDataFast({
@@ -190,6 +196,10 @@ async function loadAllSlowdownData(options = {}) {
                 // Render optimal compute cap over time plot
                 if (typeof plotOptimalComputeCapOverTime === 'function') {
                     plotOptimalComputeCapOverTime(data);
+                }
+                // Render agreement risk over time plot
+                if (typeof plotAgreementRiskOverTime === 'function') {
+                    plotAgreementRiskOverTime(data);
                 }
                 if (onTrajectoryComplete) {
                     onTrajectoryComplete(data);
@@ -270,6 +280,9 @@ async function loadAllSlowdownDataLegacy(options = {}) {
         }
         if (typeof showCovertUncertaintyLoadingIndicator === 'function') {
             showCovertUncertaintyLoadingIndicator();
+        }
+        if (typeof showAgreementRiskLoadingIndicator === 'function') {
+            showAgreementRiskLoadingIndicator();
         }
 
         // Use Server-Sent Events for streaming progress

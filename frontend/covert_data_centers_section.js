@@ -329,11 +329,11 @@ function populateDatacenterCapacityBreakdown(data) {
             <div class="breakdown-label">Max % energy</div>
         </div>`;
 
-    // Update inline text in description
-    const inlineElement = document.getElementById('inlineMaxEnergyPercent');
-    if (inlineElement) {
-        inlineElement.textContent = `${maxProportionPercent}%`;
-    }
+    // Update inline text in description (there may be multiple elements)
+    const inlineElements = document.querySelectorAll('.inlineMaxEnergyPercent');
+    inlineElements.forEach(el => {
+        el.textContent = `${maxProportionPercent}%`;
+    });
 
     // Get datacenter construction workers from input
     const workersInput = document.getElementById('datacenter_construction_labor');

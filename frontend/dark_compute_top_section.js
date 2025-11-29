@@ -345,7 +345,7 @@ function plotChipProductionReductionCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: { text: "Covert chip production during agreement<br>/ chip production if no agreement", standoff: 20 },
+            title: { text: "Covert chip production during agreement<br>/ chip production if there was no agreement", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',
@@ -498,7 +498,7 @@ function plotAiRdReductionCcdf(data) {
 
     const layout = {
         xaxis: {
-            title: { text: "Covert computation during agreement<br>/ computation if no agreement", standoff: 20 },
+            title: { text: "Covert computation during agreement<br>/ computation if there was no agreement", standoff: 20 },
             titlefont: { size: 11 },
             tickfont: { size: 10 },
             type: 'log',

@@ -250,12 +250,12 @@ class ModelParameters:
 @dataclass
 class PCatastropheParameters:
     p_ai_takeover_t1: float = 0.40 # time is adjusted for safety research speed
-    p_ai_takeover_t2: float = 0.15
-    p_ai_takeover_t3: float = 0.05
+    p_ai_takeover_t2: float = 0.10
+    p_ai_takeover_t3: float = 0.04
 
     p_human_power_grabs_t1: float = 0.40 # time is NOT adjusted for research speed
     p_human_power_grabs_t2: float = 0.20
-    p_human_power_grabs_t3: float = 0.10
+    p_human_power_grabs_t3: float = 0.03
 
     # Safety research speedup = capability_speedup ^ safety_speedup_exponent
     # e.g., exponent=0.5 means safety speedup is sqrt of capability speedup

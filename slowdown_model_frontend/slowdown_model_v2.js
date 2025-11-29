@@ -65,6 +65,7 @@ function plotAllCharts(data) {
     plotPCatastropheOverTime(data);
     plotOptimalComputeCapOverTime(data);
     renderPCatastropheDashboard(data);
+    plotAgreementRiskOverTime(data);
 }
 
 // Update all plots by reloading data from backend

@@ -303,7 +303,7 @@
         <label for="datacenter_construction_labor">Datacenter construction labor</label>
         <input type="number" id="datacenter_construction_labor" value="{{ defaults['covert_project_properties.datacenter_construction_labor'] }}" step="1">
     </div>
-    <div class="param-group">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/datacenter_start_year.html">
         <label for="years_before_agreement_year_prc_starts_building_covert_datacenters">Years before agreement year PRC starts building covert datacenters</label>
         <input type="number" id="years_before_agreement_year_prc_starts_building_covert_datacenters" value="{{ defaults['covert_project_properties.years_before_agreement_year_prc_starts_building_covert_datacenters'] }}" step="1">
     </div>
@@ -355,23 +355,23 @@
         <input type="number" id="covert_project_parameters.p_project_exists" value="{{ defaults['covert_project_parameters.p_project_exists'] }}" step="0.01" min="0" max="1">
     </div>
 
-    <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters determine the relationship between workforce size and the probability a covert project is detected over time. We estimated these parameters using online information about historical nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (μ₁₀₀) represents the expected detection time for a covert project with 100 high-context workers." data-download="/download/nuclear_case_studies">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/detection_time.html" data-tooltip-suffix="<br><br>This parameter (μ₁₀₀) represents the expected detection time for a covert project with 100 high-context workers.">
         <label for="mean_detection_time_100">Expected time to detect covert project involving 100 people (years)</label>
         <input type="number" id="mean_detection_time_100" value="{{ defaults['covert_project_parameters.mean_detection_time_for_100_workers'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters determine the relationship between workforce size and the probability a covert project is detected over time. We estimated these parameters using online information about historical nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (μ₁₀₀₀) represents the expected detection time for a covert project with 1000 high-context workers." data-download="/download/nuclear_case_studies">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/detection_time.html" data-tooltip-suffix="<br><br>This parameter (μ₁₀₀₀) represents the expected detection time for a covert project with 1000 high-context workers.">
         <label for="mean_detection_time_1000">Expected time to detect covert project involving 1000 people (years)</label>
         <input type="number" id="mean_detection_time_1000" value="{{ defaults['covert_project_parameters.mean_detection_time_for_1000_workers'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip" data-tooltip="<strong>Detection Time</strong><br><br>These parameters determine the relationship between workforce size and the probability a covert project is detected over time. We estimated these parameters using online information about historical nuclear programs. Over the past 50 years, about a dozen states attempted to covertly develop nuclear weapons. For each case, we estimated the number of high-context workers involved and the time until detection (see attached data file).<br><br><strong>Functional Form:</strong><br>Detection time is modeled as a log-normal distribution:<br>• Mean detection time: μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100) / log₁₀(10)<br>• Where N is the number of workers<br>• The mean scales logarithmically with workforce size<br>• Standard deviation σ is constant across workforce sizes<br><br>This parameter (σ) represents the standard deviation of the log-normal distribution." data-download="/download/nuclear_case_studies">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/detection_time.html" data-tooltip-suffix="<br><br>This parameter (σ) represents the standard deviation of the log-normal distribution.">
         <label for="variance_detection_time">Detection time sigma (years)</label>
         <input type="number" id="variance_detection_time" value="{{ defaults['covert_project_parameters.variance_of_detection_time_given_num_workers'] }}" step="0.01">
     </div>
-    <div class="param-group">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/chip_stock_detection.html">
         <label for="us_intelligence_median_error_in_estimate_of_prc_compute_stock">US intelligence median error in estimate of PRC compute stock</label>
         <input type="number" id="us_intelligence_median_error_in_estimate_of_prc_compute_stock" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip" data-tooltip="<strong>SME Inventory Accounting Detection</strong><br><br><strong>Detection Method:</strong><br>US intelligence could detect a covert fab by noticing that equipment is missing from China's domestic semiconductor industry.<br><br><strong>Two Key Factors:</strong><br>1. Amount diverted: Diverting 80 of 100 stockpiled DUV scanners would be obvious; diverting a handful would not.<br>2. Width of USG's error bars: If USG estimates Chinese companies built 50-150 DUV scanners, a dozen missing wouldn't raise suspicion. If USG knows the exact count, it would notice.<br><br><strong>Historical Calibration:</strong><br>Historical intelligence estimates of weapon counts (tanks, nuclear warheads, etc.) from declassified documents (1960-2025) show median errors of ~15%." data-download="/download/us_intelligence_estimates" data-image="/static/error_bars_plot.png" data-image-after-text="<strong>Adjustment for SME Context:</strong><br>15% would be reasonable if the PRC treats SME with nuclear-weapons-level secrecy. However, it's plausible that China's semiconductor industry remains quasi-private with details shared among investors, or that the expansive SME industry is difficult to lock down. Therefore, I estimate that the US intelligence error margin will be ~7% (2x smaller than weapons programs).">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/sme_inventory_detection.html">
         <label for="proportion_diverted_sme">US intelligence median error in estimate of PRC SME stock</label>
         <input type="number" id="proportion_diverted_sme" value="{{ defaults['covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock'] }}" step="0.01">
     </div>
@@ -401,53 +401,47 @@
         <label for="proportion_of_prc_chip_stock_produced_domestically_2030">Proportion of PRC chip stock produced domestically in 2030</label>
         <input type="number" id="proportion_of_prc_chip_stock_produced_domestically_2030" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2030'] }}" step="0.01" min="0" max="1">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>Energy Efficiency Relative to H100</strong><br><br>This parameter represents how energy-efficient the PRC compute stock is compared to an H100 chip. A value of 0.5 means the chips consume twice as much energy per unit of compute as an H100. A value of 2.0 means they are twice as efficient.<br><br>This is used to calculate total energy consumption based on H100-equivalent compute.">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/energy_efficiency.html">
         <label for="energy_efficiency_relative_to_h100">Energy efficiency relative to H100 (multiplicative)</label>
         <input type="number" id="energy_efficiency_relative_to_h100" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100'] }}" step="0.1">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>H100 Power Consumption</strong><br><br>Total power consumption of NVIDIA H100 GPU during operation. Source: <a href='https://www.nvidia.com/en-us/data-center/h100/' style='color: #6db4ff;' target='_blank'>https://www.nvidia.com/en-us/data-center/h100/</a>">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/h100_power.html">
         <label for="h100_power_watts">H100 power consumption (W)</label>
         <input type="number" id="h100_power_watts" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.h100_power_watts'] }}" step="1">
     </div>
 
     <h2>Survival Rate Parameters</h2>
-    <div class="param-group">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/ai_chip_lifespan.html">
         <label for="initial_hazard_rate_p50">Initial hazard rate (median)</label>
         <input type="number" id="initial_hazard_rate_p50" value="{{ defaults['covert_project_parameters.survival_rate_parameters.initial_hazard_rate_p50'] }}" step="0.001">
     </div>
-    <div class="param-group">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/ai_chip_lifespan.html">
         <label for="increase_of_hazard_rate_per_year_p50">Increase of hazard rate per year (median)</label>
         <input type="number" id="increase_of_hazard_rate_per_year_p50" value="{{ defaults['covert_project_parameters.survival_rate_parameters.increase_of_hazard_rate_per_year_p50'] }}" step="0.001">
     </div>
-    <div class="param-group">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/ai_chip_lifespan.html">
         <label for="hazard_rate_p25_relative_to_p50">Hazard rate 25th percentile (relative to median)</label>
         <input type="number" id="hazard_rate_p25_relative_to_p50" value="{{ defaults['covert_project_parameters.survival_rate_parameters.hazard_rate_p25_relative_to_p50'] }}" step="0.01">
     </div>
-    <div class="param-group">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/ai_chip_lifespan.html">
         <label for="hazard_rate_p75_relative_to_p50">Hazard rate 75th percentile (relative to median)</label>
         <input type="number" id="hazard_rate_p75_relative_to_p50" value="{{ defaults['covert_project_parameters.survival_rate_parameters.hazard_rate_p75_relative_to_p50'] }}" step="0.1">
     </div>
 
     <h2>Covert Datacenter Parameters</h2>
-    <div class="param-group">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/max_energy_proportion.html">
         <label for="max_proportion_of_PRC_energy_consumption">Max proportion of PRC energy consumption</label>
         <input type="number" id="max_proportion_of_PRC_energy_consumption" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.max_proportion_of_PRC_energy_consumption'] }}" step="0.01">
     </div>
-    <div class="param-group">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/prc_energy_consumption.html">
         <label for="total_GW_of_PRC_energy_consumption">Total GW of PRC energy consumption</label>
         <input type="number" id="total_GW_of_PRC_energy_consumption" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.total_GW_of_PRC_energy_consumption'] }}" step="10">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>MW per Year per Construction Worker</strong><br><br>This parameter represents the data center capacity (in megawatts) that can be built per construction worker per year. We estimated this parameter using examples of datacenter construction progress.<br><br><img src='/static/workers_vs_gw_per_year.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction workers vs GW per year'><br><br>You can download the data used to make this plot, along with its sources, by clicking on the link below.<br><br>Most of our data came from Epoch's Frontier Data Centers dataset (<a href='https://epoch.ai/data/data-centers' target='_blank' style='color: #007bff;'>https://epoch.ai/data/data-centers</a>)."
-         data-download="/download/data_center_workers_vs_build_rate">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/mw_per_worker.html">
         <label for="MW_per_construction_worker_per_year">MW per year per construction worker</label>
         <input type="number" id="MW_per_construction_worker_per_year" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.MW_per_construction_worker_per_year'] }}" step="0.1">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>Relative Sigma MW per Year per Construction Worker</strong><br><br>This parameter represents the data center capacity (in megawatts) that can be built per construction worker per year. We estimated this parameter using examples of datacenter construction progress.<br><br><img src='/static/workers_vs_gw_per_year.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction workers vs GW per year'><br><br>You can download the data used to make this plot, along with its sources, by clicking on the link below.<br><br>Most of our data came from Epoch's Frontier Data Centers dataset (<a href='https://epoch.ai/data/data-centers' target='_blank' style='color: #007bff;'>https://epoch.ai/data/data-centers</a>)."
-         data-download="/download/data_center_workers_vs_build_rate">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/mw_per_worker.html">
         <label for="relative_sigma_mw_per_construction_worker_per_year">Relative sigma MW per year per construction worker</label>
         <input type="number" id="relative_sigma_mw_per_construction_worker_per_year" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.relative_sigma_mw_per_construction_worker_per_year'] }}" step="0.1">
     </div>
@@ -462,7 +456,7 @@
 
     <h2>Covert fab parameters</h2>
 
-    <div class="has-tooltip" style="margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: #666; cursor: help;" data-tooltip="<strong>PRC Semiconductor Manufacturing Equipment (SME) Indigenization</strong><br><br><strong>Why Indigenization Matters for Covert Fabs:</strong><br>The SME market involves very few buyers and sellers globally. If equipment goes missing or can't be accounted for in international supply chains, there are only a handful of actors that could be hiding it—and the PRC would be a highly salient suspect. Therefore, a covert PRC fab would likely need to rely primarily on domestically-produced equipment to avoid detection through procurement accounting.<br><br>These parameters represent the probability that the PRC achieves >90% domestic sourcing of SME at each process node by the specified year. See the attached data file for detailed capabilities by equipment category and process node." data-image-after-text="<strong>Current Status (2025):</strong><br>The PRC can manufacture 130nm chips with mostly domestic tools (~80% localized). More advanced nodes require imported equipment, particularly photolithography scanners.<br><br><strong>Near-Term Progress (by 2031):</strong><br>• <strong>28nm:</strong> SMEE and Huawei-linked Yuliangsheng are developing DUV immersion scanners for 28nm. SMIC plans production integration by 2027. Given typical delays between prototype and production-ready equipment, there's ~25% chance of >90% localization by 2031.<br>• <strong>14nm & 7nm:</strong> Multi-patterning techniques could enable 28nm scanners to reach these nodes, but this requires years of additional development. Lower probability of high localization by 2031 (10% for 14nm, 6% for 7nm).<br><br><strong>Key Accelerants:</strong><br>• U.S. export controls driving indigenization urgency<br>• $47.5B Chinese government SME fund<br>• Aggressive talent recruitment (Huawei recruiting from ASML at 3x salary)<br>• Huawei's ¥12B R&D park with 35,000+ employees<br><br>The main bottleneck is talent (experienced engineers), not funding. Recent investments may start paying off by 2031, but the probability decreases significantly for more advanced nodes." data-image="/static/china_capabilities_table.png" data-download="/download/prc_indigenous_sme_capabilities">
+    <div class="has-tooltip" style="margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: #666; cursor: help;" data-tooltip-file="tooltips/prc_sme_indigenization.html">
         Probability PRC achieves >90% indiginization at node
     </div>
     <div class="localization-row">
@@ -506,21 +500,15 @@
         </div>
     </div>
 
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>How does fab construction time depend on construction labor? McKinsey claims that 'about 100 workers are dedicated to the construction phase' for approximately every $1 billion spent on fab construction. Looking at a couple of examples, this claim appears to be roughly accurate.<br><br>Now, here's the cost of constructing a fab given its production capacity:<br><br><img src='/static/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'><br><br>Our model predicts the production capacity based on operating labor and SME inputs. So we can predict the construction labor that would typically be required by first estimating the cost of the project, and then using the heuristic that 100 concurrent workers are needed for every $1 billion USD.<br><br>But what if the provided construction labor falls short of this standard requirement? Then, we assume that if X times less construction labor is provided, construction will move X times slower. Conversely, if construction labor is oversupplied, then we assume that there's no speedup (which corresponds to the simple 'fixed-ratios' production function).<br><br><img src='/static/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'>"
-         data-download="/download/construction_time_vs_fab_capacity">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/fab_construction_time.html">
         <label for="construction_time_5k">Construction time of 5k wafers/month fab (years)</label>
         <input type="number" id="construction_time_5k" value="{{ defaults['covert_project_parameters.covert_fab_parameters.construction_time_for_5k_wafers_per_month'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>How does fab construction time depend on construction labor? McKinsey claims that 'about 100 workers are dedicated to the construction phase' for approximately every $1 billion spent on fab construction. Looking at a couple of examples, this claim appears to be roughly accurate.<br><br>Now, here's the cost of constructing a fab given its production capacity:<br><br><img src='/static/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'><br><br>Our model predicts the production capacity based on operating labor and SME inputs. So we can predict the construction labor that would typically be required by first estimating the cost of the project, and then using the heuristic that 100 concurrent workers are needed for every $1 billion USD.<br><br>But what if the provided construction labor falls short of this standard requirement? Then, we assume that if X times less construction labor is provided, construction will move X times slower. Conversely, if construction labor is oversupplied, then we assume that there's no speedup (which corresponds to the simple 'fixed-ratios' production function).<br><br><img src='/static/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'>"
-         data-download="/download/construction_time_vs_fab_capacity">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/fab_construction_time.html">
         <label for="construction_time_100k">Construction time of 100k wafers/month fab (years)</label>
         <input type="number" id="construction_time_100k" value="{{ defaults['covert_project_parameters.covert_fab_parameters.construction_time_for_100k_wafers_per_month'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>Fab Construction Time</strong><br><br>Fab construction time depends on production capacity and construction labor. Time from 'breaking ground' to production ranges from 1-3 years for declared fabs.<br><br><img src='/static/construction_time_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs capacity'><br><br><strong>The Secrecy Tax:</strong><br>Covert fabs may take longer due to secrecy requirements. Comparing declared vs undeclared nuclear enrichment facilities: declared took 3.7 years on average, undeclared took 5.5 years - a 1.5x 'secrecy tax'.<br><br>So realistic timeframes for covert fabs: 1.5-4.5 years.<br><br><img src='/static/construction_time_plot_adjusted.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Adjusted construction time'><br><br><strong>Construction Labor:</strong><br>How does fab construction time depend on construction labor? McKinsey claims that 'about 100 workers are dedicated to the construction phase' for approximately every $1 billion spent on fab construction. Looking at a couple of examples, this claim appears to be roughly accurate.<br><br>Now, here's the cost of constructing a fab given its production capacity:<br><br><img src='/static/cost_of_fab_plot.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Production capacity vs cost'><br><br>Our model predicts the production capacity based on operating labor and SME inputs. So we can predict the construction labor that would typically be required by first estimating the cost of the project, and then using the heuristic that 100 concurrent workers are needed for every $1 billion USD.<br><br>But what if the provided construction labor falls short of this standard requirement? Then, we assume that if X times less construction labor is provided, construction will move X times slower. Conversely, if construction labor is oversupplied, then we assume that there's no speedup (which corresponds to the simple 'fixed-ratios' production function).<br><br><img src='/static/construction_time_vs_labor.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Construction time vs labor'>"
-         data-download="/download/construction_time_vs_fab_capacity">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/fab_construction_time.html">
         <label for="construction_time_sigma">Construction time vs wafers per month sigma (relative, log scale)</label>
         <input type="number" id="construction_time_sigma" value="{{ defaults['covert_project_parameters.covert_fab_parameters.construction_time_relative_sigma'] }}" step="0.01">
     </div>
@@ -528,15 +516,15 @@
         <label for="construction_workers_per_1000">Construction workers per 1000 wafers/month</label>
         <input type="number" id="construction_workers_per_1000" value="{{ defaults['covert_project_parameters.covert_fab_parameters.construction_workers_per_1000_wafers_per_month'] }}" step="0.1">
     </div>
-    <div class="param-group has-tooltip" data-tooltip="<strong>Operating Labor and Fab Production Capacity</strong><br><br>Fab production capacity depends on two main factors:<br>• Operating labor<br>• Quantity of SME<br><br>The relationship between the number of workers involved in operating a fab and its production capacity is shown in the attached plot, which displays wafers per month vs operating labor.<br><br>This regression trend is used in the model to estimate production capacity based on the allocated operating workforce.<br><br><strong>Production Function:</strong><br>The model uses a fixed-proportions production function where fab output is the minimum of labor and scanner constraints:<br><br>Production = min(24.6 × operating labor, 1000 × num scanners)" data-image="/static/labor_vs_production.png" data-download="/download/compute_production_vs_operating_labor">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/operating_labor_production.html">
         <label for="wafers_per_month_per_worker">Wafers/month per operating worker</label>
         <input type="number" id="wafers_per_month_per_worker" value="{{ defaults['covert_project_parameters.covert_fab_parameters.wafers_per_month_per_worker'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip" data-tooltip="<strong>Operating Labor and Fab Production Capacity</strong><br><br>Fab production capacity depends on two main factors:<br>• Operating labor<br>• Quantity of SME<br><br>The relationship between the number of workers involved in operating a fab and its production capacity is shown in the attached plot, which displays wafers per month vs operating labor.<br><br>This regression trend is used in the model to estimate production capacity based on the allocated operating workforce.<br><br><strong>Production Function:</strong><br>The model uses a fixed-proportions production function where fab output is the minimum of labor and scanner constraints:<br><br>Production = min(24.6 × operating labor, 1000 × num scanners)" data-image="/static/labor_vs_production.png" data-download="/download/compute_production_vs_operating_labor">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/operating_labor_production.html">
         <label for="labor_productivity_sigma">Wafers per month per operating worker sigma (log scale, wafers/month)</label>
         <input type="number" id="labor_productivity_sigma" value="{{ defaults['covert_project_parameters.covert_fab_parameters.labor_productivity_relative_sigma'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip" data-tooltip="<strong>Photolithography Scanner Production Capacity</strong><br><br>Advanced photolithography scanners are often the main bottleneck to chip production. ASML claims that its DUV lithography machines can pattern around 250 wafers per hour, or 180,000 wafers per month.<br><br>However, each chip typically requires around 80 patterning steps and scanners operate at roughly 50% utilization. Therefore, each machine processes approximately:<br><br>0.5 × 180,000 / 80 = 1,000 completed wafers per month<br><br><strong>Production Function:</strong><br>The model uses a fixed-proportions production function where fab output is the minimum of labor and scanner constraints:<br><br>Production = min(24.6 × operating labor, 1000 × num scanners)">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/scanner_production_capacity.html">
         <label for="wafers_per_month_per_scanner">Wafers/month per photolithography scanner</label>
         <input type="number" id="wafers_per_month_per_scanner" value="{{ defaults['covert_project_parameters.covert_fab_parameters.wafers_per_month_per_lithography_scanner'] }}" step="1">
     </div>
@@ -544,11 +532,11 @@
         <label for="scanner_productivity_sigma">Wafers per month per photolithography scanner sigma (log scale, wafers/month)</label>
         <input type="number" id="scanner_productivity_sigma" value="{{ defaults['covert_project_parameters.covert_fab_parameters.scanner_productivity_relative_sigma'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip" data-tooltip="<strong>PRC Lithography Scanner Production Ramp-Up</strong><br><br>To estimate the total number of indigenous lithography scanners the PRC has at a given time, we model their production ramp-up based on historical ASML scaling patterns.<br><br>The attached plot shows how quickly ASML scaled production of a given lithography machine after it was first used in high volume production. The model assumes that PRC photolithography scanner production follows a similar trend (shown as the orange trendline) starting from the date when the PRC achieves high volume production at a given node.<br><br>This parameter represents the number of scanners produced in the first year after achieving high volume production capability." data-image="/static/lithography_sales_plot.png" data-download="/download/asml_sales_history">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/prc_scanner_rampup.html" data-tooltip-suffix="<br><br>This parameter represents the number of scanners produced in the first year after achieving high volume production capability.">
         <label for="prc_scanners_first_year">Prc scanners produced in first year after high volume production is achieved</label>
         <input type="number" id="prc_scanners_first_year" value="{{ defaults['covert_project_parameters.covert_fab_parameters.prc_lithography_scanners_produced_in_first_year'] }}" step="1">
     </div>
-    <div class="param-group has-tooltip" data-tooltip="<strong>PRC Lithography Scanner Production Ramp-Up</strong><br><br>To estimate the total number of indigenous lithography scanners the PRC has at a given time, we model their production ramp-up based on historical ASML scaling patterns.<br><br>The attached plot shows how quickly ASML scaled production of a given lithography machine after it was first used in high volume production. The model assumes that PRC photolithography scanner production follows a similar trend (shown as the orange trendline) starting from the date when the PRC achieves high volume production at a given node.<br><br>This parameter represents the annual increase in scanner production after the first year." data-image="/static/lithography_sales_plot.png" data-download="/download/asml_sales_history">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/prc_scanner_rampup.html" data-tooltip-suffix="<br><br>This parameter represents the annual increase in scanner production after the first year.">
         <label for="prc_scanners_per_year">Annual increase of scanner production</label>
         <input type="number" id="prc_scanners_per_year" value="{{ defaults['covert_project_parameters.covert_fab_parameters.prc_additional_lithography_scanners_produced_per_year'] }}" step="1">
     </div>
@@ -556,39 +544,28 @@
         <label for="prc_scanner_production_sigma">Prc scanner production sigma (log scale, scanners/year)</label>
         <input type="number" id="prc_scanner_production_sigma" value="{{ defaults['covert_project_parameters.covert_fab_parameters.prc_scanner_production_relative_sigma'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>H100-sized Chips per Wafer (Yield)</strong><br><br>The value of 28 H100-sized chips per wafer represents the yield that TSMC achieved when manufacturing H100s for NVIDIA.<br><br>Source: <a href='https://www.trendforce.com/news/2024/03/18/news-tsmc-boosts-investment-in-advanced-packaging-with-ntd-500-billion-plan-to-build-six-plants-in-chiayi-science-park/' style='color: #6db4ff;' target='_blank'>TrendForce (March 2024)</a>">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/chips_per_wafer.html">
         <label for="chips_per_wafer">H100-sized chips per wafer (yield)</label>
         <input type="number" id="chips_per_wafer" value="{{ defaults['covert_project_parameters.covert_fab_parameters.h100_sized_chips_per_wafer'] }}" step="1">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>Transistor Density</strong><br><br>Transistor density depends on the process node - the resolution at which circuits can be patterned onto the wafer. Historical data shows how transistor density (in millions of transistors per mm²) varies across different process nodes.<br><br>The figure below shows the relationship between process node (bottom axis) and H100 equivalents per wafer with 2022 architectures (left axis). This assumes a yield of 28 H100-sized chips per wafer."
-         data-image="/static/h100_equiv_per_year_vs_process_node.png"
-         data-download="/download/transistor_density_vs_node">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/transistor_density.html">
         <label for="transistor_density_exponent">Transistor density increase for every halving of process node</label>
         <input type="number" id="transistor_density_exponent" value="{{ defaults['covert_project_parameters.covert_fab_parameters.transistor_density_scaling_exponent'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>Architecture Efficiency</strong><br><br>Over time, chip architectures improve and chips deliver more performance. To predict these improvements, we infer architecture efficiency by comparing how total chip performance has improved versus transistor density improvements.<br><br>According to <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;'>Epoch's data</a>, total performance (TPP/Die Area) has improved at roughly 1.55x per year:<br><br><img src='/static/tpp_per_die_area.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='TPP per die area over time'><br><br>However, transistor density has only increased at 1.26x per year:<br><br><img src='/static/transistor_density_over_time.png' style='width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;' alt='Transistor density over time'><br><br>Therefore, architecture improvements have increased TPP/Die Area by around 1.55 / 1.26 = <strong>1.23x per year</strong>.">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/architecture_efficiency.html">
         <label for="architecture_efficiency">Rate of architecture efficiency improvement per year</label>
         <input type="number" id="architecture_efficiency" value="{{ defaults['covert_project_parameters.covert_fab_parameters.architecture_efficiency_improvement_per_year'] }}" step="0.01">
     </div>
 
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>W/TPP vs Density Exponent (Before Dennard Scaling End)</strong><br><br>Energy efficiency (watts per tera-parameter-pass) scales with transistor density following a power law: W/TPP ∝ (transistor_density)^exponent. Before Dennard scaling ended in ~2006, voltage could scale down with transistor size, leading to more aggressive efficiency improvements with density.<br><br>We estimated the value of this parameter using Epoch's AI hardware trends: <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>https://epoch.ai/blog/trends-in-machine-learning-hardware</a>"
-         data-image="/static/energy_efficiency_vs_transistors.png">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/watts_per_tpp_before_dennard.html">
         <label for="watts_per_tpp_exponent_before_dennard">W/TPP vs density exponent (before Dennard scaling end, ≤2006)</label>
         <input type="number" id="watts_per_tpp_exponent_before_dennard" value="{{ defaults['covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended'] }}" step="0.01">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>W/TPP vs Density Exponent (After Dennard Scaling End)</strong><br><br>Energy efficiency (watts per tera-parameter-pass) scales with transistor density following a power law: W/TPP ∝ (transistor_density)^exponent. After Dennard scaling ended in ~2006, voltage scaling stalled, changing how efficiency improves with density. The exponent became less negative, meaning efficiency improvements slowed down.<br><br>We estimated the value of this parameter using Epoch's AI hardware trends: <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>https://epoch.ai/blog/trends-in-machine-learning-hardware</a>"
-         data-image="/static/energy_efficiency_vs_transistors.png">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/watts_per_tpp_after_dennard.html">
         <label for="watts_per_tpp_exponent_after_dennard">W/TPP vs density exponent (after Dennard scaling end, >2006)</label>
         <input type="number" id="watts_per_tpp_exponent_after_dennard" value="{{ defaults['covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended'] }}" step="0.001">
     </div>
-    <div class="param-group has-tooltip"
-         data-tooltip="<strong>Transistor Density at Dennard Scaling End</strong><br><br>Dennard scaling refers to the historical period when voltage could scale down proportionally with transistor size. This ended around 2006 when voltage scaling hit physical limits. This parameter specifies the transistor density (in millions of transistors per mm²) at which this transition occurred.<br><br>We estimated the value of this parameter using Epoch's AI hardware trends: <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>https://epoch.ai/blog/trends-in-machine-learning-hardware</a>"
-         data-image="/static/energy_efficiency_vs_transistors.png">
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/dennard_scaling_end.html">
         <label for="transistor_density_at_dennard_end">Transistor density at Dennard scaling end (M/mm², ~2006)</label>
         <input type="number" id="transistor_density_at_dennard_end" value="{{ defaults['covert_project_parameters.covert_fab_parameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2'] }}" step="0.01">
     </div>

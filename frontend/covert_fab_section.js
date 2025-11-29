@@ -1,4 +1,40 @@
 // JavaScript for Covert Fab and Dark Compute Model sections
+
+// Helper function to copy tooltip from a sidebar input to a param-link span
+function copyTooltipToParamLink(span, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    // Find the parent with has-tooltip class (could be the input's parent .param-group)
+    const tooltipParent = input.closest('.has-tooltip');
+    if (!tooltipParent) return;
+
+    // Copy tooltip attributes to the span - support both file-based and inline tooltips
+    const tooltipFile = tooltipParent.getAttribute('data-tooltip-file');
+    const tooltipText = tooltipParent.getAttribute('data-tooltip');
+    const tooltipSuffix = tooltipParent.getAttribute('data-tooltip-suffix');
+
+    if (tooltipFile || tooltipText) {
+        span.classList.add('has-tooltip');
+
+        // Copy tooltip source (file or inline)
+        if (tooltipFile) span.setAttribute('data-tooltip-file', tooltipFile);
+        if (tooltipText) span.setAttribute('data-tooltip', tooltipText);
+        if (tooltipSuffix) span.setAttribute('data-tooltip-suffix', tooltipSuffix);
+
+        // Copy other tooltip-related attributes if they exist
+        const downloadUrl = tooltipParent.getAttribute('data-download');
+        const imageUrl = tooltipParent.getAttribute('data-image');
+        const imageBeforeText = tooltipParent.getAttribute('data-image-before-text');
+        const imageAfterText = tooltipParent.getAttribute('data-image-after-text');
+
+        if (downloadUrl) span.setAttribute('data-download', downloadUrl);
+        if (imageUrl) span.setAttribute('data-image', imageUrl);
+        if (imageBeforeText) span.setAttribute('data-image-before-text', imageBeforeText);
+        if (imageAfterText) span.setAttribute('data-image-after-text', imageAfterText);
+    }
+}
+
 function plotTimeSeries(data) {
     if (!data.dark_compute_model || !data.covert_fab) return;
 
@@ -540,6 +576,7 @@ function updateParameterDisplays() {
                 mwPerWorkerInput.focus();
                 mwPerWorkerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
+            copyTooltipToParamLink(span, 'MW_per_construction_worker_per_year');
         }
     }
 
@@ -607,6 +644,7 @@ function updateParameterDisplays() {
                 errorPrcSmeInput.focus();
                 errorPrcSmeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
+            copyTooltipToParamLink(span, 'proportion_diverted_sme');
         }
     }
 
@@ -757,6 +795,20 @@ function updateParameterDisplays() {
                 wafersPerWorkerInput.focus();
                 wafersPerWorkerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
+            copyTooltipToParamLink(span, 'wafers_per_month_per_worker');
+        }
+    }
+
+    // SME constraints parameter (links to proportion of SME to divert)
+    const scannerProportionInput = document.getElementById('scanner_proportion');
+    if (scannerProportionInput) {
+        const span = document.getElementById('param-sme-constraints');
+        if (span) {
+            span.onclick = () => {
+                scannerProportionInput.focus();
+                scannerProportionInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+            copyTooltipToParamLink(span, 'scanner_proportion');
         }
     }
 
@@ -770,6 +822,7 @@ function updateParameterDisplays() {
                 chipsPerWaferInput.focus();
                 chipsPerWaferInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
+            copyTooltipToParamLink(span, 'chips_per_wafer');
         }
     }
 
@@ -787,6 +840,7 @@ function updateParameterDisplays() {
                     transistorDensityInput.focus();
                     transistorDensityInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 };
+                copyTooltipToParamLink(span, 'transistor_density_exponent');
             }
         });
     }
@@ -801,6 +855,7 @@ function updateParameterDisplays() {
                 architectureEfficiencyInput.focus();
                 architectureEfficiencyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
+            copyTooltipToParamLink(span, 'architecture_efficiency');
         }
     }
 
@@ -816,6 +871,7 @@ function updateParameterDisplays() {
                 wattsExponentBeforeInput.focus();
                 wattsExponentBeforeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
+            copyTooltipToParamLink(spanBefore, 'watts_per_tpp_exponent_before_dennard');
         }
         if (spanAfter) {
             spanAfter.textContent = parseFloat(wattsExponentAfterInput.value).toFixed(2);
@@ -823,6 +879,7 @@ function updateParameterDisplays() {
                 wattsExponentAfterInput.focus();
                 wattsExponentAfterInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
+            copyTooltipToParamLink(spanAfter, 'watts_per_tpp_exponent_after_dennard');
         }
     }
 
@@ -836,6 +893,7 @@ function updateParameterDisplays() {
                 h100PowerInput.focus();
                 h100PowerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
+            copyTooltipToParamLink(span, 'h100_power_watts');
         }
     }
 }

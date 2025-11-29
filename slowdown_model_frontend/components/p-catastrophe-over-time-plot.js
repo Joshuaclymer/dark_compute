@@ -1,143 +1,215 @@
-// P(Catastrophe) Over Time Plot Component JavaScript
+// Risk Breakdown Plot Component JavaScript
 
 /**
- * Plot P(catastrophe) vs Duration of Slowdown
- *
- * This plot shows how P(catastrophe) evolves over time during the slowdown period.
- * It displays:
- * - P(AI Takeover) over time
- * - P(Human Power Grabs) over time
- * - Combined P(Catastrophe) over time
- *
- * X-axis: Duration of slowdown (years since agreement)
- * Y-axis: Probability
+ * Plot risk curves for slowdown vs no slowdown comparison
+ * Shows three plots: Risk without slowdown - Risk with slowdown = Risk reduction
  */
-function plotPCatastropheOverTime(data) {
-    const plotData = data.p_catastrophe_over_time;
 
-    if (!plotData || !plotData.slowdown_duration || plotData.slowdown_duration.length === 0) {
-        const container = document.getElementById('pCatastropheOverTimePlot');
-        if (container) {
-            container.innerHTML = '<p style="text-align: center; color: #888; padding: 100px;">No P(catastrophe) over time data available</p>';
-        }
-        return;
-    }
+// Colors consistent with dark compute main page
+const riskColors = {
+    catastrophe: '#5B8DBE',     // Blue for combined P(Domestic Takeover)
+    aiTakeover: '#E8A863',      // Orange for AI Takeover
+    humanPowerGrabs: '#5AA89B'  // Turquoise green for Human Power Grabs
+};
 
-    const traces = [
-        // P(AI Takeover) line
-        {
-            x: plotData.slowdown_duration,
-            y: plotData.p_ai_takeover,
-            type: 'scatter',
-            mode: 'lines',
-            line: {
-                color: '#c0392b',
-                width: 2
-            },
-            name: 'P(AI Takeover)',
-            hovertemplate: 'Duration: %{x:.2f} years<br>P(AI Takeover): %{y:.3f}<extra></extra>'
-        },
-        // P(Human Power Grabs) line
-        {
-            x: plotData.slowdown_duration,
-            y: plotData.p_human_power_grabs,
-            type: 'scatter',
-            mode: 'lines',
-            line: {
-                color: '#8e44ad',
-                width: 2
-            },
-            name: 'P(Human Power Grabs)',
-            hovertemplate: 'Duration: %{x:.2f} years<br>P(Power Grabs): %{y:.3f}<extra></extra>'
-        },
-        // Combined P(Catastrophe) line (thicker, main focus)
-        {
-            x: plotData.slowdown_duration,
-            y: plotData.p_catastrophe,
-            type: 'scatter',
-            mode: 'lines',
-            line: {
-                color: '#2c3e50',
-                width: 3
-            },
-            name: 'P(Catastrophe)',
-            hovertemplate: 'Duration: %{x:.2f} years<br>P(Catastrophe): %{y:.3f}<extra></extra>'
-        }
-    ];
-
-    const layout = {
+// Common layout settings for risk breakdown plots
+function getRiskPlotLayout(showLegend = false) {
+    return {
         xaxis: {
-            title: 'Duration of Slowdown (years since agreement)',
-            titlefont: { size: 14 },
-            tickfont: { size: 12 },
+            title: 'Slowdown duration (years)',
+            titlefont: { size: 10 },
+            tickfont: { size: 9 },
             gridcolor: '#e0e0e0',
-            showgrid: true,
-            zeroline: true,
-            zerolinecolor: '#ccc'
+            showgrid: true
         },
         yaxis: {
             title: 'Probability',
-            titlefont: { size: 14 },
-            tickfont: { size: 12 },
+            titlefont: { size: 10 },
+            tickfont: { size: 9 },
             range: [0, 1],
             gridcolor: '#e0e0e0',
             showgrid: true
         },
-        showlegend: true,
+        showlegend: showLegend,
         legend: {
             x: 0.02,
             y: 0.98,
             bgcolor: 'rgba(255, 255, 255, 0.8)',
             bordercolor: '#ddd',
-            borderwidth: 1
+            borderwidth: 1,
+            font: { size: 9 }
         },
         hovermode: 'closest',
-        margin: { l: 70, r: 40, t: 40, b: 70 },
+        margin: { l: 45, r: 10, t: 10, b: 40 },
         paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: '#fafafa',
-        annotations: []
+        plot_bgcolor: '#fafafa'
     };
+}
 
-    // Add annotation for SC milestone if it exists
-    if (plotData.sc_time && plotData.agreement_year) {
-        const scDuration = plotData.sc_time - plotData.agreement_year;
-        // Only add annotation if SC milestone is in the visible range
-        if (scDuration > 0 && plotData.slowdown_duration[0] <= scDuration) {
-            layout.shapes = [{
-                type: 'line',
-                x0: 0,
-                x1: 0,
-                y0: 0,
-                y1: 1,
-                xref: 'x',
-                yref: 'paper',
-                line: {
-                    color: '#27ae60',
-                    width: 2,
-                    dash: 'dash'
-                }
-            }];
-            layout.annotations.push({
-                x: 0.02,
-                y: 0.5,
-                xref: 'paper',
-                yref: 'paper',
-                text: 'SC milestone<br>(handoff starts)',
-                showarrow: false,
-                font: {
-                    size: 11,
-                    color: '#27ae60'
-                },
-                bgcolor: 'rgba(255, 255, 255, 0.8)',
-                borderpad: 4
-            });
+/**
+ * Plot risk curves WITHOUT slowdown
+ */
+function plotRiskNoSlowdown(data) {
+    const plotData = data.risk_reduction_over_time;
+
+    if (!plotData || !plotData.slowdown_duration || plotData.slowdown_duration.length === 0) {
+        const container = document.getElementById('riskNoSlowdownPlot');
+        if (container) {
+            container.innerHTML = '<p style="text-align: center; color: #888; padding: 100px;">No data available</p>';
         }
+        return;
     }
 
-    Plotly.newPlot('pCatastropheOverTimePlot', traces, layout, {displayModeBar: false, responsive: true});
+    const traces = [
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.p_catastrophe_no_slowdown,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.catastrophe, width: 2.5 },
+            name: 'Domestic Takeover',
+            hovertemplate: 'Duration: %{x:.1f} years<br>P(Domestic Takeover): %{y:.3f}<extra></extra>'
+        },
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.p_ai_takeover_no_slowdown,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.aiTakeover, width: 1.5 },
+            name: 'AI Takeover',
+            hovertemplate: 'Duration: %{x:.1f} years<br>P(AI Takeover): %{y:.3f}<extra></extra>'
+        },
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.p_human_power_grabs_no_slowdown,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.humanPowerGrabs, width: 1.5 },
+            name: 'Human Power Grabs',
+            hovertemplate: 'Duration: %{x:.1f} years<br>P(Power Grabs): %{y:.3f}<extra></extra>'
+        }
+    ];
+
+    Plotly.newPlot('riskNoSlowdownPlot', traces, getRiskPlotLayout(true), {displayModeBar: false, responsive: true});
+}
+
+/**
+ * Plot risk curves WITH slowdown
+ */
+function plotRiskWithSlowdown(data) {
+    const plotData = data.risk_reduction_over_time;
+
+    if (!plotData || !plotData.slowdown_duration || plotData.slowdown_duration.length === 0) {
+        const container = document.getElementById('riskWithSlowdownPlot');
+        if (container) {
+            container.innerHTML = '<p style="text-align: center; color: #888; padding: 100px;">No data available</p>';
+        }
+        return;
+    }
+
+    const traces = [
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.p_catastrophe_slowdown,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.catastrophe, width: 2.5 },
+            name: 'Domestic Takeover',
+            hovertemplate: 'Duration: %{x:.1f} years<br>P(Domestic Takeover): %{y:.3f}<extra></extra>'
+        },
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.p_ai_takeover_slowdown,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.aiTakeover, width: 1.5 },
+            name: 'AI Takeover',
+            hovertemplate: 'Duration: %{x:.1f} years<br>P(AI Takeover): %{y:.3f}<extra></extra>'
+        },
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.p_human_power_grabs_slowdown,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.humanPowerGrabs, width: 1.5 },
+            name: 'Human Power Grabs',
+            hovertemplate: 'Duration: %{x:.1f} years<br>P(Power Grabs): %{y:.3f}<extra></extra>'
+        }
+    ];
+
+    Plotly.newPlot('riskWithSlowdownPlot', traces, getRiskPlotLayout(false), {displayModeBar: false, responsive: true});
+}
+
+/**
+ * Plot risk reduction (the result of subtraction)
+ */
+function plotRiskReductionResult(data) {
+    const plotData = data.risk_reduction_over_time;
+
+    if (!plotData || !plotData.slowdown_duration || plotData.slowdown_duration.length === 0) {
+        const container = document.getElementById('riskReductionResultPlot');
+        if (container) {
+            container.innerHTML = '<p style="text-align: center; color: #888; padding: 100px;">No data available</p>';
+        }
+        return;
+    }
+
+    const traces = [
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.risk_reduction,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.catastrophe, width: 2.5 },
+            name: 'Domestic Takeover',
+            hovertemplate: 'Duration: %{x:.1f} years<br>Risk Reduction: %{y:.3f}<extra></extra>'
+        },
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.p_ai_takeover_reduction,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.aiTakeover, width: 1.5 },
+            name: 'AI Takeover',
+            hovertemplate: 'Duration: %{x:.1f} years<br>Risk Reduction: %{y:.3f}<extra></extra>'
+        },
+        {
+            x: plotData.slowdown_duration,
+            y: plotData.p_human_power_grabs_reduction,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: riskColors.humanPowerGrabs, width: 1.5 },
+            name: 'Human Power Grabs',
+            hovertemplate: 'Duration: %{x:.1f} years<br>Risk Reduction: %{y:.3f}<extra></extra>'
+        }
+    ];
+
+    // Modified layout for risk reduction - y-axis can go negative
+    const layout = getRiskPlotLayout(false);
+    layout.yaxis.title = 'Risk reduction';
+    layout.yaxis.range = undefined; // Auto-range for risk reduction
+    layout.yaxis.zeroline = true;
+    layout.yaxis.zerolinecolor = '#999';
+    layout.yaxis.zerolinewidth = 1;
+
+    Plotly.newPlot('riskReductionResultPlot', traces, layout, {displayModeBar: false, responsive: true});
+}
+
+/**
+ * Main function to plot all three risk breakdown plots
+ */
+function plotRiskBreakdown(data) {
+    plotRiskNoSlowdown(data);
+    plotRiskWithSlowdown(data);
+    plotRiskReductionResult(data);
+}
+
+// Legacy function name for compatibility
+function plotPCatastropheOverTime(data) {
+    plotRiskBreakdown(data);
 }
 
 // Export functions for module usage
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { plotPCatastropheOverTime };
+    module.exports = { plotPCatastropheOverTime, plotRiskBreakdown, plotRiskNoSlowdown, plotRiskWithSlowdown, plotRiskReductionResult };
 }

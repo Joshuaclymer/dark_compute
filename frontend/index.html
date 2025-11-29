@@ -998,9 +998,8 @@
             agreementYearDisplay.style.cursor = 'pointer';
         }
 
-        // Setup tooltip handlers
+        // Setup tooltip handlers using event delegation (works for dynamically-added elements)
         const globalTooltip = document.getElementById('globalTooltip');
-        const tooltipElements = document.querySelectorAll('.has-tooltip');
 
         let hideTooltipTimeout;
         let currentTooltipElement = null;
@@ -1023,91 +1022,152 @@
             return false;
         }
 
-        tooltipElements.forEach(element => {
-            element.addEventListener('mouseenter', (e) => {
-                clearTimeout(hideTooltipTimeout);
-                currentTooltipElement = element;
-                const tooltipText = element.getAttribute('data-tooltip');
-                const downloadUrl = element.getAttribute('data-download');
-                const imageUrl = element.getAttribute('data-image');
-                const imageBeforeText = element.getAttribute('data-image-before-text');
-                const imageAfterText = element.getAttribute('data-image-after-text');
+        // Cache for tooltip file contents
+        const tooltipFileCache = {};
 
-                if (tooltipText) {
-                    // Add the tooltip text
-                    let content = tooltipText;
+        async function getTooltipContent(element) {
+            const tooltipFile = element.getAttribute('data-tooltip-file');
+            const tooltipText = element.getAttribute('data-tooltip');
+            const tooltipSuffix = element.getAttribute('data-tooltip-suffix');
 
-                    // Add image if data-image attribute exists
-                    if (imageUrl) {
-                        if (imageBeforeText) {
-                            // Insert image before the specified text
-                            content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;" alt="Capabilities table"><br>${imageBeforeText}`;
-                        } else if (imageAfterText) {
-                            // Insert image after the tooltip text, then add the after text
-                            content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;" alt="Capabilities table"><br>${imageAfterText}`;
+            let baseContent = '';
+
+            if (tooltipFile) {
+                // Check cache first
+                if (tooltipFileCache[tooltipFile]) {
+                    baseContent = tooltipFileCache[tooltipFile];
+                } else {
+                    try {
+                        const response = await fetch(tooltipFile);
+                        if (response.ok) {
+                            baseContent = await response.text();
+                            tooltipFileCache[tooltipFile] = baseContent;
                         } else {
-                            // Default: add image after tooltip text
-                            content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px;" alt="Capabilities table">`;
+                            console.error(`Failed to load tooltip file: ${tooltipFile}`);
+                            return null;
                         }
+                    } catch (error) {
+                        console.error(`Error loading tooltip file: ${tooltipFile}`, error);
+                        return null;
                     }
-
-                    // Add download button only if data-download attribute exists
-                    if (downloadUrl) {
-                        const fileName = downloadUrl.split('/').pop() + '.csv';
-                        content += `<br><br><button onclick='window.location.href="${downloadUrl}"' style='margin-top: 8px; padding: 6px 12px; background-color: #555; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; pointer-events: auto;'>Download ${fileName}</button>`;
-                    }
-
-                    globalTooltip.innerHTML = content;
-
-                    // Get the position of the element
-                    const rect = element.getBoundingClientRect();
-
-                    // Show tooltip temporarily to measure its dimensions
-                    globalTooltip.style.visibility = 'hidden';
-                    globalTooltip.style.opacity = '1';
-                    globalTooltip.classList.add('visible');
-
-                    const tooltipWidth = globalTooltip.offsetWidth;
-                    const tooltipHeight = globalTooltip.offsetHeight;
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
-
-                    // Calculate horizontal position
-                    let leftPosition = rect.right + 10;
-
-                    // If tooltip would go off right edge of screen, position to the left of element
-                    if (leftPosition + tooltipWidth > viewportWidth - 10) {
-                        leftPosition = rect.left - tooltipWidth - 10;
-
-                        // If positioning to the left would go off left edge, clamp to viewport
-                        if (leftPosition < 10) {
-                            leftPosition = 10;
-                        }
-                    }
-
-                    globalTooltip.style.left = leftPosition + 'px';
-
-                    // Calculate vertical position to keep tooltip within viewport
-                    let topPosition = rect.top;
-
-                    // If tooltip would go off bottom of screen, adjust position
-                    if (topPosition + tooltipHeight > viewportHeight) {
-                        topPosition = Math.max(10, viewportHeight - tooltipHeight - 10);
-                    }
-
-                    // If tooltip would go off top of screen, adjust position
-                    if (topPosition < 10) {
-                        topPosition = 10;
-                    }
-
-                    globalTooltip.style.top = topPosition + 'px';
-
-                    // Now show tooltip properly
-                    globalTooltip.style.visibility = 'visible';
                 }
-            });
+            } else if (tooltipText) {
+                baseContent = tooltipText;
+            }
 
-            element.addEventListener('mouseleave', (e) => {
+            // Add suffix if present
+            if (tooltipSuffix && baseContent) {
+                baseContent += tooltipSuffix;
+            }
+
+            return baseContent;
+        }
+
+        async function showTooltipForElement(element) {
+            clearTimeout(hideTooltipTimeout);
+            currentTooltipElement = element;
+
+            const tooltipText = await getTooltipContent(element);
+            const downloadUrl = element.getAttribute('data-download');
+            const imageUrl = element.getAttribute('data-image');
+            const imageBeforeText = element.getAttribute('data-image-before-text');
+            const imageAfterText = element.getAttribute('data-image-after-text');
+
+            if (tooltipText) {
+                // Add the tooltip text
+                let content = tooltipText;
+
+                // Add image if data-image attribute exists
+                if (imageUrl) {
+                    if (imageBeforeText) {
+                        // Insert image before the specified text
+                        content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;" alt="Capabilities table"><br>${imageBeforeText}`;
+                    } else if (imageAfterText) {
+                        // Insert image after the tooltip text, then add the after text
+                        content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px; margin-bottom: 8px;" alt="Capabilities table"><br>${imageAfterText}`;
+                    } else {
+                        // Default: add image after tooltip text
+                        content += `<br><br><img src="${imageUrl}" style="width: 100%; max-width: 470px; border-radius: 4px; margin-top: 8px;" alt="Capabilities table">`;
+                    }
+                }
+
+                // Add download button only if data-download attribute exists
+                if (downloadUrl) {
+                    const fileName = downloadUrl.split('/').pop() + '.csv';
+                    content += `<br><br><button onclick='window.location.href="${downloadUrl}"' style='margin-top: 8px; padding: 6px 12px; background-color: #555; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; pointer-events: auto;'>Download ${fileName}</button>`;
+                }
+
+                globalTooltip.innerHTML = content;
+
+                // Get the position of the element
+                const rect = element.getBoundingClientRect();
+
+                // Show tooltip temporarily to measure its dimensions
+                globalTooltip.style.visibility = 'hidden';
+                globalTooltip.style.opacity = '1';
+                globalTooltip.classList.add('visible');
+
+                const tooltipWidth = globalTooltip.offsetWidth;
+                const tooltipHeight = globalTooltip.offsetHeight;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                // Calculate horizontal position
+                let leftPosition = rect.right + 10;
+
+                // If tooltip would go off right edge of screen, position to the left of element
+                if (leftPosition + tooltipWidth > viewportWidth - 10) {
+                    leftPosition = rect.left - tooltipWidth - 10;
+
+                    // If positioning to the left would go off left edge, clamp to viewport
+                    if (leftPosition < 10) {
+                        leftPosition = 10;
+                    }
+                }
+
+                globalTooltip.style.left = leftPosition + 'px';
+
+                // Calculate vertical position to keep tooltip within viewport
+                let topPosition = rect.top;
+
+                // If tooltip would go off bottom of screen, adjust position
+                if (topPosition + tooltipHeight > viewportHeight) {
+                    topPosition = Math.max(10, viewportHeight - tooltipHeight - 10);
+                }
+
+                // If tooltip would go off top of screen, adjust position
+                if (topPosition < 10) {
+                    topPosition = 10;
+                }
+
+                globalTooltip.style.top = topPosition + 'px';
+
+                // Now show tooltip properly
+                globalTooltip.style.visibility = 'visible';
+            }
+        }
+
+        // Use event delegation for tooltip mouseenter/mouseleave
+        document.addEventListener('mouseover', (e) => {
+            if (!e.target || typeof e.target.closest !== 'function') return;
+            const element = e.target.closest('.has-tooltip');
+            if (element && element !== currentTooltipElement) {
+                showTooltipForElement(element);
+            }
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            if (!e.target || typeof e.target.closest !== 'function') return;
+            const element = e.target.closest('.has-tooltip');
+            if (element) {
+                // Check if we're moving to a child element of the same tooltip element
+                const relatedTarget = e.relatedTarget;
+                if (relatedTarget && typeof relatedTarget.closest === 'function') {
+                    const relatedTooltipElement = relatedTarget.closest('.has-tooltip');
+                    if (relatedTooltipElement === element) {
+                        return; // Still within the same tooltip element
+                    }
+                }
                 // Give a short delay to allow mouse to move to tooltip
                 hideTooltipTimeout = setTimeout(() => {
                     // Only hide if mouse is not over the element or tooltip
@@ -1115,7 +1175,7 @@
                         hideTooltip();
                     }
                 }, 100);
-            });
+            }
         });
 
         // Keep tooltip visible when hovering over it
@@ -1240,19 +1300,19 @@
             'energyPerMonthPlot': null, // Output, not an input
 
             // Dark Compute Model Section - Dark Compute Stock Breakdown
-            'initialDarkComputePlot': 'proportion_of_initial_chip_stock_to_divert',
-            'covertFabFlowPlot': '#covertFabComputeProductionBreakdown', // Scroll to section instead of input
+            'initialDarkComputePlot': '#initialStockSection', // Scroll to section
+            'covertFabFlowPlot': '#covertFabSection', // Scroll to section
             'chipSurvivalPlot': 'increase_of_hazard_rate_per_year_p50',
             'totalDarkComputePlot': null, // Output, not an input
 
             // Dark Compute Model Section - Data Center Capacity Breakdown
-            'datacenterCapacityPlot2': 'datacenter_construction_labor',
+            'datacenterCapacityPlot2': '#covertDataCentersSection', // Scroll to section
             'darkComputeEnergyPlot': 'h100_power_watts',
             'operationalDarkComputePlot': null, // Output, not an input
 
             // Dark Compute Model Section - US Estimated Likelihood of PRC Covert Project
             'dashboardPriorProject': 'covert_project_parameters.p_project_exists',
-            'lrPrcAccountingPlot': '#initialStockIntelligenceBreakdown', // Individual component plots
+            'lrPrcAccountingPlot': '#initialStockSection', // Individual component plots
             'lrSmeInventoryPlot': 'proportion_diverted_sme',
             'lrReportedAssetsPlot': null, // Combined output
             'lrOtherIntelPlot': 'mean_detection_time_100',

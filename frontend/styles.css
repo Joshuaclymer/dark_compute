@@ -256,11 +256,8 @@
             transition: transform 0.2s ease;
         }
 
-        .breakdown-item[style*="cursor: pointer"]:hover {
+        .breakdown-item[style*="cursor: pointer"] .breakdown-plot:hover {
             transform: scale(1.02);
-        }
-
-        .breakdown-item[style*="cursor: pointer"]:hover .breakdown-plot {
             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
         }
 
@@ -364,6 +361,7 @@
             overflow: hidden;
             position: relative;
             flex-shrink: 0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .breakdown-box {

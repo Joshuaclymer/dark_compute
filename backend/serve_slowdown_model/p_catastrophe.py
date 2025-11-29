@@ -310,6 +310,167 @@ def compute_p_catastrophe_over_time(
     }
 
 
+def compute_risk_reduction_over_time(
+    slowdown_mc_data: Dict[str, Any],
+    no_slowdown_mc_data: Dict[str, Any],
+    agreement_year: float,
+    p_cat_params: PCatastropheParameters
+) -> Dict[str, Any]:
+    """Compute risk reduction vs slowdown duration.
+
+    Risk reduction is the difference between:
+    - P(catastrophe) if there were no slowdown (using global/no-slowdown trajectory)
+    - P(catastrophe) with the slowdown (using proxy_project/US Frontier trajectory)
+
+    Args:
+        slowdown_mc_data: Monte Carlo results for the slowdown trajectory (proxy_project)
+        no_slowdown_mc_data: Monte Carlo results for the no-slowdown trajectory (global)
+        agreement_year: The year when the slowdown agreement starts
+        p_cat_params: PCatastropheParameters with probability anchor points
+
+    Returns:
+        Dictionary containing:
+            - slowdown_duration: Duration of slowdown at each time point
+            - p_catastrophe_no_slowdown: P(catastrophe) without slowdown at each duration
+            - p_catastrophe_slowdown: P(catastrophe) with slowdown at each duration
+            - risk_reduction: Risk reduction (no_slowdown - slowdown) at each duration
+            - p_ai_takeover_reduction: AI takeover risk reduction at each duration
+            - p_human_power_grabs_reduction: Human power grabs risk reduction at each duration
+    """
+    if not slowdown_mc_data or not no_slowdown_mc_data:
+        return None
+
+    # Get trajectory data for both scenarios
+    slowdown_times = slowdown_mc_data.get('trajectory_times', [])
+    slowdown_speedup = slowdown_mc_data.get('speedup_percentiles', {}).get('median', [])
+    slowdown_milestones = slowdown_mc_data.get('milestones_median', {})
+
+    no_slowdown_times = no_slowdown_mc_data.get('trajectory_times', [])
+    no_slowdown_speedup = no_slowdown_mc_data.get('speedup_percentiles', {}).get('median', [])
+    no_slowdown_milestones = no_slowdown_mc_data.get('milestones_median', {})
+
+    if not slowdown_times or not slowdown_speedup or not slowdown_milestones:
+        return None
+    if not no_slowdown_times or not no_slowdown_speedup or not no_slowdown_milestones:
+        return None
+
+    # Get AC milestone times for both trajectories
+    slowdown_ac_time = slowdown_milestones.get('AC', {}).get('time')
+    no_slowdown_ac_time = no_slowdown_milestones.get('AC', {}).get('time')
+
+    if slowdown_ac_time is None or no_slowdown_ac_time is None:
+        return None
+
+    p_cat = PCatastrophe()
+
+    # We'll compute risk at various slowdown durations
+    # Duration = time since agreement started
+    # For each duration, we compute the risk if the slowdown ended at that point
+
+    slowdown_times_arr = np.array(slowdown_times)
+    no_slowdown_times_arr = np.array(no_slowdown_times)
+
+    # Find the range of durations to compute
+    # Start from when handoff begins (AC milestone) in the slowdown case
+    start_time = max(agreement_year, slowdown_ac_time)
+
+    # Get valid time indices for slowdown trajectory
+    valid_indices = np.where(slowdown_times_arr >= start_time)[0]
+
+    if len(valid_indices) == 0:
+        return None
+
+    result_slowdown_duration = []
+    result_p_catastrophe_no_slowdown = []
+    result_p_catastrophe_slowdown = []
+    result_risk_reduction = []
+    result_p_ai_takeover_no_slowdown = []
+    result_p_ai_takeover_slowdown = []
+    result_p_ai_takeover_reduction = []
+    result_p_human_power_grabs_no_slowdown = []
+    result_p_human_power_grabs_slowdown = []
+    result_p_human_power_grabs_reduction = []
+
+    for idx in valid_indices:
+        current_time = slowdown_times_arr[idx]
+        slowdown_duration = current_time - agreement_year
+
+        if slowdown_duration <= 0:
+            continue
+
+        # --- Compute P(catastrophe) WITH slowdown ---
+        slowdown_handoff_duration = current_time - slowdown_ac_time
+        if slowdown_handoff_duration <= 0:
+            continue
+
+        slowdown_adjusted_handoff = compute_research_speed_adjusted_duration(
+            slowdown_times, slowdown_speedup, slowdown_ac_time, current_time,
+            safety_speedup_exponent=p_cat_params.safety_speedup_exponent
+        )
+
+        p_takeover_slowdown = p_cat.p_AI_takeover(slowdown_adjusted_handoff, p_cat_params)
+        p_power_grabs_slowdown = p_cat.p_human_power_grabs(slowdown_handoff_duration, p_cat_params)
+        p_catastrophe_slowdown = p_cat.p_domestic_takeover(
+            slowdown_handoff_duration, slowdown_adjusted_handoff, p_cat_params
+        )
+
+        # --- Compute P(catastrophe) WITHOUT slowdown ---
+        # Find the corresponding time in the no-slowdown trajectory
+        # The no-slowdown scenario progresses faster, so at the same calendar time,
+        # more handoff time has passed
+        no_slowdown_handoff_duration = current_time - no_slowdown_ac_time
+
+        if no_slowdown_handoff_duration <= 0:
+            # No-slowdown AC hasn't happened yet at this calendar time
+            p_takeover_no_slowdown = 0.0
+            p_power_grabs_no_slowdown = 0.0
+            p_catastrophe_no_slowdown = 0.0
+        else:
+            no_slowdown_adjusted_handoff = compute_research_speed_adjusted_duration(
+                no_slowdown_times, no_slowdown_speedup, no_slowdown_ac_time, current_time,
+                safety_speedup_exponent=p_cat_params.safety_speedup_exponent
+            )
+
+            p_takeover_no_slowdown = p_cat.p_AI_takeover(no_slowdown_adjusted_handoff, p_cat_params)
+            p_power_grabs_no_slowdown = p_cat.p_human_power_grabs(no_slowdown_handoff_duration, p_cat_params)
+            p_catastrophe_no_slowdown = p_cat.p_domestic_takeover(
+                no_slowdown_handoff_duration, no_slowdown_adjusted_handoff, p_cat_params
+            )
+
+        # Risk reduction = no_slowdown risk - slowdown risk (positive means slowdown reduces risk)
+        risk_reduction = p_catastrophe_no_slowdown - p_catastrophe_slowdown
+        ai_takeover_reduction = p_takeover_no_slowdown - p_takeover_slowdown
+        power_grabs_reduction = p_power_grabs_no_slowdown - p_power_grabs_slowdown
+
+        result_slowdown_duration.append(float(slowdown_duration))
+        result_p_catastrophe_no_slowdown.append(float(p_catastrophe_no_slowdown))
+        result_p_catastrophe_slowdown.append(float(p_catastrophe_slowdown))
+        result_risk_reduction.append(float(risk_reduction))
+        result_p_ai_takeover_no_slowdown.append(float(p_takeover_no_slowdown))
+        result_p_ai_takeover_slowdown.append(float(p_takeover_slowdown))
+        result_p_ai_takeover_reduction.append(float(ai_takeover_reduction))
+        result_p_human_power_grabs_no_slowdown.append(float(p_power_grabs_no_slowdown))
+        result_p_human_power_grabs_slowdown.append(float(p_power_grabs_slowdown))
+        result_p_human_power_grabs_reduction.append(float(power_grabs_reduction))
+
+    if not result_slowdown_duration:
+        return None
+
+    return {
+        'slowdown_duration': result_slowdown_duration,
+        'p_catastrophe_no_slowdown': result_p_catastrophe_no_slowdown,
+        'p_catastrophe_slowdown': result_p_catastrophe_slowdown,
+        'risk_reduction': result_risk_reduction,
+        'p_ai_takeover_no_slowdown': result_p_ai_takeover_no_slowdown,
+        'p_ai_takeover_slowdown': result_p_ai_takeover_slowdown,
+        'p_ai_takeover_reduction': result_p_ai_takeover_reduction,
+        'p_human_power_grabs_no_slowdown': result_p_human_power_grabs_no_slowdown,
+        'p_human_power_grabs_slowdown': result_p_human_power_grabs_slowdown,
+        'p_human_power_grabs_reduction': result_p_human_power_grabs_reduction,
+        'agreement_year': float(agreement_year)
+    }
+
+
 def compute_optimal_compute_cap_over_time(
     p_catastrophe_over_time: Dict[str, Any],
     covert_compute_data: Dict[str, Any],

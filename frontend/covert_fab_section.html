@@ -1,8 +1,6 @@
-            <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 40px; color: #333;">Covert fab</h1>
+            <h1 id="covertFabSection" style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 40px; color: #333;">Covert fab</h1>
             <div class="section-description" style="margin-bottom: 20px;">
-            The PRC might build a covert fab using semiconductor manufacturing equipment (SME) diverted before the AI agreement takes effect. According to our model, it's only worthwhile for the PRC to build a covert fab if it can divert >90% of this SME from domestic suppliers, and can use it to build a covert fab at the <span id="minProcessNode">--</span>nm process node or below. Otherwise, the probability of detection is too high and the compute output too low.
-            <br><br>
-            Across simulation runs, these conditions are met <span id="fabBuiltPercentage">--</span>% of the time. The plots below only show results across these simulation runs, where a covert fab is built.
+            The PRC might build a covert fab by diverting semiconductor manufacturing equipment (SME) before the AI agreement begins. The plots below show simulation runs where the PRC chooses to build a covert fab. This happens in <span id="fabBuiltPercentage">--</span>% of simulations, which are the simulations where the PRC can build the fab with mostly (>90%) indigenously sourced equipment (otherwise, unreported procurements raise too much suspicion), and can build the fab at the <span id="minProcessNode">--</span>nm process node or lower (otherwise the chips are too energy inefficient).
             </div>
                 
             <div id="projectNotRun" style="display: none; padding: 40px; text-align: center;">
@@ -15,20 +13,20 @@
                     <div class="plot-title" style="text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin: 0 0 20px 0;">Median outcome</div>
                     <div class="dashboard-item" style="margin: 0 0 20px 0;">
                         <div class="dashboard-value" id="dashboard80thCombined">--</div>
-                        <div class="dashboard-label">of production before detection</div>
+                        <div class="dashboard-label">Production before detection</div>
                         <div class="dashboard-sublabel" id="dashboardDetectionLabel">Detection means ≥5x update</div>
                     </div>
                     <div class="dashboard-item" style="margin: 0 0 20px 0;">
                         <div class="dashboard-value-small" id="dashboardProbFabBuilt">--</div>
-                        <div class="dashboard-label-light">probability covert fab is built</div>
+                        <div class="dashboard-label-light">Probability covert fab is built</div>
                     </div>
                     <div class="dashboard-item" style="margin: 0 0 20px 0;">
                         <div class="dashboard-value-small" id="dashboard80thTime">--</div>
-                        <div class="dashboard-label-light">years operational before detection</div>
+                        <div class="dashboard-label-light">Years operational before detection</div>
                     </div>
                     <div class="dashboard-item" style="margin: 0;">
                         <div class="dashboard-value-small" id="dashboard80thNode">--</div>
-                        <div class="dashboard-label-light">process node</div>
+                        <div class="dashboard-label-light">Process node</div>
                     </div>
                 </div>
 
@@ -46,10 +44,10 @@
             <div class="breakdown-section" id="covertFabComputeProductionBreakdown" style="margin-top: 30px;">
                 <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 10px; color: #222; text-align: left; letter-spacing: -0.5px;">Breaking down fab production</h2>
                 <div class="section-description" style="margin-bottom: 20px; text-align: left; font-size: 15px;">
-                    The compute produced by a covert fab depends on when the fab finishes construction, the production capacity (which is determined by how many people operate the fab and how much SME is diverted for its construction), the yield, and the compute density of the chips.
+                    The compute produced by a covert fab depends on when the fab finishes construction, the production capacity, the yield, and the compute density of the chips.
                 </div>
                 <div class="breakdown-plots-row">
-                    <div class="breakdown-item">
+                    <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/fab_construction_time.html">
                         <div id="isOperationalPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Probability construction has finished</div>
                         <div class="breakdown-description">Construction time depends on fab capacity (wafers/month) and available workers, based on <span id="param-construction-time-5k" class="param-link">5k wafer/month</span> and <span id="param-construction-time-100k" class="param-link">100k wafer/month</span> benchmarks.</div>
@@ -57,15 +55,15 @@
                     <div class="operator" style="position: relative; height: 240px; display: flex; align-items: center; justify-content: center;">
                         <div style="font-size: 24px; font-weight: bold; color: #666;">×</div>
                     </div>
-                    <div class="breakdown-item">
+                    <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/operating_labor_production.html">
                         <div id="waferStartsPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Production capacity (wafer starts per month)</div>
-                        <div class="breakdown-description">Production capacity is the minimum of labor constraints (<span id="param-wafers-per-worker" class="param-link">24.6</span> wafers/month per operating worker) and SME constraints (scanners × 1000 wafers/month).</div>
+                        <div class="breakdown-description">Production capacity is the minimum of labor constraints (<span id="param-wafers-per-worker" class="param-link">24.6</span> wafers/month per operating worker) and <span id="param-sme-constraints" class="param-link">SME constraints</span> (scanners × 1000 wafers/month).</div>
                     </div>
                     <div class="operator">
                         ×
                     </div>
-                    <div class="breakdown-box-item">
+                    <div class="breakdown-box-item has-tooltip" data-tooltip-file="tooltips/chips_per_wafer.html">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
                             <div id="chipsPerWaferPlot" class="breakdown-box">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
@@ -82,7 +80,7 @@
                     <div class="operator">
                         ×
                     </div>
-                    <div class="breakdown-item">
+                    <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/transistor_density.html">
                         <div id="computePerChipPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Transistor density relative to H100</div>
                         <div class="breakdown-description">Transistor density scales with process node improvement. Density increases <span id="param-transistor-density-exponent" class="param-link">2x</span> for every halving of process node (e.g., 28nm → 14nm).</div>
@@ -90,7 +88,7 @@
                     <div class="operator">
                         ×
                     </div>
-                    <div class="breakdown-box-item">
+                    <div class="breakdown-box-item has-tooltip" data-tooltip-file="tooltips/architecture_efficiency.html">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
                             <div id="architectureEfficiencyDisplay" class="breakdown-box">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
@@ -118,7 +116,7 @@
                     Equally important is energy efficiency, which is a direct function of the process node.
                 </div>
                 <div class="breakdown-plots-row">
-                    <div class="breakdown-item">
+                    <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/transistor_density.html">
                         <div id="energyTransistorDensityPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Transistor density relative to H100</div>
                         <div class="breakdown-description">Same as compute production: density increases <span id="param-transistor-density-exponent-2" class="param-link">2x</span> for every halving of process node.</div>
@@ -127,7 +125,7 @@
                         <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">Plug into</div>
                         <div style="font-size: 20px; color: #666;">→</div>
                     </div>
-                    <div class="breakdown-item">
+                    <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/watts_per_tpp_before_dennard.html">
                         <div id="densityVsEfficiencyPlot" class="breakdown-plot"></div>
                         <div class="breakdown-label">Watts per performance relative to H100</div>
                         <div class="breakdown-description">Energy efficiency follows W/TPP ∝ (density)^exponent. Exponent is <span id="param-watts-exponent-before" class="param-link">-0.5</span> before Dennard scaling ended (2006) and <span id="param-watts-exponent-after" class="param-link">-0.15</span> after.</div>
@@ -135,7 +133,7 @@
                     <div class="operator">
                         ×
                     </div>
-                    <div class="breakdown-box-item">
+                    <div class="breakdown-box-item has-tooltip" data-tooltip-file="tooltips/h100_power.html">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
                             <div id="h100EnergyDisplay" class="breakdown-box">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">

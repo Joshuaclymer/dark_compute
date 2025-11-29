@@ -351,7 +351,7 @@ function plotTakeoffModel(data) {
             borderwidth: 1
         },
         hovermode: 'closest',
-        margin: { l: 55, r: 0, t: 0, b: 60 },
+        margin: { l: 50, r: 20, t: 10, b: 40 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
         shapes: agreement_year ? [{

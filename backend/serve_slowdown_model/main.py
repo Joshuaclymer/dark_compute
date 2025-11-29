@@ -35,6 +35,7 @@ from .p_catastrophe import (
     get_p_catastrophe_curve_data,
     compute_p_catastrophe_over_time,
     compute_optimal_compute_cap_over_time,
+    compute_risk_reduction_over_time,
 )
 from .compute_curves import (
     combine_prc_and_covert_compute,
@@ -498,6 +499,14 @@ def get_trajectory_data_fast(
         params.simulation_settings.start_agreement_at_specific_year
     )
 
+    # Compute risk reduction over time (slowdown vs no slowdown)
+    risk_reduction_over_time = compute_risk_reduction_over_time(
+        proxy_mc,  # slowdown trajectory
+        global_mc,  # no-slowdown trajectory
+        params.simulation_settings.start_agreement_at_specific_year,
+        p_cat_params
+    )
+
     return {
         'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
         'covert_compute_data': covert_compute_data,
@@ -514,7 +523,8 @@ def get_trajectory_data_fast(
         'p_catastrophe': p_catastrophe_results,
         'p_catastrophe_curves': p_catastrophe_curves,
         'p_catastrophe_over_time': p_catastrophe_over_time,
-        'optimal_compute_cap_over_time': optimal_compute_cap_over_time
+        'optimal_compute_cap_over_time': optimal_compute_cap_over_time,
+        'risk_reduction_over_time': risk_reduction_over_time
     }
 
 

@@ -46,7 +46,7 @@
       max-width: 100%;
     "
   >
-    <div class="breakdown-item">
+    <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/chip_stock_detection.html">
       <div id="lrPrcAccountingPlot" class="breakdown-plot" style="height: 240px"></div>
       <div class="breakdown-label" style="text-align: center; font-size: 11px">
         Evidence from discrepancies between reported and estimated PRC chip stock
@@ -58,7 +58,7 @@
     <div class="operator">
       ×
     </div>
-    <div class="breakdown-item">
+    <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/sme_inventory_detection.html">
       <div id="lrSmeInventoryPlot" class="breakdown-plot" style="height: 240px"></div>
       <div class="breakdown-label" style="text-align: center; font-size: 11px">
         Evidence from discrepancies between reported and estimated PRC SME stock
@@ -136,7 +136,7 @@
       </div>
     </div>
     <div class="operator">×</div>
-    <div class="breakdown-item">
+    <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/detection_time.html">
       <div id="lrOtherIntelPlot" class="breakdown-plot"></div>
       <div class="breakdown-label">
         Direct evidence of covert operations
@@ -180,7 +180,7 @@
   <!-- Historical Evidence subsection (still within the same border) -->
   <div style="margin-top: 60px;">
     <div class="section-description" style="max-width: 900px; text-align: left; margin-bottom: 40px;">
-      How did we model intelligence gathering if many relevant details are classified? We use two main pieces of (unclassified) historical data: (1) the accuracy of intelligence estimates of weapon quantities, such as ICBMs, nuclear warheads, etc and (2) the speed at which intelligence agencies identified covert nuclear operations:
+      How did we model intelligence gathering? We used two main pieces of unclassified historical data: (1) how well intelligence agencies estimated the quantities of weapon stockpiles (which are analogous to SME or chip stockpiles), and (2) how quickly intelligence agencies detected covert nuclear operations.
     </div>
   </div>
 
@@ -190,7 +190,7 @@
     <div style="flex: 1; min-width: 200px; max-width: 900px;">
       <div id="intelligenceAccuracyPlot" style="width: 100%; height: 320px;"></div>
       <div style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
-        Historical accuracy of intelligence estimates of military asset counts, used to model PRC chip stock and SME estimation errors
+        Historical accuracy of intelligence estimates of military asset stockpiles, which we used to predict the errors of US intelligence estimates of PRC chip and SME quantities.
       </div>
     </div>
 
@@ -198,7 +198,7 @@
     <div style="flex: 1; min-width: 200px; max-width: 900px;">
       <div id="detectionLatencyPlot" style="width: 100%; height: 320px;"></div>
       <div style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
-        Historical detection speed of covert nuclear operations, used to model direct observations of covert activity.
+        Historical detection speed of covert nuclear operations, which we used to model direct observations of covert activity.
       </div>
     </div>
   </div>

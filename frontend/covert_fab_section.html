@@ -1,6 +1,6 @@
             <h1 id="covertFabSection" style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 40px; color: #333;">Covert fab</h1>
             <div class="section-description" style="margin-bottom: 20px;">
-            The PRC might build a covert fab by diverting semiconductor manufacturing equipment (SME) before the AI agreement begins. The plots below show simulation runs where the PRC chooses to build a covert fab. This happens in <span id="fabBuiltPercentage">--</span>% of simulations, which are the simulations where the PRC can build the fab with mostly (>90%) indigenously sourced equipment (otherwise, unreported procurements raise too much suspicion), and can build the fab at the <span id="minProcessNode">--</span>nm process node or lower (otherwise the chips are too energy inefficient).
+            The semiconductor industry is complex and would be nearly impossible to hide. But the PRC might still build a covert fab if it stashes away the necessary semiconductor manufacturing equipment (SME) <em>before</em> an AI agreement begins. The plots below show simulation runs where the PRC chooses to build a covert fab, which happens in <span id="fabBuiltPercentage">--</span>% of all simulations. These are the cases where two conditions are met: the PRC can source most equipment (>90%) indigenously (since imports are more traceable), and the PRC can achieve the <span id="minProcessNode">--</span>nm process node or better, which makes chips powerful enough to be worth producing.
             </div>
                 
             <div id="projectNotRun" style="display: none; padding: 40px; text-align: center;">
@@ -44,7 +44,7 @@
             <div class="breakdown-section" id="covertFabComputeProductionBreakdown" style="margin-top: 30px;">
                 <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 10px; color: #222; text-align: left; letter-spacing: -0.5px;">Breaking down fab production</h2>
                 <div class="section-description" style="margin-bottom: 20px; text-align: left; font-size: 15px;">
-                    The compute produced by a covert fab depends on when the fab finishes construction, the production capacity, the yield, and the compute density of the chips.
+                    The compute produced by a covert fab depends on when the fab finishes construction, the production capacity, its yield, and the compute density of the chips.
                 </div>
                 <div class="breakdown-plots-row">
                     <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/fab_construction_time.html">
@@ -113,7 +113,7 @@
                 </div>
 
                 <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
-                    Equally important is energy efficiency, which is a direct function of the process node.
+                    The energy efficiency of the chips is just as important as the volume of compute. Energy efficiency is a direct function of the process node of the fab.
                 </div>
                 <div class="breakdown-plots-row">
                     <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/transistor_density.html">

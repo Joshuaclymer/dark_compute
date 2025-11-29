@@ -335,6 +335,12 @@ function populateDatacenterCapacityBreakdown(data) {
         el.textContent = `${maxProportionPercent}%`;
     });
 
+    // Update the maxEnergyProportionText span in the section description
+    const maxEnergyProportionText = document.getElementById('maxEnergyProportionText');
+    if (maxEnergyProportionText) {
+        maxEnergyProportionText.textContent = maxProportionPercent;
+    }
+
     // Get datacenter construction workers from input
     const workersInput = document.getElementById('datacenter_construction_labor');
     const workers = workersInput ? parseInt(workersInput.value) : 10000;

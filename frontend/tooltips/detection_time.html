@@ -1,8 +1,16 @@
-<strong>Detection Time Parameters</strong><br><br>
-We model the relationship between workforce size and time to detection. We estimated them using historical data from 12 covert nuclear weapons programs over the past 50 years, tracking the number of high-context workers and time until detection.<br><br>
+<strong>Detection Time</strong><br><br>
+
+How long can a secret project stay hidden? It depends heavily on how many people are involved. More workers means more chances for leaks, defections, or surveillance to catch something.<br><br>
+
+We estimated the relationship between the number of workers and detection likelihood using data from 12 covert nuclear weapons programs over the past 50 years, tracking how many "high-context" workers each program employed and how long it took for outsiders to discover it.<br><br>
+
 <div id="tooltipDetectionLatencyPlot" data-plot="detection-latency" style="width: 100%; max-width: 500px; height: 320px;"></div><br>
-<strong>Model:</strong><br>
-Detection time follows a log-normal distribution where the mean scales logarithmically with workforce size:<br><br>
-μ(N) = μ₁₀₀ + (μ₁₀₀₀ - μ₁₀₀) × log₁₀(N/100)<br><br>
-The standard deviation σ is constant across workforce sizes.<br><br>
+
+<strong>The math</strong><br>
+We assume detection time follows a Gamma distribution, and the mean time to detection scales inversely with the log of workforce size:<br><br>
+
+μ(N) = A / log₁₀(N)<sup>B</sup><br><br>
+
+The variance is proportional to the mean (variance = σ² × μ), which gives the distribution its heavy tail.<br><br>
+
 <button onclick='window.location.href="/download/nuclear_case_studies"' style='margin-top: 8px; padding: 6px 12px; background-color: #555; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;'>Download nuclear_case_studies.csv</button>

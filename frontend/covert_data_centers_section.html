@@ -1,7 +1,7 @@
             <h1 id="covertDataCentersSection" style="font-size: 32px; font-weight: bold; margin-bottom: 20px; margin-top: 40px; color: #333;">Covert Datacenters</h1>
 
             <div class="section-description" style="margin-bottom: 20px; text-align: left;">
-                The typical datacenter is visible from satellites because of its cooling and electrical equipment. However, states could design datacenters that are much more stealthy. For example, the PRC might build datacenters in ordinary warehouse buildings (of which there are thousands in China), power them with shipments of natural gas, and diffuse thermal output underneath bodies of water. If the PRC built covert datacenters like these, how much energy capacity could they provide? 
+                The typical datacenter is visible from satellites because of its cooling and electrical equipment. However, states could design datacenters to be much more stealthy. For example, the PRC might build datacenters in ordinary warehouse buildings, power them with shipments of natural gas, and diffuse thermal output underneath bodies of water. If the PRC builds datacenters designed for stealth, how much energy capacity could they provide? 
             </div>
             <!-- Dashboard and Plots in One Row (Flexbox with wrap) -->
             <div id="covertDatacentersTopSection" style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 10px; align-items: flex-start;">
@@ -46,7 +46,8 @@
                     Breaking down covert datacenter capacity
                 </h3>
                 <div class="section-description">
-                    The capacity of covert datacenters is mainly determined by the number of workers constructing them at any given time, how early the PRC starts building covert datacenters, and how much total energy the PRC consumes. We assume that the energy consumption of the datacenters doesn't affect their stealth unless they consume a meaningful fraction (<span class="inlineMaxEnergyPercent">--</span>) of all PRC energy consumption, at which point covert datacenters are likely to be detected. So we upper bound the energy consumption of covert datacenters at <span class="inlineMaxEnergyPercent">--</span> of PRC energy consumption.</div>
+                    The speed of covert datacenter construction is directly proportional to the number of workers involved, and depends on how early the PRC starts preparing. We also put a hard cap on the total datacenter capacity, since we didn't incorporate energy consumption into our detection model and energy could start to become an important factor at large scales. So for simplicity, we cap the energy consumption of covert PRC datacenters to <span id="maxEnergyProportionText">--</span>% of total PRC energy consumption and assume the absolute energy capacity doesn't affect detection likelihood by much.
+                </div>
 
                 <div class="breakdown-plots-row">
                     <!-- Min function start -->
@@ -93,7 +94,7 @@
                     </div>
 
                     <!-- Number of datacenter workers box -->
-                    <div class="breakdown-box-item">
+                    <div class="breakdown-box-item has-tooltip" data-tooltip-file="tooltips/project_property.html">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
                             <div id="datacenterWorkersDisplay" class="breakdown-box">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">

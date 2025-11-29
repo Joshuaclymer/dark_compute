@@ -1,7 +1,13 @@
-<strong>Architecture Efficiency Parameters</strong><br><br>
-Chip architectures improve over time, delivering more performance independent of transistor density gains. We estimate this by comparing total performance improvements against transistor density improvements.<br><br>
-According to <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>Epoch's data</a>, total performance (TPP/die area) has improved at ~1.55x per year:<br><br>
+<strong>Architecture Efficiency</strong><br><br>
+
+Chip performance improves over time for two reasons: we pack more transistors onto each chip, and we get better at designing chip architectures. This parameter captures the architecture improvements—the gains that come from smarter designs, not just smaller transistors.<br><br>
+
+Here's how we estimated it. According to <a href='https://epoch.ai/blog/trends-in-machine-learning-hardware' style='color: #6db4ff;' target='_blank'>Epoch's data</a>, total chip performance (TPP per die area) has improved at about 1.55x per year:<br><br>
+
 <iframe src="/static/tpp_per_die_area.html" style="width: 100%; max-width: 500px; height: 300px; border: none; border-radius: 4px; margin-top: 8px; margin-bottom: 8px; overflow: hidden;" scrolling="no" title="TPP per die area over time"></iframe><br><br>
-However, transistor density has only increased at ~1.26x per year:<br><br>
+
+But transistor density has only increased at about 1.26x per year:<br><br>
+
 <iframe src="/static/transistor_density_over_time.html" style="width: 100%; max-width: 500px; height: 300px; border: none; border-radius: 4px; margin-top: 8px; margin-bottom: 8px; overflow: hidden;" scrolling="no" title="Transistor density over time"></iframe><br><br>
-Therefore, architecture improvements account for roughly 1.55 / 1.26 = <strong>1.23x per year</strong>.
+
+The difference—1.55 / 1.26 = <strong>1.23x per year</strong>—comes from architecture improvements alone.

@@ -12,7 +12,7 @@
   >
     How we estimate covert computation
   </h2>
-  <div style="display: flex; gap: 30px; align-items: flex-start; margin-bottom: 15px;">
+  <div style="display: flex; gap: 30px; align-items: center; margin-bottom: 15px;">
     <div
       class="section-description"
       style="
@@ -24,21 +24,30 @@
         max-width: 1500px;
       "
     >
-      The amount of computation a covert project performs depends on strategic choices, such as how many AI chips to divert, how many workers to involve, etc. These properties affect both the <strong>rate of computation</strong> and <strong>detection likelihood</strong>, which trade-off against each other. For example, if the PRC diverts more chips to the covert effort, it can perform computation faster, but will be discovered earlier. So we identify the <span
+      Figure 1 summarizes our approach:<br>
+      1. First, we come up with a model that maps <span
       class="param-link"
       onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); input.select(); }"
-      >project properties</span> that balance this tradeoff and maximize the median computation performed before detection. Then, we predict how much covert computation this project might perform. Figure 1 summarizes this flow.
-      <br><br>
-      The sections below explain how we use <span
+      >project properties</span> (such as how many chips are diverted, how many workers are involved, etc.) to the project's <strong>rate of computation</strong> and its <strong>likelihood of detection</strong> over time.<br>
+      2. Then, we identify the <span
       class="param-link"
       onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); input.select(); }"
-      >project properties</span> to predict the <strong>rate of computation</strong> and <strong>detection likelihood</strong>, which is the central component of our model.
+      >project properties</span> that maximize <strong>covert computation</strong> - the computation performed before detection. This requires striking a balance between keeping the covert project large enough to operate lots of compute, but small enough to remain hidden.<br>
+      3. Finally, we predict how much <strong>covert computation</strong> the PRC might perform given worst-case <span
+      class="param-link"
+      onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); input.select(); }"
+      >project properties</span>.<br><br>
+
+      The next sections expand on the first step: how we came up with the mapping from <span
+      class="param-link"
+      onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); input.select(); }"
+      >project properties</span> to <strong>rate of computation</strong> and <strong>detection likelihood</strong>. 
     </div>
 
     <!-- Diagram as SVG -->
     <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
       <img src="model_diagram.svg" alt="Overview of the model" style="width: 100%; max-width: 540px; height: auto;" />
-      <div style="text-align: center; margin-top: 6px; font-style: italic; font-size: 11px; color: #666;">Figure 1. Overview of the model</div>
+      <div style="text-align: center; margin-top: 6px; font-style: italic; font-size: 11px; color: #666;">Figure 1. Overview of our forecasting methodology.</div>
     </div>
   </div>
   <div style="display: flex; position: relative; max-width: 100%; overflow: hidden;">
@@ -62,7 +71,7 @@
           style="max-width: 900px; text-align: left"
 
         >
-          The rate of computation is determined by the covert project's <strong>stock of AI chips</strong> and how many of these chips it can operate in <strong>covert datacenters</strong>.
+          The rate of computation depends on a covert project's <strong>stock of AI chips</strong> and the <strong>capacity of covert datacenters</strong>. The PRC must have a sufficient amount of both to operate compute.
         </div>
 
         <!-- Continuous outline for both subsections -->
@@ -71,7 +80,7 @@
           <div style="position: relative">
             <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
             <div class="section-description" style="max-width: 900px; text-align: left">
-              The project's <strong>stock of AI chips</strong> is equal to the <em>initial stock</em> diverted to the project, plus the <em>AI chips later acquired</em> after the agreement is in force, multiplied by the <em>fraction of chips that survive</em> degradation and failure.
+              The PRC's <strong>stock of AI chips</strong> is the <em>initial stock</em> it diverts to a covert project, plus the AI chips the PRC <em>acquires</em> after the agreement is in force, multiplied by the fraction that survives <em>degradation and failure</em> over time. 
             </div>
           </div>
 
@@ -184,7 +193,7 @@
             class="section-description"
             style="max-width: 900px; text-align: left"
           >
-            The capacity of <strong>covert datacenters</strong> limits how many AI chips the project can operate, and depends on the number of construction workers involved in building them.
+            The PRC can only operate these AI chips if there's enough <strong>covert datacenter capacity</strong>, which grows linearly over time as more datacenters are constructed with a small and stealthy workforce. 
           </div>
         </div>
 

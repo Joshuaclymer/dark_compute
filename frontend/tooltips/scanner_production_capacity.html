@@ -1,7 +1,12 @@
-<strong>Scanner Production Capacity Parameters</strong><br><br>
-Photolithography scanners are often the main bottleneck to chip production.<br><br>
-ASML's DUV machines can pattern ~250 wafers/hour (180K wafers/month). However, each chip requires ~80 patterning steps and scanners operate at ~50% utilization:<br><br>
-0.5 × 180,000 / 80 = <strong>~1,000 completed wafers/month per scanner</strong><br><br>
-<strong>Production Function:</strong><br>
-Output is the minimum of labor and scanner constraints:<br><br>
+<strong>Scanner Production Capacity</strong><br><br>
+
+Photolithography scanners are usually the bottleneck in chip production. These machines pattern circuits onto silicon wafers, and they're extraordinarily complex—each one costs over $100 million.<br><br>
+
+Here's the math: ASML's DUV machines can pattern about 250 wafers per hour, or roughly 180,000 wafers per month. But each chip requires around 80 separate patterning steps, and scanners typically operate at about 50% utilization. That works out to:<br><br>
+
+0.5 × 180,000 / 80 = <strong>~1,000 completed wafers per month per scanner</strong><br><br>
+
+<strong>The production formula</strong><br>
+Fab output is limited by whichever constraint binds first—workers or scanners:<br><br>
+
 Production = min(24.6 × workers, 1000 × scanners)

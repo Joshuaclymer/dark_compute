@@ -1,14 +1,14 @@
 <strong>Operating Labor and Production</strong><br><br>
 
-How many chips can a fab produce? It depends on two things: how many workers it has and how many lithography scanners. The chart below shows how production scales with workforce:<br><br>
+Fab production capacity is constrained by either workforce or lithography scanners, whichever is more limiting:<br><br>
 
 <iframe src="/static/labor_vs_production.html" style="width: 100%; max-width: 500px; height: 300px; border: none; border-radius: 4px; margin-top: 8px; margin-bottom: 8px; overflow: hidden;" scrolling="no" title="Operating labor vs production"></iframe><br><br>
 
-<strong>The production formula</strong><br>
-Output is limited by whichever constraint is tighter—labor or scanners:<br><br>
+<strong>Production formula</strong><br>
+Output equals the minimum of labor-constrained and scanner-constrained capacity:<br><br>
 
 Production = min(24.6 × workers, 1000 × scanners)<br><br>
 
-In other words, each worker can support about 24.6 wafers per month, but each scanner can only process about 1,000 wafers per month. The fab produces whichever number is lower.<br><br>
+Each worker supports approximately 24.6 wafers per month; each scanner processes approximately 1,000 wafers per month.<br><br>
 
 <button onclick='window.location.href="/download/compute_production_vs_operating_labor"' style='margin-top: 8px; padding: 6px 12px; background-color: #555; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;'>Download compute_production_vs_operating_labor.csv</button>

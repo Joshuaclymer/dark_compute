@@ -21,8 +21,8 @@
     class="section-description"
     style="max-width: 900px; text-align: left"
   >
-    The quantity of <strong>covert computation</strong>depends both on the <strong>rate at which computation is performed</strong>and on <strong>how quickly US intelligence agencies detect the PRC AI project</strong>. Once the project is detected, computation is no longer considered to be covert.<br><br>We determine when <strong>detection</strong>occurs by predicting how much US intelligence <em>believes</em> that a PRC AI project exists. Once its level of belief exceeds some threshold (we chose a <span id="detection-threshold-text"></span>x increase in odds), then the project is detected.<br><br>
-    US intelligence updates its beliefs over time according to two sources of evidence: <strong>discrepancies</strong> between reported quantities of semiconductor assets and estimated quantities, as well as <strong>direct observations of covert operations </strong>(via IMGINT, HUMINT, SIGINT, etc).
+    We model when "detection" occurs by predicting how much <em>confidence</em> US intelligence has that a covert PRC AI project exists. Once this confidence exceeds a certain threshold (we chose a <span id="detection-threshold-text"></span>x increase in odds), the project is "detected," and the US exits the agreement.<br><br>
+    US intelligence becomes more confident in the existence of the covert project because of two sources of evidence: <strong>discrepancies</strong> between reported quantities of semiconductor assets and estimated quantities, and <strong>direct observations of covert operations</strong> (via IMGINT, HUMINT, SIGINT, etc).
   </div>
 
   <!-- Continuous outline for both detection subsections -->
@@ -31,7 +31,7 @@
     <div style="position: relative">
       <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
       <div class="section-description" style="max-width: 900px; text-align: left">
-        At the start of an AI slowdown agreement, the PRC government reports quantities of key assets, such as its <em>AI chip stock</em> and <em>semiconductor manufacturing equipment (SME)</em>. If these reported quantities are lower than the quantities US intelligence estimates, these <strong>discrepancies</strong> are evidence that assets were diverted to a covert effort.
+        At the start of an AI slowdown agreement, the PRC government reports quantities of key assets, such as its <em>AI chip stock</em> and <em>semiconductor manufacturing equipment (SME)</em>. If these reported quantities are lower than the quantities US intelligence estimates, this <strong>discrepancy</strong> provides evidence that assets were diverted to a covert effort.
       </div>
     </div>
 
@@ -181,7 +181,7 @@
   <!-- Historical Evidence subsection (still within the same border) -->
   <div style="margin-top: 60px;">
     <div class="section-description" style="max-width: 900px; text-align: left; margin-bottom: 40px;">
-      How do we predict the effectiveness of intelligence agencies if much of the relevant information is classified? We base our estimates on two main pieces of historical data: (1) how well intelligence agencies estimated the sizes of weapon stockpiles, and (2) how quickly intelligence agencies detected covert nuclear operations.
+      How do we predict the speed of intelligence gathering if much of the relevant information is classified? We rely on two main pieces of historical data: (1) how well intelligence agencies estimated the sizes of weapon stockpiles, and (2) how quickly intelligence agencies detected covert nuclear operations.
     </div>
   </div>
 

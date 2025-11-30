@@ -25,23 +25,17 @@
       "
     >
       Figure 1 summarizes our approach:<br>
-      1. First, we come up with a model that maps <span
+      1. First, we create a model that predicts how quickly a covert project <strong>performs computation</strong> and its likelihood of being <strong>detected</strong> by US intelligence agencies.<br>
+      2. Then, we identify the strategic choices (such as how many people to involve) that maximize the total computation the project performs before detection. If a covert project is too large, it is detected quickly. If a covert project is too small, it makes little progress. So finding the optimal configuration requires striking a balance between size and stealth.<br>
+      3. Finally, we use the optimal <span
       class="param-link"
       onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); input.select(); }"
-      >project properties</span> (such as how many chips are diverted, how many workers are involved, etc.) to the project's <strong>rate of computation</strong> and its <strong>likelihood of detection</strong> over time.<br>
-      2. Then, we identify the <span
-      class="param-link"
-      onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); input.select(); }"
-      >project properties</span> that maximize <strong>covert computation</strong> - the computation performed before detection. This requires striking a balance between keeping the covert project large enough to operate lots of compute, but small enough to remain hidden.<br>
-      3. Finally, we predict how much <strong>covert computation</strong> the PRC might perform given worst-case <span
-      class="param-link"
-      onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); input.select(); }"
-      >project properties</span>.<br><br>
+      >project properties</span> identified in the previous step to come up with a worst-case estimate of how much <strong>covert computation</strong> the PRC might perform during an AI slowdown agreement.<br><br>
 
-      The next sections expand on the first step: how we came up with the mapping from <span
+      The next sections expand on the first step: how we mapped a <span
       class="param-link"
       onclick="const input = document.getElementById('proportion_of_initial_chip_stock_to_divert'); if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); input.select(); }"
-      >project properties</span> to <strong>rate of computation</strong> and <strong>detection likelihood</strong>. 
+      >project's properties</span> to its <strong>rate of computation</strong> and <strong>detection likelihood</strong>. 
     </div>
 
     <!-- Diagram as SVG -->
@@ -71,7 +65,7 @@
           style="max-width: 900px; text-align: left"
 
         >
-          The rate of computation depends on a covert project's <strong>stock of AI chips</strong> and the <strong>capacity of covert datacenters</strong>. The PRC must have a sufficient amount of both to operate compute.
+          The rate of computation depends on a covert project's <strong>stock of AI chips</strong> and the <strong>capacity of covert datacenters</strong>.
         </div>
 
         <!-- Continuous outline for both subsections -->
@@ -80,7 +74,7 @@
           <div style="position: relative">
             <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
             <div class="section-description" style="max-width: 900px; text-align: left">
-              The PRC's <strong>stock of AI chips</strong> is the <em>initial stock</em> it diverts to a covert project, plus the AI chips the PRC <em>acquires</em> after the agreement is in force, multiplied by the fraction that survives <em>degradation and failure</em> over time. 
+              The PRC's <strong>stock of AI chips</strong> is the <em>initial stock</em> the PRC chooses to divert to the covert project, plus the chips the PRC <em>acquires</em> after the agreement is in force, multiplied by the fraction that survives <em>degradation and failure</em> over time. 
             </div>
           </div>
 
@@ -193,7 +187,7 @@
             class="section-description"
             style="max-width: 900px; text-align: left"
           >
-            The PRC can only operate these AI chips if there's enough <strong>covert datacenter capacity</strong>, which grows linearly over time as more datacenters are constructed with a small and stealthy workforce. 
+            The PRC can only operate these AI chips if there's enough <strong>covert datacenter capacity</strong>, which grows linearly as more datacenters are constructed by a small and stealthy workforce. 
           </div>
         </div>
 

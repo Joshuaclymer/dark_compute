@@ -115,7 +115,7 @@
                         <span style="font-size: 18px; color: #888;">)</span>
                     </div>
                     <div class="breakdown-label">P(No Misalignment at Handoff)</div>
-                    <div class="breakdown-description">Probability aligned before 20x speedup</div>
+                    <div class="breakdown-description">Probability aligned before <span id="handoff-threshold-1">--</span>x speedup</div>
                 </div>
             </div>
         </div>
@@ -168,7 +168,7 @@
 
     <!-- Section 3: Breaking down P(Misalignment at Handoff) -->
     <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
-        <strong>3. Breaking down P(Misalignment at Handoff):</strong> We assume 'handoff' happens when AI agents speed up AI R&D to 20x of today's rate of progress. The probability of misalignment at handoff depends on the "adjusted alignment research time" conducted prior to the handoff point. We estimate "effective" alignment research by first adjusting for (1) the relevance of the research based on when it is performed and (2) the speedup from AI assistance. To account for the relevance of the research, we consider two time periods separately: the period before frontier developers have automated coders (the pre-handoff window) and the period after frontier developers have automated coders (the handoff window):
+        <strong>3. Breaking down P(Misalignment at Handoff):</strong> We assume 'handoff' happens when AI agents speed up AI R&D to <span id="handoff-threshold-2">--</span>x of today's rate of progress. The probability of misalignment at handoff depends on the "adjusted alignment research time" conducted prior to the handoff point. We estimate "effective" alignment research by first adjusting for (1) the relevance of the research based on when it is performed and (2) the speedup from AI assistance. To account for the relevance of the research, we consider two time periods separately: the period before frontier developers have automated coders (the pre-handoff window) and the period after frontier developers have automated coders (the handoff window):
     </div>
 
     <!-- Pre-automated coder period -->
@@ -346,7 +346,7 @@
 
     <!-- Section 5: Breaking down P(Misalignment after Handoff) -->
     <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
-        <strong>6. Breaking down P(Misalignment after Handoff):</strong> After handoff (when AI R&D speedup reaches 20x), alignment research is conducted autonomously by AI. Assuming the systems developers handoff to are safe to defer to, misalignment risk after handoff depends on the "alignment tax" - the ratio of alignment research effort to capability research effort. We assume a <span id="tax-multiplier-inline">--</span>x <span id="tax-multiplier-direction">higher</span> alignment tax after handoff is required to achieve the same safety level as during handoff.
+        <strong>6. Breaking down P(Misalignment after Handoff):</strong> After handoff (when AI R&D speedup reaches <span id="handoff-threshold-3">--</span>x), alignment research is conducted autonomously by AI. Assuming the systems developers handoff to are safe to defer to, misalignment risk after handoff depends on the "alignment tax" - the ratio of alignment research effort to capability research effort. We assume a <span id="tax-multiplier-inline">--</span>x <span id="tax-multiplier-direction">higher</span> alignment tax after handoff is required to achieve the same safety level as during handoff.
     </div>
 
     <!-- Computing alignment tax after handoff -->

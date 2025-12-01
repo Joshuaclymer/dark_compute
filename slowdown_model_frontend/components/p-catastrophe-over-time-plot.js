@@ -202,6 +202,12 @@ function updateRiskBreakdownValues(data) {
     setElementText('safety-exponent-display-1', safetyExp.toFixed(1));
     setElementText('safety-exponent-display-2', safetyExp.toFixed(1));
 
+    // Handoff speedup threshold displays
+    const handoffThreshold = rbd.handoff_speedup_threshold || 20;
+    setElementText('handoff-threshold-1', Math.round(handoffThreshold));
+    setElementText('handoff-threshold-2', Math.round(handoffThreshold));
+    setElementText('handoff-threshold-3', Math.round(handoffThreshold));
+
     // === Section 3: Handoff window ===
     setElementText('handoff-window-calendar-time', formatYears(rbd.handoff_window_calendar_time));
     setElementText('handoff-window-alignment-speedup', formatMultiplier(rbd.handoff_window_avg_alignment_speedup));

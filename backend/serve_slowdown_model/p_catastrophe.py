@@ -800,6 +800,7 @@ def compute_risk_breakdown_data(
         'sar_to_asi_duration': float(sar_to_asi_duration) if sar_to_asi_duration is not None else None,
 
         # Section 3: Misalignment at Handoff breakdown
+        'handoff_speedup_threshold': float(handoff_threshold),
         'safety_speedup_exponent': safety_exponent,
         'relevance_discount': relevance_discount,
 

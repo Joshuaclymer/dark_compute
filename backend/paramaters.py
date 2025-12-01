@@ -321,23 +321,38 @@ class SlowdownPageParameters:
     @classmethod
     def from_request_args(cls, args) -> 'SlowdownPageParameters':
         """Create SlowdownPageParameters from Flask request.args (or any dict-like object)."""
-        # Monte Carlo samples
-        num_mc_samples = int(args.get('num_mc_samples', 1))
 
-        # P(Catastrophe) parameters
+        # Helper to get float from args, using default if missing or empty
+        def get_float(key, default):
+            val = args.get(key, '')
+            if val == '' or val is None:
+                return default
+            return float(val)
+
+        # Helper to get int from args, using default if missing or empty
+        def get_int(key, default):
+            val = args.get(key, '')
+            if val == '' or val is None:
+                return default
+            return int(val)
+
+        # Monte Carlo samples
+        num_mc_samples = get_int('num_mc_samples', 1)
+
+        # P(Catastrophe) parameters - defaults match PCatastropheParameters dataclass
         # Note: p_ai_takeover_t1/t2/t3 from request are mapped to p_misalignment_at_handoff_t1/t2/t3
         p_cat_params = PCatastropheParameters(
-            p_misalignment_at_handoff_t1=float(args.get('p_ai_takeover_t1', 0.40)),
-            p_misalignment_at_handoff_t2=float(args.get('p_ai_takeover_t2', 0.10)),
-            p_misalignment_at_handoff_t3=float(args.get('p_ai_takeover_t3', 0.04)),
-            p_human_power_grabs_t1=float(args.get('p_human_power_grabs_t1', 0.40)),
-            p_human_power_grabs_t2=float(args.get('p_human_power_grabs_t2', 0.15)),
-            p_human_power_grabs_t3=float(args.get('p_human_power_grabs_t3', 0.05)),
-            safety_speedup_exponent=float(args.get('safety_speedup_exponent', 0.5)),
-            handoff_speedup_threshold=float(args.get('handoff_speedup_threshold', 20.0)),
-            research_relevance_of_pre_handoff_discount=float(args.get('research_relevance_of_pre_handoff_discount', 0.1)),
-            increase_in_alignment_research_effort_during_slowdown=float(args.get('increase_in_alignment_research_effort_during_slowdown', 1.5)),
-            alignment_tax_after_handoff_relative_to_during_handoff=float(args.get('alignment_tax_after_handoff_relative_to_during_handoff', 2.0))
+            p_misalignment_at_handoff_t1=get_float('p_ai_takeover_t1', 0.40),
+            p_misalignment_at_handoff_t2=get_float('p_ai_takeover_t2', 0.10),
+            p_misalignment_at_handoff_t3=get_float('p_ai_takeover_t3', 0.04),
+            p_human_power_grabs_t1=get_float('p_human_power_grabs_t1', 0.40),
+            p_human_power_grabs_t2=get_float('p_human_power_grabs_t2', 0.15),
+            p_human_power_grabs_t3=get_float('p_human_power_grabs_t3', 0.05),
+            safety_speedup_exponent=get_float('safety_speedup_exponent', 0.5),
+            handoff_speedup_threshold=get_float('handoff_speedup_threshold', 20.0),
+            research_relevance_of_pre_handoff_discount=get_float('research_relevance_of_pre_handoff_discount', 0.1),
+            increase_in_alignment_research_effort_during_slowdown=get_float('increase_in_alignment_research_effort_during_slowdown', 1.5),
+            alignment_tax_after_handoff_relative_to_during_handoff=get_float('alignment_tax_after_handoff_relative_to_during_handoff', 2.0)
         )
 
         # Software proliferation parameters

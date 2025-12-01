@@ -215,6 +215,11 @@ def get_slowdown_model_data_stream():
                 'message': status_message
             })
 
+        def partial_data_callback(partial_data):
+            # Sanitize and send partial data immediately
+            sanitized = sanitize_for_json(partial_data)
+            progress_queue.put({'type': 'partial', 'data': sanitized})
+
         def compute_data():
             try:
                 from backend.serve_slowdown_model import get_slowdown_model_data_with_progress
@@ -239,7 +244,8 @@ def get_slowdown_model_data_stream():
                     cached_simulation_data,
                     slowdown_params=slowdown_params,
                     progress_callback=progress_callback,
-                    status_callback=status_callback
+                    status_callback=status_callback,
+                    partial_data_callback=partial_data_callback
                 )
                 # Sanitize result to remove inf/nan values that aren't valid JSON
                 sanitized_result = sanitize_for_json(result)
@@ -261,6 +267,9 @@ def get_slowdown_model_data_stream():
                     yield f"data: {json.dumps(msg)}\n\n"
                 elif msg['type'] == 'status':
                     yield f"data: {json.dumps(msg)}\n\n"
+                elif msg['type'] == 'partial':
+                    # Send partial data immediately so frontend can render
+                    yield f"data: {json.dumps(msg)}\n\n"
                 elif msg['type'] == 'complete':
                     yield f"data: {json.dumps(msg)}\n\n"
                     break
@@ -277,84 +286,6 @@ def get_slowdown_model_data_stream():
         'Cache-Control': 'no-cache',
         'X-Accel-Buffering': 'no'
     })
-
-
-# Commented out - not needed yet
-# @app.route('/get_uncertainty_data_stream')
-# def get_uncertainty_data_stream():
-#     """Stream uncertainty data with MC simulations for covert and proxy_project only.
-#
-#     This is for the Covert Compute Prediction Uncertainty plot.
-#     """
-#     slowdown_params = SlowdownPageParameters.from_request_args(request.args)
-#
-#     def generate():
-#         import queue
-#         import threading
-#
-#         progress_queue = queue.Queue()
-#
-#         def progress_callback(current, total, trajectory_name):
-#             progress_queue.put({
-#                 'type': 'progress',
-#                 'current': current,
-#                 'total': total,
-#                 'trajectory': trajectory_name
-#             })
-#
-#         def compute_data():
-#             try:
-#                 from backend.serve_slowdown_model import get_uncertainty_data
-#
-#                 cached_simulation_data = load_default_cache()
-#                 if not cached_simulation_data:
-#                     import glob as glob_module
-#                     cache_files = glob_module.glob(os.path.join(CACHE_DIR, '*.json'))
-#                     cache_files = [f for f in cache_files if not f.endswith('default.json')]
-#                     if cache_files:
-#                         most_recent = max(cache_files, key=os.path.getmtime)
-#                         try:
-#                             with open(most_recent, 'r') as f:
-#                                 cache_data = json.load(f)
-#                             cached_simulation_data = cache_data.get('results', cache_data)
-#                         except Exception as e:
-#                             print(f"Error loading cache file: {e}", flush=True)
-#
-#                 result = get_uncertainty_data(
-#                     cached_simulation_data,
-#                     slowdown_params=slowdown_params,
-#                     progress_callback=progress_callback
-#                 )
-#                 sanitized_result = sanitize_for_json(result)
-#                 progress_queue.put({'type': 'complete', 'data': sanitized_result})
-#             except Exception as e:
-#                 import traceback
-#                 traceback.print_exc()
-#                 progress_queue.put({'type': 'error', 'error': str(e)})
-#
-#         thread = threading.Thread(target=compute_data)
-#         thread.start()
-#
-#         while True:
-#             try:
-#                 msg = progress_queue.get(timeout=60)
-#                 if msg['type'] == 'progress':
-#                     yield f"data: {json.dumps(msg)}\n\n"
-#                 elif msg['type'] == 'complete':
-#                     yield f"data: {json.dumps(msg)}\n\n"
-#                     break
-#                 elif msg['type'] == 'error':
-#                     yield f"data: {json.dumps(msg)}\n\n"
-#                     break
-#             except queue.Empty:
-#                 yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
-#
-#         thread.join()
-#
-#     return Response(generate(), mimetype='text/event-stream', headers={
-#         'Cache-Control': 'no-cache',
-#         'X-Accel-Buffering': 'no'
-#     })
 
 
 @app.route('/run_simulation', methods=['POST'])

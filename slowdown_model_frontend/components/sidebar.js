@@ -52,32 +52,41 @@ function populateSidebarDefaults(data) {
 }
 
 // Collect all sidebar parameters and return as query string
+// Only includes parameters that have values - backend uses its defaults for missing params
 function collectSidebarParams() {
     const params = new URLSearchParams();
 
+    // Helper to add param only if it has a value
+    function addIfPresent(paramName, elementId) {
+        const value = getElementValue(elementId, '');
+        if (value !== '') {
+            params.set(paramName, value);
+        }
+    }
+
     // Simulation settings
-    params.set('num_mc_samples', getElementValue('num_mc_samples', '1'));
-    params.set('handoff_speedup_threshold', getElementValue('handoff_speedup_threshold', '20'));
-    params.set('research_relevance_of_pre_handoff_discount', getElementValue('research_relevance_of_pre_handoff_discount', '0.1'));
-    params.set('increase_in_alignment_research_effort_during_slowdown', getElementValue('increase_in_alignment_research_effort_during_slowdown', '1.5'));
-    params.set('alignment_tax_after_handoff_relative_to_during_handoff', getElementValue('alignment_tax_after_handoff_relative_to_during_handoff', '2.0'));
+    addIfPresent('num_mc_samples', 'num_mc_samples');
+    addIfPresent('handoff_speedup_threshold', 'handoff_speedup_threshold');
+    addIfPresent('research_relevance_of_pre_handoff_discount', 'research_relevance_of_pre_handoff_discount');
+    addIfPresent('increase_in_alignment_research_effort_during_slowdown', 'increase_in_alignment_research_effort_during_slowdown');
+    addIfPresent('alignment_tax_after_handoff_relative_to_during_handoff', 'alignment_tax_after_handoff_relative_to_during_handoff');
 
     // Safety research speedup exponent
-    params.set('safety_speedup_exponent', getElementValue('safety_speedup_exponent', '0.5'));
+    addIfPresent('safety_speedup_exponent', 'safety_speedup_exponent');
 
     // P(AI Takeover) parameters
-    params.set('p_ai_takeover_t1', getElementValue('p_ai_takeover_t1', '0.40'));
-    params.set('p_ai_takeover_t2', getElementValue('p_ai_takeover_t2', '0.15'));
-    params.set('p_ai_takeover_t3', getElementValue('p_ai_takeover_t3', '0.05'));
+    addIfPresent('p_ai_takeover_t1', 'p_ai_takeover_t1');
+    addIfPresent('p_ai_takeover_t2', 'p_ai_takeover_t2');
+    addIfPresent('p_ai_takeover_t3', 'p_ai_takeover_t3');
 
     // P(Human Power Grabs) parameters
-    params.set('p_human_power_grabs_t1', getElementValue('p_human_power_grabs_t1', '0.40'));
-    params.set('p_human_power_grabs_t2', getElementValue('p_human_power_grabs_t2', '0.15'));
-    params.set('p_human_power_grabs_t3', getElementValue('p_human_power_grabs_t3', '0.05'));
+    addIfPresent('p_human_power_grabs_t1', 'p_human_power_grabs_t1');
+    addIfPresent('p_human_power_grabs_t2', 'p_human_power_grabs_t2');
+    addIfPresent('p_human_power_grabs_t3', 'p_human_power_grabs_t3');
 
-    // Software proliferation parameters
-    params.set('weight_stealing', getElementValue('weight_stealing_enabled', 'SC'));
-    params.set('algorithm_stealing', getElementValue('algorithm_stealing_enabled', 'SAR'));
+    // Software proliferation parameters (selects always have values)
+    addIfPresent('weight_stealing', 'weight_stealing_enabled');
+    addIfPresent('algorithm_stealing', 'algorithm_stealing_enabled');
 
     return params.toString();
 }

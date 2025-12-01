@@ -314,6 +314,40 @@ def get_slowdown_model_data(
         params.simulation_settings.start_agreement_at_specific_year
     )
 
+    # Compute risk reduction over time (slowdown vs no slowdown)
+    risk_reduction_over_time = compute_risk_reduction_over_time(
+        proxy_mc,  # slowdown trajectory
+        global_mc,  # no-slowdown trajectory
+        params.simulation_settings.start_agreement_at_specific_year,
+        p_cat_params
+    )
+
+    # Compute risk breakdown data for the visualization
+    risk_breakdown_data = compute_risk_breakdown_data(
+        proxy_mc,
+        params.simulation_settings.start_agreement_at_specific_year,
+        p_cat_params
+    )
+
+    # Get default parameter values for frontend
+    default_p_cat = PCatastropheParameters()
+    default_parameters = {
+        'num_mc_samples': num_mc_samples,
+        'handoff_speedup_threshold': default_p_cat.handoff_speedup_threshold,
+        'research_relevance_of_pre_handoff_discount': default_p_cat.research_relevance_of_pre_handoff_discount,
+        'increase_in_alignment_research_effort_during_slowdown': default_p_cat.increase_in_alignment_research_effort_during_slowdown,
+        'alignment_tax_after_handoff_relative_to_during_handoff': default_p_cat.alignment_tax_after_handoff_relative_to_during_handoff,
+        'safety_speedup_exponent': default_p_cat.safety_speedup_exponent,
+        'p_ai_takeover_t1': default_p_cat.p_misalignment_at_handoff_t1,
+        'p_ai_takeover_t2': default_p_cat.p_misalignment_at_handoff_t2,
+        'p_ai_takeover_t3': default_p_cat.p_misalignment_at_handoff_t3,
+        'p_human_power_grabs_t1': default_p_cat.p_human_power_grabs_t1,
+        'p_human_power_grabs_t2': default_p_cat.p_human_power_grabs_t2,
+        'p_human_power_grabs_t3': default_p_cat.p_human_power_grabs_t3,
+        'weight_stealing_enabled': 'SC',
+        'algorithm_stealing_enabled': 'SAR',
+    }
+
     return {
         'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
         'covert_compute_data': covert_compute_data,
@@ -332,7 +366,10 @@ def get_slowdown_model_data(
         'p_catastrophe': p_catastrophe_results,
         'p_catastrophe_curves': p_catastrophe_curves,
         'p_catastrophe_over_time': p_catastrophe_over_time,
-        'optimal_compute_cap_over_time': optimal_compute_cap_over_time
+        'optimal_compute_cap_over_time': optimal_compute_cap_over_time,
+        'risk_reduction_over_time': risk_reduction_over_time,
+        'risk_breakdown_data': risk_breakdown_data,
+        'default_parameters': default_parameters
     }
 
 
@@ -340,18 +377,259 @@ def get_slowdown_model_data_with_progress(
     cached_simulation_data: Optional[Dict[str, Any]] = None,
     slowdown_params: Optional[SlowdownPageParameters] = None,
     progress_callback: Optional[callable] = None,
-    status_callback: Optional[callable] = None
+    status_callback: Optional[callable] = None,
+    partial_data_callback: Optional[callable] = None
 ) -> Dict[str, Any]:
-    """Alias for get_slowdown_model_data with explicit progress callback support.
+    """Compute slowdown model data with streaming support.
 
-    Used by the streaming endpoint to report progress during Monte Carlo simulations.
+    This function streams partial data early (deterministic results) so the user
+    sees data quickly, then computes MC uncertainty bands in the background.
+
+    Args:
+        cached_simulation_data: Cached simulation results
+        slowdown_params: SlowdownPageParameters object
+        progress_callback: Callback for progress updates
+        status_callback: Callback for status messages
+        partial_data_callback: Callback to send partial data (called with dict)
+
+    Returns:
+        Complete dictionary with all data including MC uncertainty bands
     """
-    return get_slowdown_model_data(
-        cached_simulation_data=cached_simulation_data,
-        slowdown_params=slowdown_params,
-        progress_callback=progress_callback,
-        status_callback=status_callback
+    if slowdown_params is None:
+        slowdown_params = SlowdownPageParameters()
+
+    num_mc_samples = slowdown_params.monte_carlo_samples
+    proxy_project_params = slowdown_params.proxy_project
+    p_cat_params = slowdown_params.PCatastrophe_parameters
+
+    params = ModelParameters(
+        simulation_settings=SimulationSettings(),
+        covert_project_properties=CovertProjectProperties(),
+        covert_project_parameters=CovertProjectParameters()
     )
+
+    # Extract covert compute data
+    covert_compute_data = None
+    if cached_simulation_data and 'dark_compute_model' in cached_simulation_data:
+        dark_compute_model = cached_simulation_data['dark_compute_model']
+        initial_stock = cached_simulation_data.get('initial_stock', {})
+        covert_compute_data = {
+            'years': dark_compute_model.get('years', []),
+            'operational_dark_compute': dark_compute_model.get('operational_dark_compute', {}),
+            'prc_compute_years': initial_stock.get('prc_compute_years', []),
+            'prc_compute_over_time': initial_stock.get('prc_compute_over_time', {})
+        }
+
+    covert_years, covert_median = combine_prc_and_covert_compute(covert_compute_data)
+    combined_covert_data = {'years': covert_years, 'median': covert_median} if covert_years and covert_median else None
+
+    largest_company_data = get_largest_company_compute()
+    prc_no_slowdown_data = compute_prc_no_slowdown_trajectory(covert_compute_data, covert_years)
+    proxy_project_data = compute_proxy_project_trajectory(covert_compute_data, proxy_project_params)
+
+    agreement_year = params.simulation_settings.start_agreement_at_specific_year
+
+    # === PHASE 1: Quick deterministic calculation ===
+    if status_callback:
+        status_callback("Computing deterministic trajectories...")
+
+    # Build trajectory configs
+    trajectory_args = []
+    trajectory_args.append(('global', None, None))
+    if covert_years and covert_median:
+        trajectory_args.append(('covert', covert_years, covert_median))
+    if prc_no_slowdown_data and prc_no_slowdown_data.get('years') and prc_no_slowdown_data.get('median'):
+        trajectory_args.append(('prc_no_slowdown', prc_no_slowdown_data['years'], prc_no_slowdown_data['median']))
+
+    # Build combined proxy trajectory
+    combined_proxy_years = []
+    combined_proxy_compute = []
+    if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
+        lc_years = largest_company_data.get('years', []) if largest_company_data else []
+        lc_compute = largest_company_data.get('compute', []) if largest_company_data else []
+        proxy_years = proxy_project_data['years']
+        proxy_compute = proxy_project_data['compute']
+        for i, year in enumerate(lc_years):
+            if year <= agreement_year:
+                combined_proxy_years.append(year)
+                combined_proxy_compute.append(lc_compute[i])
+        for i, year in enumerate(proxy_years):
+            if year > agreement_year:
+                combined_proxy_years.append(year)
+                combined_proxy_compute.append(proxy_compute[i])
+        if combined_proxy_years:
+            trajectory_args.append(('proxy_project', combined_proxy_years, combined_proxy_compute))
+
+    # Run deterministic trajectories quickly
+    if JOBLIB_AVAILABLE and len(trajectory_args) > 1:
+        num_workers = max(1, mp.cpu_count() - 1)
+        results = Parallel(n_jobs=min(num_workers, len(trajectory_args)), backend='loky', verbose=0)(
+            delayed(_run_deterministic_wrapper)(args) for args in trajectory_args
+        )
+        det_results = {name: result for name, result in results if result is not None}
+    else:
+        det_results = {}
+        for args in trajectory_args:
+            name, result = _run_deterministic_wrapper(args)
+            if result is not None:
+                det_results[name] = result
+
+    # Convert deterministic results to MC-like format
+    def to_mc_format(det_result):
+        if not det_result:
+            return None
+        return {
+            'trajectory_times': det_result.get('trajectory_times', []),
+            'speedup_percentiles': {
+                'p25': det_result.get('speedup', []),
+                'median': det_result.get('speedup', []),
+                'p75': det_result.get('speedup', [])
+            },
+            'milestones_median': det_result.get('milestones', {}),
+            'asi_times': {'median': det_result.get('asi_time', 1e308)}
+        }
+
+    global_mc = to_mc_format(det_results.get('global'))
+    covert_mc = to_mc_format(det_results.get('covert'))
+    prc_no_slowdown_mc = to_mc_format(det_results.get('prc_no_slowdown'))
+    proxy_mc = to_mc_format(det_results.get('proxy_project'))
+
+    # Compute P(catastrophe) from deterministic results
+    trajectories_for_p_cat = _build_trajectories_from_mc(global_mc, covert_mc)
+    p_catastrophe_results = compute_p_catastrophe_from_trajectories(trajectories_for_p_cat, p_cat_params)
+    p_catastrophe_curves = get_p_catastrophe_curve_data(p_cat_params)
+    p_catastrophe_over_time = compute_p_catastrophe_over_time(proxy_mc, agreement_year, p_cat_params)
+    optimal_compute_cap_over_time = compute_optimal_compute_cap_over_time(p_catastrophe_over_time, covert_compute_data, agreement_year)
+    risk_reduction_over_time = compute_risk_reduction_over_time(proxy_mc, global_mc, agreement_year, p_cat_params)
+    risk_breakdown_data = compute_risk_breakdown_data(proxy_mc, agreement_year, p_cat_params)
+
+    # Get default parameters
+    default_p_cat = PCatastropheParameters()
+    default_parameters = {
+        'num_mc_samples': num_mc_samples,
+        'handoff_speedup_threshold': default_p_cat.handoff_speedup_threshold,
+        'research_relevance_of_pre_handoff_discount': default_p_cat.research_relevance_of_pre_handoff_discount,
+        'increase_in_alignment_research_effort_during_slowdown': default_p_cat.increase_in_alignment_research_effort_during_slowdown,
+        'alignment_tax_after_handoff_relative_to_during_handoff': default_p_cat.alignment_tax_after_handoff_relative_to_during_handoff,
+        'safety_speedup_exponent': default_p_cat.safety_speedup_exponent,
+        'p_ai_takeover_t1': default_p_cat.p_misalignment_at_handoff_t1,
+        'p_ai_takeover_t2': default_p_cat.p_misalignment_at_handoff_t2,
+        'p_ai_takeover_t3': default_p_cat.p_misalignment_at_handoff_t3,
+        'p_human_power_grabs_t1': default_p_cat.p_human_power_grabs_t1,
+        'p_human_power_grabs_t2': default_p_cat.p_human_power_grabs_t2,
+        'p_human_power_grabs_t3': default_p_cat.p_human_power_grabs_t3,
+        'weight_stealing_enabled': 'SC',
+        'algorithm_stealing_enabled': 'SAR',
+    }
+
+    # Build partial result (deterministic only)
+    partial_result = {
+        'agreement_year': agreement_year,
+        'covert_compute_data': covert_compute_data,
+        'combined_covert_compute': combined_covert_data,
+        'largest_company_compute': largest_company_data,
+        'prc_no_slowdown_compute': prc_no_slowdown_data,
+        'proxy_project_compute': proxy_project_data,
+        'monte_carlo': {
+            'global': global_mc,
+            'covert': covert_mc,
+            'prc_no_slowdown': prc_no_slowdown_mc,
+            'proxy_project': proxy_mc
+        },
+        'p_catastrophe': p_catastrophe_results,
+        'p_catastrophe_curves': p_catastrophe_curves,
+        'p_catastrophe_over_time': p_catastrophe_over_time,
+        'optimal_compute_cap_over_time': optimal_compute_cap_over_time,
+        'risk_reduction_over_time': risk_reduction_over_time,
+        'risk_breakdown_data': risk_breakdown_data,
+        'default_parameters': default_parameters,
+        'has_mc_uncertainty': False  # Flag to indicate MC bands not yet computed
+    }
+
+    # Send partial data immediately if callback provided
+    if partial_data_callback:
+        partial_data_callback(partial_result)
+
+    # === PHASE 2: MC uncertainty (only if num_mc_samples > 1) ===
+    if num_mc_samples > 1:
+        if status_callback:
+            status_callback(f"Computing uncertainty bands ({num_mc_samples} MC samples)...")
+
+        base_seed = int(time.time())
+        trajectory_configs = [
+            {'name': 'global', 'years': None, 'values': None, 'seed': base_seed},
+        ]
+        if covert_years and covert_median:
+            trajectory_configs.append({'name': 'covert', 'years': covert_years, 'values': covert_median, 'seed': base_seed + 1})
+        if prc_no_slowdown_data and prc_no_slowdown_data.get('years') and prc_no_slowdown_data.get('median'):
+            trajectory_configs.append({'name': 'prc_no_slowdown', 'years': prc_no_slowdown_data['years'], 'values': prc_no_slowdown_data['median'], 'seed': base_seed + 2})
+        if combined_proxy_years:
+            trajectory_configs.append({'name': 'proxy_project', 'years': combined_proxy_years, 'values': combined_proxy_compute, 'seed': base_seed + 3})
+
+        # Map internal names to display names
+        trajectory_display_names = {
+            'global': 'Largest U.S. Company',
+            'covert': 'PRC Covert AI R&D',
+            'prc_no_slowdown': 'PRC (no slowdown)',
+            'proxy_project': 'US Frontier'
+        }
+
+        mc_results = {}
+        total_trajectories = len(trajectory_configs)
+        for idx, config in enumerate(trajectory_configs):
+            display_name = trajectory_display_names.get(config['name'], config['name'])
+            if progress_callback:
+                progress_callback(idx, total_trajectories, f"Running {display_name}...")
+
+            result = run_monte_carlo_trajectories(
+                config['years'], config['values'],
+                num_samples=num_mc_samples, seed=config['seed'],
+                progress_callback=None
+            )
+            mc_results[config['name']] = result
+
+            if progress_callback:
+                progress_callback(idx + 1, total_trajectories, f"Completed {display_name}")
+
+        # Update results with MC data
+        global_mc = mc_results.get('global')
+        covert_mc = mc_results.get('covert')
+        prc_no_slowdown_mc = mc_results.get('prc_no_slowdown')
+        proxy_mc = mc_results.get('proxy_project')
+
+        # Recompute P(catastrophe) with MC data
+        trajectories_for_p_cat = _build_trajectories_from_mc(global_mc, covert_mc)
+        p_catastrophe_results = compute_p_catastrophe_from_trajectories(trajectories_for_p_cat, p_cat_params)
+        p_catastrophe_over_time = compute_p_catastrophe_over_time(proxy_mc, agreement_year, p_cat_params)
+        optimal_compute_cap_over_time = compute_optimal_compute_cap_over_time(p_catastrophe_over_time, covert_compute_data, agreement_year)
+        risk_reduction_over_time = compute_risk_reduction_over_time(proxy_mc, global_mc, agreement_year, p_cat_params)
+        risk_breakdown_data = compute_risk_breakdown_data(proxy_mc, agreement_year, p_cat_params)
+
+    # Build final result
+    final_result = {
+        'agreement_year': agreement_year,
+        'covert_compute_data': covert_compute_data,
+        'combined_covert_compute': combined_covert_data,
+        'largest_company_compute': largest_company_data,
+        'prc_no_slowdown_compute': prc_no_slowdown_data,
+        'proxy_project_compute': proxy_project_data,
+        'monte_carlo': {
+            'global': global_mc,
+            'covert': covert_mc,
+            'prc_no_slowdown': prc_no_slowdown_mc,
+            'proxy_project': proxy_mc
+        },
+        'p_catastrophe': p_catastrophe_results,
+        'p_catastrophe_curves': p_catastrophe_curves,
+        'p_catastrophe_over_time': p_catastrophe_over_time,
+        'optimal_compute_cap_over_time': optimal_compute_cap_over_time,
+        'risk_reduction_over_time': risk_reduction_over_time,
+        'risk_breakdown_data': risk_breakdown_data,
+        'default_parameters': default_parameters,
+        'has_mc_uncertainty': num_mc_samples > 1
+    }
+
+    return final_result
 
 
 def _run_deterministic_wrapper(args: Tuple) -> Tuple[str, Optional[Dict[str, Any]]]:

@@ -218,6 +218,8 @@ def _run_single_mc_sample(args):
 def run_deterministic_trajectory(
     covert_compute_years: Optional[List[float]],
     covert_compute_values: Optional[List[float]],
+    capability_cap: Optional[List[float]] = None,
+    capability_cap_times: Optional[List[float]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Run a single trajectory prediction with default (median) parameters.
 
@@ -226,6 +228,10 @@ def run_deterministic_trajectory(
     Args:
         covert_compute_years: Years for the compute trajectory (or None for global)
         covert_compute_values: Compute values at each year (or None for global)
+        capability_cap: Optional list of progress cap values.
+            If provided, progress will be upper-bounded by these values.
+        capability_cap_times: Times corresponding to capability_cap values.
+            If None, assumes capability_cap already matches base_time_series.time.
 
     Returns:
         Dictionary containing:
@@ -245,6 +251,20 @@ def run_deterministic_trajectory(
             covert_compute_years, covert_compute_values, base_time_series, present_day
         )
 
+        # Convert capability_cap to numpy array and interpolate if needed
+        capability_cap_array = None
+        if capability_cap is not None:
+            cap_array = np.array(capability_cap, dtype=float)
+            if capability_cap_times is not None:
+                # Interpolate to base_time_series.time
+                times_array = np.array(capability_cap_times, dtype=float)
+                capability_cap_array = np.interp(base_time_series.time, times_array, cap_array)
+            elif len(cap_array) == len(base_time_series.time):
+                capability_cap_array = cap_array
+            else:
+                print(f"Warning: capability_cap length ({len(cap_array)}) != base_time_series.time length ({len(base_time_series.time)})")
+                return None
+
         # Run trajectory prediction with default parameters
         predictor = TrajectoryPredictor(params=TakeoffParameters())
         milestones_dict = predictor.predict_from_time_series(
@@ -252,7 +272,8 @@ def run_deterministic_trajectory(
             inference_compute=inference_to_use,
             experiment_compute=experiment_to_use,
             L_HUMAN=base_time_series.L_HUMAN,
-            training_compute_growth_rate=base_time_series.training_compute_growth_rate
+            training_compute_growth_rate=base_time_series.training_compute_growth_rate,
+            capability_cap=capability_cap_array
         )
 
         trajectory = predictor.get_full_trajectory()

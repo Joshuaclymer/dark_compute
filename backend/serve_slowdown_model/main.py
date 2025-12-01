@@ -3,6 +3,10 @@ Main endpoint for the AI takeoff slowdown model visualization.
 
 This module consolidates all computation for the /get_slowdown_model_data endpoint,
 importing from specialized component modules.
+
+NOTE: This file should only contain code for formatting data for plots, orchestrating
+calls to classes, and building API responses. All core logic (computations, algorithms,
+business rules) must be implemented in backend/classes/. See CLAUDE.md for details.
 """
 
 import time
@@ -45,6 +49,7 @@ from .compute_curves import (
     compute_prc_no_slowdown_trajectory,
 )
 from .proxy_project import compute_proxy_project_trajectory
+from backend.classes.us_project import ProxyProject, LargestUSProject, filter_trajectory_by_start_year
 
 
 def _build_trajectories_from_mc(
@@ -153,7 +158,7 @@ def get_slowdown_model_data(
         covert_compute_data, covert_years
     )
 
-    # Compute proxy project compute
+    # Compute proxy project compute cap
     proxy_project_data = compute_proxy_project_trajectory(
         covert_compute_data, proxy_project_params
     )
@@ -195,8 +200,8 @@ def get_slowdown_model_data(
             'seed': base_seed + 2
         })
 
-    # 4. US Frontier (proxy_project) - use largest company compute until agreement year,
-    #    then proxy project compute after (matches the compute over time plot)
+    # 4. Proxy Project - use largest company compute until agreement year,
+    #    then proxy project compute cap after (matches the compute over time plot)
     if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
         agreement_year = params.simulation_settings.start_agreement_at_specific_year
 
@@ -204,30 +209,30 @@ def get_slowdown_model_data(
         lc_years = largest_company_data.get('years', []) if largest_company_data else []
         lc_compute = largest_company_data.get('compute', []) if largest_company_data else []
 
-        proxy_years = proxy_project_data['years']
-        proxy_compute = proxy_project_data['compute']
+        proxy_project_years = proxy_project_data['years']
+        proxy_project_compute = proxy_project_data['compute']
 
-        # Build combined trajectory: largest company until agreement, then proxy project after
-        combined_proxy_years = []
-        combined_proxy_compute = []
+        # Build combined trajectory: largest company until agreement, then proxy project cap after
+        combined_proxy_project_years = []
+        combined_proxy_project_compute = []
 
         # Add largest company compute up to and including agreement year
         for i, year in enumerate(lc_years):
             if year <= agreement_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(lc_compute[i])
+                combined_proxy_project_years.append(year)
+                combined_proxy_project_compute.append(lc_compute[i])
 
-        # Add proxy project compute after agreement year
-        for i, year in enumerate(proxy_years):
+        # Add proxy project compute cap after agreement year
+        for i, year in enumerate(proxy_project_years):
             if year > agreement_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(proxy_compute[i])
+                combined_proxy_project_years.append(year)
+                combined_proxy_project_compute.append(proxy_project_compute[i])
 
-        if combined_proxy_years:
+        if combined_proxy_project_years:
             trajectory_configs.append({
                 'name': 'proxy_project',
-                'years': combined_proxy_years,
-                'values': combined_proxy_compute,
+                'years': combined_proxy_project_years,
+                'values': combined_proxy_project_compute,
                 'seed': base_seed + 3
             })
 
@@ -236,11 +241,15 @@ def get_slowdown_model_data(
     mc_results = {}
 
     # Map internal names to display names
+    # - 'global': US trajectory WITHOUT slowdown (largest company, no cap)
+    # - 'proxy_project': Proxy project trajectory (compute capped)
+    # - 'covert': PRC covert AI R&D trajectory
+    # - 'prc_no_slowdown': PRC if they kept pace with US (no slowdown scenario)
     trajectory_display_names = {
-        'global': 'Largest U.S. Company',
+        'global': 'US (no slowdown)',
         'covert': 'PRC Covert AI R&D',
         'prc_no_slowdown': 'PRC (no slowdown)',
-        'proxy_project': 'US Frontier'
+        'proxy_project': 'Proxy Project'
     }
 
     total_trajectories = len(trajectory_configs)
@@ -277,7 +286,7 @@ def get_slowdown_model_data(
     global_mc = mc_results.get('global')
     covert_mc = mc_results.get('covert')
     prc_no_slowdown_mc = mc_results.get('prc_no_slowdown')
-    proxy_mc = mc_results.get('proxy_project')
+    proxy_project_mc = mc_results.get('proxy_project')
 
     print("Monte Carlo simulations complete.")
 
@@ -302,7 +311,7 @@ def get_slowdown_model_data(
 
     # Compute P(catastrophe) over time during the slowdown (using US Frontier trajectory)
     p_catastrophe_over_time = compute_p_catastrophe_over_time(
-        proxy_mc,
+        proxy_project_mc,
         params.simulation_settings.start_agreement_at_specific_year,
         p_cat_params
     )
@@ -316,7 +325,7 @@ def get_slowdown_model_data(
 
     # Compute risk reduction over time (slowdown vs no slowdown)
     risk_reduction_over_time = compute_risk_reduction_over_time(
-        proxy_mc,  # slowdown trajectory
+        proxy_project_mc,  # slowdown trajectory
         global_mc,  # no-slowdown trajectory
         params.simulation_settings.start_agreement_at_specific_year,
         p_cat_params
@@ -324,7 +333,7 @@ def get_slowdown_model_data(
 
     # Compute risk breakdown data for the visualization
     risk_breakdown_data = compute_risk_breakdown_data(
-        proxy_mc,
+        proxy_project_mc,
         params.simulation_settings.start_agreement_at_specific_year,
         p_cat_params
     )
@@ -332,24 +341,31 @@ def get_slowdown_model_data(
     # Get default parameter values for frontend
     default_p_cat = PCatastropheParameters()
     default_parameters = {
-        'num_mc_samples': num_mc_samples,
-        'handoff_speedup_threshold': default_p_cat.handoff_speedup_threshold,
+        'monte_carlo_samples': num_mc_samples,
         'research_relevance_of_pre_handoff_discount': default_p_cat.research_relevance_of_pre_handoff_discount,
         'increase_in_alignment_research_effort_during_slowdown': default_p_cat.increase_in_alignment_research_effort_during_slowdown,
-        'alignment_tax_after_handoff_relative_to_during_handoff': default_p_cat.alignment_tax_after_handoff_relative_to_during_handoff,
-        'safety_speedup_exponent': default_p_cat.safety_speedup_exponent,
-        'p_ai_takeover_t1': default_p_cat.p_misalignment_at_handoff_t1,
-        'p_ai_takeover_t2': default_p_cat.p_misalignment_at_handoff_t2,
-        'p_ai_takeover_t3': default_p_cat.p_misalignment_at_handoff_t3,
+        'safety_speedup_multiplier': default_p_cat.safety_speedup_multiplier,
+        'max_alignment_speedup_before_handoff': default_p_cat.max_alignment_speedup_before_handoff,
+        'p_misalignment_at_handoff_t1': default_p_cat.p_misalignment_at_handoff_t1,
+        'p_misalignment_at_handoff_t2': default_p_cat.p_misalignment_at_handoff_t2,
+        'p_misalignment_at_handoff_t3': default_p_cat.p_misalignment_at_handoff_t3,
         'p_human_power_grabs_t1': default_p_cat.p_human_power_grabs_t1,
         'p_human_power_grabs_t2': default_p_cat.p_human_power_grabs_t2,
         'p_human_power_grabs_t3': default_p_cat.p_human_power_grabs_t3,
-        'weight_stealing_enabled': 'SC',
-        'algorithm_stealing_enabled': 'SAR',
+        'p_misalignment_after_handoff_t1': default_p_cat.p_misalignment_after_handoff_t1,
+        'p_misalignment_after_handoff_t2': default_p_cat.p_misalignment_after_handoff_t2,
+        'p_misalignment_after_handoff_t3': default_p_cat.p_misalignment_after_handoff_t3,
+        'alignment_tax_after_handoff': default_p_cat.alignment_tax_after_handoff,
+        'weight_stealing_times': 'SC',
+        'stealing_algorithms_up_to': 'SAR',
     }
 
+    # Filter proxy_project to only show data from agreement start
+    agreement_year = params.simulation_settings.start_agreement_at_specific_year
+    proxy_project_mc = filter_trajectory_by_start_year(proxy_project_mc, agreement_year)
+
     return {
-        'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
+        'agreement_year': agreement_year,
         'covert_compute_data': covert_compute_data,
         'combined_covert_compute': combined_covert_data,
         'largest_company_compute': largest_company_data,
@@ -360,7 +376,7 @@ def get_slowdown_model_data(
             'global': global_mc,
             'covert': covert_mc,
             'prc_no_slowdown': prc_no_slowdown_mc,
-            'proxy_project': proxy_mc
+            'proxy_project': proxy_project_mc
         },
         # P(catastrophe) data
         'p_catastrophe': p_catastrophe_results,
@@ -441,24 +457,24 @@ def get_slowdown_model_data_with_progress(
     if prc_no_slowdown_data and prc_no_slowdown_data.get('years') and prc_no_slowdown_data.get('median'):
         trajectory_args.append(('prc_no_slowdown', prc_no_slowdown_data['years'], prc_no_slowdown_data['median']))
 
-    # Build combined proxy trajectory
-    combined_proxy_years = []
-    combined_proxy_compute = []
+    # Build combined US slowdown trajectory
+    combined_proxy_project_years = []
+    combined_proxy_project_compute = []
     if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
         lc_years = largest_company_data.get('years', []) if largest_company_data else []
         lc_compute = largest_company_data.get('compute', []) if largest_company_data else []
-        proxy_years = proxy_project_data['years']
-        proxy_compute = proxy_project_data['compute']
+        proxy_project_years = proxy_project_data['years']
+        proxy_project_compute = proxy_project_data['compute']
         for i, year in enumerate(lc_years):
             if year <= agreement_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(lc_compute[i])
-        for i, year in enumerate(proxy_years):
+                combined_proxy_project_years.append(year)
+                combined_proxy_project_compute.append(lc_compute[i])
+        for i, year in enumerate(proxy_project_years):
             if year > agreement_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(proxy_compute[i])
-        if combined_proxy_years:
-            trajectory_args.append(('proxy_project', combined_proxy_years, combined_proxy_compute))
+                combined_proxy_project_years.append(year)
+                combined_proxy_project_compute.append(proxy_project_compute[i])
+        if combined_proxy_project_years:
+            trajectory_args.append(('proxy_project', combined_proxy_project_years, combined_proxy_project_compute))
 
     # Run deterministic trajectories quickly
     if JOBLIB_AVAILABLE and len(trajectory_args) > 1:
@@ -492,35 +508,80 @@ def get_slowdown_model_data_with_progress(
     global_mc = to_mc_format(det_results.get('global'))
     covert_mc = to_mc_format(det_results.get('covert'))
     prc_no_slowdown_mc = to_mc_format(det_results.get('prc_no_slowdown'))
-    proxy_mc = to_mc_format(det_results.get('proxy_project'))
+    proxy_project_mc = to_mc_format(det_results.get('proxy_project'))
+
+    # Compute US slowdown trajectory (uses full US compute with capability cap)
+    # Uses LargestUSProject class which implements the capability cap logic from slowdown_model.md
+    us_slowdown_mc = None
+    capability_cap_data = None
+    if proxy_project_mc:
+        proxy_times = proxy_project_mc.get('trajectory_times', [])
+        proxy_speedup = proxy_project_mc.get('speedup_percentiles', {}).get('median', [])
+
+        if proxy_speedup and proxy_times:
+            # Use LargestUSProject class to compute capability cap
+            us_project = LargestUSProject()
+            cap_result = us_project.compute_capability_cap_from_arrays(
+                years=proxy_times,
+                proxy_speedups=proxy_speedup,
+                agreement_start_year=agreement_year
+            )
+            capability_cap = cap_result.get('capability_cap', [])
+
+            # Store capability cap data for plotting
+            capability_cap_data = {
+                'trajectory_times': proxy_times,
+                'speedup_percentiles': {
+                    'p25': capability_cap,
+                    'median': capability_cap,
+                    'p75': capability_cap
+                },
+                'milestones_median': {},
+                'asi_times': {'median': 1e308}
+            }
+
+            # Run US slowdown trajectory with the computed capability cap
+            us_slowdown_result = run_deterministic_trajectory(
+                None, None,
+                capability_cap=capability_cap,
+                capability_cap_times=proxy_times
+            )
+            us_slowdown_mc = to_mc_format(us_slowdown_result)
 
     # Compute P(catastrophe) from deterministic results
     trajectories_for_p_cat = _build_trajectories_from_mc(global_mc, covert_mc)
     p_catastrophe_results = compute_p_catastrophe_from_trajectories(trajectories_for_p_cat, p_cat_params)
     p_catastrophe_curves = get_p_catastrophe_curve_data(p_cat_params)
-    p_catastrophe_over_time = compute_p_catastrophe_over_time(proxy_mc, agreement_year, p_cat_params)
+    p_catastrophe_over_time = compute_p_catastrophe_over_time(proxy_project_mc, agreement_year, p_cat_params)
     optimal_compute_cap_over_time = compute_optimal_compute_cap_over_time(p_catastrophe_over_time, covert_compute_data, agreement_year)
-    risk_reduction_over_time = compute_risk_reduction_over_time(proxy_mc, global_mc, agreement_year, p_cat_params)
-    risk_breakdown_data = compute_risk_breakdown_data(proxy_mc, agreement_year, p_cat_params)
+    risk_reduction_over_time = compute_risk_reduction_over_time(proxy_project_mc, global_mc, agreement_year, p_cat_params)
+    risk_breakdown_data = compute_risk_breakdown_data(proxy_project_mc, agreement_year, p_cat_params)
 
     # Get default parameters
     default_p_cat = PCatastropheParameters()
     default_parameters = {
-        'num_mc_samples': num_mc_samples,
-        'handoff_speedup_threshold': default_p_cat.handoff_speedup_threshold,
+        'monte_carlo_samples': num_mc_samples,
         'research_relevance_of_pre_handoff_discount': default_p_cat.research_relevance_of_pre_handoff_discount,
         'increase_in_alignment_research_effort_during_slowdown': default_p_cat.increase_in_alignment_research_effort_during_slowdown,
-        'alignment_tax_after_handoff_relative_to_during_handoff': default_p_cat.alignment_tax_after_handoff_relative_to_during_handoff,
-        'safety_speedup_exponent': default_p_cat.safety_speedup_exponent,
-        'p_ai_takeover_t1': default_p_cat.p_misalignment_at_handoff_t1,
-        'p_ai_takeover_t2': default_p_cat.p_misalignment_at_handoff_t2,
-        'p_ai_takeover_t3': default_p_cat.p_misalignment_at_handoff_t3,
+        'alignment_tax_after_handoff': default_p_cat.alignment_tax_after_handoff,
+        'safety_speedup_multiplier': default_p_cat.safety_speedup_multiplier,
+        'max_alignment_speedup_before_handoff': default_p_cat.max_alignment_speedup_before_handoff,
+        'p_misalignment_at_handoff_t1': default_p_cat.p_misalignment_at_handoff_t1,
+        'p_misalignment_at_handoff_t2': default_p_cat.p_misalignment_at_handoff_t2,
+        'p_misalignment_at_handoff_t3': default_p_cat.p_misalignment_at_handoff_t3,
+        'p_misalignment_after_handoff_t1': default_p_cat.p_misalignment_after_handoff_t1,
+        'p_misalignment_after_handoff_t2': default_p_cat.p_misalignment_after_handoff_t2,
+        'p_misalignment_after_handoff_t3': default_p_cat.p_misalignment_after_handoff_t3,
         'p_human_power_grabs_t1': default_p_cat.p_human_power_grabs_t1,
         'p_human_power_grabs_t2': default_p_cat.p_human_power_grabs_t2,
         'p_human_power_grabs_t3': default_p_cat.p_human_power_grabs_t3,
-        'weight_stealing_enabled': 'SC',
-        'algorithm_stealing_enabled': 'SAR',
+        'weight_stealing_times': 'SC',
+        'stealing_algorithms_up_to': 'SAR',
     }
+
+    # Filter proxy_project and capability_cap to only show data from agreement start
+    proxy_project_mc = filter_trajectory_by_start_year(proxy_project_mc, agreement_year)
+    capability_cap_data = filter_trajectory_by_start_year(capability_cap_data, agreement_year)
 
     # Build partial result (deterministic only)
     partial_result = {
@@ -534,7 +595,9 @@ def get_slowdown_model_data_with_progress(
             'global': global_mc,
             'covert': covert_mc,
             'prc_no_slowdown': prc_no_slowdown_mc,
-            'proxy_project': proxy_mc
+            'proxy_project': proxy_project_mc,
+            'us_slowdown': us_slowdown_mc,
+            'capability_cap': capability_cap_data
         },
         'p_catastrophe': p_catastrophe_results,
         'p_catastrophe_curves': p_catastrophe_curves,
@@ -563,15 +626,15 @@ def get_slowdown_model_data_with_progress(
             trajectory_configs.append({'name': 'covert', 'years': covert_years, 'values': covert_median, 'seed': base_seed + 1})
         if prc_no_slowdown_data and prc_no_slowdown_data.get('years') and prc_no_slowdown_data.get('median'):
             trajectory_configs.append({'name': 'prc_no_slowdown', 'years': prc_no_slowdown_data['years'], 'values': prc_no_slowdown_data['median'], 'seed': base_seed + 2})
-        if combined_proxy_years:
-            trajectory_configs.append({'name': 'proxy_project', 'years': combined_proxy_years, 'values': combined_proxy_compute, 'seed': base_seed + 3})
+        if combined_proxy_project_years:
+            trajectory_configs.append({'name': 'proxy_project', 'years': combined_proxy_project_years, 'values': combined_proxy_project_compute, 'seed': base_seed + 3})
 
         # Map internal names to display names
         trajectory_display_names = {
-            'global': 'Largest U.S. Company',
+            'global': 'US (no slowdown)',
             'covert': 'PRC Covert AI R&D',
             'prc_no_slowdown': 'PRC (no slowdown)',
-            'proxy_project': 'US Frontier'
+            'proxy_project': 'Proxy Project'
         }
 
         mc_results = {}
@@ -595,15 +658,18 @@ def get_slowdown_model_data_with_progress(
         global_mc = mc_results.get('global')
         covert_mc = mc_results.get('covert')
         prc_no_slowdown_mc = mc_results.get('prc_no_slowdown')
-        proxy_mc = mc_results.get('proxy_project')
+        proxy_project_mc = mc_results.get('proxy_project')
 
         # Recompute P(catastrophe) with MC data
         trajectories_for_p_cat = _build_trajectories_from_mc(global_mc, covert_mc)
         p_catastrophe_results = compute_p_catastrophe_from_trajectories(trajectories_for_p_cat, p_cat_params)
-        p_catastrophe_over_time = compute_p_catastrophe_over_time(proxy_mc, agreement_year, p_cat_params)
+        p_catastrophe_over_time = compute_p_catastrophe_over_time(proxy_project_mc, agreement_year, p_cat_params)
         optimal_compute_cap_over_time = compute_optimal_compute_cap_over_time(p_catastrophe_over_time, covert_compute_data, agreement_year)
-        risk_reduction_over_time = compute_risk_reduction_over_time(proxy_mc, global_mc, agreement_year, p_cat_params)
-        risk_breakdown_data = compute_risk_breakdown_data(proxy_mc, agreement_year, p_cat_params)
+        risk_reduction_over_time = compute_risk_reduction_over_time(proxy_project_mc, global_mc, agreement_year, p_cat_params)
+        risk_breakdown_data = compute_risk_breakdown_data(proxy_project_mc, agreement_year, p_cat_params)
+
+        # Re-filter proxy_project after MC phase 2 updates it
+        proxy_project_mc = filter_trajectory_by_start_year(proxy_project_mc, agreement_year)
 
     # Build final result
     final_result = {
@@ -617,7 +683,9 @@ def get_slowdown_model_data_with_progress(
             'global': global_mc,
             'covert': covert_mc,
             'prc_no_slowdown': prc_no_slowdown_mc,
-            'proxy_project': proxy_mc
+            'proxy_project': proxy_project_mc,
+            'us_slowdown': us_slowdown_mc,
+            'capability_cap': capability_cap_data
         },
         'p_catastrophe': p_catastrophe_results,
         'p_catastrophe_curves': p_catastrophe_curves,
@@ -634,8 +702,12 @@ def get_slowdown_model_data_with_progress(
 
 def _run_deterministic_wrapper(args: Tuple) -> Tuple[str, Optional[Dict[str, Any]]]:
     """Wrapper for running deterministic trajectory in parallel."""
-    name, years, values = args
-    result = run_deterministic_trajectory(years, values)
+    if len(args) == 3:
+        name, years, values = args
+        capability_cap = None
+    else:
+        name, years, values, capability_cap = args
+    result = run_deterministic_trajectory(years, values, capability_cap=capability_cap)
     return name, result
 
 
@@ -701,28 +773,28 @@ def get_trajectory_data_fast(
     if prc_no_slowdown_data and prc_no_slowdown_data.get('years') and prc_no_slowdown_data.get('median'):
         trajectory_args.append(('prc_no_slowdown', prc_no_slowdown_data['years'], prc_no_slowdown_data['median']))
 
-    # 4. US Frontier (proxy_project)
+    # 4. Proxy Project (compute-capped based on PRC covert estimate)
+    combined_proxy_project_years = []
+    combined_proxy_project_compute = []
     if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
         lc_years = largest_company_data.get('years', []) if largest_company_data else []
         lc_compute = largest_company_data.get('compute', []) if largest_company_data else []
-        proxy_years = proxy_project_data['years']
-        proxy_compute = proxy_project_data['compute']
+        proxy_project_years = proxy_project_data['years']
+        proxy_project_compute = proxy_project_data['compute']
 
-        combined_proxy_years = []
-        combined_proxy_compute = []
         for i, year in enumerate(lc_years):
             if year <= agreement_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(lc_compute[i])
-        for i, year in enumerate(proxy_years):
+                combined_proxy_project_years.append(year)
+                combined_proxy_project_compute.append(lc_compute[i])
+        for i, year in enumerate(proxy_project_years):
             if year > agreement_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(proxy_compute[i])
+                combined_proxy_project_years.append(year)
+                combined_proxy_project_compute.append(proxy_project_compute[i])
 
-        if combined_proxy_years:
-            trajectory_args.append(('proxy_project', combined_proxy_years, combined_proxy_compute))
+        if combined_proxy_project_years:
+            trajectory_args.append(('proxy_project', combined_proxy_project_years, combined_proxy_project_compute))
 
-    # Run all 4 trajectories in parallel using joblib
+    # Run trajectories in parallel using joblib
     print(f"Running {len(trajectory_args)} deterministic trajectories in parallel...", flush=True)
     num_workers = max(1, mp.cpu_count() - 1)
 
@@ -758,7 +830,47 @@ def get_trajectory_data_fast(
     global_mc = to_mc_format(trajectory_results.get('global'))
     covert_mc = to_mc_format(trajectory_results.get('covert'))
     prc_no_slowdown_mc = to_mc_format(trajectory_results.get('prc_no_slowdown'))
-    proxy_mc = to_mc_format(trajectory_results.get('proxy_project'))
+    proxy_project_mc = to_mc_format(trajectory_results.get('proxy_project'))
+
+    # 5. US Slowdown (uses full US compute with capability cap)
+    # Uses LargestUSProject class which implements the capability cap logic from slowdown_model.md
+    us_slowdown_mc = None
+    capability_cap_data = None
+    if proxy_project_mc:
+        proxy_times = proxy_project_mc.get('trajectory_times', [])
+        proxy_speedup = proxy_project_mc.get('speedup_percentiles', {}).get('median', [])
+
+        if proxy_speedup and proxy_times:
+            # Use LargestUSProject class to compute capability cap
+            us_project = LargestUSProject()
+            cap_result = us_project.compute_capability_cap_from_arrays(
+                years=proxy_times,
+                proxy_speedups=proxy_speedup,
+                agreement_start_year=agreement_year
+            )
+            capability_cap = cap_result.get('capability_cap', [])
+
+            # Store capability cap data for plotting
+            capability_cap_data = {
+                'trajectory_times': proxy_times,
+                'speedup_percentiles': {
+                    'p25': capability_cap,
+                    'median': capability_cap,
+                    'p75': capability_cap
+                },
+                'milestones_median': {},
+                'asi_times': {'median': 1e308}
+            }
+
+            # Pass None for compute to use global (largest US company) compute
+            # Pass capability_cap with its times for interpolation
+            us_slowdown_result = run_deterministic_trajectory(
+                None, None,
+                capability_cap=capability_cap,
+                capability_cap_times=proxy_times
+            )
+            us_slowdown_mc = to_mc_format(us_slowdown_result)
+            print("Computed US slowdown trajectory with capability cap", flush=True)
 
     # Compute P(catastrophe)
     trajectories_for_p_cat = _build_trajectories_from_mc(global_mc, covert_mc)
@@ -767,7 +879,7 @@ def get_trajectory_data_fast(
 
     # Compute P(catastrophe) over time during the slowdown (using US Frontier trajectory)
     p_catastrophe_over_time = compute_p_catastrophe_over_time(
-        proxy_mc,
+        proxy_project_mc,
         params.simulation_settings.start_agreement_at_specific_year,
         p_cat_params
     )
@@ -781,7 +893,7 @@ def get_trajectory_data_fast(
 
     # Compute risk reduction over time (slowdown vs no slowdown)
     risk_reduction_over_time = compute_risk_reduction_over_time(
-        proxy_mc,  # slowdown trajectory
+        proxy_project_mc,  # slowdown trajectory
         global_mc,  # no-slowdown trajectory
         params.simulation_settings.start_agreement_at_specific_year,
         p_cat_params
@@ -789,7 +901,7 @@ def get_trajectory_data_fast(
 
     # Compute risk breakdown data for the visualization
     risk_breakdown_data = compute_risk_breakdown_data(
-        proxy_mc,
+        proxy_project_mc,
         params.simulation_settings.start_agreement_at_specific_year,
         p_cat_params
     )
@@ -797,21 +909,28 @@ def get_trajectory_data_fast(
     # Get default parameter values for frontend
     default_p_cat = PCatastropheParameters()
     default_parameters = {
-        'num_mc_samples': 1,
-        'handoff_speedup_threshold': default_p_cat.handoff_speedup_threshold,
+        'monte_carlo_samples': 1,
         'research_relevance_of_pre_handoff_discount': default_p_cat.research_relevance_of_pre_handoff_discount,
         'increase_in_alignment_research_effort_during_slowdown': default_p_cat.increase_in_alignment_research_effort_during_slowdown,
-        'alignment_tax_after_handoff_relative_to_during_handoff': default_p_cat.alignment_tax_after_handoff_relative_to_during_handoff,
-        'safety_speedup_exponent': default_p_cat.safety_speedup_exponent,
-        'p_ai_takeover_t1': default_p_cat.p_misalignment_at_handoff_t1,
-        'p_ai_takeover_t2': default_p_cat.p_misalignment_at_handoff_t2,
-        'p_ai_takeover_t3': default_p_cat.p_misalignment_at_handoff_t3,
+        'alignment_tax_after_handoff': default_p_cat.alignment_tax_after_handoff,
+        'safety_speedup_multiplier': default_p_cat.safety_speedup_multiplier,
+        'max_alignment_speedup_before_handoff': default_p_cat.max_alignment_speedup_before_handoff,
+        'p_misalignment_at_handoff_t1': default_p_cat.p_misalignment_at_handoff_t1,
+        'p_misalignment_at_handoff_t2': default_p_cat.p_misalignment_at_handoff_t2,
+        'p_misalignment_at_handoff_t3': default_p_cat.p_misalignment_at_handoff_t3,
+        'p_misalignment_after_handoff_t1': default_p_cat.p_misalignment_after_handoff_t1,
+        'p_misalignment_after_handoff_t2': default_p_cat.p_misalignment_after_handoff_t2,
+        'p_misalignment_after_handoff_t3': default_p_cat.p_misalignment_after_handoff_t3,
         'p_human_power_grabs_t1': default_p_cat.p_human_power_grabs_t1,
         'p_human_power_grabs_t2': default_p_cat.p_human_power_grabs_t2,
         'p_human_power_grabs_t3': default_p_cat.p_human_power_grabs_t3,
-        'weight_stealing_enabled': 'SC',
-        'algorithm_stealing_enabled': 'SAR',
+        'weight_stealing_times': 'SC',
+        'stealing_algorithms_up_to': 'SAR',
     }
+
+    # Filter proxy_project and capability_cap to only show data from agreement start
+    proxy_project_mc = filter_trajectory_by_start_year(proxy_project_mc, agreement_year)
+    capability_cap_data = filter_trajectory_by_start_year(capability_cap_data, agreement_year)
 
     return {
         'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
@@ -824,7 +943,9 @@ def get_trajectory_data_fast(
             'global': global_mc,
             'covert': covert_mc,
             'prc_no_slowdown': prc_no_slowdown_mc,
-            'proxy_project': proxy_mc
+            'proxy_project': proxy_project_mc,
+            'us_slowdown': us_slowdown_mc,
+            'capability_cap': capability_cap_data
         },
         'p_catastrophe': p_catastrophe_results,
         'p_catastrophe_curves': p_catastrophe_curves,
@@ -899,25 +1020,25 @@ def get_uncertainty_data(
     if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
         lc_years = largest_company_data.get('years', []) if largest_company_data else []
         lc_compute = largest_company_data.get('compute', []) if largest_company_data else []
-        proxy_years = proxy_project_data['years']
-        proxy_compute = proxy_project_data['compute']
+        proxy_project_years = proxy_project_data['years']
+        proxy_project_compute = proxy_project_data['compute']
 
-        combined_proxy_years = []
-        combined_proxy_compute = []
+        combined_proxy_project_years = []
+        combined_proxy_project_compute = []
         for i, year in enumerate(lc_years):
             if year <= agreement_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(lc_compute[i])
-        for i, year in enumerate(proxy_years):
+                combined_proxy_project_years.append(year)
+                combined_proxy_project_compute.append(lc_compute[i])
+        for i, year in enumerate(proxy_project_years):
             if year > agreement_year:
-                combined_proxy_years.append(year)
-                combined_proxy_compute.append(proxy_compute[i])
+                combined_proxy_project_years.append(year)
+                combined_proxy_project_compute.append(proxy_project_compute[i])
 
-        if combined_proxy_years:
+        if combined_proxy_project_years:
             trajectory_configs.append({
                 'name': 'proxy_project',
-                'years': combined_proxy_years,
-                'values': combined_proxy_compute,
+                'years': combined_proxy_project_years,
+                'values': combined_proxy_project_compute,
                 'seed_offset': 200  # Different offset from covert
             })
 
@@ -929,10 +1050,16 @@ def get_uncertainty_data(
         progress_callback=progress_callback
     )
 
+    # Filter proxy_project to only show data from agreement start
+    proxy_project_mc = filter_trajectory_by_start_year(
+        mc_results.get('proxy_project'),
+        agreement_year
+    )
+
     return {
         'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
         'monte_carlo': {
             'covert': mc_results.get('covert'),
-            'proxy_project': mc_results.get('proxy_project')
+            'proxy_project': proxy_project_mc
         }
     }

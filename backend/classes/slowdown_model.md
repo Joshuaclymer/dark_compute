@@ -51,26 +51,26 @@ Multiply any adjusted alignment research time occurring during an AI slowdown by
 
 ### The Alignment Tax
 
-The alignment tax paid is the ratio of research labor expended on alignment versus capabilities.
+The alignment tax after handoff is defined as the **proportion of compute spent on alignment research** (a value between 0 and 1). For example, an alignment tax of 0.10 means 10% of compute is devoted to alignment research after handoff.
 
-```
-Alignment tax paid during handoff = [speedup-and-effort-adjusted alignment research time during handoff window] ÷ [speedup-adjusted capabilities research time during handoff window]
-```
+This is a user-specified input parameter (`alignment_tax_after_handoff`) rather than a computed value.
 
 ### Mapping Tax to Risk
 
-Using the model above, construct a mapping from "alignment tax paid during handoff" to "P(misalignment at handoff)."
+P(misalignment after handoff) is a function of the alignment tax. The function is obtained by extrapolating between three anchor points:
 
-Then introduce `alignment_tax_after_handoff_relative_to_during_handoff`—a constant representing how much higher the required alignment tax is after handoff. For example, if this constant is 2, the alignment tax required after handoff is always 2× higher than during handoff.
+- P(misalignment after handoff) if alignment tax = 1% of compute
+- P(misalignment after handoff) if alignment tax = 10% of compute
+- P(misalignment after handoff) if alignment tax = 100% of compute
 
-Use this constant to create a corresponding function mapping "alignment tax paid after handoff" to "P(misalignment after handoff)."
+The interpolation uses log-linear interpolation in logit-probability space (same technique as the other probability curves).
 
-### Computing the Post-Handoff Estimate
+### Parameters
 
-1. Compute speedup-and-effort-adjusted alignment research time after handoff (using the same adjustment process as above)
-2. Compute speedup-adjusted capabilities research time after handoff
-3. Take the ratio to get the alignment tax paid after handoff
-4. Plug this value into the "alignment tax paid after handoff" → "P(misalignment after handoff)" function
+- `alignment_tax_after_handoff`: The proportion of compute spent on alignment (0 to 1)
+- `p_misalignment_after_handoff_t1`: P(misalignment) at 1% alignment tax
+- `p_misalignment_after_handoff_t2`: P(misalignment) at 10% alignment tax
+- `p_misalignment_after_handoff_t3`: P(misalignment) at 100% alignment tax
 
 ---
 
@@ -93,3 +93,27 @@ P(human power grab) is a function of the elapsed time between superhuman AI rese
 - P(human power grab) if time between SAR and ASI is 1 month
 - P(human power grab) if time between SAR and ASI is 1 year
 - P(human power grab) if time between SAR and ASI is 10 years
+
+## Proxy project
+The U.S. proxy project is supposed to be a proxy for the capabilities that the PRC or other uncooperative actors might achieve covertly.
+
+The amount of compute the proxy project has is given by the parameters in the ProxyProject class:
+
+```
+class ProxyProjectParameters:
+    """Parameters for the US slowdown trajectory (compute cap based on PRC covert compute)."""
+    compute_cap_as_percentile_of_PRC_operational_covert_compute: float = 0.7 #70th percentile
+    frequency_cap_is_updated_in_years: float = 1.0
+```
+
+## Capability cap
+The capability cap is a cap on the AR&D speedup of the US project during the AI slowdown. 
+
+Before the capability cap can be enforced with evaluations (years_after_agreement_start_when_evaluation_based_capability_cap_is_implemented), The capability cap is set to whatever capabilities the proxy project can achieve.
+
+After the capability cap can be enforced with evaluations, the capability cap is set to the maximum of the following:
+- Some fixed AI R&D speedup (capability_cap_ai_randd_speedup). By default, this is set at the point where developers cannot effectively oversee AI alignment work (hand-off).
+- The capabilities achieved by the 'proxy project.'
+
+## Largest US project capabilities during the AI slowdown
+The capabilities of the US project during the AI slowdown are *the maximum capabilities that the largest AI company can achieve without exceeding the capability cap.*

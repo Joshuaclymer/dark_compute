@@ -197,21 +197,20 @@ function updateRiskBreakdownValues(data) {
     setElementText('pre-ac-relevance', formatDecimal(rbd.relevance_discount));
     setElementText('pre-ac-adjusted-time', formatYears(rbd.pre_ac_adjusted_time));
 
-    // Safety exponent displays
-    const safetyExp = rbd.safety_speedup_exponent || 0.5;
-    setElementText('safety-exponent-display-1', safetyExp.toFixed(1));
-    setElementText('safety-exponent-display-2', safetyExp.toFixed(1));
+    // Safety multiplier displays (value comes from backend)
+    setElementText('safety-multiplier-display-1', formatDecimal(rbd.safety_speedup_multiplier));
+    setElementText('safety-multiplier-display-2', formatDecimal(rbd.safety_speedup_multiplier));
 
-    // Handoff speedup threshold displays
-    const handoffThreshold = rbd.handoff_speedup_threshold || 20;
-    setElementText('handoff-threshold-1', Math.round(handoffThreshold));
-    setElementText('handoff-threshold-2', Math.round(handoffThreshold));
-    setElementText('handoff-threshold-3', Math.round(handoffThreshold));
+    // Max alignment speedup displays (value comes from backend)
+    const maxAlignmentSpeedup = rbd.max_alignment_speedup_before_handoff != null ? Math.round(rbd.max_alignment_speedup_before_handoff) : '--';
+    setElementText('max-alignment-speedup-display-0', maxAlignmentSpeedup);
+    setElementText('max-alignment-speedup-display-1', maxAlignmentSpeedup);
+    setElementText('max-alignment-speedup-display-2', maxAlignmentSpeedup);
 
     // === Section 3: Handoff window ===
     setElementText('handoff-window-calendar-time', formatYears(rbd.handoff_window_calendar_time));
     setElementText('handoff-window-alignment-speedup', formatMultiplier(rbd.handoff_window_avg_alignment_speedup));
-    setElementText('handoff-window-relevance', '1.0'); // Always 1.0 for handoff window
+    setElementText('handoff-window-relevance', formatDecimal(rbd.handoff_window_relevance));
     setElementText('handoff-window-adjusted-time', formatYears(rbd.handoff_window_adjusted_time));
 
     // === Section 4: Slowdown effort adjustment ===
@@ -236,29 +235,17 @@ function updateRiskBreakdownValues(data) {
     // P(Misalignment at Handoff) result
     setElementText('p-misalignment-at-handoff-result', formatPercent(rbd.p_misalignment_at_handoff));
 
-    // === Section 6: Post-handoff ===
-    // Tax multiplier in description text
-    const taxMult = rbd.tax_multiplier || 2.0;
-    setElementText('tax-multiplier-inline', taxMult.toFixed(0));
-    setElementText('tax-multiplier-direction', taxMult >= 1 ? 'higher' : 'lower');
-    setElementText('tax-multiplier-display', taxMult.toFixed(0));
-    setElementText('tax-multiplier-value', formatMultiplier(taxMult));
+    // === Section 6: Post-handoff (simplified - alignment tax is user input) ===
+    // Display alignment tax as percentage (it's the proportion of compute on alignment)
+    setElementText('alignment-tax-after-handoff', formatPercent(rbd.alignment_tax_after_handoff));
 
-    // Post-handoff window calculation
-    setElementText('post-handoff-calendar-time', formatYears(rbd.post_handoff_calendar_time));
-    setElementText('post-handoff-calendar-time-2', formatYears(rbd.post_handoff_calendar_time));
-    setElementText('post-handoff-avg-alignment-speedup', formatMultiplier(rbd.post_handoff_avg_alignment_speedup));
-    setElementText('post-handoff-avg-capability-speedup', formatMultiplier(rbd.post_handoff_avg_capability_speedup));
-    setElementText('safety-exponent-display-3', safetyExp.toFixed(1));
-
-    // Post-handoff alignment tax calculation
-    setElementText('post-handoff-alignment-time', formatYears(rbd.post_handoff_alignment_time));
-    setElementText('post-handoff-alignment-time-2', formatYears(rbd.post_handoff_alignment_time));
-    setElementText('post-handoff-capability-time', formatYears(rbd.post_handoff_capability_time));
-    setElementText('post-handoff-capability-time-2', formatYears(rbd.post_handoff_capability_time));
-    setElementText('alignment-tax-after-handoff', formatDecimal(rbd.alignment_tax_after_handoff));
-    setElementText('alignment-tax-after-handoff-2', formatDecimal(rbd.alignment_tax_after_handoff));
-    setElementText('effective-tax', formatDecimal(rbd.effective_tax));
+    // Anchor points for post-handoff misalignment
+    if (rbd.anchor_points && rbd.anchor_points.misalignment_after_handoff) {
+        const mah = rbd.anchor_points.misalignment_after_handoff;
+        setElementText('post-handoff-anchor-1pct', formatPercent(mah.t1));
+        setElementText('post-handoff-anchor-10pct', formatPercent(mah.t2));
+        setElementText('post-handoff-anchor-100pct', formatPercent(mah.t3));
+    }
 
     // P(Misalignment after Handoff) result
     setElementText('p-misalignment-after-handoff-result', formatPercent(rbd.p_misalignment_after_handoff));
@@ -297,15 +284,15 @@ function updateRiskBreakdownValues(data) {
             );
         }
 
-        // Post-handoff mapping plot (using effective alignment tax as x-axis)
+        // Post-handoff mapping plot (alignment tax → P(Misalignment after Handoff))
         if (rbd.curves.post_handoff && rbd.curves.post_handoff_x) {
             createMappingPlot(
                 'post-handoff-mapping-plot',
-                rbd.curves.post_handoff_x,  // Use separate x-axis for tax values
+                rbd.curves.post_handoff_x,  // Alignment tax values (0.001 to 1.0)
                 rbd.curves.post_handoff,
-                'Alignment tax paid',
+                'Alignment tax',
                 'P(Misalignment)',
-                rbd.effective_tax,
+                rbd.alignment_tax_after_handoff,  // User-specified alignment tax
                 rbd.p_misalignment_after_handoff,
                 '#E8A863'
             );

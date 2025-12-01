@@ -16,3 +16,12 @@ Use existing functions and ccs styles when you can, and keep code clean.
 If there's an issue related to a plot not showing up, probably it's because the height of the plot was not set in the CSS rules. 
 
 Put logic on the backend instead of the front-end. Just display data on the front-end with plots.
+
+## Code Organization
+
+**IMPORTANT**: Always add core logic to `backend/classes/`. The files in `backend/serve_slowdown_model/` should only be used for:
+- Formatting data for plots
+- Orchestrating calls to classes
+- Building API responses
+
+Core logic such as computations, algorithms, and business rules must be implemented in the appropriate class files under `backend/classes/`.

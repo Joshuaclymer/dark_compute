@@ -118,7 +118,7 @@ function plotCovertUncertainty(data) {
         });
     }
 
-    // US Frontier MC runs
+    // Proxy Project MC runs
     if (mc.proxy_project && mc.proxy_project.all_mc_runs && mc.proxy_project.all_mc_runs.length > 0) {
         const proxyTimes = mc.proxy_project.trajectory_times;
         mc.proxy_project.all_mc_runs.forEach((runSpeedup, idx) => {
@@ -142,9 +142,9 @@ function plotCovertUncertainty(data) {
     const covertTraces = createPercentileBand(mc.covert, '#8B4513', 'PRC Covert AI R&D', startYear, endYear);
     traces.push(...covertTraces);
 
-    // Add US Frontier with uncertainty band (on top of light traces)
+    // Add Proxy Project with uncertainty band (on top of light traces)
     if (mc.proxy_project) {
-        const proxyTraces = createPercentileBand(mc.proxy_project, '#9C27B0', 'US Frontier', startYear, endYear);
+        const proxyTraces = createPercentileBand(mc.proxy_project, '#9C27B0', 'Proxy Project', startYear, endYear);
         traces.push(...proxyTraces);
     }
 

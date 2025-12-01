@@ -14,94 +14,141 @@ async function loadAgreementSection() {
     }
 }
 
-// Show loading indicator for agreement risk plot and size container to match dashboard
-function showAgreementRiskLoadingIndicator() {
-    const plotContainer = document.getElementById('agreementRiskPlot');
-    if (plotContainer) {
-        plotContainer.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">Loading...</p>';
-    }
+// Plot compute over time in agreement section (styled to match takeoff trajectory plot)
+function plotAgreementComputeOverTime(data) {
+    const combinedData = data.combined_covert_compute;
+    const largestCompanyData = data.largest_company_compute;
+    const prcNoSlowdownData = data.prc_no_slowdown_compute;
+    const proxyProjectData = data.proxy_project_compute;
 
-    // Size the container to match dashboard height immediately
-    const dashboard = document.querySelector('#agreementTopSection .dashboard');
-    const plotContainers = document.querySelectorAll('#agreementTopSection .plot-container');
-    if (dashboard && plotContainers.length > 0) {
-        const dashboardHeight = dashboard.offsetHeight;
-        plotContainers.forEach(container => {
-            container.style.height = dashboardHeight + 'px';
-        });
-    }
-}
+    const container = document.getElementById('agreementComputePlot');
+    if (!container) return;
 
-// Plot risk reduction vs slowdown duration
-function plotAgreementRiskOverTime(data) {
-    const plotData = data.risk_reduction_over_time;
-
-    if (!plotData || !plotData.slowdown_duration || plotData.slowdown_duration.length === 0) {
-        const container = document.getElementById('agreementRiskPlot');
-        if (container) {
-            container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">No data available</p>';
-        }
+    if (!combinedData || !combinedData.years || !combinedData.median) {
+        container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">No compute data available</p>';
         return;
     }
 
-    // Colors consistent with dark compute main page
-    const aiTakeoverColor = '#E8A863';      // Orange for AI Takeover (matches AI R&D color)
-    const humanPowerGrabsColor = '#5AA89B'; // Turquoise green for Human Power Grabs
-    const catastropheColor = '#5B8DBE';     // Blue for combined P(Domestic Takeover) (matches probability color)
+    const years = combinedData.years;
+    const median = combinedData.median;
+    const agreement_year = data.agreement_year;
 
-    const traces = [
-        // Combined risk reduction line first (main focus, thicker)
-        {
-            x: plotData.slowdown_duration,
-            y: plotData.risk_reduction,
+    // Color scheme matching takeoff trajectory plot
+    const usColor = '#5B8DBE';    // Blue for US
+    const prcColor = '#C77CAA';   // Purple/pink for PRC
+
+    const traces = [];
+
+    // 1. US no slowdown (dashed) - Largest U.S. Company
+    if (largestCompanyData && largestCompanyData.years && largestCompanyData.compute) {
+        traces.push({
+            x: largestCompanyData.years,
+            y: largestCompanyData.compute,
             type: 'scatter',
             mode: 'lines',
             line: {
-                color: catastropheColor,
-                width: 3
+                color: usColor,
+                width: 3,
+                dash: 'dash'
             },
-            name: 'Domestic Takeover',
-            hovertemplate: 'Duration: %{x:.1f} years<br>Risk Reduction: %{y:.3f}<extra></extra>'
-        },
-        // AI Takeover risk reduction line
-        {
-            x: plotData.slowdown_duration,
-            y: plotData.p_ai_takeover_reduction,
+            name: 'US (no slowdown)',
+            hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
+        });
+    }
+
+    // 2. PRC no slowdown (dashed)
+    if (prcNoSlowdownData && prcNoSlowdownData.years && prcNoSlowdownData.median) {
+        traces.push({
+            x: prcNoSlowdownData.years,
+            y: prcNoSlowdownData.median,
             type: 'scatter',
             mode: 'lines',
             line: {
-                color: aiTakeoverColor,
-                width: 2
+                color: prcColor,
+                width: 3,
+                dash: 'dash'
             },
-            name: 'AI Takeover',
-            hovertemplate: 'Duration: %{x:.1f} years<br>Risk Reduction: %{y:.3f}<extra></extra>'
-        },
-        // Human Power Grabs risk reduction line
-        {
-            x: plotData.slowdown_duration,
-            y: plotData.p_human_power_grabs_reduction,
-            type: 'scatter',
-            mode: 'lines',
-            line: {
-                color: humanPowerGrabsColor,
-                width: 2
-            },
-            name: 'Human Power Grabs',
-            hovertemplate: 'Duration: %{x:.1f} years<br>Risk Reduction: %{y:.3f}<extra></extra>'
+            name: 'PRC (no slowdown)',
+            hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
+        });
+    }
+
+    // 3. Proxy Project (dotted black) - only from agreement year onwards
+    if (proxyProjectData && proxyProjectData.years && proxyProjectData.compute) {
+        // Filter to only include years from agreement year onwards
+        const proxyYears = [];
+        const proxyCompute = [];
+        for (let i = 0; i < proxyProjectData.years.length; i++) {
+            if (proxyProjectData.years[i] >= agreement_year) {
+                proxyYears.push(proxyProjectData.years[i]);
+                proxyCompute.push(proxyProjectData.compute[i]);
+            }
         }
-    ];
+
+        if (proxyYears.length > 0) {
+            traces.push({
+                x: proxyYears,
+                y: proxyCompute,
+                type: 'scatter',
+                mode: 'lines',
+                line: {
+                    color: '#000000',
+                    width: 3,
+                    dash: 'dot'
+                },
+                name: 'Proxy Project',
+                hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
+            });
+        }
+    }
+
+    // 4. PRC covert compute (solid)
+    traces.push({
+        x: years,
+        y: median,
+        type: 'scatter',
+        mode: 'lines',
+        line: {
+            color: prcColor,
+            width: 3
+        },
+        name: 'PRC (with slowdown)',
+        hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
+    });
+
+    // Add a dummy trace for the agreement line legend entry
+    if (agreement_year) {
+        traces.push({
+            x: [null],
+            y: [null],
+            type: 'scatter',
+            mode: 'lines',
+            line: {
+                color: '#888',
+                width: 2,
+                dash: 'dot'
+            },
+            name: 'Agreement start',
+            showlegend: true
+        });
+    }
+
+    // Determine end year from the data
+    const endYear = years[years.length - 1];
 
     const layout = {
         xaxis: {
-            title: 'Slowdown duration (years)',
+            title: 'Year',
             titlefont: { size: 11 },
             tickfont: { size: 10 },
-            automargin: true
+            automargin: true,
+            range: [2026, endYear]
         },
         yaxis: {
-            title: 'Risk reduction',
+            title: 'H100-equivalents',
             titlefont: { size: 11 },
             tickfont: { size: 10 },
+            type: 'log',
             automargin: true
         },
         showlegend: true,
@@ -117,16 +164,26 @@ function plotAgreementRiskOverTime(data) {
         hovermode: 'closest',
         margin: { l: 50, r: 20, t: 10, b: 40 },
         paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)'
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        shapes: agreement_year ? [{
+            type: 'line',
+            x0: agreement_year,
+            x1: agreement_year,
+            y0: 0,
+            y1: 1,
+            yref: 'paper',
+            line: {
+                color: '#888',
+                width: 2,
+                dash: 'dot'
+            }
+        }] : []
     };
 
-    // Clear loading indicator before plotting
-    const plotContainer = document.getElementById('agreementRiskPlot');
-    if (plotContainer) {
-        plotContainer.innerHTML = '';
-    }
+    // Clear container before plotting
+    container.innerHTML = '';
 
-    Plotly.newPlot('agreementRiskPlot', traces, layout, {displayModeBar: false, responsive: true});
+    Plotly.newPlot('agreementComputePlot', traces, layout, {displayModeBar: false, responsive: true});
 }
 
 // Update the agreement section with data
@@ -171,5 +228,5 @@ document.addEventListener('DOMContentLoaded', loadAgreementSection);
 
 // Export functions for module usage
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { loadAgreementSection, updateAgreementSection, plotAgreementRiskOverTime, showAgreementRiskLoadingIndicator };
+    module.exports = { loadAgreementSection, updateAgreementSection, plotAgreementComputeOverTime };
 }

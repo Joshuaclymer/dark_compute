@@ -193,7 +193,8 @@ def get_slowdown_model_data_stream():
     """Stream AI takeoff slowdown model data with progress updates via Server-Sent Events."""
     # Parse slowdown parameters from query arguments BEFORE entering the generator
     # (request context is not available inside the generator after the response starts)
-    slowdown_params = SlowdownPageParameters.from_request_args(request.args)
+    slowdown_params = SlowdownPageParameters()
+    slowdown_params.update_from_dict(dict(request.args))
 
     def generate():
         import queue

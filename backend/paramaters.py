@@ -264,9 +264,14 @@ class PCatastropheParameters:
     p_human_power_grabs_t3: float = 0.05  # at 10 years
 
     # --- Safety research adjustment parameters ---
-    # Safety research speedup = capability_speedup ^ safety_speedup_exponent
-    # e.g., exponent=0.5 means alignment speedup is sqrt of capability speedup
-    safety_speedup_exponent: float = 0.5
+    # Safety research speedup = capability_speedup * safety_speedup_multiplier
+    # e.g., multiplier=0.5 means alignment speedup is half of capability speedup
+    safety_speedup_multiplier: float = 0.5
+
+    # Maximum alignment speedup before handoff
+    # Caps the alignment speedup during pre-AC and AC-to-handoff periods
+    # Alignment speedup = min(max_alignment_speedup_before_handoff, capability_speedup * safety_speedup_multiplier)
+    max_alignment_speedup_before_handoff: float = 5.0
 
     # Backward compatibility aliases for p_ai_takeover (deprecated naming)
     @property
@@ -293,17 +298,18 @@ class PCatastropheParameters:
     # Present day year for calculations
     present_day_year: float = 2026.0
 
-    # AI R&D speedup threshold that defines "handoff" (when alignment research is fully automated)
-    handoff_speedup_threshold: float = 20.0
+    # --- P(misalignment after handoff) anchor points ---
+    # These are probabilities at different alignment tax values (proportion of compute spent on alignment)
+    # The alignment tax is the fraction of compute devoted to alignment after handoff (0 to 1)
+    # t1 = 1% alignment tax, t2 = 10% alignment tax, t3 = 100% alignment tax
+    p_misalignment_after_handoff_t1: float = 0.3  # at 1% alignment tax paid
+    p_misalignment_after_handoff_t2: float = 0.15  # at 10% alignment tax paid
+    p_misalignment_after_handoff_t3: float = 0.1  # at 100% alignment tax paid
 
-    # Ratio: how much higher the required alignment tax is after handoff vs during handoff
-    # If 2.0, the alignment tax required after handoff is 2x higher than during handoff
-    alignment_tax_after_handoff_relative_to_during_handoff: float = 2.0
+    # Alignment tax after handoff: the proportion of compute spent on alignment (0 to 1)
+    # This is a user-specified input, not computed from the trajectory
+    alignment_tax_after_handoff: float = 0.10  # default 10% of compute on alignment
 
-@dataclass
-class ProxyProject:
-    compute_cap_as_percentile_of_PRC_operational_covert_compute: float = 0.7 #70th percentile
-    frequency_cap_is_updated_in_years: float = 1.0
 
 @dataclass
 class SoftwareProliferation:
@@ -311,73 +317,81 @@ class SoftwareProliferation:
     stealing_algorithms_up_to: str = "SAR" # Options: "SC", "SAR"
 
 @dataclass
+class ProxyProjectParameters:
+    """Parameters for the US slowdown trajectory (compute cap based on PRC covert compute)."""
+    compute_cap_as_percentile_of_PRC_operational_covert_compute: float = 0.7 #70th percentile
+    frequency_cap_is_updated_in_years: float = 1.0
+
+@dataclass
+class USProjectParameters:
+    """Parameters for capability cap trajectory"""
+    years_after_agreement_start_when_evaluation_based_capability_cap_is_implemented: float = 0.5
+    capability_cap_ai_randd_speedup: float = PCatastropheParameters.max_alignment_speedup_before_handoff / PCatastropheParameters.safety_speedup_multiplier # Options: "AC", "SAR", or year like "2028"
+
+@dataclass
 class SlowdownPageParameters:
     monte_carlo_samples: int = 1
     ai_rnd_speedup_at_agreement_start: float = 2.0
     PCatastrophe_parameters: PCatastropheParameters = field(default_factory=PCatastropheParameters)
-    proxy_project: ProxyProject = field(default_factory=ProxyProject)
+    proxy_project: ProxyProjectParameters = field(default_factory=ProxyProjectParameters)
     software_proliferation: SoftwareProliferation = field(default_factory=SoftwareProliferation)
 
-    @classmethod
-    def from_request_args(cls, args) -> 'SlowdownPageParameters':
-        """Create SlowdownPageParameters from Flask request.args (or any dict-like object)."""
+    def update_from_dict(self, data: dict):
+        """
+        Update parameters from request data using dot notation for nested access.
 
-        # Helper to get float from args, using default if missing or empty
-        def get_float(key, default):
-            val = args.get(key, '')
-            if val == '' or val is None:
-                return default
-            return float(val)
+        For example:
+        - 'monte_carlo_samples' -> self.monte_carlo_samples
+        - 'PCatastrophe_parameters.safety_speedup_multiplier' -> self.PCatastrophe_parameters.safety_speedup_multiplier
+        - 'software_proliferation.weight_stealing_times' -> self.software_proliferation.weight_stealing_times
+        """
+        for key, value in data.items():
+            # Skip empty values
+            if value == '' or value is None:
+                continue
 
-        # Helper to get int from args, using default if missing or empty
-        def get_int(key, default):
-            val = args.get(key, '')
-            if val == '' or val is None:
-                return default
-            return int(val)
+            # Special handling for software_proliferation parameters
+            if key == 'software_proliferation.weight_stealing_times':
+                if value == 'none':
+                    self.software_proliferation.weight_stealing_times = []
+                else:
+                    self.software_proliferation.weight_stealing_times = [value]
+                continue
 
-        # Monte Carlo samples
-        num_mc_samples = get_int('num_mc_samples', 1)
+            if key == 'software_proliferation.stealing_algorithms_up_to':
+                if value == 'none':
+                    self.software_proliferation.stealing_algorithms_up_to = None
+                else:
+                    self.software_proliferation.stealing_algorithms_up_to = value
+                continue
 
-        # P(Catastrophe) parameters - defaults match PCatastropheParameters dataclass
-        # Note: p_ai_takeover_t1/t2/t3 from request are mapped to p_misalignment_at_handoff_t1/t2/t3
-        p_cat_params = PCatastropheParameters(
-            p_misalignment_at_handoff_t1=get_float('p_ai_takeover_t1', 0.40),
-            p_misalignment_at_handoff_t2=get_float('p_ai_takeover_t2', 0.10),
-            p_misalignment_at_handoff_t3=get_float('p_ai_takeover_t3', 0.04),
-            p_human_power_grabs_t1=get_float('p_human_power_grabs_t1', 0.40),
-            p_human_power_grabs_t2=get_float('p_human_power_grabs_t2', 0.15),
-            p_human_power_grabs_t3=get_float('p_human_power_grabs_t3', 0.05),
-            safety_speedup_exponent=get_float('safety_speedup_exponent', 0.5),
-            handoff_speedup_threshold=get_float('handoff_speedup_threshold', 20.0),
-            research_relevance_of_pre_handoff_discount=get_float('research_relevance_of_pre_handoff_discount', 0.1),
-            increase_in_alignment_research_effort_during_slowdown=get_float('increase_in_alignment_research_effort_during_slowdown', 1.5),
-            alignment_tax_after_handoff_relative_to_during_handoff=get_float('alignment_tax_after_handoff_relative_to_during_handoff', 2.0)
-        )
+            # Try to set the value using dot notation
+            try:
+                _set_nested_attr(self, key, self._convert_value(key, value))
+            except AttributeError:
+                # Field doesn't exist - skip it
+                pass
 
-        # Software proliferation parameters
-        weight_stealing_val = args.get('weight_stealing', 'SC')
-        algorithm_stealing_val = args.get('algorithm_stealing', 'SAR')
+    def _convert_value(self, attr_path: str, value):
+        """Convert value to the appropriate type based on the attribute."""
+        # Get the target attribute to determine its type
+        parts = attr_path.split('.')
+        obj = self
+        for part in parts[:-1]:
+            obj = getattr(obj, part)
 
-        # Convert 'none' to empty list for weight stealing
-        if weight_stealing_val == 'none':
-            weight_stealing_times = []
+        # Get current value to determine type
+        current_value = getattr(obj, parts[-1], None)
+
+        if current_value is None:
+            return value
+
+        # Convert to the same type as the current value
+        if isinstance(current_value, int):
+            return int(value)
+        elif isinstance(current_value, float):
+            return float(value)
+        elif isinstance(current_value, bool):
+            return bool(value)
         else:
-            weight_stealing_times = [weight_stealing_val]
-
-        # Convert 'none' to None for algorithm stealing
-        if algorithm_stealing_val == 'none':
-            stealing_algorithms_up_to = None
-        else:
-            stealing_algorithms_up_to = algorithm_stealing_val
-
-        software_proliferation = SoftwareProliferation(
-            weight_stealing_times=weight_stealing_times,
-            stealing_algorithms_up_to=stealing_algorithms_up_to
-        )
-
-        return cls(
-            monte_carlo_samples=num_mc_samples,
-            PCatastrophe_parameters=p_cat_params,
-            software_proliferation=software_proliferation
-        )
+            return value

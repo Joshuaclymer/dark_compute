@@ -50,46 +50,31 @@ function plotCovertCompute(data) {
         });
     }
 
-    // Add US Frontier compute: largest company until agreement year, then proxy project after
-    // This represents US AI development conditional on a slowdown
-    if (largestCompanyData && largestCompanyData.years && largestCompanyData.compute) {
-        // Filter largest company data to only include years up to (and including) agreement year
-        const preAgreementYears = [];
-        const preAgreementCompute = [];
-        for (let i = 0; i < largestCompanyData.years.length; i++) {
-            if (largestCompanyData.years[i] <= agreement_year) {
-                preAgreementYears.push(largestCompanyData.years[i]);
-                preAgreementCompute.push(largestCompanyData.compute[i]);
+    // Add Proxy Project compute: only from agreement year onwards
+    // This represents the compute cap based on PRC covert compute estimates
+    if (proxyProjectData && proxyProjectData.years && proxyProjectData.compute) {
+        // Filter to only include years from agreement year onwards
+        const proxyYears = [];
+        const proxyCompute = [];
+        for (let i = 0; i < proxyProjectData.years.length; i++) {
+            if (proxyProjectData.years[i] >= agreement_year) {
+                proxyYears.push(proxyProjectData.years[i]);
+                proxyCompute.push(proxyProjectData.compute[i]);
             }
         }
 
-        // Get post-agreement US Frontier data (from proxy project)
-        let postAgreementYears = [];
-        let postAgreementCompute = [];
-        if (proxyProjectData && proxyProjectData.years && proxyProjectData.compute) {
-            for (let i = 0; i < proxyProjectData.years.length; i++) {
-                if (proxyProjectData.years[i] > agreement_year) {
-                    postAgreementYears.push(proxyProjectData.years[i]);
-                    postAgreementCompute.push(proxyProjectData.compute[i]);
-                }
-            }
-        }
-
-        // Combine pre and post agreement data
-        const usFrontierYears = [...preAgreementYears, ...postAgreementYears];
-        const usFrontierCompute = [...preAgreementCompute, ...postAgreementCompute];
-
-        if (usFrontierYears.length > 0) {
+        if (proxyYears.length > 0) {
             traces.push({
-                x: usFrontierYears,
-                y: usFrontierCompute,
+                x: proxyYears,
+                y: proxyCompute,
                 type: 'scatter',
                 mode: 'lines',
                 line: {
-                    color: '#4169E1',
-                    width: 3
+                    color: '#000000',
+                    width: 3,
+                    dash: 'dot'
                 },
-                name: 'US Frontier (with slowdown)',
+                name: 'Proxy Project',
                 hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
             });
         }

@@ -274,8 +274,8 @@
           </div>
           <div class="breakdown-label">P(No Misalignment at Handoff)</div>
           <div class="breakdown-description">
-            Probability aligned before <span id="handoff-threshold-1">--</span>x
-            speedup
+            Probability aligned before
+            <span id="max-alignment-speedup-display-0">--</span>x alignment speedup
           </div>
         </div>
       </div>
@@ -377,8 +377,8 @@
     "
   >
     <strong>3. Breaking down P(Misalignment at Handoff):</strong> We assume
-    'handoff' happens when AI agents speed up AI R&D to
-    <span id="handoff-threshold-2">--</span>x of today's rate of progress. The
+    'handoff' happens after AI agents speed up alignment research by
+    <span id="max-alignment-speedup-display-1">--</span>x relative to today. The
     probability of misalignment at handoff depends on the "adjusted alignment
     research time" conducted prior to the handoff point. We estimate "effective"
     alignment research by first adjusting for (1) the relevance of the research
@@ -434,10 +434,7 @@
           </div>
           <div class="breakdown-label">Avg. Alignment Speedup</div>
           <div class="breakdown-description">
-            Avg of AI R&D speedup^<span id="safety-exponent-display-1"
-              >0.5</span
-            >
-            before AC
+            Avg capability speedup × <span id="safety-multiplier-display-1">0.5</span> before AC
           </div>
         </div>
       </div>
@@ -537,10 +534,7 @@
           </div>
           <div class="breakdown-label">Avg. Alignment Speedup</div>
           <div class="breakdown-description">
-            Avg of AI R&D speedup^<span id="safety-exponent-display-2"
-              >0.5</span
-            >
-            between AC and handoff
+            Avg capability speedup × <span id="safety-multiplier-display-2">0.5</span> between AC and handoff
           </div>
         </div>
       </div>
@@ -822,139 +816,13 @@
     "
   >
     <strong>6. Breaking down P(Misalignment after Handoff):</strong> After
-    handoff (when AI R&D speedup reaches
-    <span id="handoff-threshold-3">--</span>x), alignment research is conducted
-    autonomously by AI with little human oversight. We estimate the risk of misalignment during this period by assuming AI systems are safe to defer to and have calibrated judgement. So the main risk is that AI systems (or humans using AI systems) gamble with high loss of control risk to remain competitive. Misalignment risk after handoff depends on the "alignment tax" -
-    the ratio of alignment research effort to capability research effort required to maintain safety. We
-    assume a <span id="tax-multiplier-inline">--</span>x
-    <span id="tax-multiplier-direction">higher</span> alignment tax after
-    handoff is required to achieve the same safety level as during handoff.
+    handoff (when alignment research speedup reaches
+    <span id="max-alignment-speedup-display-2">--</span>x), alignment research is conducted
+    autonomously by AI with less human oversight. We estimate the risk of misalignment during this period based on the "alignment tax" - the proportion of compute spent on alignment research after handoff. A higher alignment tax means more resources devoted to safety, reducing the risk of misalignment.
   </div>
-
-  <!-- Computing adjusted alignment and capability research after handoff -->
-  <div style="margin-bottom: 10px; font-weight: bold; color: #555">
-    Post-handoff window (Handoff → ASI):
-  </div>
-  <div class="breakdown-plots-row" style="margin-bottom: 15px">
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 110px">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-          <div id="post-handoff-calendar-time" style="font-size: 18px; font-weight: bold; color: #666">-- yrs</div>
-          <div class="breakdown-label">Calendar Time</div>
-          <div class="breakdown-description">Handoff → ASI</div>
-        </div>
-      </div>
-    </div>
-    <div class="operator">×</div>
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 110px">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-          <div id="post-handoff-avg-alignment-speedup" style="font-size: 18px; font-weight: bold; color: #666">--x</div>
-          <div class="breakdown-label">Avg. Alignment Speedup</div>
-          <div class="breakdown-description">Speedup^<span id="safety-exponent-display-3">0.5</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="operator">=</div>
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 120px">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-          <div id="post-handoff-alignment-time" style="font-size: 18px; font-weight: bold; color: #666">-- yrs</div>
-          <div class="breakdown-label">Adjusted Alignment Research</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="breakdown-plots-row" style="margin-bottom: 15px">
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 110px">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-          <div id="post-handoff-calendar-time-2" style="font-size: 18px; font-weight: bold; color: #666">-- yrs</div>
-          <div class="breakdown-label">Calendar Time</div>
-          <div class="breakdown-description">Handoff → ASI</div>
-        </div>
-      </div>
-    </div>
-    <div class="operator">×</div>
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 110px">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-          <div id="post-handoff-avg-capability-speedup" style="font-size: 18px; font-weight: bold; color: #666">--x</div>
-          <div class="breakdown-label">Avg. Capability Speedup</div>
-          <div class="breakdown-description">Full speedup</div>
-        </div>
-      </div>
-    </div>
-    <div class="operator">=</div>
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 120px">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-          <div id="post-handoff-capability-time" style="font-size: 18px; font-weight: bold; color: #666">-- yrs</div>
-          <div class="breakdown-label">Adjusted Capability Research</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Computing alignment tax after handoff -->
-  <div
-    class="section-description"
-    style="
-      margin-bottom: 10px;
-      text-align: left;
-      font-size: 13px;
-      color: #666;
-      font-style: italic;
-    "
-  >
-    The alignment tax paid <em>after handoff</em> is the ratio of adjusted
-    alignment research time to adjusted capability research:
-  </div>
-  <div class="breakdown-plots-row" style="margin-bottom: 20px">
+  <div class="breakdown-plots-row" style="align-items: flex-start">
     <div class="breakdown-box-item">
       <div class="breakdown-box" style="min-width: 140px">
-        <div
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-          "
-        >
-          <div
-            id="post-handoff-alignment-time-2"
-            style="font-size: 18px; font-weight: bold; color: #666"
-          >
-            -- yrs
-          </div>
-          <div class="breakdown-label">Adjusted Alignment Research</div>
-        </div>
-      </div>
-    </div>
-    <div class="operator">÷</div>
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 140px">
-        <div
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-          "
-        >
-          <div
-            id="post-handoff-capability-time-2"
-            style="font-size: 18px; font-weight: bold; color: #666"
-          >
-            -- yrs
-          </div>
-          <div class="breakdown-label">Adjusted Capability Research</div>
-        </div>
-      </div>
-    </div>
-    <div class="operator">=</div>
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 130px">
         <div
           style="
             display: flex;
@@ -965,97 +833,12 @@
         >
           <div
             id="alignment-tax-after-handoff"
-            style="font-size: 18px; font-weight: bold; color: #666"
+            style="font-size: 20px; font-weight: bold; color: #666"
           >
-            --
+            --%
           </div>
-          <div class="breakdown-label">Alignment Tax Paid</div>
-          <div class="breakdown-description">Alignment tax paid after handoff</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Mapping tax to probability -->
-  <div
-    class="section-description"
-    style="
-      margin-bottom: 10px;
-      text-align: left;
-      font-size: 13px;
-      color: #666;
-      font-style: italic;
-    "
-  >
-    Then we assume the alignment tax paid after handoff is
-    <span id="tax-multiplier-display">2</span>x higher than during handoff to
-    achieve the same safety level.
-  </div>
-  <div class="breakdown-plots-row" style="align-items: flex-start">
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 130px">
-        <div
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-          "
-        >
-          <div
-            id="alignment-tax-after-handoff-2"
-            style="font-size: 18px; font-weight: bold; color: #666"
-          >
-            --
-          </div>
-          <div class="breakdown-label">Alignment Tax Paid After Handoff</div>
-        </div>
-      </div>
-    </div>
-    <div class="operator">÷</div>
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 130px">
-        <div
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-          "
-        >
-          <div
-            id="tax-multiplier-value"
-            style="font-size: 18px; font-weight: bold; color: #666"
-          >
-            --x
-          </div>
-          <div class="breakdown-label">Post-Handoff Multiplier</div>
-          <div class="breakdown-description">
-            Higher tax required after handoff
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="operator">=</div>
-    <div class="breakdown-box-item">
-      <div class="breakdown-box" style="min-width: 130px">
-        <div
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-          "
-        >
-          <div
-            id="effective-tax"
-            style="font-size: 18px; font-weight: bold; color: #666"
-          >
-            --
-          </div>
-          <div class="breakdown-label">
-            Pre-Handoff Alignment Tax Equivalent
-          </div>
+          <div class="breakdown-label">Alignment Tax After Handoff</div>
+          <div class="breakdown-description">Proportion of compute on alignment</div>
         </div>
       </div>
     </div>
@@ -1090,14 +873,16 @@
         style="width: 100%; height: 200px"
       ></div>
       <div class="breakdown-label" style="text-align: center; font-size: 11px">
-        Pre-handoff alignment tax → P(Misalignment)
+        Alignment tax → P(Misalignment after Handoff)
       </div>
       <div
         class="breakdown-description"
         style="text-align: center; font-size: 10px; margin-top: 5px"
       >
-        Reformulation of the 'Adjusted alignment research → P(Misalignment)'
-        curve
+        Anchor points: 1% (<span id="post-handoff-anchor-1pct">30%</span>), 10% (<span
+          id="post-handoff-anchor-10pct"
+          >10%</span
+        >), 100% (<span id="post-handoff-anchor-100pct">3%</span>)
       </div>
     </div>
     <div class="operator">=</div>

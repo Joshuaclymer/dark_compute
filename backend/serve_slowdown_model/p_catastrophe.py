@@ -17,22 +17,24 @@ def compute_research_speed_adjusted_duration(
     ai_speedup: List[float],
     start_time: float,
     end_time: float,
-    safety_speedup_exponent: float = 1.0
+    safety_speedup_multiplier: float = 1.0,
+    max_alignment_speedup: float = None
 ) -> float:
     """Compute the safety-research-speed-adjusted duration between two time points.
 
     This integrates the safety research speedup over the handoff period to get the
     effective research time (accounting for accelerated progress).
 
-    Safety speedup = capability_speedup ^ safety_speedup_exponent
-    e.g., if exponent=0.5, safety speedup is sqrt of capability speedup
+    Safety speedup = min(max_alignment_speedup, capability_speedup * safety_speedup_multiplier)
+    e.g., if multiplier=0.5 and max=5, safety speedup is half of capability speedup, capped at 5
 
     Args:
         trajectory_times: Time points of the trajectory
         ai_speedup: AI R&D (capability) speedup values at each time point
         start_time: Start time (e.g., AC milestone time)
         end_time: End time (e.g., SAR milestone time)
-        safety_speedup_exponent: Exponent relating safety to capability speedup (default 1.0 = same as capability)
+        safety_speedup_multiplier: Multiplier relating safety to capability speedup (default 1.0 = same as capability)
+        max_alignment_speedup: Maximum alignment speedup cap (default None = no cap)
 
     Returns:
         Safety-research-speed-adjusted duration in years
@@ -41,7 +43,11 @@ def compute_research_speed_adjusted_duration(
     capability_speedup = np.array(ai_speedup)
 
     # Convert capability speedup to safety speedup
-    safety_speedup = np.power(np.maximum(capability_speedup, 1e-10), safety_speedup_exponent)
+    safety_speedup = capability_speedup * safety_speedup_multiplier
+
+    # Apply cap if specified
+    if max_alignment_speedup is not None:
+        safety_speedup = np.minimum(safety_speedup, max_alignment_speedup)
 
     # Find indices within the time range
     mask = (times >= start_time) & (times <= end_time)
@@ -100,7 +106,8 @@ def compute_p_catastrophe_from_trajectories(
             # Safety-research-speed-adjusted handoff duration
             adjusted_handoff_duration = compute_research_speed_adjusted_duration(
                 trajectory_times, global_ai_speedup, ac_time, sar_time,
-                safety_speedup_exponent=p_cat_params.safety_speedup_exponent
+                safety_speedup_multiplier=p_cat_params.safety_speedup_multiplier,
+                max_alignment_speedup=p_cat_params.max_alignment_speedup_before_handoff
             )
 
             p_takeover = p_cat.p_AI_takeover(adjusted_handoff_duration, p_cat_params)
@@ -138,7 +145,8 @@ def compute_p_catastrophe_from_trajectories(
 
             adjusted_handoff_duration = compute_research_speed_adjusted_duration(
                 covert_trajectory_times, covert_ai_speedup, ac_time, sar_time,
-                safety_speedup_exponent=p_cat_params.safety_speedup_exponent
+                safety_speedup_multiplier=p_cat_params.safety_speedup_multiplier,
+                max_alignment_speedup=p_cat_params.max_alignment_speedup_before_handoff
             )
 
             p_takeover = p_cat.p_AI_takeover(adjusted_handoff_duration, p_cat_params)
@@ -240,7 +248,7 @@ def compute_p_catastrophe_over_time(
 
     Args:
         mc_data: Monte Carlo results containing trajectory_times, speedup_percentiles, and milestones
-                 This should be the proxy_project (US Frontier) trajectory data
+                 This should be the proxy_project trajectory data
         agreement_year: The year when the slowdown agreement starts
         p_cat_params: PCatastropheParameters with probability anchor points
 
@@ -329,7 +337,8 @@ def compute_p_catastrophe_over_time(
         # Integrate speedup from SC time to current time
         adjusted_handoff = compute_research_speed_adjusted_duration(
             trajectory_times, median_speedup, sc_time, current_time,
-            safety_speedup_exponent=p_cat_params.safety_speedup_exponent
+            safety_speedup_multiplier=p_cat_params.safety_speedup_multiplier,
+            max_alignment_speedup=p_cat_params.max_alignment_speedup_before_handoff
         )
 
         # Compute probabilities using the PCatastrophe class
@@ -369,7 +378,7 @@ def compute_risk_reduction_over_time(
 
     Risk reduction is the difference between:
     - P(catastrophe) if there were no slowdown (using global/no-slowdown trajectory)
-    - P(catastrophe) with the slowdown (using proxy_project/US Frontier trajectory)
+    - P(catastrophe) with the slowdown (using proxy_project trajectory)
 
     Args:
         slowdown_mc_data: Monte Carlo results for the slowdown trajectory (proxy_project)
@@ -460,7 +469,8 @@ def compute_risk_reduction_over_time(
 
         slowdown_adjusted_handoff = compute_research_speed_adjusted_duration(
             slowdown_times, slowdown_speedup, slowdown_ac_time, current_time,
-            safety_speedup_exponent=p_cat_params.safety_speedup_exponent
+            safety_speedup_multiplier=p_cat_params.safety_speedup_multiplier,
+            max_alignment_speedup=p_cat_params.max_alignment_speedup_before_handoff
         )
 
         p_takeover_slowdown = p_cat.p_AI_takeover(slowdown_adjusted_handoff, p_cat_params)
@@ -482,7 +492,8 @@ def compute_risk_reduction_over_time(
         else:
             no_slowdown_adjusted_handoff = compute_research_speed_adjusted_duration(
                 no_slowdown_times, no_slowdown_speedup, no_slowdown_ac_time, current_time,
-                safety_speedup_exponent=p_cat_params.safety_speedup_exponent
+                safety_speedup_multiplier=p_cat_params.safety_speedup_multiplier,
+                max_alignment_speedup=p_cat_params.max_alignment_speedup_before_handoff
             )
 
             p_takeover_no_slowdown = p_cat.p_AI_takeover(no_slowdown_adjusted_handoff, p_cat_params)
@@ -543,7 +554,7 @@ def compute_risk_breakdown_data(
 
     Args:
         mc_data: Monte Carlo results containing trajectory_times, speedup_percentiles, and milestones
-                 This should be the proxy_project (US Frontier) trajectory data
+                 This should be the proxy_project trajectory data
         agreement_year: The year when the slowdown agreement starts
         p_cat_params: PCatastropheParameters with probability anchor points and settings
 
@@ -579,11 +590,15 @@ def compute_risk_breakdown_data(
     asi_milestone = milestones.get('ASI', {})
     asi_time = asi_milestone.get('time') if asi_milestone else None
 
-    # Find the handoff time (when speedup reaches 20x)
-    handoff_threshold = p_cat_params.handoff_speedup_threshold
+    # Find the handoff time (when alignment speedup reaches the max cap)
+    # Alignment speedup = capability_speedup × safety_multiplier
+    # Handoff occurs when alignment_speedup >= max_alignment_speedup_before_handoff
+    safety_multiplier = p_cat_params.safety_speedup_multiplier
+    max_alignment_speedup = p_cat_params.max_alignment_speedup_before_handoff
     handoff_time = None
     for i, (t, s) in enumerate(zip(times, speedup)):
-        if s >= handoff_threshold:
+        alignment_speedup = s * safety_multiplier
+        if alignment_speedup >= max_alignment_speedup:
             handoff_time = t
             break
     # Fallback to ASI time if handoff threshold never reached
@@ -604,7 +619,7 @@ def compute_risk_breakdown_data(
     # === Section 2: P(AI Takeover) - we'll compute components then combine ===
 
     # === Section 3: P(Misalignment at Handoff) breakdown ===
-    safety_exponent = p_cat_params.safety_speedup_exponent
+    safety_multiplier = p_cat_params.safety_speedup_multiplier
     relevance_discount = p_cat_params.research_relevance_of_pre_handoff_discount
 
     # Pre-handoff window (Present → AC)
@@ -620,8 +635,8 @@ def compute_risk_breakdown_data(
             mask = (times >= present_day) & (times <= ac_time)
             if np.any(mask):
                 relevant_speedup = speedup[mask]
-                # Alignment speedup = capability_speedup ^ safety_exponent
-                alignment_speedup = np.power(np.maximum(relevant_speedup, 1e-10), safety_exponent)
+                # Alignment speedup = capability_speedup * safety_multiplier
+                alignment_speedup = relevant_speedup * safety_multiplier
                 pre_ac_avg_alignment_speedup = float(np.mean(alignment_speedup))
             else:
                 pre_ac_avg_alignment_speedup = 1.0
@@ -649,14 +664,14 @@ def compute_risk_breakdown_data(
                 relevant_speedup = speedup[mask]
                 relevant_times = times[mask]
 
-                # Alignment speedup uses safety_exponent
-                alignment_speedup = np.power(np.maximum(relevant_speedup, 1e-10), safety_exponent)
+                # Alignment speedup = capability_speedup * safety_multiplier
+                alignment_speedup = relevant_speedup * safety_multiplier
                 handoff_window_avg_alignment_speedup = float(np.mean(alignment_speedup))
 
                 # Compute adjusted alignment time (integrated)
                 if len(relevant_times) >= 2:
                     handoff_window_adjusted_time = float(np.trapz(alignment_speedup, relevant_times))
-                    # Capability time uses full speedup (exponent = 1.0)
+                    # Capability time uses full speedup (multiplier = 1.0)
                     handoff_window_capability_time = float(np.trapz(relevant_speedup, relevant_times))
                 else:
                     handoff_window_adjusted_time = handoff_window_calendar_time * float(np.mean(alignment_speedup))
@@ -723,55 +738,17 @@ def compute_risk_breakdown_data(
     p_misalignment_at_handoff = p_cat.p_misalignment_at_handoff(total_adjusted_alignment_time, p_cat_params)
 
     # === Section 6: P(Misalignment after Handoff) ===
-    tax_multiplier = p_cat_params.alignment_tax_after_handoff_relative_to_during_handoff
+    # The alignment tax is now a user-specified input: the proportion of compute spent on alignment (0 to 1)
+    alignment_tax_after_handoff = p_cat_params.alignment_tax_after_handoff
 
-    # Post-handoff calculations
-    post_handoff_alignment_time = None
-    post_handoff_capability_time = None
+    # Post-handoff calculations (for display purposes only)
     post_handoff_calendar_time = None
-    post_handoff_avg_alignment_speedup = None
-    post_handoff_avg_capability_speedup = None
-    alignment_tax_after_handoff = None
-    effective_tax = None
-    p_misalignment_after_handoff = None
 
     if handoff_time is not None and asi_time is not None and asi_time > handoff_time:
         post_handoff_calendar_time = asi_time - handoff_time
 
-        # Compute adjusted alignment time after handoff
-        mask = (times >= handoff_time) & (times <= asi_time)
-        if np.any(mask):
-            relevant_speedup = speedup[mask]
-            alignment_speedup = np.power(np.maximum(relevant_speedup, 1e-10), safety_exponent)
-            # Integrate alignment speedup over time
-            relevant_times = times[mask]
-            if len(relevant_times) >= 2:
-                post_handoff_alignment_time = float(np.trapz(alignment_speedup, relevant_times))
-                post_handoff_capability_time = float(np.trapz(relevant_speedup, relevant_times))
-            else:
-                post_handoff_alignment_time = post_handoff_calendar_time * float(np.mean(alignment_speedup))
-                post_handoff_capability_time = post_handoff_calendar_time * float(np.mean(relevant_speedup))
-
-            # Compute average speedups for display
-            post_handoff_avg_alignment_speedup = post_handoff_alignment_time / post_handoff_calendar_time if post_handoff_calendar_time > 0 else 1.0
-            post_handoff_avg_capability_speedup = post_handoff_capability_time / post_handoff_calendar_time if post_handoff_calendar_time > 0 else 1.0
-        else:
-            post_handoff_alignment_time = post_handoff_calendar_time
-            post_handoff_capability_time = post_handoff_calendar_time
-            post_handoff_avg_alignment_speedup = 1.0
-            post_handoff_avg_capability_speedup = 1.0
-
-        # Alignment tax = adjusted alignment time / adjusted capability time
-        if post_handoff_capability_time > 0:
-            alignment_tax_after_handoff = post_handoff_alignment_time / post_handoff_capability_time
-        else:
-            alignment_tax_after_handoff = 1.0
-
-        # Effective tax (in pre-handoff equivalent terms)
-        effective_tax = alignment_tax_after_handoff / tax_multiplier
-
-        # P(misalignment after handoff)
-        p_misalignment_after_handoff = p_cat.p_misalignment_after_handoff(alignment_tax_after_handoff, p_cat_params)
+    # P(misalignment after handoff) - uses the user-specified alignment tax directly
+    p_misalignment_after_handoff = p_cat.p_misalignment_after_handoff(alignment_tax_after_handoff, p_cat_params)
 
     # === Combine into P(AI Takeover) ===
     p_no_misalignment_at_handoff = 1 - p_misalignment_at_handoff
@@ -803,12 +780,10 @@ def compute_risk_breakdown_data(
     # Misalignment at handoff curve (adjusted alignment research → P)
     misalignment_at_handoff_curve = [p_cat.p_misalignment_at_handoff(d, p_cat_params) for d in durations]
 
-    # Post-handoff curve (effective alignment tax → P)
-    # The x-axis represents the "effective tax" (alignment_tax / multiplier)
-    # which maps to the same probability curve as misalignment at handoff
-    # Use a range that includes typical effective_tax values (0.001 to 10)
-    tax_values = np.logspace(-3, 1, 100)  # 0.001 to 10
-    post_handoff_curve = [p_cat.p_misalignment_after_handoff(t * tax_multiplier, p_cat_params) for t in tax_values]
+    # Alignment tax → P(Misalignment after Handoff) curve
+    # The x-axis is the proportion of compute spent on alignment (0.001 to 1.0)
+    alignment_tax_values = np.logspace(-3, 0, 100)  # 0.001 to 1.0
+    post_handoff_misalignment_curve = [p_cat.p_misalignment_after_handoff(t, p_cat_params) for t in alignment_tax_values]
 
     return {
         # Top-level probabilities
@@ -827,9 +802,9 @@ def compute_risk_breakdown_data(
         'sar_to_asi_duration': float(sar_to_asi_duration) if sar_to_asi_duration is not None else None,
 
         # Section 3: Misalignment at Handoff breakdown
-        'handoff_speedup_threshold': float(handoff_threshold),
-        'safety_speedup_exponent': safety_exponent,
-        'relevance_discount': relevance_discount,
+        'safety_speedup_multiplier': float(safety_multiplier),
+        'max_alignment_speedup_before_handoff': float(p_cat_params.max_alignment_speedup_before_handoff),
+        'relevance_discount': float(relevance_discount),
 
         # Pre-handoff window
         'pre_ac_calendar_time': float(pre_ac_calendar_time) if pre_ac_calendar_time is not None else None,
@@ -841,6 +816,7 @@ def compute_risk_breakdown_data(
         'handoff_window_avg_alignment_speedup': float(handoff_window_avg_alignment_speedup) if handoff_window_avg_alignment_speedup is not None else None,
         'handoff_window_adjusted_time': float(handoff_window_adjusted_time) if handoff_window_adjusted_time is not None else None,
         'handoff_window_capability_time': float(handoff_window_capability_time) if handoff_window_capability_time is not None else None,
+        'handoff_window_relevance': 1.0,  # Always 1.0 for handoff window (research after AC has full relevance)
         'alignment_tax_during_handoff': float(alignment_tax_during_handoff) if alignment_tax_during_handoff is not None else None,
 
         # Section 4: Slowdown effort
@@ -851,14 +827,8 @@ def compute_risk_breakdown_data(
         'total_adjusted_alignment_time': float(total_adjusted_alignment_time),
 
         # Section 6: Post-handoff
-        'tax_multiplier': float(tax_multiplier),
         'post_handoff_calendar_time': float(post_handoff_calendar_time) if post_handoff_calendar_time is not None else None,
-        'post_handoff_avg_alignment_speedup': float(post_handoff_avg_alignment_speedup) if post_handoff_avg_alignment_speedup is not None else None,
-        'post_handoff_avg_capability_speedup': float(post_handoff_avg_capability_speedup) if post_handoff_avg_capability_speedup is not None else None,
-        'post_handoff_alignment_time': float(post_handoff_alignment_time) if post_handoff_alignment_time is not None else None,
-        'post_handoff_capability_time': float(post_handoff_capability_time) if post_handoff_capability_time is not None else None,
-        'alignment_tax_after_handoff': float(alignment_tax_after_handoff) if alignment_tax_after_handoff is not None else None,
-        'effective_tax': float(effective_tax) if effective_tax is not None else None,
+        'alignment_tax_after_handoff': float(alignment_tax_after_handoff),
 
         # Milestone times for reference
         'ac_time': float(ac_time) if ac_time is not None else None,
@@ -877,6 +847,11 @@ def compute_risk_breakdown_data(
                 't1': p_cat_params.p_human_power_grabs_t1,
                 't2': p_cat_params.p_human_power_grabs_t2,
                 't3': p_cat_params.p_human_power_grabs_t3
+            },
+            'misalignment_after_handoff': {
+                't1': p_cat_params.p_misalignment_after_handoff_t1,
+                't2': p_cat_params.p_misalignment_after_handoff_t2,
+                't3': p_cat_params.p_misalignment_after_handoff_t3
             }
         },
 
@@ -885,8 +860,9 @@ def compute_risk_breakdown_data(
             'durations': durations.tolist(),
             'human_power_grabs': human_power_grabs_curve,
             'misalignment_at_handoff': misalignment_at_handoff_curve,
-            'post_handoff': post_handoff_curve,
-            'post_handoff_x': tax_values.tolist()  # Separate x-axis for post-handoff (effective tax values)
+            # Alignment tax → P(Misalignment after Handoff) curve
+            'post_handoff': post_handoff_misalignment_curve,
+            'post_handoff_x': alignment_tax_values.tolist()  # Alignment tax values (proportion of compute, 0 to 1)
         }
     }
 

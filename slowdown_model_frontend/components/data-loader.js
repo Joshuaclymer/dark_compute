@@ -33,9 +33,6 @@ async function loadAllSlowdownData(options = {}) {
         if (typeof showCovertUncertaintyLoadingIndicator === 'function') {
             showCovertUncertaintyLoadingIndicator();
         }
-        if (typeof showAgreementRiskLoadingIndicator === 'function') {
-            showAgreementRiskLoadingIndicator();
-        }
 
         // Use Server-Sent Events for streaming progress
         return new Promise((resolve, reject) => {

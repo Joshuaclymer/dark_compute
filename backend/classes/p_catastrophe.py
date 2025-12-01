@@ -9,26 +9,31 @@ class PCatastrophe:
     ANCHOR_T2 = 1.0   # 1 year (second anchor)
     ANCHOR_T3 = 10.0  # 10 years (third anchor)
 
+    # Alignment tax anchor points (proportion of compute spent on alignment, 0-1)
+    ALIGNMENT_TAX_T1 = 0.01  # 1% of compute on alignment
+    ALIGNMENT_TAX_T2 = 0.10  # 10% of compute on alignment
+    ALIGNMENT_TAX_T3 = 1.00  # 100% of compute on alignment
+
     @staticmethod
-    def compute_safety_speedup(capability_speedup: float, exponent: float) -> float:
+    def compute_safety_speedup(capability_speedup: float, multiplier: float) -> float:
         """
         Compute safety research speedup from capability research speedup.
 
-        Safety research speedup = capability_speedup ^ exponent
+        Safety research speedup = capability_speedup * multiplier
 
-        For example, if capability speedup is 4x and exponent is 0.5,
-        safety speedup is sqrt(4) = 2x.
+        For example, if capability speedup is 4x and multiplier is 0.5,
+        safety speedup is 4 * 0.5 = 2x.
 
         Args:
             capability_speedup: The AI capability research speedup factor
-            exponent: The exponent relating safety to capability speedup
+            multiplier: The multiplier relating safety to capability speedup
 
         Returns:
             Safety research speedup factor
         """
         if capability_speedup <= 0:
             return 1.0
-        return capability_speedup ** exponent
+        return capability_speedup * multiplier
 
     def _interpolate_probability(self, duration_years: float, p_t1: float, p_t2: float, p_t3: float) -> float:
         """
@@ -243,6 +248,66 @@ class PCatastrophe:
         # (assuming capability time is normalized to 1)
         return duration
 
+    def _interpolate_probability_alignment_tax(
+        self,
+        alignment_tax: float,
+        p_t1: float,
+        p_t2: float,
+        p_t3: float
+    ) -> float:
+        """
+        Interpolate probability using log-linear interpolation on alignment tax.
+
+        Similar to _interpolate_probability but uses alignment tax anchor points (0.01, 0.10, 1.00)
+        instead of time anchor points.
+
+        Args:
+            alignment_tax: The proportion of compute spent on alignment (0 to 1)
+            p_t1: Probability at ALIGNMENT_TAX_T1 (1% of compute)
+            p_t2: Probability at ALIGNMENT_TAX_T2 (10% of compute)
+            p_t3: Probability at ALIGNMENT_TAX_T3 (100% of compute)
+
+        Returns:
+            Interpolated probability bounded between 0 and 1
+        """
+        # Tax anchor points
+        t1 = self.ALIGNMENT_TAX_T1  # 0.01
+        t2 = self.ALIGNMENT_TAX_T2  # 0.10
+        t3 = self.ALIGNMENT_TAX_T3  # 1.00
+
+        # Clamp alignment tax to valid range
+        alignment_tax = max(t1 / 10, min(alignment_tax, 1.0))
+
+        # Convert probabilities to logit space for interpolation
+        def logit(p):
+            p = max(1e-10, min(1 - 1e-10, p))  # Clamp to avoid log(0)
+            return math.log(p / (1 - p))
+
+        def sigmoid(x):
+            return 1 / (1 + math.exp(-x))
+
+        logit_p1 = logit(p_t1)
+        logit_p2 = logit(p_t2)
+        logit_p3 = logit(p_t3)
+
+        # Use log-tax for interpolation (log-linear in alignment tax)
+        log_t1 = math.log(t1)
+        log_t2 = math.log(t2)
+        log_t3 = math.log(t3)
+        log_tax = math.log(alignment_tax)
+
+        # Piecewise linear interpolation in log-tax, logit-probability space
+        if log_tax <= log_t2:
+            # Interpolate between 1% and 10%
+            alpha = (log_tax - log_t1) / (log_t2 - log_t1)
+            logit_p = logit_p1 + alpha * (logit_p2 - logit_p1)
+        else:
+            # Interpolate between 10% and 100%
+            alpha = (log_tax - log_t2) / (log_t3 - log_t2)
+            logit_p = logit_p2 + alpha * (logit_p3 - logit_p2)
+
+        return sigmoid(logit_p)
+
     def p_misalignment_after_handoff(
         self,
         alignment_tax_after_handoff: float,
@@ -251,40 +316,29 @@ class PCatastrophe:
         """
         Estimate the probability of misalignment after handoff given the alignment tax paid.
 
-        Per slowdown_model.md:
-        - The alignment tax is the ratio of alignment research time to capability research time
-        - We map tax to probability using the same curve as P(misalignment at handoff),
-          but scaled by alignment_tax_after_handoff_relative_to_during_handoff
+        The alignment tax is defined as the proportion of compute spent on alignment
+        after handoff (a value between 0 and 1). This function uses a separate curve
+        from the pre-handoff misalignment curve, with its own anchor points.
 
-        The key insight is:
-        1. First, we build a mapping from "alignment tax during handoff" to "P(misalignment at handoff)"
-        2. Then we scale the required tax by alignment_tax_after_handoff_relative_to_during_handoff
-           to create the "tax after handoff" -> "P(misalignment after handoff)" mapping
-
-        If the multiplier is 2.0, then achieving a given probability after handoff requires
-        2x the alignment tax that would be needed during handoff.
+        The curve maps:
+        - 1% compute on alignment → p_misalignment_after_handoff_t1
+        - 10% compute on alignment → p_misalignment_after_handoff_t2
+        - 100% compute on alignment → p_misalignment_after_handoff_t3
 
         Args:
-            alignment_tax_after_handoff: The ratio of adjusted alignment research time to
-                adjusted capability research time, computed for the post-handoff period
-            params: PCatastropheParameters with anchor points and multiplier
+            alignment_tax_after_handoff: The proportion of compute devoted to alignment
+                after handoff (0 to 1). For example, 0.1 means 10% of compute is spent
+                on alignment research.
+            params: PCatastropheParameters with anchor points
 
         Returns:
             float: Estimated probability of misalignment after handoff
         """
-        # The alignment tax after handoff needs to be higher to achieve the same safety level
-        # So we divide by the multiplier to get the "effective" tax in handoff terms
-        multiplier = params.alignment_tax_after_handoff_relative_to_during_handoff
-        effective_tax = alignment_tax_after_handoff / multiplier
-
-        # The effective tax represents the adjusted alignment research time
-        # (since capability time is normalized to 1)
-        # Use the same interpolation as p_misalignment_at_handoff
-        return self._interpolate_probability(
-            effective_tax,
-            params.p_misalignment_at_handoff_t1,
-            params.p_misalignment_at_handoff_t2,
-            params.p_misalignment_at_handoff_t3
+        return self._interpolate_probability_alignment_tax(
+            alignment_tax_after_handoff,
+            params.p_misalignment_after_handoff_t1,
+            params.p_misalignment_after_handoff_t2,
+            params.p_misalignment_after_handoff_t3
         )
 
     def p_AI_takeover_full(

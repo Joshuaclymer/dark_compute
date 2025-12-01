@@ -1,7 +1,7 @@
 // Takeoff Trajectory Plot Component JavaScript
 
 // Helper function to create a median-only trace (no uncertainty bands)
-function createMedianTrace(mcData, color, name, startYear, endYear, lineStyle = 'solid') {
+function createMedianTrace(mcData, color, name, startYear, endYear, lineStyle = 'solid', opacity = 1.0) {
     if (!mcData || !mcData.trajectory_times || !mcData.speedup_percentiles) {
         return [];
     }
@@ -14,6 +14,11 @@ function createMedianTrace(mcData, color, name, startYear, endYear, lineStyle = 
     const filteredTimes = indices.map(d => times[d.i]);
     const filteredMedian = indices.map(d => median[d.i]);
 
+    // Determine dash style
+    let dashStyle = undefined;
+    if (lineStyle === 'dash') dashStyle = 'dash';
+    else if (lineStyle === 'dot') dashStyle = 'dot';
+
     return [
         // Median line only
         {
@@ -24,8 +29,9 @@ function createMedianTrace(mcData, color, name, startYear, endYear, lineStyle = 
             line: {
                 color: color,
                 width: 3,
-                dash: lineStyle === 'dash' ? 'dash' : undefined
+                dash: dashStyle
             },
+            opacity: opacity,
             name: name,
             hovertemplate: 'Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>'
         }
@@ -241,41 +247,20 @@ function plotTakeoffModel(data) {
         }
     }
 
-    // 3. US slowdown (solid) - US Frontier AI R&D
+    // 3. Proxy Project (dotted black) - what the proxy project can achieve with capped compute
     if (mc.proxy_project) {
-        traces.push(...createMedianTrace(mc.proxy_project, usColor, 'US (slowdown)', startYear, endYear));
-
-        // US Frontier milestone markers
-        const milestoneDataUSFrontier = extractMilestoneData(mc.proxy_project.milestones_median, startYear, endYear);
-        if (milestoneDataUSFrontier.length > 0) {
-            traces.push({
-                x: milestoneDataUSFrontier.map(m => m.time),
-                y: milestoneDataUSFrontier.map(m => m.speedup),
-                type: 'scatter',
-                mode: 'markers+text',
-                marker: {
-                    color: usColor,
-                    size: 10,
-                    symbol: 'square',
-                    line: {
-                        color: 'white',
-                        width: 2
-                    }
-                },
-                text: milestoneDataUSFrontier.map(m => m.label),
-                textposition: 'top center',
-                textfont: {
-                    size: 11,
-                    color: usColor,
-                    family: 'Arial, sans-serif'
-                },
-                hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
-                showlegend: false
-            });
-        }
+        traces.push(...createMedianTrace(mc.proxy_project, '#000000', 'Proxy Project', startYear, endYear, 'dot'));
     }
 
-    // 4. PRC slowdown (solid) - PRC Covert AI R&D
+    // 4. Capability Cap (solid black with opacity) - the upper bound on AI R&D speedup
+    // Uses the computed capability cap which implements the logic:
+    // - Before eval-based enforcement: proxy project capabilities
+    // - After eval-based enforcement: max(fixed_cap, proxy_project_capabilities)
+    if (mc.capability_cap) {
+        traces.push(...createMedianTrace(mc.capability_cap, '#000000', 'Capability Cap', startYear, endYear, 'solid', 0.5));
+    }
+
+    // 5. PRC slowdown (solid) - PRC Covert AI R&D
     if (mc.covert) {
         traces.push(...createMedianTrace(mc.covert, prcColor, 'PRC (slowdown)', startYear, endYear));
 
@@ -300,6 +285,39 @@ function plotTakeoffModel(data) {
                 textfont: {
                     size: 11,
                     color: prcColor,
+                    family: 'Arial, sans-serif'
+                },
+                hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
+                showlegend: false
+            });
+        }
+    }
+
+    // 6. US slowdown (solid blue) - Largest US Company with capability cap
+    if (mc.us_slowdown) {
+        traces.push(...createMedianTrace(mc.us_slowdown, usColor, 'US (slowdown)', startYear, endYear));
+
+        // US slowdown milestone markers
+        const milestoneDataUSSlowdown = extractMilestoneData(mc.us_slowdown.milestones_median, startYear, endYear);
+        if (milestoneDataUSSlowdown.length > 0) {
+            traces.push({
+                x: milestoneDataUSSlowdown.map(m => m.time),
+                y: milestoneDataUSSlowdown.map(m => m.speedup),
+                type: 'scatter',
+                mode: 'markers+text',
+                marker: {
+                    color: usColor,
+                    size: 10,
+                    line: {
+                        color: 'white',
+                        width: 2
+                    }
+                },
+                text: milestoneDataUSSlowdown.map(m => m.label),
+                textposition: 'bottom center',
+                textfont: {
+                    size: 11,
+                    color: usColor,
                     family: 'Arial, sans-serif'
                 },
                 hovertemplate: '%{text}<br>Year: %{x:.1f}<br>Speedup: %{y:.2f}x<extra></extra>',
@@ -403,11 +421,8 @@ function plotTakeoffModel(data) {
             setTimeout(() => {
                 Plotly.Plots.resize('slowdownPlot');
                 // Also resize other plots in the section if they exist
-                if (document.getElementById('agreementRiskPlot')) {
-                    Plotly.Plots.resize('agreementRiskPlot');
-                }
-                if (document.getElementById('agreementCapsPlot')) {
-                    Plotly.Plots.resize('agreementCapsPlot');
+                if (document.getElementById('agreementComputePlot')) {
+                    Plotly.Plots.resize('agreementComputePlot');
                 }
             }, 50);
         }

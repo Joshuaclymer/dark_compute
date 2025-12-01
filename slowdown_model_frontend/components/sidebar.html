@@ -6,38 +6,31 @@
 
     <h2>Simulation Settings</h2>
     <div class="param-group">
-        <label for="num_mc_samples">Takeoff Simulations</label>
-        <input type="number" id="num_mc_samples" placeholder="--" step="10" min="1" max="500">
+        <label for="monte_carlo_samples">Takeoff Simulations</label>
+        <input type="number" id="monte_carlo_samples" placeholder="--" step="10" min="1" max="500">
     </div>
     <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
         Number of takeoff model simulations (with randomly sampled parameters) used to compute uncertainty bands.
     </p>
 
-    <h2>P(AI Takeover)</h2>
+    <h2>P(Misalignment at Handoff)</h2>
     <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
         Probability of AI takeover given the safety-research-speed-adjusted handoff duration (time between AC and SAR).
     </p>
     <div class="param-row">
         <div class="param-group">
-            <label for="p_ai_takeover_t1">At 1 month</label>
-            <input type="number" id="p_ai_takeover_t1" placeholder="--" step="0.01" min="0" max="1">
+            <label for="p_misalignment_at_handoff_t1">At 1 month</label>
+            <input type="number" id="p_misalignment_at_handoff_t1" placeholder="--" step="0.01" min="0" max="1">
         </div>
         <div class="param-group">
-            <label for="p_ai_takeover_t2">At 1 year</label>
-            <input type="number" id="p_ai_takeover_t2" placeholder="--" step="0.01" min="0" max="1">
+            <label for="p_misalignment_at_handoff_t2">At 1 year</label>
+            <input type="number" id="p_misalignment_at_handoff_t2" placeholder="--" step="0.01" min="0" max="1">
         </div>
     </div>
     <div class="param-group">
-        <label for="p_ai_takeover_t3">At 10 years</label>
-        <input type="number" id="p_ai_takeover_t3" placeholder="--" step="0.01" min="0" max="1">
+        <label for="p_misalignment_at_handoff_t3">At 10 years</label>
+        <input type="number" id="p_misalignment_at_handoff_t3" placeholder="--" step="0.01" min="0" max="1">
     </div>
-    <div class="param-group">
-        <label for="handoff_speedup_threshold">Handoff Speedup Threshold</label>
-        <input type="number" id="handoff_speedup_threshold" placeholder="--" step="1" min="1" max="100">
-    </div>
-    <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
-        AI R&D speedup (relative to 2024) at which alignment research is assumed to be fully automated.
-    </p>
     <div class="param-group">
         <label for="research_relevance_of_pre_handoff_discount">Pre-Handoff Research Discount</label>
         <input type="number" id="research_relevance_of_pre_handoff_discount" placeholder="--" step="0.1" min="0" max="1">
@@ -53,19 +46,45 @@
         Multiplier for alignment research effort during slowdown (e.g., 1.5 = 50% more effort).
     </p>
     <div class="param-group">
-        <label for="alignment_tax_after_handoff_relative_to_during_handoff">Post-Handoff Tax Ratio</label>
-        <input type="number" id="alignment_tax_after_handoff_relative_to_during_handoff" placeholder="--" step="0.5" min="1" max="10">
+        <label for="alignment_tax_after_handoff">Alignment Tax After Handoff</label>
+        <input type="number" id="alignment_tax_after_handoff" placeholder="--" step="0.05" min="0" max="1">
     </div>
     <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
-        How much higher the required alignment tax is after handoff vs during (e.g., 2 = twice as high).
+        Proportion of compute spent on alignment after handoff (0 to 1). E.g., 0.1 = 10% of compute.
     </p>
     <div class="param-group">
-        <label for="safety_speedup_exponent">Safety Speedup Exponent</label>
-        <input type="number" id="safety_speedup_exponent" placeholder="--" step="0.1" min="0" max="2">
+        <label for="safety_speedup_multiplier">Safety Speedup Multiplier</label>
+        <input type="number" id="safety_speedup_multiplier" placeholder="--" step="0.1" min="0" max="2">
     </div>
     <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
-        Safety speedup = capability_speedup ^ exponent. E.g., 0.5 means safety speedup is sqrt of capability speedup.
+        Safety speedup = capability_speedup × multiplier. E.g., 0.5 means safety speedup is half of capability speedup.
     </p>
+    <div class="param-group">
+        <label for="max_alignment_speedup_before_handoff">Max Alignment Speedup</label>
+        <input type="number" id="max_alignment_speedup_before_handoff" placeholder="--" step="1" min="1" max="100">
+    </div>
+    <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
+        Maximum alignment speedup before handoff. Caps the formula: min(max, capability_speedup × multiplier).
+    </p>
+
+    <h2>P(Misalignment after Handoff)</h2>
+    <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
+        Probability of misalignment after handoff given the alignment tax (proportion of compute on alignment).
+    </p>
+    <div class="param-row">
+        <div class="param-group">
+            <label for="p_misalignment_after_handoff_t1">At 1%</label>
+            <input type="number" id="p_misalignment_after_handoff_t1" placeholder="--" step="0.01" min="0" max="1">
+        </div>
+        <div class="param-group">
+            <label for="p_misalignment_after_handoff_t2">At 10%</label>
+            <input type="number" id="p_misalignment_after_handoff_t2" placeholder="--" step="0.01" min="0" max="1">
+        </div>
+    </div>
+    <div class="param-group">
+        <label for="p_misalignment_after_handoff_t3">At 100%</label>
+        <input type="number" id="p_misalignment_after_handoff_t3" placeholder="--" step="0.01" min="0" max="1">
+    </div>
 
     <h2>P(Human Power Grabs)</h2>
     <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
@@ -91,8 +110,8 @@
         Model scenarios where the PRC covert project gains access to leading AI lab software (weights and/or algorithms).
     </p>
     <div class="param-group">
-        <label for="weight_stealing_enabled">Weight Stealing</label>
-        <select id="weight_stealing_enabled" style="width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+        <label for="weight_stealing_times">Weight Stealing</label>
+        <select id="weight_stealing_times" style="width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
             <option value="none">Disabled</option>
             <option value="SC" selected>At SC (Superhuman Coder)</option>
             <option value="SAR">At SAR (Strong AI Researcher)</option>
@@ -102,8 +121,8 @@
         When enabled, the covert project gains the AI capabilities (automation fraction, research taste) of the leading project at the specified milestone.
     </p>
     <div class="param-group">
-        <label for="algorithm_stealing_enabled">Algorithm Stealing Up To</label>
-        <select id="algorithm_stealing_enabled" style="width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+        <label for="stealing_algorithms_up_to">Algorithm Stealing Up To</label>
+        <select id="stealing_algorithms_up_to" style="width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
             <option value="none">Disabled</option>
             <option value="SC">SC (Superhuman Coder)</option>
             <option value="SAR" selected>SAR (Strong AI Researcher)</option>

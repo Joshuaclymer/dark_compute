@@ -358,7 +358,8 @@ class TakeoffModel:
         time: List[float],
         human_labor: List[float],
         compute: List[float],
-        proportion_compute_spent_on_experiments: float = 0.15
+        proportion_compute_spent_on_experiments: float = 0.15,
+        capability_cap: List[float] = None
     ) -> Dict[str, Any]:
         """
         Predict AI R&D speedup trajectory using default (median) parameters only.
@@ -371,6 +372,8 @@ class TakeoffModel:
             human_labor: List of human labor values at each time point
             compute: List of total compute values at each time point (H100-equivalents)
             proportion_compute_spent_on_experiments: Fraction of compute for experiments
+            capability_cap: Optional list of progress cap values at each time point.
+                If provided, progress will be upper-bounded by these values.
 
         Returns:
             Dictionary containing:
@@ -401,6 +404,11 @@ class TakeoffModel:
                 base_time_series.training_compute_growth_rate
             )
 
+            # Convert capability_cap to numpy array if provided
+            capability_cap_array = None
+            if capability_cap is not None:
+                capability_cap_array = np.array(capability_cap, dtype=float)
+
             # Run with default parameters
             predictor = TrajectoryPredictor(params=TakeoffParameters())
             milestones_dict = predictor.predict_from_time_series(
@@ -408,7 +416,8 @@ class TakeoffModel:
                 inference_compute=inference_compute,
                 experiment_compute=experiment_compute,
                 L_HUMAN=human_labor_array,
-                training_compute_growth_rate=training_compute_growth_rate
+                training_compute_growth_rate=training_compute_growth_rate,
+                capability_cap=capability_cap_array
             )
 
             trajectory = predictor.get_full_trajectory()

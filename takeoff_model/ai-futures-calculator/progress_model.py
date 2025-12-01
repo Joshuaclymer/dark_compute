@@ -58,6 +58,7 @@ class TimeSeriesData:
     inference_compute: np.ndarray  # AI labor supply (human-equivalents)
     experiment_compute: np.ndarray  # Experiment compute budget
     training_compute_growth_rate: np.ndarray  # Training compute budget
+    capability_cap: Optional[np.ndarray] = None  # Optional cap on progress at each time step
 
 
 # Global cache for TasteDistribution instances to avoid expensive reinitialization
@@ -4045,6 +4046,127 @@ class ProgressModel:
             times, progress_values, research_stock_values = integrate_progress(time_range, initial_progress, initial_research_stock_val, self.data, self.params)
             takeoff_start_research_stock = _log_interp(full_automation_time, times, research_stock_values)
             self.human_only_results['takeoff_start_stats'] = takeoff_start_human_only_stats
+
+        # Capability cap handling: The capability_cap is in terms of AI R&D speedup.
+        # We need to apply this cap to the underlying progress trajectory, not just the output metric.
+        # When speedup exceeds the cap, progress freezes until the cap catches up.
+        speedup_cap_at_times = None
+        if self.data.capability_cap is not None:
+            # Interpolate capability cap (AI R&D speedup cap) to match the times array
+            speedup_cap_at_times = np.interp(times, self.data.time, self.data.capability_cap)
+            # Apply 20% margin below the cap to ensure trajectory stays visually below the cap line
+            speedup_cap_at_times = speedup_cap_at_times * 0.8
+            logger.info(f"Applying AI R&D speedup cap to trajectory with 20% margin (range: {np.min(speedup_cap_at_times):.1f} to {np.max(speedup_cap_at_times):.1f})")
+
+            # Apply capability cap to progress trajectory:
+            # When speedup would exceed the cap, freeze progress at the level that gives cap speedup
+            # This is done by tracking the maximum progress allowed at each time step
+            capped_progress_values = np.zeros_like(progress_values)
+            capped_progress_values[0] = progress_values[0]
+
+            for i in range(1, len(times)):
+                t = times[i]
+                cap_speedup = speedup_cap_at_times[i]
+
+                # The candidate progress is the uncapped progress
+                candidate_progress = progress_values[i]
+
+                # Compute what speedup would be at candidate progress
+                # To compute speedup, we need automation fraction at this progress level
+                automation_fraction = self.params.automation_model.get_automation_fraction(candidate_progress)
+
+                # Get resources at this time
+                inference_compute = _log_interp(t, self.data.time, self.data.inference_compute)
+                L_HUMAN = _log_interp(t, self.data.time, self.data.L_HUMAN)
+
+                # Compute coding labor with present-day resources
+                # IMPORTANT: Use the same computation as the metrics loop to ensure consistency
+                if getattr(self.params, 'coding_labor_mode', 'simple_ces') == 'optimal_ces':
+                    logE = float(np.log(cfg.BASE_FOR_SOFTWARE_LOM) * candidate_progress)
+                    L_opt_present_resources = self.params.automation_model.coding_labor_optimal_ces(
+                        present_day_human_labor, present_day_inference_compute, logE, self.params
+                    )
+                    serial_coding_labor_present = float((L_opt_present_resources ** self.params.parallel_penalty) * self.params.coding_labor_normalization)
+                else:
+                    coding_labor_present = compute_coding_labor(
+                        automation_fraction, present_day_inference_compute, present_day_human_labor,
+                        self.params.rho_coding_labor, self.params.parallel_penalty, self.params.coding_labor_normalization
+                    )
+                    serial_coding_labor_present = float((coding_labor_present ** self.params.parallel_penalty) * self.params.coding_labor_normalization)
+
+                # Compute AI research taste
+                ai_research_taste = compute_ai_research_taste(candidate_progress, self.params)
+                aggregate_taste = compute_aggregate_research_taste(ai_research_taste, self.params.taste_distribution)
+
+                # Compute research effort with present-day resources
+                research_effort_present = compute_research_effort(
+                    present_day_experiment_compute, serial_coding_labor_present,
+                    self.params.alpha_experiment_capacity, self.params.rho_experiment_capacity,
+                    self.params.experiment_compute_exponent, aggregate_taste
+                )
+
+                # Compute software progress rate with present-day resources
+                software_rate_present = compute_software_progress_rate(
+                    present_day_research_stock, research_effort_present,
+                    self.params.r_software
+                )
+
+                # Compute speedup
+                candidate_speedup = software_rate_present / present_day_sw_progress_rate if present_day_sw_progress_rate > 0 else 0.0
+
+                if candidate_speedup <= cap_speedup:
+                    # Speedup is within cap, allow progress to advance
+                    capped_progress_values[i] = candidate_progress
+                else:
+                    # Speedup exceeds cap - need to find the progress level that gives exactly cap_speedup
+                    # Use binary search between previous capped progress and candidate progress
+                    low_prog = capped_progress_values[i-1]
+                    high_prog = candidate_progress
+
+                    # Binary search for progress that gives cap_speedup
+                    for _ in range(20):  # 20 iterations gives ~1e-6 precision
+                        mid_prog = (low_prog + high_prog) / 2
+
+                        # Compute speedup at mid_prog
+                        # IMPORTANT: Use the same computation as the metrics loop to ensure consistency
+                        if getattr(self.params, 'coding_labor_mode', 'simple_ces') == 'optimal_ces':
+                            mid_logE = float(np.log(cfg.BASE_FOR_SOFTWARE_LOM) * mid_prog)
+                            mid_L_opt = self.params.automation_model.coding_labor_optimal_ces(
+                                present_day_human_labor, present_day_inference_compute, mid_logE, self.params
+                            )
+                            mid_serial_labor = float((mid_L_opt ** self.params.parallel_penalty) * self.params.coding_labor_normalization)
+                        else:
+                            mid_automation = self.params.automation_model.get_automation_fraction(mid_prog)
+                            mid_coding_labor = compute_coding_labor(
+                                mid_automation, present_day_inference_compute, present_day_human_labor,
+                                self.params.rho_coding_labor, self.params.parallel_penalty, self.params.coding_labor_normalization
+                            )
+                            mid_serial_labor = float((mid_coding_labor ** self.params.parallel_penalty) * self.params.coding_labor_normalization)
+                        mid_taste = compute_ai_research_taste(mid_prog, self.params)
+                        mid_aggregate_taste = compute_aggregate_research_taste(mid_taste, self.params.taste_distribution)
+                        mid_research_effort = compute_research_effort(
+                            present_day_experiment_compute, mid_serial_labor,
+                            self.params.alpha_experiment_capacity, self.params.rho_experiment_capacity,
+                            self.params.experiment_compute_exponent, mid_aggregate_taste
+                        )
+                        mid_software_rate = compute_software_progress_rate(
+                            present_day_research_stock, mid_research_effort,
+                            self.params.r_software
+                        )
+                        mid_speedup = mid_software_rate / present_day_sw_progress_rate if present_day_sw_progress_rate > 0 else 0.0
+
+                        if mid_speedup < cap_speedup:
+                            low_prog = mid_prog
+                        else:
+                            high_prog = mid_prog
+
+                    # Use the conservative (lower) bound
+                    capped_progress_values[i] = low_prog
+
+            # Replace progress_values with capped values
+            progress_values = capped_progress_values
+            logger.info(f"Applied capability cap: progress range [{progress_values[0]:.3f}, {progress_values[-1]:.3f}]")
+
         # Fix for Case 2 anchor horizon blowup: Update anchor_progress after ODE integration
         # This ensures that the horizon at present_day matches the specified present_horizon value
         if (self.horizon_trajectory is not None and 
@@ -4345,10 +4467,14 @@ class ProgressModel:
                     ai_coding_labor_mult_ref_present_day.append(coding_labor_with_present_resources / present_day_human_labor if ai_contrib > 0 else 1.0)
                 else:
                     ai_coding_labor_multipliers.append(0.0)
-                ai_sw_progress_mult_ref_present_day.append(software_rate_present_resources / present_day_sw_progress_rate if present_day_sw_progress_rate > 0 else 0.0)
+                # AI R&D speedup is computed directly from the (now capped) progress trajectory
+                # The capability cap was already applied to progress_values earlier, so the speedup
+                # computed here will naturally respect the cap
+                speedup = software_rate_present_resources / present_day_sw_progress_rate if present_day_sw_progress_rate > 0 else 0.0
+                ai_sw_progress_mult_ref_present_day.append(speedup)
                 if takeoff_start_human_only_stats is not None:
                     takeoff_progress_multipliers.append(research_effort_takeoff_start_resources / takeoff_start_human_only_stats['research_effort'] if takeoff_start_human_only_stats['research_effort'] > 0 else 0.0)
-                
+
             except Exception as e:
                 assert False, f"Error calculating metrics at t={t}: {e}"
                 logger.warning(f"Error calculating metrics at t={t}: {e}")

@@ -1,106 +1,68 @@
 """
-Proxy project calculations for the slowdown model.
+Proxy Project data formatting for plots.
 
-This module handles computing the compute trajectory and AI R&D speedup
-for a "proxy project" that approximates PRC covert capabilities based
-on a percentile of the covert compute distribution.
+This module provides functions to format proxy project data for frontend plots.
+The actual computation logic is in backend/classes/us_project.py.
+
+Trajectory naming conventions:
+- 'global' or 'us_no_slowdown': Largest US company trajectory WITHOUT slowdown (no cap)
+- 'proxy_project': Proxy project trajectory (compute capped based on PRC covert estimate)
+- 'covert': PRC covert AI R&D trajectory
+- 'prc_no_slowdown': PRC trajectory if there were no slowdown (they kept pace with US)
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
-from backend.paramaters import ProxyProject
+from backend.paramaters import ProxyProjectParameters
+from backend.classes.us_project import ProxyProject
 
 
-def compute_proxy_project_compute(
-    years: List[float],
-    covert_compute_percentiles: Dict[str, List[float]],
-    proxy_params: ProxyProject
+def compute_proxy_project_compute_cap(
+    years: list,
+    covert_compute_percentiles: Dict[str, list],
+    proxy_project_params: ProxyProjectParameters
 ) -> Dict[str, Any]:
-    """Compute the compute available to a proxy project over time.
+    """
+    Compute the compute cap for the proxy project scenario over time.
 
-    The proxy project's compute cap is determined by taking a given percentile
-    of the PRC operational covert compute distribution. The cap is updated
-    at a specified frequency, creating a discrete/step-change curve.
+    This is a convenience wrapper around ProxyProject.compute_compute_cap()
+    for backward compatibility.
 
     Args:
         years: List of years for the time series
         covert_compute_percentiles: Dict with keys like 'p10', 'p25', 'p50', 'p75', 'p90'
             containing lists of compute values at each percentile for each year
-        proxy_params: ProxyProject dataclass containing:
-            - compute_cap_as_percentile_of_PRC_operational_covert_compute: float (0-1)
-            - frequency_cap_is_updated_in_years: float
+        proxy_project_params: ProxyProjectParameters dataclass
 
     Returns:
         Dictionary with:
             - 'years': List of years
-            - 'compute': List of compute values for the proxy project
+            - 'compute': List of compute cap values
     """
-    if not years or not covert_compute_percentiles:
-        return {'years': [], 'compute': []}
-
-    percentile = proxy_params.compute_cap_as_percentile_of_PRC_operational_covert_compute
-    update_frequency = proxy_params.frequency_cap_is_updated_in_years
-
-    # Determine which percentile key to use based on the percentile value
-    # Map the percentile (0-1) to the available keys
-    percentile_keys = {
-        0.10: 'p10',
-        0.25: 'p25',
-        0.50: 'p50',
-        0.75: 'p75',
-        0.90: 'p90'
-    }
-
-    # Find the closest available percentile
-    available_percentiles = sorted(percentile_keys.keys())
-    closest_percentile = min(available_percentiles, key=lambda x: abs(x - percentile))
-    percentile_key = percentile_keys[closest_percentile]
-
-    # Get the covert compute values at the selected percentile
-    if percentile_key not in covert_compute_percentiles:
-        # Fallback to median if the exact percentile isn't available
-        percentile_key = 'p50' if 'p50' in covert_compute_percentiles else 'median'
-
-    if percentile_key not in covert_compute_percentiles:
-        return {'years': [], 'compute': []}
-
-    covert_compute_at_percentile = covert_compute_percentiles[percentile_key]
-
-    # Build the step-change curve
-    # The proxy project updates its cap at the specified frequency
-    proxy_compute = []
-    current_cap = None
-    last_update_year = None
-
-    for i, year in enumerate(years):
-        if last_update_year is None or (year - last_update_year) >= update_frequency:
-            # Update the cap
-            current_cap = covert_compute_at_percentile[i]
-            last_update_year = year
-
-        proxy_compute.append(current_cap if current_cap is not None else 0)
-
-    return {
-        'years': list(years),
-        'compute': proxy_compute
-    }
+    proxy_project = ProxyProject(params=proxy_project_params)
+    return proxy_project.compute_compute_cap(years, covert_compute_percentiles)
 
 
 def compute_proxy_project_trajectory(
     covert_compute_data: Optional[Dict[str, Any]],
-    proxy_project_params: Optional[ProxyProject] = None
+    proxy_project_params: Optional[ProxyProjectParameters] = None
 ) -> Optional[Dict[str, Any]]:
-    """Compute proxy project compute trajectory.
+    """
+    Compute proxy project compute trajectory (the cap for post-agreement period).
 
-    The proxy project's cap is based on a percentile of the PRC covert compute distribution
-    and is updated at a specified frequency (creating step changes).
+    This is a convenience wrapper for backward compatibility that returns just
+    the compute cap data formatted for plots.
+
+    Note: The full proxy project trajectory in monte carlo results combines:
+    - Largest US company compute before agreement year
+    - This computed cap after agreement year
 
     Args:
         covert_compute_data: Cached simulation data with covert compute info
-        proxy_project_params: ProxyProject parameters (uses defaults if None)
+        proxy_project_params: ProxyProjectParameters (uses defaults if None)
 
     Returns:
-        Dictionary with 'years' and 'compute' lists for the proxy project compute,
+        Dictionary with 'years' and 'compute' lists for the compute cap,
         or None if insufficient data
     """
     if not covert_compute_data:
@@ -121,13 +83,9 @@ def compute_proxy_project_trajectory(
     if not post_years or not covert_compute_percentiles:
         return None
 
-    # Compute proxy project compute (use provided params or defaults)
+    # Use new class for computation
     if proxy_project_params is None:
-        proxy_project_params = ProxyProject()
-    proxy_project_data = compute_proxy_project_compute(
-        post_years,
-        covert_compute_percentiles,
-        proxy_project_params
-    )
+        proxy_project_params = ProxyProjectParameters()
 
-    return proxy_project_data
+    proxy_project = ProxyProject(params=proxy_project_params)
+    return proxy_project.compute_compute_cap(post_years, covert_compute_percentiles)

@@ -85,7 +85,9 @@ class TrajectoryPredictor:
         experiment_compute_leading_project: Optional[np.ndarray] = None,
         L_HUMAN_leading_project: Optional[np.ndarray] = None,
         years_weights_are_stolen_from_leading_project: Optional[List[Union[float, str]]] = None,
-        stealing_algorithms_up_to: Optional[Union[float, str]] = None
+        stealing_algorithms_up_to: Optional[Union[float, str]] = None,
+        # Capability cap - upper bound on progress at each time step
+        capability_cap: Optional[np.ndarray] = None
     ) -> Dict[str, MilestoneInfo]:
         """
         Predict capability milestones from compute time series.
@@ -108,6 +110,10 @@ class TrajectoryPredictor:
                 same software efficiency as the leading project. Can be a float (decimal year) or
                 string (milestone name). This models the scenario where algorithms/techniques are
                 stolen from the leading project. (optional)
+            capability_cap: Optional time series of progress caps. At each time step, progress will
+                be upper bounded by the corresponding value in this array. This models scenarios where
+                capabilities are externally constrained (e.g., by regulatory caps or evaluation-based
+                limits). Must have the same length as the time array if provided. (optional)
 
         Returns:
             Dictionary mapping milestone names to MilestoneInfo objects.
@@ -153,6 +159,10 @@ class TrajectoryPredictor:
             # Default to 0.5 OOMs/year (moderate training compute growth)
             training_compute_growth_rate = np.ones_like(time) * 0.5
 
+        # Validate capability_cap if provided
+        if capability_cap is not None and len(capability_cap) != len(time):
+            raise ValueError("capability_cap must have same length as time array")
+
         # Check if we're in weight stealing mode or algorithm stealing mode
         has_weight_stealing = (
             years_weights_are_stolen_from_leading_project is not None and
@@ -192,7 +202,8 @@ class TrajectoryPredictor:
             L_HUMAN=L_HUMAN,
             inference_compute=inference_compute,
             experiment_compute=experiment_compute,
-            training_compute_growth_rate=training_compute_growth_rate
+            training_compute_growth_rate=training_compute_growth_rate,
+            capability_cap=capability_cap
         )
 
         if weight_stealing_mode:
@@ -357,7 +368,9 @@ def predict_milestones_from_compute(
     experiment_compute_leading_project: Optional[Union[np.ndarray, List[float]]] = None,
     L_HUMAN_leading_project: Optional[Union[np.ndarray, List[float]]] = None,
     years_weights_are_stolen_from_leading_project: Optional[List[Union[float, str]]] = None,
-    stealing_algorithms_up_to: Optional[Union[float, str]] = None
+    stealing_algorithms_up_to: Optional[Union[float, str]] = None,
+    # Capability cap - upper bound on progress at each time step
+    capability_cap: Optional[Union[np.ndarray, List[float]]] = None
 ) -> Dict[str, MilestoneInfo]:
     """
     Convenience function to predict milestones from compute time series.
@@ -380,6 +393,8 @@ def predict_milestones_from_compute(
         stealing_algorithms_up_to: Time or milestone up to which the stealing project has the
             same software efficiency as the leading project. Can be a float (decimal year) or
             string (milestone name like "SC"). (optional)
+        capability_cap: Optional time series of progress caps. At each time step, progress will
+            be upper bounded by the corresponding value in this array. (optional)
 
     Returns:
         Dictionary mapping milestone names to MilestoneInfo objects.
@@ -436,6 +451,10 @@ def predict_milestones_from_compute(
     if L_HUMAN_leading_project is not None:
         L_HUMAN_leading_project = np.asarray(L_HUMAN_leading_project, dtype=float)
 
+    # Convert capability_cap if provided
+    if capability_cap is not None:
+        capability_cap = np.asarray(capability_cap, dtype=float)
+
     # Create predictor and run
     predictor = TrajectoryPredictor(params=params)
     milestones = predictor.predict_from_time_series(
@@ -449,7 +468,8 @@ def predict_milestones_from_compute(
         experiment_compute_leading_project=experiment_compute_leading_project,
         L_HUMAN_leading_project=L_HUMAN_leading_project,
         years_weights_are_stolen_from_leading_project=years_weights_are_stolen_from_leading_project,
-        stealing_algorithms_up_to=stealing_algorithms_up_to
+        stealing_algorithms_up_to=stealing_algorithms_up_to,
+        capability_cap=capability_cap
     )
 
     return milestones

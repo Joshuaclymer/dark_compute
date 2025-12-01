@@ -2,6 +2,10 @@
 
 // Plot P(AI Takeover) curve
 function plotPAiTakeover(data) {
+    if (!data || !data.durations || !data.p_ai_takeover || !data.anchor_points || !data.anchor_times) {
+        console.warn('plotPAiTakeover: Missing required data');
+        return;
+    }
     const durations = data.durations;
     const pTakeover = data.p_ai_takeover;
     const anchors = data.anchor_points.ai_takeover;
@@ -88,6 +92,10 @@ function plotPAiTakeover(data) {
 
 // Plot P(Human Power Grabs) curve
 function plotPHumanPowerGrabs(data) {
+    if (!data || !data.durations || !data.p_human_power_grabs || !data.anchor_points || !data.anchor_times) {
+        console.warn('plotPHumanPowerGrabs: Missing required data');
+        return;
+    }
     const durations = data.durations;
     const pPowerGrabs = data.p_human_power_grabs;
     const anchors = data.anchor_points.human_power_grabs;

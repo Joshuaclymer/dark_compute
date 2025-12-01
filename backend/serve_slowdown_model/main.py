@@ -22,6 +22,7 @@ from backend.paramaters import (
     CovertProjectProperties,
     CovertProjectParameters,
     SlowdownPageParameters,
+    PCatastropheParameters,
 )
 
 from .monte_carlo import (
@@ -36,6 +37,7 @@ from .p_catastrophe import (
     compute_p_catastrophe_over_time,
     compute_optimal_compute_cap_over_time,
     compute_risk_reduction_over_time,
+    compute_risk_breakdown_data,
 )
 from .compute_curves import (
     combine_prc_and_covert_compute,
@@ -507,6 +509,28 @@ def get_trajectory_data_fast(
         p_cat_params
     )
 
+    # Compute risk breakdown data for the visualization
+    risk_breakdown_data = compute_risk_breakdown_data(
+        proxy_mc,
+        params.simulation_settings.start_agreement_at_specific_year,
+        p_cat_params
+    )
+
+    # Get default parameter values for frontend
+    default_p_cat = PCatastropheParameters()
+    default_parameters = {
+        'num_mc_samples': 1,
+        'safety_speedup_exponent': default_p_cat.safety_speedup_exponent,
+        'p_ai_takeover_t1': default_p_cat.p_misalignment_at_handoff_t1,
+        'p_ai_takeover_t2': default_p_cat.p_misalignment_at_handoff_t2,
+        'p_ai_takeover_t3': default_p_cat.p_misalignment_at_handoff_t3,
+        'p_human_power_grabs_t1': default_p_cat.p_human_power_grabs_t1,
+        'p_human_power_grabs_t2': default_p_cat.p_human_power_grabs_t2,
+        'p_human_power_grabs_t3': default_p_cat.p_human_power_grabs_t3,
+        'weight_stealing_enabled': 'SC',
+        'algorithm_stealing_enabled': 'SAR',
+    }
+
     return {
         'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
         'covert_compute_data': covert_compute_data,
@@ -524,7 +548,9 @@ def get_trajectory_data_fast(
         'p_catastrophe_curves': p_catastrophe_curves,
         'p_catastrophe_over_time': p_catastrophe_over_time,
         'optimal_compute_cap_over_time': optimal_compute_cap_over_time,
-        'risk_reduction_over_time': risk_reduction_over_time
+        'risk_reduction_over_time': risk_reduction_over_time,
+        'risk_breakdown_data': risk_breakdown_data,
+        'default_parameters': default_parameters
     }
 
 

@@ -249,17 +249,56 @@ class ModelParameters:
     
 @dataclass
 class PCatastropheParameters:
-    p_ai_takeover_t1: float = 0.40 # time is adjusted for safety research speed
-    p_ai_takeover_t2: float = 0.10
-    p_ai_takeover_t3: float = 0.04
+    # --- P(misalignment at handoff) anchor points ---
+    # These are probabilities at 1 month, 1 year, and 10 years of adjusted alignment research time
+    # See slowdown_model.md for details on how adjusted alignment research time is computed
+    p_misalignment_at_handoff_t1: float = 0.40  # at 1 month of adjusted research time
+    p_misalignment_at_handoff_t2: float = 0.10  # at 1 year
+    p_misalignment_at_handoff_t3: float = 0.04  # at 10 years
 
-    p_human_power_grabs_t1: float = 0.40 # time is NOT adjusted for research speed
-    p_human_power_grabs_t2: float = 0.20
-    p_human_power_grabs_t3: float = 0.03
+    # --- P(human power grabs) anchor points ---
+    # Based on SAR to ASI duration (time society has to react)
+    # See slowdown_model.md section "Modeling Human Power Grab Risk"
+    p_human_power_grabs_t1: float = 0.40  # at 1 month SAR-to-ASI
+    p_human_power_grabs_t2: float = 0.15  # at 1 year
+    p_human_power_grabs_t3: float = 0.05  # at 10 years
 
+    # --- Safety research adjustment parameters ---
     # Safety research speedup = capability_speedup ^ safety_speedup_exponent
-    # e.g., exponent=0.5 means safety speedup is sqrt of capability speedup
+    # e.g., exponent=0.5 means alignment speedup is sqrt of capability speedup
     safety_speedup_exponent: float = 0.5
+
+    # Backward compatibility aliases for p_ai_takeover (deprecated naming)
+    @property
+    def p_ai_takeover_t1(self) -> float:
+        return self.p_misalignment_at_handoff_t1
+
+    @property
+    def p_ai_takeover_t2(self) -> float:
+        return self.p_misalignment_at_handoff_t2
+
+    @property
+    def p_ai_takeover_t3(self) -> float:
+        return self.p_misalignment_at_handoff_t3
+
+    # Discount factor for pre-handoff research (present day -> automated coder)
+    # Research during this period is less relevant than during handoff window
+    research_relevance_of_pre_handoff_discount: float = 0.1
+
+    # Multiplier for alignment research effort during slowdown period
+    # If > 1, indicates increased focus on alignment during slowdown
+    increase_in_alignment_research_effort_during_slowdown: float = 1.5
+
+    # --- Post-handoff parameters ---
+    # Present day year for calculations
+    present_day_year: float = 2026.0
+
+    # AI R&D speedup threshold that defines "handoff" (when alignment research is fully automated)
+    handoff_speedup_threshold: float = 20.0
+
+    # Ratio: how much higher the required alignment tax is after handoff vs during handoff
+    # If 2.0, the alignment tax required after handoff is 2x higher than during handoff
+    alignment_tax_after_handoff_relative_to_during_handoff: float = 2.0
 
 @dataclass
 class ProxyProject:

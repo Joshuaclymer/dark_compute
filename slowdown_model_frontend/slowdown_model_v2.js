@@ -56,8 +56,16 @@ async function loadComponents() {
     await Promise.all(loadPromises);
 }
 
+// Track whether defaults have been populated
+let sidebarDefaultsPopulated = false;
+
 // Plot all charts from the data
 function plotAllCharts(data) {
+    // Populate sidebar defaults from backend on first load only
+    if (!sidebarDefaultsPopulated && typeof populateSidebarDefaults === 'function') {
+        populateSidebarDefaults(data);
+        sidebarDefaultsPopulated = true;
+    }
     plotTakeoffModel(data);
     plotCovertCompute(data);
     plotCovertUncertainty(data);

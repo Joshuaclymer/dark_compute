@@ -153,6 +153,28 @@ def log_client_error():
         print(f"ERROR logging client error: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
+@app.route('/log_frontend', methods=['POST'])
+def log_frontend():
+    """Log frontend debug messages to the server console."""
+    try:
+        log_data = request.json
+        logs = log_data.get('logs', [])
+        print(f"\n{'='*80}", flush=True)
+        print(f"FRONTEND LOGS ({len(logs)} messages):", flush=True)
+        for log in logs:
+            level = log.get('level', 'log')
+            msg = log.get('message', '')
+            data = log.get('data')
+            if data:
+                print(f"  [{level.upper()}] {msg}: {json.dumps(data, indent=2, default=str)}", flush=True)
+            else:
+                print(f"  [{level.upper()}] {msg}", flush=True)
+        print(f"{'='*80}\n", flush=True)
+        return jsonify({"status": "logged"}), 200
+    except Exception as e:
+        print(f"ERROR logging frontend: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/get_default_results')
 def get_default_results():
     """Get cached default simulation results."""
@@ -174,10 +196,12 @@ def _parse_slowdown_params_from_request() -> SlowdownPageParameters:
     num_mc_samples = int(request.args.get('num_mc_samples', 3))
 
     # P(Catastrophe) parameters
+    # Note: p_ai_takeover_t1/t2/t3 from request are mapped to p_misalignment_at_handoff_t1/t2/t3
+    # (the documented naming - see slowdown_model.md)
     p_cat_params = PCatastropheParameters(
-        p_ai_takeover_t1=float(request.args.get('p_ai_takeover_t1', 0.40)),
-        p_ai_takeover_t2=float(request.args.get('p_ai_takeover_t2', 0.15)),
-        p_ai_takeover_t3=float(request.args.get('p_ai_takeover_t3', 0.05)),
+        p_misalignment_at_handoff_t1=float(request.args.get('p_ai_takeover_t1', 0.40)),
+        p_misalignment_at_handoff_t2=float(request.args.get('p_ai_takeover_t2', 0.15)),
+        p_misalignment_at_handoff_t3=float(request.args.get('p_ai_takeover_t3', 0.05)),
         p_human_power_grabs_t1=float(request.args.get('p_human_power_grabs_t1', 0.40)),
         p_human_power_grabs_t2=float(request.args.get('p_human_power_grabs_t2', 0.20)),
         p_human_power_grabs_t3=float(request.args.get('p_human_power_grabs_t3', 0.10)),

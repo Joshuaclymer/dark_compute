@@ -1,23 +1,446 @@
-<!-- Risk Breakdown Plot Component -->
+<!-- Risk Breakdown Section -->
 <div class="p-catastrophe-over-time-section" style="margin-bottom: 30px;">
-    <div class="breakdown-plots-row" style="align-items: center;">
-        <div class="breakdown-item" style="min-width: 200px; flex: 1 1 200px;">
-            <div id="riskNoSlowdownPlot" class="breakdown-plot" style="height: 300px;"></div>
-            <div class="breakdown-label">Risk without slowdown</div>
+
+    <!-- Section 1: Top-level breakdown of P(Domestic Takeover) -->
+    <div class="section-description" style="margin-bottom: 20px; text-align: left; font-size: 15px;">
+        The risk of domestic takeover (by AI or humans) combines two independent risk sources: AI takeover from misalignment and human power grabs enabled by AI capabilities.
+    </div>
+    <div class="breakdown-plots-row">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <span style="font-size: 18px; color: #888;">(1 −</span>
+                        <span id="p-no-ai-takeover-value" style="font-size: 24px; font-weight: bold; color: #E8A863;">--%</span>
+                        <span style="font-size: 18px; color: #888;">)</span>
+                    </div>
+                    <div class="breakdown-label">P(No AI Takeover)</div>
+                    <div class="breakdown-description">Probability AI remains aligned</div>
+                </div>
+            </div>
         </div>
-        <div class="operator" style="height: 300px; display: flex; align-items: center; justify-content: center;">
-            <div style="font-size: 24px; font-weight: bold; color: #666;">−</div>
+        <div class="operator">
+            ×
         </div>
-        <div class="breakdown-item" style="min-width: 200px; flex: 1 1 200px;">
-            <div id="riskWithSlowdownPlot" class="breakdown-plot" style="height: 300px;"></div>
-            <div class="breakdown-label">Risk with slowdown</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <span style="font-size: 18px; color: #888;">(1 −</span>
+                        <span id="p-no-human-power-grabs-value" style="font-size: 24px; font-weight: bold; color: #5AA89B;">--%</span>
+                        <span style="font-size: 18px; color: #888;">)</span>
+                    </div>
+                    <div class="breakdown-label">P(No Human Power Grabs)</div>
+                    <div class="breakdown-description">Probability humans don't seize power</div>
+                </div>
+            </div>
         </div>
-        <div class="operator" style="height: 300px; display: flex; align-items: center; justify-content: center;">
-            <div style="font-size: 24px; font-weight: bold; color: #666;">=</div>
+        <div class="operator">
+            =
         </div>
-        <div class="breakdown-item" style="min-width: 200px; flex: 1 1 200px;">
-            <div id="riskReductionResultPlot" class="breakdown-plot" style="height: 300px;"></div>
-            <div class="breakdown-label">Risk reduction</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div id="p-no-domestic-takeover-value" style="font-size: 24px; font-weight: bold; color: #5B8DBE;">--%</div>
+                    <div class="breakdown-label">P(No Domestic Takeover)</div>
+                    <div class="breakdown-description">Probability no takeover occurs</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator arrow-operator" style="flex-direction: column;">
+            <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">invert</div>
+            <div style="font-size: 20px; color: #666;">→</div>
+        </div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px; border-color: #5B8DBE;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div id="p-domestic-takeover-value" style="font-size: 24px; font-weight: bold; color: #5B8DBE;">--%</div>
+                    <div class="breakdown-label">P(Domestic Takeover)</div>
+                    <div class="breakdown-description">Combined risk of takeover by AI or humans</div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Section 1: Breaking down P(Human Power Grabs) -->
+    <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
+        <strong>1. Breaking down P(Human Power Grabs):</strong> The risk of human power grabs depends on how quickly AI capabilities advance. A slower transition from superhuman AI researcher (SAR) to ASI gives society more time to establish safeguards.
+    </div>
+    <div class="breakdown-plots-row" style="align-items: flex-start;">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div id="sar-to-asi-duration" style="font-size: 20px; font-weight: bold; color: #666;">-- yrs</div>
+                    <div class="breakdown-label">SAR → ASI Duration</div>
+                    <div class="breakdown-description">Time from superhuman AI researcher to ASI</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator arrow-operator" style="flex-direction: column;">
+            <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">Plug into</div>
+            <div style="font-size: 20px; color: #666;">→</div>
+        </div>
+        <!-- Plot showing the mapping function -->
+        <div style="min-width: 280px; max-width: 350px; display: flex; flex-direction: column; align-items: stretch; margin-top: 20px; margin-bottom: 10px;">
+            <div id="human-power-grabs-mapping-plot" style="width: 100%; height: 200px;"></div>
+            <div class="breakdown-label" style="text-align: center; font-size: 11px;">
+                SAR → ASI duration → P(Human Power Grabs)
+            </div>
+            <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+                Anchor points: 1 month (<span id="power-grab-anchor-1mo">40%</span>), 1 year (<span id="power-grab-anchor-1yr">20%</span>), 10 years (<span id="power-grab-anchor-10yr">3%</span>)
+            </div>
+        </div>
+        <div class="operator">=</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div id="p-human-power-grabs-result" style="font-size: 24px; font-weight: bold; color: #5AA89B;">--%</div>
+                    <div class="breakdown-label">P(Human Power Grabs)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Breaking down P(AI Takeover) -->
+    <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
+        <strong>2. Breaking down P(AI Takeover):</strong> AI takeover risk comes from misalignment that could be introduced at different times - AI systems could be misaligned at "handoff," when humans start deferring alignment research to AI, or AI systems could become misaligned <em>after</em> handoff if AI systems fail to align their successors.
+    </div>
+    <div class="breakdown-plots-row">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 160px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <span style="font-size: 18px; color: #888;">(1 −</span>
+                        <span id="p-no-misalignment-at-handoff-value" style="font-size: 24px; font-weight: bold; color: #E8A863;">--%</span>
+                        <span style="font-size: 18px; color: #888;">)</span>
+                    </div>
+                    <div class="breakdown-label">P(No Misalignment at Handoff)</div>
+                    <div class="breakdown-description">Probability aligned before 20x speedup</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">
+            ×
+        </div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 160px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <span style="font-size: 18px; color: #888;">(1 −</span>
+                        <span id="p-no-misalignment-after-handoff-value" style="font-size: 24px; font-weight: bold; color: #E8A863;">--%</span>
+                        <span style="font-size: 18px; color: #888;">)</span>
+                    </div>
+                    <div class="breakdown-label">P(No Misalignment after Handoff)</div>
+                    <div class="breakdown-description">Probability aligned after autonomous research</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">
+            =
+        </div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <span style="font-size: 18px; color: #888;">(1 −</span>
+                        <span id="p-no-ai-takeover-result" style="font-size: 24px; font-weight: bold; color: #E8A863;">--%</span>
+                        <span style="font-size: 18px; color: #888;">)</span>
+                    </div>
+                    <div class="breakdown-label">P(No AI Takeover)</div>
+                    <div class="breakdown-description">Probability AI stays aligned</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator arrow-operator" style="flex-direction: column;">
+            <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">invert</div>
+            <div style="font-size: 20px; color: #666;">→</div>
+        </div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div id="p-ai-takeover-result" style="font-size: 24px; font-weight: bold; color: #E8A863;">--%</div>
+                    <div class="breakdown-label">P(AI Takeover)</div>
+                    <div class="breakdown-description">Combined misalignment risk</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Breaking down P(Misalignment at Handoff) -->
+    <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
+        <strong>3. Breaking down P(Misalignment at Handoff):</strong> We assume 'handoff' happens when AI agents speed up AI R&D to 20x of today's rate of progress. The probability of misalignment at handoff depends on the "adjusted alignment research time" conducted prior to the handoff point. We estimate "effective" alignment research by first adjusting for (1) the relevance of the research based on when it is performed and (2) the speedup from AI assistance. To account for the relevance of the research, we consider two time periods separately: the period before frontier developers have automated coders (the pre-handoff window) and the period after frontier developers have automated coders (the handoff window):
+    </div>
+
+    <!-- Pre-automated coder period -->
+    <div style="margin-bottom: 10px; font-weight: bold; color: #555;">Pre-handoff window (Present → Automated Coder):</div>
+    <div class="breakdown-plots-row" style="margin-bottom: 20px;">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 110px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="pre-ac-calendar-time" style="font-size: 18px; font-weight: bold; color: #666;">-- yrs</div>
+                    <div class="breakdown-label">Calendar Time</div>
+                    <div class="breakdown-description">Present → Automated Coder</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">×</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 110px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="pre-ac-alignment-speedup" style="font-size: 18px; font-weight: bold; color: #666;">--x</div>
+                    <div class="breakdown-label">Avg. Alignment Speedup</div>
+                    <div class="breakdown-description">Avg of AI R&D speedup^<span id="safety-exponent-display-1">0.5</span> before AC</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">×</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 110px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="pre-ac-relevance" style="font-size: 18px; font-weight: bold; color: #666;">--</div>
+                    <div class="breakdown-label">Relevance Discount</div>
+                    <div class="breakdown-description">Value of alignment research<br>before AC relative to after</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">=</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 120px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="pre-ac-adjusted-time" style="font-size: 18px; font-weight: bold; color: #888;">-- yrs</div>
+                    <div class="breakdown-label">Adjusted Alignment Research (Pre-Handoff)</div>
+                    <div class="breakdown-description">Effective research years</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Handoff window period -->
+    <div style="margin-bottom: 10px; font-weight: bold; color: #555;">Handoff window (Automated Coder → Handoff):</div>
+    <div class="breakdown-plots-row" style="margin-bottom: 20px;">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 110px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="handoff-window-calendar-time" style="font-size: 18px; font-weight: bold; color: #666;">-- yrs</div>
+                    <div class="breakdown-label">Calendar Time</div>
+                    <div class="breakdown-description">Automated Coder → Handoff</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">×</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 110px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="handoff-window-alignment-speedup" style="font-size: 18px; font-weight: bold; color: #666;">--x</div>
+                    <div class="breakdown-label">Avg. Alignment Speedup</div>
+                    <div class="breakdown-description">Avg of AI R&D speedup^<span id="safety-exponent-display-2">0.5</span> after AC</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">×</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 110px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="handoff-window-relevance" style="font-size: 18px; font-weight: bold; color: #666;">1.0</div>
+                    <div class="breakdown-label">Relevance Multiplier</div>
+                    <div class="breakdown-description">Alignment research after AC<br>has full relevance</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">=</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 120px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="handoff-window-adjusted-time" style="font-size: 18px; font-weight: bold; color: #888;">-- yrs</div>
+                    <div class="breakdown-label">Adjusted Alignment Research (Handoff)</div>
+                    <div class="breakdown-description">Effective research years</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Slowdown effort adjustment -->
+    <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
+        <strong>4. Adjusting for slowdown effort:</strong> We make another adjustment to account for the increased focus on alignment research during an AI slowdown.
+    </div>
+    <div class="breakdown-plots-row" style="margin-bottom: 20px;">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 150px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="adjusted-time-before-agreement" style="font-size: 18px; font-weight: bold; color: #888;">-- yrs</div>
+                    <div class="breakdown-label">Effective Alignment Research Before Slowdown</div>
+                    <div class="breakdown-description">Research before <span id="agreement-year-display">--</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">+</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 150px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="adjusted-time-during-slowdown" style="font-size: 18px; font-weight: bold; color: #888;">-- yrs</div>
+                    <div class="breakdown-label">Effective Alignment Research During Slowdown</div>
+                    <div class="breakdown-description">Research after <span id="agreement-year-display-2">--</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">×</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 130px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="slowdown-effort-multiplier" style="font-size: 18px; font-weight: bold; color: #666;">--x</div>
+                    <div class="breakdown-label">Slowdown Effort Multiplier</div>
+                    <div class="breakdown-description">Increased alignment focus</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">=</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="total-adjusted-time-after-slowdown" style="font-size: 18px; font-weight: bold; color: #666;">-- yrs</div>
+                    <div class="breakdown-label">Total Effective Alignment Research</div>
+                    <div class="breakdown-description">Used to compute P(Misalignment at Handoff)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Combining these factors together -->
+    <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
+        <strong>5. Combining these factors together:</strong> We plug the adjusted alignment research into a function we came up with by surveying experts to estimate P(Misalignment at Handoff).
+    </div>
+    <div class="breakdown-plots-row" style="align-items: flex-start;">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="total-adjusted-alignment-time" style="font-size: 20px; font-weight: bold; color: #666;">-- yrs</div>
+                    <div class="breakdown-label">Total Effective Alignment Research</div>
+                    <div class="breakdown-description">From section 4</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator arrow-operator" style="flex-direction: column;">
+            <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">Plug into</div>
+            <div style="font-size: 20px; color: #666;">→</div>
+        </div>
+        <!-- Plot showing the mapping function -->
+        <div style="min-width: 280px; max-width: 350px; display: flex; flex-direction: column; align-items: stretch; margin-top: 20px; margin-bottom: 10px;">
+            <div id="misalignment-mapping-plot" style="width: 100%; height: 200px;"></div>
+            <div class="breakdown-label" style="text-align: center; font-size: 11px;">
+                Adjusted alignment research → P(Misalignment)
+            </div>
+            <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+                Anchor points: 1 month (<span id="anchor-1mo">40%</span>), 1 year (<span id="anchor-1yr">10%</span>), 10 years (<span id="anchor-10yr">4%</span>)
+            </div>
+        </div>
+        <div class="operator">=</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="p-misalignment-at-handoff-result" style="font-size: 24px; font-weight: bold; color: #E8A863;">--%</div>
+                    <div class="breakdown-label">P(Misalignment at Handoff)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Breaking down P(Misalignment after Handoff) -->
+    <div class="section-description" style="margin-top: 40px; margin-bottom: 20px; text-align: left; font-size: 15px;">
+        <strong>6. Breaking down P(Misalignment after Handoff):</strong> After handoff (when AI R&D speedup reaches 20x), alignment research is conducted autonomously by AI. Assuming the systems developers handoff to are safe to defer to, misalignment risk after handoff depends on the "alignment tax" - the ratio of alignment research effort to capability research effort. We assume a <span id="tax-multiplier-inline">--</span>x <span id="tax-multiplier-direction">higher</span> alignment tax after handoff is required to achieve the same safety level as during handoff.
+    </div>
+
+    <!-- Computing alignment tax after handoff -->
+    <div class="section-description" style="margin-bottom: 10px; text-align: left; font-size: 13px; color: #666; font-style: italic;">
+        The alignment tax paid <em>during handoff</em> is the ratio of adjusted alignment research time to adjusted capability research time during the handoff window.
+    </div>
+    <div class="breakdown-plots-row" style="margin-bottom: 20px;">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="post-handoff-alignment-time" style="font-size: 18px; font-weight: bold; color: #666;">-- yrs</div>
+                    <div class="breakdown-label">Adjusted Alignment Research</div>
+                    <div class="breakdown-description">Post-handoff alignment research</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">÷</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="post-handoff-capability-time" style="font-size: 18px; font-weight: bold; color: #666;">-- yrs</div>
+                    <div class="breakdown-label">Adjusted Capability Research</div>
+                    <div class="breakdown-description">Post-handoff capability research</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">=</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 130px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="alignment-tax-after-handoff" style="font-size: 18px; font-weight: bold; color: #666;">--</div>
+                    <div class="breakdown-label">Alignment Tax</div>
+                    <div class="breakdown-description">Ratio paid after handoff</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mapping tax to probability -->
+    <div class="section-description" style="margin-bottom: 10px; text-align: left; font-size: 13px; color: #666; font-style: italic;">
+        Then we assume the alignment tax paid after handoff is <span id="tax-multiplier-display">2</span>x higher than during handoff to achieve the same safety level.
+    </div>
+    <div class="breakdown-plots-row" style="align-items: flex-start;">
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 130px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="alignment-tax-after-handoff-2" style="font-size: 18px; font-weight: bold; color: #666;">--</div>
+                    <div class="breakdown-label">Alignment Tax Paid After Handoff</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">÷</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 130px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="tax-multiplier-value" style="font-size: 18px; font-weight: bold; color: #666;">--x</div>
+                    <div class="breakdown-label">Post-Handoff Multiplier</div>
+                    <div class="breakdown-description">Higher tax required after handoff</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator">=</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 130px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="effective-tax" style="font-size: 18px; font-weight: bold; color: #666;">--</div>
+                    <div class="breakdown-label">Pre-Handoff Alignment Tax Equivalent</div>
+                </div>
+            </div>
+        </div>
+        <div class="operator arrow-operator" style="flex-direction: column;">
+            <div style="font-size: 9px; text-align: center; color: #888; line-height: 1.3; margin-bottom: 5px;">Plug into</div>
+            <div style="font-size: 20px; color: #666;">→</div>
+        </div>
+        <!-- Plot showing the mapping function -->
+        <div style="min-width: 280px; max-width: 350px; display: flex; flex-direction: column; align-items: stretch; margin-top: 20px; margin-bottom: 10px;">
+            <div id="post-handoff-mapping-plot" style="width: 100%; height: 200px;"></div>
+            <div class="breakdown-label" style="text-align: center; font-size: 11px;">
+                Pre-handoff alignment tax → P(Misalignment)
+            </div>
+            <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+                Reformulation of the 'Adjusted alignment research → P(Misalignment)' curve
+            </div>
+        </div>
+        <div class="operator">=</div>
+        <div class="breakdown-box-item">
+            <div class="breakdown-box" style="min-width: 140px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <div id="p-misalignment-after-handoff-result" style="font-size: 24px; font-weight: bold; color: #E8A863;">--%</div>
+                    <div class="breakdown-label">P(Misalignment after Handoff)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 </div>

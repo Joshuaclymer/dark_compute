@@ -6,6 +6,47 @@ function getElementValue(id, fallback) {
     return el ? (el.value || fallback) : fallback;
 }
 
+// Populate sidebar inputs from backend defaults
+function populateSidebarDefaults(data) {
+    const defaults = data.default_parameters;
+    if (!defaults) {
+        console.warn('No default_parameters in data');
+        return;
+    }
+
+    // Set each input value from defaults
+    const inputMappings = {
+        'num_mc_samples': defaults.num_mc_samples,
+        'safety_speedup_exponent': defaults.safety_speedup_exponent,
+        'p_ai_takeover_t1': defaults.p_ai_takeover_t1,
+        'p_ai_takeover_t2': defaults.p_ai_takeover_t2,
+        'p_ai_takeover_t3': defaults.p_ai_takeover_t3,
+        'p_human_power_grabs_t1': defaults.p_human_power_grabs_t1,
+        'p_human_power_grabs_t2': defaults.p_human_power_grabs_t2,
+        'p_human_power_grabs_t3': defaults.p_human_power_grabs_t3,
+    };
+
+    for (const [inputId, value] of Object.entries(inputMappings)) {
+        const el = document.getElementById(inputId);
+        if (el && value !== undefined) {
+            el.value = value;
+        }
+    }
+
+    // Set select elements
+    const selectMappings = {
+        'weight_stealing_enabled': defaults.weight_stealing_enabled,
+        'algorithm_stealing_enabled': defaults.algorithm_stealing_enabled,
+    };
+
+    for (const [selectId, value] of Object.entries(selectMappings)) {
+        const el = document.getElementById(selectId);
+        if (el && value !== undefined) {
+            el.value = value;
+        }
+    }
+}
+
 // Collect all sidebar parameters and return as query string
 function collectSidebarParams() {
     const params = new URLSearchParams();
@@ -62,5 +103,5 @@ function initSidebar(onUpdateCallback) {
 
 // Export functions for module usage
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { collectSidebarParams, initSidebar };
+    module.exports = { collectSidebarParams, initSidebar, populateSidebarDefaults };
 }

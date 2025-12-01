@@ -84,58 +84,285 @@ class PCatastrophe:
 
         return sigmoid(logit_p)
 
-    def p_AI_takeover(self, research_speed_adjusted_handoff_duration: float, params: PCatastropheParameters) -> float:
+    def p_misalignment_at_handoff(self, adjusted_alignment_research_time: float, params: PCatastropheParameters) -> float:
         """
-        Estimate the probability of AI takeover given the adjusted takeoff duration.
+        Estimate the probability of misalignment at handoff given the adjusted alignment research time.
+
+        P(misalignment at handoff) is a function of alignment research time between present day
+        and handoff, adjusted for Research Speedup, Research Relevance, and Slowdown Effort.
+        See slowdown_model.md for details.
+
+        The function extrapolates from three anchor points:
+        - P(misalignment at handoff) if adjusted research time = 1 month
+        - P(misalignment at handoff) if adjusted research time = 1 year
+        - P(misalignment at handoff) if adjusted research time = 10 years
 
         Args:
-            research_speed_adjusted_handoff_duration (float): The handoff duration is the duration of time between SC and SAR. The research speed adjusted handoff duration is the handoff duration adjusted for the rate of AI R&D speedup. So for example, if the rate of AI R&D speed up is 2x during a handoff duration of 1 year, then the research speed adjusted handoff duration would be 2 years.
+            adjusted_alignment_research_time (float): Alignment research time adjusted for
+                speedup, relevance, and slowdown effort. For example, if there's a 2x AI R&D
+                speedup during 1 year of calendar time with exponent 0.5, the adjusted time
+                would be sqrt(2) * 1 = 1.41 years.
+
         Returns:
-            float: Estimated probability of AI takeover.
+            float: Estimated probability of misalignment at handoff.
         """
         return self._interpolate_probability(
-            research_speed_adjusted_handoff_duration,
-            params.p_ai_takeover_t1,
-            params.p_ai_takeover_t2,
-            params.p_ai_takeover_t3
+            adjusted_alignment_research_time,
+            params.p_misalignment_at_handoff_t1,
+            params.p_misalignment_at_handoff_t2,
+            params.p_misalignment_at_handoff_t3
         )
 
-    def p_human_power_grabs(self, handoff_duration: float, params: PCatastropheParameters) -> float:
+    def p_AI_takeover(self, research_speed_adjusted_handoff_duration: float, params: PCatastropheParameters) -> float:
         """
-        Estimate the probability of human power grabs given the handoff duration.
+        Alias for p_misalignment_at_handoff for backward compatibility.
+
+        Note: This function is deprecated. Use p_misalignment_at_handoff instead.
+        The naming "p_AI_takeover" was misleading as this estimates P(misalignment at handoff),
+        not the full P(AI takeover) which also includes P(misalignment after handoff).
 
         Args:
-            handoff_duration (float): The handoff duration is the duration of time between SC and SAR.
+            research_speed_adjusted_handoff_duration (float): The adjusted alignment research time.
+
+        Returns:
+            float: Estimated probability of misalignment at handoff.
+        """
+        return self.p_misalignment_at_handoff(research_speed_adjusted_handoff_duration, params)
+
+    def p_human_power_grabs(self, takeoff_trajectory: dict, params: PCatastropheParameters) -> float:
+        """
+        Estimate the probability of human power grabs given a takeoff trajectory.
+
+        The risk of human power grabs depends on how much time society has to react
+        to powerful AI. A slower takeoff poses lower risk. This function uses the
+        time between Superhuman AI Researcher (SAR) and ASI as the key duration,
+        since this is when the world will most acutely recognize the possibility
+        of takeover.
+
+        Args:
+            takeoff_trajectory (dict): Response from TakeoffModel.predict_trajectory(),
+                containing milestones_median (or milestones for deterministic version)
+                with SAR and ASI timing information.
         Returns:
             float: Estimated probability of human power grabs
         """
+        # Extract milestones from trajectory (handle both stochastic and deterministic formats)
+        milestones = takeoff_trajectory.get('milestones_median') or takeoff_trajectory.get('milestones', {})
+
+        # Get SAR and ASI times
+        # Note: SAR milestone uses the full name 'SAR-level-experiment-selection-skill'
+        sar_info = milestones.get('SAR-level-experiment-selection-skill', {}) or milestones.get('SAR', {})
+        asi_info = milestones.get('ASI', {})
+
+        sar_time = sar_info.get('time') if isinstance(sar_info, dict) else None
+        asi_time = asi_info.get('time') if isinstance(asi_info, dict) else None
+
+        # If we can't determine the duration, return a default high-risk estimate
+        if sar_time is None or asi_time is None:
+            # Default to 1 month duration (high risk) if milestones unavailable
+            sar_to_asi_duration = self.ANCHOR_T1
+        else:
+            sar_to_asi_duration = asi_time - sar_time
+            # Ensure non-negative duration
+            sar_to_asi_duration = max(self.ANCHOR_T1 / 10, sar_to_asi_duration)
+
         return self._interpolate_probability(
-            handoff_duration,
+            sar_to_asi_duration,
             params.p_human_power_grabs_t1,
             params.p_human_power_grabs_t2,
             params.p_human_power_grabs_t3
         )
 
+    def _compute_alignment_tax_for_target_probability(
+        self,
+        target_probability: float,
+        params: PCatastropheParameters
+    ) -> float:
+        """
+        Compute the alignment tax required to achieve a target probability of misalignment.
+
+        This inverts the p_misalignment_at_handoff function to find:
+        "What adjusted alignment research time produces this probability?"
+
+        Then computes the alignment tax as:
+        tax = adjusted_alignment_time / adjusted_capability_time
+
+        For the handoff period, we assume capability research time equals calendar time
+        (i.e., normalized to 1), so the tax equals the adjusted alignment research time.
+
+        Args:
+            target_probability: The target P(misalignment at handoff)
+            params: PCatastropheParameters with anchor points
+
+        Returns:
+            The alignment tax (ratio) needed to achieve that probability
+        """
+        # We need to invert the interpolation to find the duration that gives target_probability
+        # The interpolation maps duration -> probability via logit space
+        # We need to find duration given probability
+
+        def logit(p):
+            p = max(1e-10, min(1 - 1e-10, p))
+            return math.log(p / (1 - p))
+
+        t1 = self.ANCHOR_T1
+        t2 = self.ANCHOR_T2
+        t3 = self.ANCHOR_T3
+
+        p_t1 = params.p_misalignment_at_handoff_t1
+        p_t2 = params.p_misalignment_at_handoff_t2
+        p_t3 = params.p_misalignment_at_handoff_t3
+
+        logit_p1 = logit(p_t1)
+        logit_p2 = logit(p_t2)
+        logit_p3 = logit(p_t3)
+        logit_target = logit(target_probability)
+
+        log_t1 = math.log(t1)
+        log_t2 = math.log(t2)
+        log_t3 = math.log(t3)
+
+        # Determine which segment we're in and invert
+        if logit_target >= logit_p2:
+            # We're in the t1-t2 segment (higher probability = shorter duration)
+            if logit_p1 == logit_p2:
+                log_duration = log_t1
+            else:
+                alpha = (logit_target - logit_p1) / (logit_p2 - logit_p1)
+                log_duration = log_t1 + alpha * (log_t2 - log_t1)
+        else:
+            # We're in the t2-t3 segment
+            if logit_p2 == logit_p3:
+                log_duration = log_t2
+            else:
+                alpha = (logit_target - logit_p2) / (logit_p3 - logit_p2)
+                log_duration = log_t2 + alpha * (log_t3 - log_t2)
+
+        duration = math.exp(log_duration)
+        # The alignment tax is the adjusted alignment time needed
+        # (assuming capability time is normalized to 1)
+        return duration
+
+    def p_misalignment_after_handoff(
+        self,
+        alignment_tax_after_handoff: float,
+        params: PCatastropheParameters
+    ) -> float:
+        """
+        Estimate the probability of misalignment after handoff given the alignment tax paid.
+
+        Per slowdown_model.md:
+        - The alignment tax is the ratio of alignment research time to capability research time
+        - We map tax to probability using the same curve as P(misalignment at handoff),
+          but scaled by alignment_tax_after_handoff_relative_to_during_handoff
+
+        The key insight is:
+        1. First, we build a mapping from "alignment tax during handoff" to "P(misalignment at handoff)"
+        2. Then we scale the required tax by alignment_tax_after_handoff_relative_to_during_handoff
+           to create the "tax after handoff" -> "P(misalignment after handoff)" mapping
+
+        If the multiplier is 2.0, then achieving a given probability after handoff requires
+        2x the alignment tax that would be needed during handoff.
+
+        Args:
+            alignment_tax_after_handoff: The ratio of adjusted alignment research time to
+                adjusted capability research time, computed for the post-handoff period
+            params: PCatastropheParameters with anchor points and multiplier
+
+        Returns:
+            float: Estimated probability of misalignment after handoff
+        """
+        # The alignment tax after handoff needs to be higher to achieve the same safety level
+        # So we divide by the multiplier to get the "effective" tax in handoff terms
+        multiplier = params.alignment_tax_after_handoff_relative_to_during_handoff
+        effective_tax = alignment_tax_after_handoff / multiplier
+
+        # The effective tax represents the adjusted alignment research time
+        # (since capability time is normalized to 1)
+        # Use the same interpolation as p_misalignment_at_handoff
+        return self._interpolate_probability(
+            effective_tax,
+            params.p_misalignment_at_handoff_t1,
+            params.p_misalignment_at_handoff_t2,
+            params.p_misalignment_at_handoff_t3
+        )
+
+    def p_AI_takeover_full(
+        self,
+        adjusted_alignment_research_time_at_handoff: float,
+        alignment_tax_after_handoff: float,
+        params: PCatastropheParameters
+    ) -> float:
+        """
+        Compute full P(AI takeover) combining misalignment at and after handoff.
+
+        Per slowdown_model.md:
+        P(takeover) = 1 - [1 - P(misalignment at handoff)] * [1 - P(misalignment after handoff)]
+
+        Args:
+            adjusted_alignment_research_time_at_handoff: Alignment research time up to handoff,
+                adjusted for speedup, relevance, and slowdown effort
+            alignment_tax_after_handoff: The ratio of adjusted alignment research time to
+                adjusted capability research time for the post-handoff period
+            params: PCatastropheParameters with probability anchor points
+
+        Returns:
+            Combined probability of AI takeover from misalignment
+        """
+        p_at_handoff = self.p_misalignment_at_handoff(
+            adjusted_alignment_research_time_at_handoff, params
+        )
+        p_after_handoff = self.p_misalignment_after_handoff(
+            alignment_tax_after_handoff, params
+        )
+        return 1 - (1 - p_at_handoff) * (1 - p_after_handoff)
+
     def p_domestic_takeover(
         self,
-        handoff_duration: float,
-        research_speed_adjusted_handoff_duration: float,
-        params: PCatastropheParameters
+        takeoff_trajectory: dict,
+        adjusted_alignment_research_time: float,
+        params: PCatastropheParameters,
+        alignment_tax_after_handoff: float = None
     ) -> float:
         """
         Compute the combined probability of catastrophe from AI takeover and human power grabs.
 
-        Assumes independence between the two risks:
+        Per slowdown_model.md, P(AI takeover) combines:
+        - P(misalignment at handoff): based on adjusted alignment research time up to handoff
+        - P(misalignment after handoff): based on alignment tax paid after handoff
+
+        Then P(catastrophe) combines P(AI takeover) with P(human power grabs):
         P(catastrophe) = 1 - (1 - P(AI takeover)) * (1 - P(human power grabs))
 
         Args:
-            handoff_duration: Raw handoff duration (SC to SAR) in years
-            research_speed_adjusted_handoff_duration: Handoff duration adjusted for AI R&D speedup
+            takeoff_trajectory: Response from TakeoffModel.predict_trajectory()
+            adjusted_alignment_research_time: Alignment research time adjusted for speedup,
+                relevance, and slowdown effort (for the period up to handoff)
             params: PCatastropheParameters with probability anchor points
+            alignment_tax_after_handoff: Optional. The ratio of adjusted alignment research time
+                to adjusted capability research time for the post-handoff period.
+                If None, P(misalignment after handoff) is assumed to be 0.
 
         Returns:
             Combined probability of catastrophe
         """
-        p_takeover = self.p_AI_takeover(research_speed_adjusted_handoff_duration, params)
-        p_power_grabs = self.p_human_power_grabs(handoff_duration, params)
-        return 1 - (1 - p_takeover) * (1 - p_power_grabs)
+        # Compute P(misalignment at handoff)
+        p_misalignment_at = self.p_misalignment_at_handoff(adjusted_alignment_research_time, params)
+
+        # Compute P(misalignment after handoff) if alignment tax is provided
+        if alignment_tax_after_handoff is not None and alignment_tax_after_handoff > 0:
+            p_misalignment_after = self.p_misalignment_after_handoff(
+                alignment_tax_after_handoff, params
+            )
+        else:
+            # If no post-handoff data, assume no additional risk from post-handoff period
+            p_misalignment_after = 0.0
+
+        # Combine into P(AI takeover)
+        p_ai_takeover = 1 - (1 - p_misalignment_at) * (1 - p_misalignment_after)
+
+        # Compute P(human power grabs)
+        p_power_grabs = self.p_human_power_grabs(takeoff_trajectory, params)
+
+        # Final P(catastrophe)
+        return 1 - (1 - p_ai_takeover) * (1 - p_power_grabs)

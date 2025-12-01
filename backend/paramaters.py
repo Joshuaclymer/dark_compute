@@ -317,3 +317,52 @@ class SlowdownPageParameters:
     PCatastrophe_parameters: PCatastropheParameters = field(default_factory=PCatastropheParameters)
     proxy_project: ProxyProject = field(default_factory=ProxyProject)
     software_proliferation: SoftwareProliferation = field(default_factory=SoftwareProliferation)
+
+    @classmethod
+    def from_request_args(cls, args) -> 'SlowdownPageParameters':
+        """Create SlowdownPageParameters from Flask request.args (or any dict-like object)."""
+        # Monte Carlo samples
+        num_mc_samples = int(args.get('num_mc_samples', 1))
+
+        # P(Catastrophe) parameters
+        # Note: p_ai_takeover_t1/t2/t3 from request are mapped to p_misalignment_at_handoff_t1/t2/t3
+        p_cat_params = PCatastropheParameters(
+            p_misalignment_at_handoff_t1=float(args.get('p_ai_takeover_t1', 0.40)),
+            p_misalignment_at_handoff_t2=float(args.get('p_ai_takeover_t2', 0.10)),
+            p_misalignment_at_handoff_t3=float(args.get('p_ai_takeover_t3', 0.04)),
+            p_human_power_grabs_t1=float(args.get('p_human_power_grabs_t1', 0.40)),
+            p_human_power_grabs_t2=float(args.get('p_human_power_grabs_t2', 0.15)),
+            p_human_power_grabs_t3=float(args.get('p_human_power_grabs_t3', 0.05)),
+            safety_speedup_exponent=float(args.get('safety_speedup_exponent', 0.5)),
+            handoff_speedup_threshold=float(args.get('handoff_speedup_threshold', 20.0)),
+            research_relevance_of_pre_handoff_discount=float(args.get('research_relevance_of_pre_handoff_discount', 0.1)),
+            increase_in_alignment_research_effort_during_slowdown=float(args.get('increase_in_alignment_research_effort_during_slowdown', 1.5)),
+            alignment_tax_after_handoff_relative_to_during_handoff=float(args.get('alignment_tax_after_handoff_relative_to_during_handoff', 2.0))
+        )
+
+        # Software proliferation parameters
+        weight_stealing_val = args.get('weight_stealing', 'SC')
+        algorithm_stealing_val = args.get('algorithm_stealing', 'SAR')
+
+        # Convert 'none' to empty list for weight stealing
+        if weight_stealing_val == 'none':
+            weight_stealing_times = []
+        else:
+            weight_stealing_times = [weight_stealing_val]
+
+        # Convert 'none' to None for algorithm stealing
+        if algorithm_stealing_val == 'none':
+            stealing_algorithms_up_to = None
+        else:
+            stealing_algorithms_up_to = algorithm_stealing_val
+
+        software_proliferation = SoftwareProliferation(
+            weight_stealing_times=weight_stealing_times,
+            stealing_algorithms_up_to=stealing_algorithms_up_to
+        )
+
+        return cls(
+            monte_carlo_samples=num_mc_samples,
+            PCatastrophe_parameters=p_cat_params,
+            software_proliferation=software_proliferation
+        )

@@ -520,6 +520,10 @@ def get_trajectory_data_fast(
     default_p_cat = PCatastropheParameters()
     default_parameters = {
         'num_mc_samples': 1,
+        'handoff_speedup_threshold': default_p_cat.handoff_speedup_threshold,
+        'research_relevance_of_pre_handoff_discount': default_p_cat.research_relevance_of_pre_handoff_discount,
+        'increase_in_alignment_research_effort_during_slowdown': default_p_cat.increase_in_alignment_research_effort_during_slowdown,
+        'alignment_tax_after_handoff_relative_to_during_handoff': default_p_cat.alignment_tax_after_handoff_relative_to_during_handoff,
         'safety_speedup_exponent': default_p_cat.safety_speedup_exponent,
         'p_ai_takeover_t1': default_p_cat.p_misalignment_at_handoff_t1,
         'p_ai_takeover_t2': default_p_cat.p_misalignment_at_handoff_t2,

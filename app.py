@@ -6,8 +6,6 @@ from backend.paramaters import (
     SimulationSettings,
     ModelParameters,
     SlowdownPageParameters,
-    PCatastropheParameters,
-    SoftwareProliferation
 )
 from backend.serve_data_for_dark_compute_model import extract_plot_data
 from backend import util
@@ -190,137 +188,12 @@ def get_default_results():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-def _parse_slowdown_params_from_request() -> SlowdownPageParameters:
-    """Parse SlowdownPageParameters from query arguments."""
-    # Monte Carlo samples
-    num_mc_samples = int(request.args.get('num_mc_samples', 3))
-
-    # P(Catastrophe) parameters
-    # Note: p_ai_takeover_t1/t2/t3 from request are mapped to p_misalignment_at_handoff_t1/t2/t3
-    # (the documented naming - see slowdown_model.md)
-    p_cat_params = PCatastropheParameters(
-        p_misalignment_at_handoff_t1=float(request.args.get('p_ai_takeover_t1', 0.40)),
-        p_misalignment_at_handoff_t2=float(request.args.get('p_ai_takeover_t2', 0.15)),
-        p_misalignment_at_handoff_t3=float(request.args.get('p_ai_takeover_t3', 0.05)),
-        p_human_power_grabs_t1=float(request.args.get('p_human_power_grabs_t1', 0.40)),
-        p_human_power_grabs_t2=float(request.args.get('p_human_power_grabs_t2', 0.20)),
-        p_human_power_grabs_t3=float(request.args.get('p_human_power_grabs_t3', 0.10)),
-        safety_speedup_exponent=float(request.args.get('safety_speedup_exponent', 0.5))
-    )
-
-    # Software proliferation parameters
-    weight_stealing_val = request.args.get('weight_stealing', 'SC')
-    algorithm_stealing_val = request.args.get('algorithm_stealing', 'SAR')
-
-    # Convert 'none' to empty list for weight stealing
-    if weight_stealing_val == 'none':
-        weight_stealing_times = []
-    else:
-        weight_stealing_times = [weight_stealing_val]
-
-    # Convert 'none' to None for algorithm stealing
-    if algorithm_stealing_val == 'none':
-        stealing_algorithms_up_to = None
-    else:
-        stealing_algorithms_up_to = algorithm_stealing_val
-
-    software_proliferation = SoftwareProliferation(
-        weight_stealing_times=weight_stealing_times,
-        stealing_algorithms_up_to=stealing_algorithms_up_to
-    )
-
-    return SlowdownPageParameters(
-        monte_carlo_samples=num_mc_samples,
-        PCatastrophe_parameters=p_cat_params,
-        software_proliferation=software_proliferation
-    )
-
-
-@app.route('/get_trajectory_data_fast')
-def get_trajectory_data_fast():
-    """Get trajectory data quickly using deterministic runs (no MC uncertainty).
-
-    This endpoint returns all 4 trajectories in parallel using deterministic runs.
-    Used for the AI R&D Speedup Trajectory plot which only needs medians.
-    """
-    try:
-        from backend.serve_slowdown_model import get_trajectory_data_fast as compute_fast_data
-
-        # Parse slowdown parameters from query arguments
-        slowdown_params = _parse_slowdown_params_from_request()
-
-        # Get cached simulation data
-        cached_simulation_data = load_default_cache()
-        if not cached_simulation_data:
-            import glob
-            cache_files = glob.glob(os.path.join(CACHE_DIR, '*.json'))
-            cache_files = [f for f in cache_files if not f.endswith('default.json')]
-            if cache_files:
-                most_recent = max(cache_files, key=os.path.getmtime)
-                try:
-                    with open(most_recent, 'r') as f:
-                        cache_data = json.load(f)
-                    cached_simulation_data = cache_data.get('results', cache_data)
-                except Exception as e:
-                    print(f"Error loading cache file: {e}", flush=True)
-
-        result = compute_fast_data(cached_simulation_data, slowdown_params=slowdown_params)
-        sanitized_result = sanitize_for_json(result)
-        return jsonify(sanitized_result)
-
-    except Exception as e:
-        print(f"ERROR computing fast trajectory data: {e}", flush=True)
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/get_slowdown_model_data')
-def get_slowdown_model_data():
-    """Get AI takeoff slowdown model data."""
-    try:
-        from backend.serve_slowdown_model import get_slowdown_model_data as compute_slowdown_data
-
-        # Parse slowdown parameters from query arguments
-        slowdown_params = _parse_slowdown_params_from_request()
-
-        # Get cached simulation data from default cache or most recent cache
-        cached_simulation_data = load_default_cache()
-
-        # If no default cache, try to load the most recent cache file
-        if not cached_simulation_data:
-            import glob
-            cache_files = glob.glob(os.path.join(CACHE_DIR, '*.json'))
-            cache_files = [f for f in cache_files if not f.endswith('default.json')]
-            if cache_files:
-                most_recent = max(cache_files, key=os.path.getmtime)
-                try:
-                    with open(most_recent, 'r') as f:
-                        cache_data = json.load(f)
-                    cached_simulation_data = cache_data.get('results', cache_data)
-                    print(f"Using most recent cache: {most_recent}", flush=True)
-                except Exception as e:
-                    print(f"Error loading cache file: {e}", flush=True)
-
-        # Compute all slowdown model data with the parsed parameters
-        result = compute_slowdown_data(cached_simulation_data, slowdown_params=slowdown_params)
-        # Sanitize result to remove inf/nan values that aren't valid JSON
-        sanitized_result = sanitize_for_json(result)
-        return jsonify(sanitized_result)
-
-    except Exception as e:
-        print(f"ERROR computing slowdown model data: {e}", flush=True)
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route('/get_slowdown_model_data_stream')
 def get_slowdown_model_data_stream():
     """Stream AI takeoff slowdown model data with progress updates via Server-Sent Events."""
     # Parse slowdown parameters from query arguments BEFORE entering the generator
     # (request context is not available inside the generator after the response starts)
-    slowdown_params = _parse_slowdown_params_from_request()
+    slowdown_params = SlowdownPageParameters.from_request_args(request.args)
 
     def generate():
         import queue
@@ -406,86 +279,82 @@ def get_slowdown_model_data_stream():
     })
 
 
-@app.route('/get_uncertainty_data_stream')
-def get_uncertainty_data_stream():
-    """Stream uncertainty data with MC simulations for covert and proxy_project only.
-
-    This is for the Covert Compute Prediction Uncertainty plot.
-    Runs in parallel with get_trajectory_data_fast.
-    """
-    # Parse slowdown parameters before entering generator
-    slowdown_params = _parse_slowdown_params_from_request()
-
-    def generate():
-        import queue
-        import threading
-
-        progress_queue = queue.Queue()
-
-        def progress_callback(current, total, trajectory_name):
-            progress_queue.put({
-                'type': 'progress',
-                'current': current,
-                'total': total,
-                'trajectory': trajectory_name
-            })
-
-        def compute_data():
-            try:
-                from backend.serve_slowdown_model import get_uncertainty_data
-
-                # Get cached simulation data
-                cached_simulation_data = load_default_cache()
-                if not cached_simulation_data:
-                    import glob as glob_module
-                    cache_files = glob_module.glob(os.path.join(CACHE_DIR, '*.json'))
-                    cache_files = [f for f in cache_files if not f.endswith('default.json')]
-                    if cache_files:
-                        most_recent = max(cache_files, key=os.path.getmtime)
-                        try:
-                            with open(most_recent, 'r') as f:
-                                cache_data = json.load(f)
-                            cached_simulation_data = cache_data.get('results', cache_data)
-                        except Exception as e:
-                            print(f"Error loading cache file: {e}", flush=True)
-
-                result = get_uncertainty_data(
-                    cached_simulation_data,
-                    slowdown_params=slowdown_params,
-                    progress_callback=progress_callback
-                )
-                sanitized_result = sanitize_for_json(result)
-                progress_queue.put({'type': 'complete', 'data': sanitized_result})
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                progress_queue.put({'type': 'error', 'error': str(e)})
-
-        # Start computation in background thread
-        thread = threading.Thread(target=compute_data)
-        thread.start()
-
-        # Stream progress updates
-        while True:
-            try:
-                msg = progress_queue.get(timeout=60)
-                if msg['type'] == 'progress':
-                    yield f"data: {json.dumps(msg)}\n\n"
-                elif msg['type'] == 'complete':
-                    yield f"data: {json.dumps(msg)}\n\n"
-                    break
-                elif msg['type'] == 'error':
-                    yield f"data: {json.dumps(msg)}\n\n"
-                    break
-            except queue.Empty:
-                yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
-
-        thread.join()
-
-    return Response(generate(), mimetype='text/event-stream', headers={
-        'Cache-Control': 'no-cache',
-        'X-Accel-Buffering': 'no'
-    })
+# Commented out - not needed yet
+# @app.route('/get_uncertainty_data_stream')
+# def get_uncertainty_data_stream():
+#     """Stream uncertainty data with MC simulations for covert and proxy_project only.
+#
+#     This is for the Covert Compute Prediction Uncertainty plot.
+#     """
+#     slowdown_params = SlowdownPageParameters.from_request_args(request.args)
+#
+#     def generate():
+#         import queue
+#         import threading
+#
+#         progress_queue = queue.Queue()
+#
+#         def progress_callback(current, total, trajectory_name):
+#             progress_queue.put({
+#                 'type': 'progress',
+#                 'current': current,
+#                 'total': total,
+#                 'trajectory': trajectory_name
+#             })
+#
+#         def compute_data():
+#             try:
+#                 from backend.serve_slowdown_model import get_uncertainty_data
+#
+#                 cached_simulation_data = load_default_cache()
+#                 if not cached_simulation_data:
+#                     import glob as glob_module
+#                     cache_files = glob_module.glob(os.path.join(CACHE_DIR, '*.json'))
+#                     cache_files = [f for f in cache_files if not f.endswith('default.json')]
+#                     if cache_files:
+#                         most_recent = max(cache_files, key=os.path.getmtime)
+#                         try:
+#                             with open(most_recent, 'r') as f:
+#                                 cache_data = json.load(f)
+#                             cached_simulation_data = cache_data.get('results', cache_data)
+#                         except Exception as e:
+#                             print(f"Error loading cache file: {e}", flush=True)
+#
+#                 result = get_uncertainty_data(
+#                     cached_simulation_data,
+#                     slowdown_params=slowdown_params,
+#                     progress_callback=progress_callback
+#                 )
+#                 sanitized_result = sanitize_for_json(result)
+#                 progress_queue.put({'type': 'complete', 'data': sanitized_result})
+#             except Exception as e:
+#                 import traceback
+#                 traceback.print_exc()
+#                 progress_queue.put({'type': 'error', 'error': str(e)})
+#
+#         thread = threading.Thread(target=compute_data)
+#         thread.start()
+#
+#         while True:
+#             try:
+#                 msg = progress_queue.get(timeout=60)
+#                 if msg['type'] == 'progress':
+#                     yield f"data: {json.dumps(msg)}\n\n"
+#                 elif msg['type'] == 'complete':
+#                     yield f"data: {json.dumps(msg)}\n\n"
+#                     break
+#                 elif msg['type'] == 'error':
+#                     yield f"data: {json.dumps(msg)}\n\n"
+#                     break
+#             except queue.Empty:
+#                 yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
+#
+#         thread.join()
+#
+#     return Response(generate(), mimetype='text/event-stream', headers={
+#         'Cache-Control': 'no-cache',
+#         'X-Accel-Buffering': 'no'
+#     })
 
 
 @app.route('/run_simulation', methods=['POST'])

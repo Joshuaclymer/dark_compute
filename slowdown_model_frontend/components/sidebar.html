@@ -4,14 +4,42 @@
 
     <button type="button" id="updatePlots">Update Plots</button>
 
-    <h2>Monte Carlo Settings</h2>
-    <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
-        Number of takeoff model simulations (with randomly sampled parameters) used to compute uncertainty bands.
-    </p>
+    <h2>Simulation Settings</h2>
     <div class="param-group">
         <label for="num_mc_samples">Takeoff Simulations</label>
         <input type="number" id="num_mc_samples" value="1" step="10" min="1" max="500">
     </div>
+    <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
+        Number of takeoff model simulations (with randomly sampled parameters) used to compute uncertainty bands.
+    </p>
+    <div class="param-group">
+        <label for="handoff_speedup_threshold">Handoff Speedup Threshold</label>
+        <input type="number" id="handoff_speedup_threshold" value="20" step="1" min="1" max="100">
+    </div>
+    <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
+        AI R&D speedup (relative to 2024) at which alignment research is assumed to be fully automated.
+    </p>
+    <div class="param-group">
+        <label for="research_relevance_of_pre_handoff_discount">Pre-Handoff Research Discount</label>
+        <input type="number" id="research_relevance_of_pre_handoff_discount" value="0.1" step="0.1" min="0" max="1">
+    </div>
+    <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
+        How much less relevant pre-handoff research is compared to post-handoff research (0 = irrelevant, 1 = equally relevant).
+    </p>
+    <div class="param-group">
+        <label for="increase_in_alignment_research_effort_during_slowdown">Alignment Research Boost</label>
+        <input type="number" id="increase_in_alignment_research_effort_during_slowdown" value="1.5" step="0.1" min="1" max="5">
+    </div>
+    <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
+        Multiplier for alignment research effort during slowdown (e.g., 1.5 = 50% more effort).
+    </p>
+    <div class="param-group">
+        <label for="alignment_tax_after_handoff_relative_to_during_handoff">Post-Handoff Tax Ratio</label>
+        <input type="number" id="alignment_tax_after_handoff_relative_to_during_handoff" value="2.0" step="0.5" min="1" max="10">
+    </div>
+    <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
+        How much higher the required alignment tax is after handoff vs during (e.g., 2 = twice as high).
+    </p>
 
     <h2>Safety Research Speedup</h2>
     <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
@@ -57,7 +85,7 @@
     </div>
     <div class="param-group">
         <label for="p_human_power_grabs_t3">At 10 years</label>
-        <input type="number" id="p_human_power_grabs_t3" value="0.03" step="0.01" min="0" max="1">
+        <input type="number" id="p_human_power_grabs_t3" value="0.05" step="0.01" min="0" max="1">
     </div>
 
     <h2>Software Proliferation</h2>

@@ -186,7 +186,7 @@ function updateRiskBreakdownValues(data) {
     setElementText('p-no-misalignment-after-handoff-value', formatPercent(rbd.p_misalignment_after_handoff));
 
     // P(No AI Takeover) result (same value as section 0)
-    setElementText('p-no-ai-takeover-result', formatPercent(rbd.p_ai_takeover));
+    setElementText('p-no-ai-takeover-result', formatPercent(rbd.p_no_ai_takeover));
 
     // P(AI Takeover) result
     setElementText('p-ai-takeover-result', formatPercent(rbd.p_ai_takeover));
@@ -244,9 +244,18 @@ function updateRiskBreakdownValues(data) {
     setElementText('tax-multiplier-display', taxMult.toFixed(0));
     setElementText('tax-multiplier-value', formatMultiplier(taxMult));
 
+    // Post-handoff window calculation
+    setElementText('post-handoff-calendar-time', formatYears(rbd.post_handoff_calendar_time));
+    setElementText('post-handoff-calendar-time-2', formatYears(rbd.post_handoff_calendar_time));
+    setElementText('post-handoff-avg-alignment-speedup', formatMultiplier(rbd.post_handoff_avg_alignment_speedup));
+    setElementText('post-handoff-avg-capability-speedup', formatMultiplier(rbd.post_handoff_avg_capability_speedup));
+    setElementText('safety-exponent-display-3', safetyExp.toFixed(1));
+
     // Post-handoff alignment tax calculation
     setElementText('post-handoff-alignment-time', formatYears(rbd.post_handoff_alignment_time));
+    setElementText('post-handoff-alignment-time-2', formatYears(rbd.post_handoff_alignment_time));
     setElementText('post-handoff-capability-time', formatYears(rbd.post_handoff_capability_time));
+    setElementText('post-handoff-capability-time-2', formatYears(rbd.post_handoff_capability_time));
     setElementText('alignment-tax-after-handoff', formatDecimal(rbd.alignment_tax_after_handoff));
     setElementText('alignment-tax-after-handoff-2', formatDecimal(rbd.alignment_tax_after_handoff));
     setElementText('effective-tax', formatDecimal(rbd.effective_tax));
@@ -294,7 +303,7 @@ function updateRiskBreakdownValues(data) {
                 'post-handoff-mapping-plot',
                 rbd.curves.post_handoff_x,  // Use separate x-axis for tax values
                 rbd.curves.post_handoff,
-                'Effective Tax',
+                'Alignment tax paid',
                 'P(Misalignment)',
                 rbd.effective_tax,
                 rbd.p_misalignment_after_handoff,

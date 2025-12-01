@@ -636,6 +636,8 @@ def compute_risk_breakdown_data(
     handoff_window_calendar_time = None
     handoff_window_avg_alignment_speedup = None
     handoff_window_adjusted_time = None
+    handoff_window_capability_time = None
+    alignment_tax_during_handoff = None
 
     if ac_time is not None and handoff_time is not None:
         handoff_window_calendar_time = max(0, handoff_time - ac_time)
@@ -645,16 +647,36 @@ def compute_risk_breakdown_data(
             mask = (times >= ac_time) & (times <= handoff_time)
             if np.any(mask):
                 relevant_speedup = speedup[mask]
+                relevant_times = times[mask]
+
+                # Alignment speedup uses safety_exponent
                 alignment_speedup = np.power(np.maximum(relevant_speedup, 1e-10), safety_exponent)
                 handoff_window_avg_alignment_speedup = float(np.mean(alignment_speedup))
+
+                # Compute adjusted alignment time (integrated)
+                if len(relevant_times) >= 2:
+                    handoff_window_adjusted_time = float(np.trapz(alignment_speedup, relevant_times))
+                    # Capability time uses full speedup (exponent = 1.0)
+                    handoff_window_capability_time = float(np.trapz(relevant_speedup, relevant_times))
+                else:
+                    handoff_window_adjusted_time = handoff_window_calendar_time * float(np.mean(alignment_speedup))
+                    handoff_window_capability_time = handoff_window_calendar_time * float(np.mean(relevant_speedup))
+
+                # Alignment tax during handoff = alignment time / capability time
+                if handoff_window_capability_time > 0:
+                    alignment_tax_during_handoff = handoff_window_adjusted_time / handoff_window_capability_time
+                else:
+                    alignment_tax_during_handoff = 1.0
             else:
                 handoff_window_avg_alignment_speedup = 1.0
-
-            # Handoff window relevance is 1.0 (full relevance)
-            handoff_window_adjusted_time = handoff_window_calendar_time * handoff_window_avg_alignment_speedup * 1.0
+                handoff_window_adjusted_time = 0.0
+                handoff_window_capability_time = 0.0
+                alignment_tax_during_handoff = 1.0
         else:
             handoff_window_avg_alignment_speedup = 1.0
             handoff_window_adjusted_time = 0.0
+            handoff_window_capability_time = 0.0
+            alignment_tax_during_handoff = 1.0
 
     # === Section 4: Slowdown effort adjustment ===
     slowdown_effort_multiplier = p_cat_params.increase_in_alignment_research_effort_during_slowdown
@@ -706,6 +728,9 @@ def compute_risk_breakdown_data(
     # Post-handoff calculations
     post_handoff_alignment_time = None
     post_handoff_capability_time = None
+    post_handoff_calendar_time = None
+    post_handoff_avg_alignment_speedup = None
+    post_handoff_avg_capability_speedup = None
     alignment_tax_after_handoff = None
     effective_tax = None
     p_misalignment_after_handoff = None
@@ -722,17 +747,19 @@ def compute_risk_breakdown_data(
             relevant_times = times[mask]
             if len(relevant_times) >= 2:
                 post_handoff_alignment_time = float(np.trapz(alignment_speedup, relevant_times))
-            else:
-                post_handoff_alignment_time = post_handoff_calendar_time * float(np.mean(alignment_speedup))
-
-            # Capability time uses the full speedup (exponent = 1.0)
-            if len(relevant_times) >= 2:
                 post_handoff_capability_time = float(np.trapz(relevant_speedup, relevant_times))
             else:
+                post_handoff_alignment_time = post_handoff_calendar_time * float(np.mean(alignment_speedup))
                 post_handoff_capability_time = post_handoff_calendar_time * float(np.mean(relevant_speedup))
+
+            # Compute average speedups for display
+            post_handoff_avg_alignment_speedup = post_handoff_alignment_time / post_handoff_calendar_time if post_handoff_calendar_time > 0 else 1.0
+            post_handoff_avg_capability_speedup = post_handoff_capability_time / post_handoff_calendar_time if post_handoff_calendar_time > 0 else 1.0
         else:
             post_handoff_alignment_time = post_handoff_calendar_time
             post_handoff_capability_time = post_handoff_calendar_time
+            post_handoff_avg_alignment_speedup = 1.0
+            post_handoff_avg_capability_speedup = 1.0
 
         # Alignment tax = adjusted alignment time / adjusted capability time
         if post_handoff_capability_time > 0:
@@ -813,6 +840,8 @@ def compute_risk_breakdown_data(
         'handoff_window_calendar_time': float(handoff_window_calendar_time) if handoff_window_calendar_time is not None else None,
         'handoff_window_avg_alignment_speedup': float(handoff_window_avg_alignment_speedup) if handoff_window_avg_alignment_speedup is not None else None,
         'handoff_window_adjusted_time': float(handoff_window_adjusted_time) if handoff_window_adjusted_time is not None else None,
+        'handoff_window_capability_time': float(handoff_window_capability_time) if handoff_window_capability_time is not None else None,
+        'alignment_tax_during_handoff': float(alignment_tax_during_handoff) if alignment_tax_during_handoff is not None else None,
 
         # Section 4: Slowdown effort
         'agreement_year': float(agreement_year),
@@ -823,6 +852,9 @@ def compute_risk_breakdown_data(
 
         # Section 6: Post-handoff
         'tax_multiplier': float(tax_multiplier),
+        'post_handoff_calendar_time': float(post_handoff_calendar_time) if post_handoff_calendar_time is not None else None,
+        'post_handoff_avg_alignment_speedup': float(post_handoff_avg_alignment_speedup) if post_handoff_avg_alignment_speedup is not None else None,
+        'post_handoff_avg_capability_speedup': float(post_handoff_avg_capability_speedup) if post_handoff_avg_capability_speedup is not None else None,
         'post_handoff_alignment_time': float(post_handoff_alignment_time) if post_handoff_alignment_time is not None else None,
         'post_handoff_capability_time': float(post_handoff_capability_time) if post_handoff_capability_time is not None else None,
         'alignment_tax_after_handoff': float(alignment_tax_after_handoff) if alignment_tax_after_handoff is not None else None,

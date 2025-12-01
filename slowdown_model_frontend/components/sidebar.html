@@ -12,6 +12,25 @@
     <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
         Number of takeoff model simulations (with randomly sampled parameters) used to compute uncertainty bands.
     </p>
+
+    <h2>P(AI Takeover)</h2>
+    <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
+        Probability of AI takeover given the safety-research-speed-adjusted handoff duration (time between AC and SAR).
+    </p>
+    <div class="param-row">
+        <div class="param-group">
+            <label for="p_ai_takeover_t1">At 1 month</label>
+            <input type="number" id="p_ai_takeover_t1" placeholder="--" step="0.01" min="0" max="1">
+        </div>
+        <div class="param-group">
+            <label for="p_ai_takeover_t2">At 1 year</label>
+            <input type="number" id="p_ai_takeover_t2" placeholder="--" step="0.01" min="0" max="1">
+        </div>
+    </div>
+    <div class="param-group">
+        <label for="p_ai_takeover_t3">At 10 years</label>
+        <input type="number" id="p_ai_takeover_t3" placeholder="--" step="0.01" min="0" max="1">
+    </div>
     <div class="param-group">
         <label for="handoff_speedup_threshold">Handoff Speedup Threshold</label>
         <input type="number" id="handoff_speedup_threshold" placeholder="--" step="1" min="1" max="100">
@@ -40,34 +59,13 @@
     <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
         How much higher the required alignment tax is after handoff vs during (e.g., 2 = twice as high).
     </p>
-
-    <h2>Safety Research Speedup</h2>
-    <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
-        Safety speedup = capability_speedup ^ exponent. E.g., 0.5 means safety speedup is sqrt of capability speedup.
-    </p>
     <div class="param-group">
-        <label for="safety_speedup_exponent">Exponent</label>
+        <label for="safety_speedup_exponent">Safety Speedup Exponent</label>
         <input type="number" id="safety_speedup_exponent" placeholder="--" step="0.1" min="0" max="2">
     </div>
-
-    <h2>P(AI Takeover)</h2>
-    <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">
-        Probability of AI takeover given the safety-research-speed-adjusted handoff duration (time between AC and SAR).
+    <p style="font-size: 10px; color: #999; margin-top: -8px; margin-bottom: 12px; line-height: 1.3;">
+        Safety speedup = capability_speedup ^ exponent. E.g., 0.5 means safety speedup is sqrt of capability speedup.
     </p>
-    <div class="param-row">
-        <div class="param-group">
-            <label for="p_ai_takeover_t1">At 1 month</label>
-            <input type="number" id="p_ai_takeover_t1" placeholder="--" step="0.01" min="0" max="1">
-        </div>
-        <div class="param-group">
-            <label for="p_ai_takeover_t2">At 1 year</label>
-            <input type="number" id="p_ai_takeover_t2" placeholder="--" step="0.01" min="0" max="1">
-        </div>
-    </div>
-    <div class="param-group">
-        <label for="p_ai_takeover_t3">At 10 years</label>
-        <input type="number" id="p_ai_takeover_t3" placeholder="--" step="0.01" min="0" max="1">
-    </div>
 
     <h2>P(Human Power Grabs)</h2>
     <p style="font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4;">

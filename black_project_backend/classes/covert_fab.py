@@ -5,10 +5,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Dict, Optional
 import random
-from backend.util import sample_from_log_normal
-from backend.classes.black_project_stock import Chip, Compute
-from backend.util import lr_over_time_vs_num_workers
-from backend.paramaters import ProcessNode, ProcessNodeStrategy, CovertFabParameters, CovertProjectParameters
+from black_project_backend.util import sample_from_log_normal
+from black_project_backend.classes.black_project_stock import Chip, Compute
+from black_project_backend.util import lr_over_time_vs_num_workers
+from black_project_backend.black_project_parameters import ProcessNode, ProcessNodeStrategy, CovertFabParameters, CovertProjectParameters
 
 """
 PRC Covert Semiconductor Fab Model

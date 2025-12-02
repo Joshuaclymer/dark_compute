@@ -1,9 +1,9 @@
 from typing import Optional
-from backend.classes.covert_fab import CovertFab, PRCCovertFab, ProcessNode, FabNotBuiltException, Compute
-from backend.classes.black_project_stock import PRCBlackProjectStock
-from backend.classes.covert_datacenters import CovertPRCDatacenters
-from backend.util import lr_over_time_vs_num_workers
-from backend.paramaters import CovertProjectProperties, CovertProjectParameters
+from black_project_backend.classes.covert_fab import CovertFab, PRCCovertFab, ProcessNode, FabNotBuiltException, Compute
+from black_project_backend.classes.black_project_stock import PRCBlackProjectStock
+from black_project_backend.classes.covert_datacenters import CovertPRCDatacenters
+from black_project_backend.util import lr_over_time_vs_num_workers
+from black_project_backend.black_project_parameters import CovertProjectProperties, CovertProjectParameters
 
 
 class CovertPRCInfrastructure:

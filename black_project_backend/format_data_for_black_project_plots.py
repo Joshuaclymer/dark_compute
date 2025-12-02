@@ -9,7 +9,7 @@ import numpy as np
 import csv
 import os
 from typing import List, Tuple, Dict, Any
-from backend.classes.black_project_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+from black_project_backend.classes.black_project_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
 
 
 # =============================================================================
@@ -31,10 +31,10 @@ def _load_compute_trajectory():
     if _cached_compute_trajectory is not None:
         return _cached_compute_trajectory
 
-    # Path to input_data.csv in the takeoff model directory
+    # Path to input_data.csv in the ai-futures-calculator directory
     csv_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        'takeoff_model', 'ai-futures-calculator', 'input_data.csv'
+        'ai-futures-calculator', 'input_data.csv'
     )
 
     time = []
@@ -190,7 +190,7 @@ def get_global_compute_production_between_years(start_year: float, end_year: flo
     return max(0.0, end_stock - start_stock)
 
 
-from backend.classes.covert_fab import (
+from black_project_backend.classes.covert_fab import (
     estimate_architecture_efficiency_relative_to_h100,
     predict_watts_per_tpp_from_transistor_density,
     H100_TRANSISTOR_DENSITY_M_PER_MM2,
@@ -729,7 +729,7 @@ def extract_prc_compute_over_time(years, initial_compute_parameters):
     the 2025 baseline and annual growth rate. Each sample uses a single
     sampled growth rate applied consistently across all years.
     """
-    from backend.classes.black_project_stock import sample_prc_growth_rate, compute_prc_compute_stock
+    from black_project_backend.classes.black_project_stock import sample_prc_growth_rate, compute_prc_compute_stock
 
     # We'll generate multiple samples to get percentiles
     num_samples = 100

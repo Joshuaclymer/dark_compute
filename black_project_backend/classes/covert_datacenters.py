@@ -2,8 +2,8 @@ import numpy as np
 from scipy import stats
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from backend.util import sample_from_log_normal, lr_over_time_vs_num_workers
-from backend.paramaters import CovertDatacenterParameters, CovertProjectParameters
+from black_project_backend.util import sample_from_log_normal, lr_over_time_vs_num_workers
+from black_project_backend.black_project_parameters import CovertDatacenterParameters, CovertProjectParameters
 from typing import List, Dict
 
 def sample_GW_per_year_per_construction_labor(datacenter_parameters):

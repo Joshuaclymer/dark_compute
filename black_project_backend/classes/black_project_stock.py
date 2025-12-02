@@ -2,7 +2,7 @@ import numpy as np
 import random
 from typing import List, Dict
 from abc import ABC, abstractmethod
-from backend.paramaters import InitialPRCBlackProjectParameters, SurvivalRateParameters
+from black_project_backend.black_project_parameters import InitialPRCBlackProjectParameters, SurvivalRateParameters
 
 # Constants for H100 chip (duplicated from covert_fab to avoid circular import)
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
@@ -11,7 +11,7 @@ H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass (default, can be 
 
 def sample_prc_growth_rate(params: InitialPRCBlackProjectParameters):
     """Sample the PRC compute stock growth rate using a metalog distribution with specified percentiles."""
-    from backend.util import sample_from_metalog_3term_semi_bounded_custom_percentiles
+    from black_project_backend.util import sample_from_metalog_3term_semi_bounded_custom_percentiles
     return sample_from_metalog_3term_semi_bounded_custom_percentiles(
         params.annual_growth_rate_of_prc_compute_stock_p10,
         params.annual_growth_rate_of_prc_compute_stock_p50,
@@ -89,7 +89,7 @@ def sample_hazard_rate_multiplier(params: SurvivalRateParameters) -> float:
     Returns a multiplier that will be applied to both initial_hazard_rate and
     increase_of_hazard_rate_per_year to create correlated uncertainty.
     """
-    from backend.util import sample_from_metalog_3term_semi_bounded
+    from black_project_backend.util import sample_from_metalog_3term_semi_bounded
 
     # Compute absolute percentiles from the ratios
     p25 = params.hazard_rate_p25_relative_to_p50

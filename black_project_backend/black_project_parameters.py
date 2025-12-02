@@ -246,3 +246,5 @@ class BlackProjectModelParameters:
 
         return flatten_dataclass(self)
     
+# Alias for backward compatibility
+ModelParameters = BlackProjectModelParameters

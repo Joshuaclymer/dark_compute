@@ -7,10 +7,10 @@ from copy import deepcopy
 # ============================================================================
 
 # Import CovertPRCInfrastructure and CovertProjectProperties
-from backend.classes.covert_project import CovertPRCInfrastructure
-from backend.classes.covert_fab import set_localization_probabilities
-from backend.classes.black_project_stock import Compute
-from backend.paramaters import CovertProjectProperties, ModelParameters, SimulationSettings
+from black_project_backend.classes.covert_project import CovertPRCInfrastructure
+from black_project_backend.classes.covert_fab import set_localization_probabilities
+from black_project_backend.classes.black_project_stock import Compute
+from black_project_backend.black_project_parameters import CovertProjectProperties, ModelParameters, SimulationSettings
 
 @dataclass
 class DetectorStrategy:
@@ -204,3 +204,5 @@ class BlackProjectModel:
             )
             covert_projects, detectors = simulation.run_simulation()
             self.simulation_results.append((covert_projects, detectors))
+# Alias for backward compatibility
+Model = BlackProjectModel

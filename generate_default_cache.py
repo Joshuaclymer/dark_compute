@@ -6,9 +6,9 @@ Run this with: python3 generate_default_cache.py [num_simulations]
 
 import sys
 import json
-from backend.model import Model
-from backend.paramaters import ModelParameters, SimulationSettings, CovertProjectProperties, CovertProjectParameters
-from backend.format_data_for_black_project_plots import extract_plot_data
+from black_project_backend.model import Model
+from black_project_backend.black_project_parameters import ModelParameters, SimulationSettings, CovertProjectProperties, CovertProjectParameters
+from black_project_backend.format_data_for_black_project_plots import extract_plot_data
 import os
 
 # Cache directory and save function (copied from app.py to avoid circular imports)

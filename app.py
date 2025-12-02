@@ -8,16 +8,15 @@ _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(_APP_DIR)
 
 from flask import Flask, render_template, jsonify, request, send_file, Response
-from backend.model import Model
-from backend.paramaters import (
+from black_project_backend.model import Model
+from black_project_backend.black_project_parameters import (
     CovertProjectProperties,
     CovertProjectParameters,
     SimulationSettings,
     ModelParameters,
-    SlowdownPageParameters,
 )
-from backend.format_data_for_black_project_plots import extract_plot_data
-from backend import util
+from black_project_backend.format_data_for_black_project_plots import extract_plot_data
+from black_project_backend import util
 import json
 import hashlib
 import math

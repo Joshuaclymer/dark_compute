@@ -67,7 +67,7 @@ def get_largest_company_compute() -> Optional[Dict[str, Any]]:
         Dictionary with 'years' and 'compute' lists, or None on error
     """
     try:
-        from backend.serve_data_for_dark_compute_model import _load_compute_trajectory
+        from backend.format_data_for_dark_compute_plots import _load_compute_trajectory
         trajectory = _load_compute_trajectory()
 
         # Filter to years from 2026 onwards and combine inference + experiment

@@ -12,12 +12,39 @@ import sys
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, Any, Optional, List, Tuple
+from scipy.signal import savgol_filter
 
 try:
     from joblib import Parallel, delayed
     JOBLIB_AVAILABLE = True
 except ImportError:
     JOBLIB_AVAILABLE = False
+
+
+def _smooth_speedup_trajectory(speedup: np.ndarray, window_length: int = 11, polyorder: int = 2) -> np.ndarray:
+    """Apply Savitzky-Golay filter to smooth speedup trajectory.
+
+    This removes bumps from discrete capability cap enforcement while preserving
+    the overall shape and monotonicity of the trajectory.
+
+    Args:
+        speedup: Array of speedup values
+        window_length: Window length for filter (must be odd, default 11)
+        polyorder: Polynomial order for filter (default 2)
+
+    Returns:
+        Smoothed speedup array
+    """
+    if len(speedup) < window_length:
+        return speedup
+
+    # Apply Savitzky-Golay filter
+    smoothed = savgol_filter(speedup, window_length, polyorder)
+
+    # Ensure smoothed values don't go below 1 (minimum speedup)
+    smoothed = np.maximum(smoothed, 1.0)
+
+    return smoothed
 
 # Default number of Monte Carlo samples for trajectory uncertainty
 DEFAULT_MC_SAMPLES = 50
@@ -220,6 +247,7 @@ def run_deterministic_trajectory(
     covert_compute_values: Optional[List[float]],
     capability_cap: Optional[List[float]] = None,
     capability_cap_times: Optional[List[float]] = None,
+    apply_cap_margin: bool = False,
 ) -> Optional[Dict[str, Any]]:
     """Run a single trajectory prediction with default (median) parameters.
 
@@ -232,6 +260,8 @@ def run_deterministic_trajectory(
             If provided, progress will be upper-bounded by these values.
         capability_cap_times: Times corresponding to capability_cap values.
             If None, assumes capability_cap already matches base_time_series.time.
+        apply_cap_margin: If True, applies US_SLOWDOWN_CAP_MARGIN to the capability cap
+            to create visual separation between the trajectory and cap line.
 
     Returns:
         Dictionary containing:
@@ -240,6 +270,7 @@ def run_deterministic_trajectory(
             - milestones: Milestone information
             - asi_time: Time when ASI is achieved (or large value if not)
     """
+    from backend.classes.us_project import US_SLOWDOWN_CAP_MARGIN
     original_dir = os.getcwd()
 
     try:
@@ -255,6 +286,9 @@ def run_deterministic_trajectory(
         capability_cap_array = None
         if capability_cap is not None:
             cap_array = np.array(capability_cap, dtype=float)
+            # Apply margin to create visual separation between trajectory and cap
+            if apply_cap_margin:
+                cap_array = cap_array * US_SLOWDOWN_CAP_MARGIN
             if capability_cap_times is not None:
                 # Interpolate to base_time_series.time
                 times_array = np.array(capability_cap_times, dtype=float)
@@ -282,18 +316,31 @@ def run_deterministic_trajectory(
         if trajectory and 'times' in trajectory and 'ai_sw_progress_mult_ref_present_day' in trajectory:
             times = trajectory['times']
             speedup = trajectory['ai_sw_progress_mult_ref_present_day']
+            # Smooth the speedup trajectory to remove bumps from discrete capability cap enforcement
+            if isinstance(speedup, np.ndarray):
+                speedup = _smooth_speedup_trajectory(speedup)
+            else:
+                speedup = _smooth_speedup_trajectory(np.array(speedup))
 
             # Extract ASI time
             asi_time = 1e308  # Large but finite value for JSON compatibility
             if 'ASI' in milestones_dict:
                 asi_time = milestones_dict['ASI'].time
 
-            return {
+            result = {
                 'trajectory_times': times.tolist() if hasattr(times, 'tolist') else list(times),
+                'times': times.tolist() if hasattr(times, 'tolist') else list(times),  # Also include as 'times' for consistency
                 'speedup': speedup.tolist() if hasattr(speedup, 'tolist') else list(speedup),
                 'milestones': _serialize_milestones(milestones_dict),
                 'asi_time': asi_time
             }
+
+            # Include capped_compute if available (generated when capability cap is applied)
+            if 'capped_compute' in trajectory:
+                capped_compute = trajectory['capped_compute']
+                result['capped_compute'] = capped_compute.tolist() if hasattr(capped_compute, 'tolist') else list(capped_compute)
+
+            return result
 
         return None
 
@@ -371,6 +418,11 @@ def run_monte_carlo_trajectories(
 
         common_times = trajectory['times']
         median_speedup = trajectory['ai_sw_progress_mult_ref_present_day']
+        # Smooth the speedup trajectory to remove bumps from discrete capability cap enforcement
+        if isinstance(median_speedup, np.ndarray):
+            median_speedup = _smooth_speedup_trajectory(median_speedup)
+        else:
+            median_speedup = _smooth_speedup_trajectory(np.array(median_speedup))
         median_asi_time = 1e308
         if 'ASI' in milestones_dict:
             median_asi_time = milestones_dict['ASI'].time

@@ -13,6 +13,7 @@ import time
 from typing import Dict, Any, Optional, List, Tuple
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing as mp
+import numpy as np
 
 try:
     from joblib import Parallel, delayed
@@ -49,7 +50,11 @@ from .compute_curves import (
     compute_prc_no_slowdown_trajectory,
 )
 from .proxy_project import compute_proxy_project_trajectory
-from backend.classes.us_project import ProxyProject, LargestUSProject, filter_trajectory_by_start_year
+from backend.classes.us_project import (
+    ProxyProject,
+    LargestUSProject,
+    filter_trajectory_by_start_year,
+)
 
 
 def _build_trajectories_from_mc(
@@ -510,15 +515,18 @@ def get_slowdown_model_data_with_progress(
     prc_no_slowdown_mc = to_mc_format(det_results.get('prc_no_slowdown'))
     proxy_project_mc = to_mc_format(det_results.get('proxy_project'))
 
-    # Compute US slowdown trajectory (uses full US compute with capability cap)
-    # Uses LargestUSProject class which implements the capability cap logic from slowdown_model.md
+    # Compute US slowdown trajectory using effective compute modulation
+    # Instead of capping progress, we modulate compute to keep speedup below the cap
     us_slowdown_mc = None
     capability_cap_data = None
-    if proxy_project_mc:
+    us_slowdown_compute_data = None
+    if proxy_project_mc and global_mc:
         proxy_times = proxy_project_mc.get('trajectory_times', [])
         proxy_speedup = proxy_project_mc.get('speedup_percentiles', {}).get('median', [])
+        global_times = global_mc.get('trajectory_times', [])
+        global_speedup = global_mc.get('speedup_percentiles', {}).get('median', [])
 
-        if proxy_speedup and proxy_times:
+        if proxy_speedup and proxy_times and global_speedup and global_times:
             # Use LargestUSProject class to compute capability cap
             us_project = LargestUSProject()
             cap_result = us_project.compute_capability_cap_from_arrays(
@@ -540,11 +548,13 @@ def get_slowdown_model_data_with_progress(
                 'asi_times': {'median': 1e308}
             }
 
-            # Run US slowdown trajectory with the computed capability cap
+            # Run US slowdown trajectory with capability cap via compute modulation
+            # Note: Margin is applied inside run_deterministic_trajectory via us_project.US_SLOWDOWN_CAP_MARGIN
             us_slowdown_result = run_deterministic_trajectory(
                 None, None,
                 capability_cap=capability_cap,
-                capability_cap_times=proxy_times
+                capability_cap_times=proxy_times,
+                apply_cap_margin=True
             )
             us_slowdown_mc = to_mc_format(us_slowdown_result)
 
@@ -591,6 +601,7 @@ def get_slowdown_model_data_with_progress(
         'largest_company_compute': largest_company_data,
         'prc_no_slowdown_compute': prc_no_slowdown_data,
         'proxy_project_compute': proxy_project_data,
+        'us_slowdown_compute': us_slowdown_compute_data,  # Effective compute for US slowdown trajectory
         'monte_carlo': {
             'global': global_mc,
             'covert': covert_mc,
@@ -671,14 +682,9 @@ def get_slowdown_model_data_with_progress(
         # Re-filter proxy_project after MC phase 2 updates it
         proxy_project_mc = filter_trajectory_by_start_year(proxy_project_mc, agreement_year)
 
-    # Build final result
-    final_result = {
-        'agreement_year': agreement_year,
-        'covert_compute_data': covert_compute_data,
-        'combined_covert_compute': combined_covert_data,
-        'largest_company_compute': largest_company_data,
-        'prc_no_slowdown_compute': prc_no_slowdown_data,
-        'proxy_project_compute': proxy_project_data,
+    # Build final result by starting with partial_result and updating only what changed
+    final_result = dict(partial_result)  # Copy all fields from partial_result
+    final_result.update({
         'monte_carlo': {
             'global': global_mc,
             'covert': covert_mc,
@@ -688,14 +694,12 @@ def get_slowdown_model_data_with_progress(
             'capability_cap': capability_cap_data
         },
         'p_catastrophe': p_catastrophe_results,
-        'p_catastrophe_curves': p_catastrophe_curves,
         'p_catastrophe_over_time': p_catastrophe_over_time,
         'optimal_compute_cap_over_time': optimal_compute_cap_over_time,
         'risk_reduction_over_time': risk_reduction_over_time,
         'risk_breakdown_data': risk_breakdown_data,
-        'default_parameters': default_parameters,
         'has_mc_uncertainty': num_mc_samples > 1
-    }
+    })
 
     return final_result
 
@@ -836,6 +840,7 @@ def get_trajectory_data_fast(
     # Uses LargestUSProject class which implements the capability cap logic from slowdown_model.md
     us_slowdown_mc = None
     capability_cap_data = None
+    us_slowdown_compute_data = None
     if proxy_project_mc:
         proxy_times = proxy_project_mc.get('trajectory_times', [])
         proxy_speedup = proxy_project_mc.get('speedup_percentiles', {}).get('median', [])
@@ -864,13 +869,24 @@ def get_trajectory_data_fast(
 
             # Pass None for compute to use global (largest US company) compute
             # Pass capability_cap with its times for interpolation
+            # Note: Margin is applied inside run_deterministic_trajectory via us_project.US_SLOWDOWN_CAP_MARGIN
             us_slowdown_result = run_deterministic_trajectory(
                 None, None,
                 capability_cap=capability_cap,
-                capability_cap_times=proxy_times
+                capability_cap_times=proxy_times,
+                apply_cap_margin=True
             )
             us_slowdown_mc = to_mc_format(us_slowdown_result)
             print("Computed US slowdown trajectory with capability cap", flush=True)
+
+            # Extract capped compute values for plotting
+            if us_slowdown_result and 'capped_compute' in us_slowdown_result:
+                capped_compute = us_slowdown_result['capped_compute']
+                trajectory_times = us_slowdown_result['times']
+                us_slowdown_compute_data = {
+                    'years': list(trajectory_times) if hasattr(trajectory_times, 'tolist') else trajectory_times,
+                    'compute': list(capped_compute) if hasattr(capped_compute, 'tolist') else capped_compute
+                }
 
     # Compute P(catastrophe)
     trajectories_for_p_cat = _build_trajectories_from_mc(global_mc, covert_mc)
@@ -939,6 +955,7 @@ def get_trajectory_data_fast(
         'largest_company_compute': largest_company_data,
         'prc_no_slowdown_compute': prc_no_slowdown_data,
         'proxy_project_compute': proxy_project_data,
+        'us_slowdown_compute': us_slowdown_compute_data,
         'monte_carlo': {
             'global': global_mc,
             'covert': covert_mc,

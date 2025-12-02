@@ -8,7 +8,7 @@ import sys
 import json
 from backend.model import Model
 from backend.paramaters import ModelParameters, SimulationSettings, CovertProjectProperties, CovertProjectParameters
-from backend.serve_data_for_dark_compute_model import extract_plot_data
+from backend.format_data_for_dark_compute_plots import extract_plot_data
 from app import save_default_cache
 
 def generate_cache(num_simulations=10):

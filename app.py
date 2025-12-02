@@ -1,3 +1,12 @@
+import os
+import sys
+
+# IMPORTANT: Change to the directory containing this file at startup.
+# This prevents errors when the shell's working directory no longer exists
+# (e.g., if a directory was deleted after a previous session).
+_APP_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(_APP_DIR)
+
 from flask import Flask, render_template, jsonify, request, send_file, Response
 from backend.model import Model
 from backend.paramaters import (
@@ -7,10 +16,9 @@ from backend.paramaters import (
     ModelParameters,
     SlowdownPageParameters,
 )
-from backend.serve_data_for_dark_compute_model import extract_plot_data
+from backend.format_data_for_dark_compute_plots import extract_plot_data
 from backend import util
 import json
-import os
 import hashlib
 import math
 
@@ -223,7 +231,7 @@ def get_slowdown_model_data_stream():
 
         def compute_data():
             try:
-                from backend.serve_slowdown_model import get_slowdown_model_data_with_progress
+                from backend.format_data_for_slowdown_plots import get_slowdown_model_data_with_progress
 
                 # Get cached simulation data
                 status_callback("Loading cached covert compute data...")

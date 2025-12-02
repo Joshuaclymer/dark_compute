@@ -19,7 +19,7 @@ Put logic on the backend instead of the front-end. Just display data on the fron
 
 ## Code Organization
 
-**IMPORTANT**: Always add core logic to `backend/classes/`. The files in `backend/serve_slowdown_model/` should only be used for:
+**IMPORTANT**: Always add core logic to `backend/classes/`. The files in `backend/format_data_for_slowdown_plots/` should only be used for:
 - Formatting data for plots
 - Orchestrating calls to classes
 - Building API responses

@@ -321,6 +321,7 @@ class ProxyProjectParameters:
     """Parameters for the US slowdown trajectory (compute cap based on PRC covert compute)."""
     compute_cap_as_percentile_of_PRC_operational_covert_compute: float = 0.7 #70th percentile
     frequency_cap_is_updated_in_years: float = 1.0
+    determine_optimal_proxy_project_compute_based_on_risk_curves : bool = False
 
 @dataclass
 class USProjectParameters:

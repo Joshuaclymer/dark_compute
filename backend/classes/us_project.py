@@ -17,6 +17,11 @@ import numpy as np
 
 from backend.paramaters import ProxyProjectParameters, USProjectParameters
 
+# Margin applied to capability cap when computing US slowdown trajectory.
+# A value of 0.8 means the US slowdown trajectory will cap at 80% of the actual
+# capability cap, providing a 20% visual margin between the curve and the cap.
+US_SLOWDOWN_CAP_MARGIN = 0.8
+
 
 def filter_trajectory_by_start_year(
     trajectory_data: Optional[Dict[str, Any]],
@@ -345,8 +350,12 @@ class LargestUSProject:
             if proxy_speedup is None:
                 proxy_speedup = 1.0
 
-            if year < eval_cap_start_year:
-                # Before evaluation-based enforcement:
+            if year < agreement_start_year:
+                # Before agreement starts: no capability cap (use infinity)
+                # This ensures US (slowdown) matches US (no slowdown) before agreement
+                cap = float('inf')
+            elif year < eval_cap_start_year:
+                # After agreement but before evaluation-based enforcement:
                 # Cap is whatever the proxy project can achieve
                 cap = proxy_speedup
             else:
@@ -406,8 +415,12 @@ class LargestUSProject:
         for i, year in enumerate(years):
             proxy_speedup = proxy_speedups[i] if i < len(proxy_speedups) else 1.0
 
-            if year < eval_cap_start_year:
-                # Before evaluation-based enforcement:
+            if year < agreement_start_year:
+                # Before agreement starts: no capability cap (use infinity)
+                # This ensures US (slowdown) matches US (no slowdown) before agreement
+                cap = float('inf')
+            elif year < eval_cap_start_year:
+                # After agreement but before evaluation-based enforcement:
                 # Cap is whatever the proxy project can achieve
                 cap = proxy_speedup
             else:
@@ -430,7 +443,8 @@ class LargestUSProject:
         takeoff_model: Any,
         human_labor: Optional[List[float]] = None,
         agreement_start_year: Optional[float] = None,
-        proxy_project: Optional[ProxyProject] = None
+        proxy_project: Optional[ProxyProject] = None,
+        apply_margin: bool = True
     ) -> Optional[Dict[str, Any]]:
         """
         Compute the US project trajectory with the capability cap applied.
@@ -449,6 +463,8 @@ class LargestUSProject:
                 Required if capability_cap hasn't been computed yet.
             proxy_project: ProxyProject instance with computed trajectory.
                 Required if capability_cap hasn't been computed yet.
+            apply_margin: If True, applies US_SLOWDOWN_CAP_MARGIN to the capability cap
+                to create visual separation between the trajectory and cap line.
 
         Returns:
             Dictionary with trajectory data including 'speedup' or None if failed
@@ -474,6 +490,10 @@ class LargestUSProject:
 
         # Interpolate capability cap to match the input years
         capability_cap_interpolated = np.interp(years, cap_years, cap_values)
+
+        # Apply margin to create visual separation between trajectory and cap
+        if apply_margin:
+            capability_cap_interpolated = capability_cap_interpolated * US_SLOWDOWN_CAP_MARGIN
 
         # Run trajectory with capability cap
         # Note: The TakeoffModel needs to be updated to accept capability_cap

@@ -20,6 +20,7 @@ function plotAgreementComputeOverTime(data) {
     const largestCompanyData = data.largest_company_compute;
     const prcNoSlowdownData = data.prc_no_slowdown_compute;
     const proxyProjectData = data.proxy_project_compute;
+    const usSlowdownData = data.us_slowdown_compute;  // Effective compute for US slowdown
 
     const container = document.getElementById('agreementComputePlot');
     if (!container) return;
@@ -52,6 +53,23 @@ function plotAgreementComputeOverTime(data) {
                 dash: 'dash'
             },
             name: 'US (no slowdown)',
+            hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
+        });
+    }
+
+    // 1.5. US with slowdown (solid) - Effective compute during AI slowdown
+    if (usSlowdownData && usSlowdownData.years && usSlowdownData.compute) {
+        // Plot the full trajectory (no filtering)
+        traces.push({
+            x: usSlowdownData.years,
+            y: usSlowdownData.compute,
+            type: 'scatter',
+            mode: 'lines',
+            line: {
+                color: usColor,
+                width: 3
+            },
+            name: 'US (with slowdown)',
             hovertemplate: 'Year: %{x:.1f}<br>H100e: %{y:,.0f}<extra></extra>'
         });
     }

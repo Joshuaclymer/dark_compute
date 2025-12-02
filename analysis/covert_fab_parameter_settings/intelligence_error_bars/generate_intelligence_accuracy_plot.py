@@ -1,6 +1,6 @@
 """
 Generate intelligence accuracy plot for tooltips.
-This replicates the intelligenceAccuracyPlot from dark_compute_detection_section.js
+This replicates the intelligenceAccuracyPlot from black_project_detection_section.js
 Shows estimate vs ground truth with median error margin.
 """
 

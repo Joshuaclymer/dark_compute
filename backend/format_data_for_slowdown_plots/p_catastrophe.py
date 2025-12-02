@@ -882,8 +882,8 @@ def compute_optimal_compute_cap_over_time(
 
     Args:
         p_catastrophe_over_time: Result from compute_p_catastrophe_over_time()
-        covert_compute_data: Dict containing 'years' and 'operational_dark_compute'
-            where operational_dark_compute has keys like 'p10', 'p25', 'median', 'p75', 'p90'
+        covert_compute_data: Dict containing 'years' and 'operational_black_project'
+            where operational_black_project has keys like 'p10', 'p25', 'median', 'p75', 'p90'
         agreement_year: The year when the slowdown agreement starts
 
     Returns:
@@ -906,7 +906,7 @@ def compute_optimal_compute_cap_over_time(
 
     # Get covert compute distribution data
     covert_years = covert_compute_data.get('years', [])
-    operational = covert_compute_data.get('operational_dark_compute', {})
+    operational = covert_compute_data.get('operational_black_project', {})
 
     if not covert_years or not operational:
         return None

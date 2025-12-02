@@ -185,7 +185,7 @@ class ProxyProject:
         the AI R&D speedup trajectory.
 
         Args:
-            covert_compute_data: Dict with 'years' and 'operational_dark_compute' containing
+            covert_compute_data: Dict with 'years' and 'operational_black_project' containing
                 percentile data (p25, median/p50, p75)
             takeoff_model: TakeoffModel instance for computing trajectories
             human_labor: Optional list of human labor values. If None, uses default.
@@ -198,7 +198,7 @@ class ProxyProject:
             return None
 
         years = covert_compute_data.get('years', [])
-        operational = covert_compute_data.get('operational_dark_compute', {})
+        operational = covert_compute_data.get('operational_black_project', {})
 
         # Build percentile dict from operational dark compute data
         covert_compute_percentiles = {}

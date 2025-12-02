@@ -6,7 +6,7 @@ from enum import Enum
 from typing import List, Dict, Optional
 import random
 from backend.util import sample_from_log_normal
-from backend.classes.dark_compute_stock import Chip, Compute
+from backend.classes.black_project_stock import Chip, Compute
 from backend.util import lr_over_time_vs_num_workers
 from backend.paramaters import ProcessNode, ProcessNodeStrategy, CovertFabParameters, CovertProjectParameters
 
@@ -898,7 +898,7 @@ class PRCCovertFab(CovertFab):
     us_estimate_of_prc_lithography_scanners : float
 
     # Fields with default values must come last
-    dark_compute_monthly_production_rate_history : dict = field(default_factory=dict)
+    black_project_monthly_production_rate_history : dict = field(default_factory=dict)
     detection_updates : dict = field(default_factory=dict)
 
     def __init__(
@@ -916,13 +916,16 @@ class PRCCovertFab(CovertFab):
         all_localization_years = sample_all_node_localization_years()
 
         # Handle different process node selection strategies
-        if process_node == "best_available_indigenously" or process_node == ProcessNodeStrategy.BEST_INDIGENOUS or process_node == "best_indigenous":
+        # Convert enum to value for comparison if needed (handles cross-module enum identity issues)
+        process_node_value = process_node.value if hasattr(process_node, 'value') else process_node
+
+        if process_node_value in ("best_available_indigenously", "best_indigenous", ProcessNodeStrategy.BEST_INDIGENOUS.value):
             # Original behavior: select best available node without threshold
             actual_process_node = determine_best_available_node(construction_start_year, all_localization_years)
             self.year_process_node_achieved_90p_prc_localization = all_localization_years[actual_process_node]
             self.process_node = actual_process_node
 
-        elif process_node == ProcessNodeStrategy.BEST_INDIGENOUS_GTE_28NM or process_node == "best_indigenous_gte_28nm":
+        elif process_node_value in ("best_indigenous_gte_28nm", ProcessNodeStrategy.BEST_INDIGENOUS_GTE_28NM.value):
             # Only build if 28nm or better is available
             actual_process_node = determine_best_available_node_with_min_threshold(
                 construction_start_year, all_localization_years, ProcessNode.nm28
@@ -932,7 +935,7 @@ class PRCCovertFab(CovertFab):
             self.year_process_node_achieved_90p_prc_localization = all_localization_years[actual_process_node]
             self.process_node = actual_process_node
 
-        elif process_node == ProcessNodeStrategy.BEST_INDIGENOUS_GTE_14NM or process_node == "best_indigenous_gte_14nm":
+        elif process_node_value in ("best_indigenous_gte_14nm", ProcessNodeStrategy.BEST_INDIGENOUS_GTE_14NM.value):
             # Only build if 14nm or better is available
             actual_process_node = determine_best_available_node_with_min_threshold(
                 construction_start_year, all_localization_years, ProcessNode.nm14
@@ -942,7 +945,7 @@ class PRCCovertFab(CovertFab):
             self.year_process_node_achieved_90p_prc_localization = all_localization_years[actual_process_node]
             self.process_node = actual_process_node
 
-        elif process_node == ProcessNodeStrategy.BEST_INDIGENOUS_GTE_7NM or process_node == "best_indigenous_gte_7nm":
+        elif process_node_value in ("best_indigenous_gte_7nm", ProcessNodeStrategy.BEST_INDIGENOUS_GTE_7NM.value):
             # Only build if 7nm or better is available
             actual_process_node = determine_best_available_node_with_min_threshold(
                 construction_start_year, all_localization_years, ProcessNode.nm7
@@ -1000,7 +1003,7 @@ class PRCCovertFab(CovertFab):
             self.total_prc_lithography_scanners_for_node
         )
         # Initialize fields that have default_factory in dataclass
-        self.dark_compute_monthly_production_rate_history = {}
+        self.black_project_monthly_production_rate_history = {}
         self.detection_updates = {}
 
         # Cache the chip object to ensure consistent chip identity across all time periods
@@ -1086,7 +1089,7 @@ class PRCCovertFab(CovertFab):
         chip = self._cached_chip
 
         compute_production_rate = Compute(chip_counts={chip: chips_per_month})
-        self.dark_compute_monthly_production_rate_history[year] = Compute(chip_counts={chip: chips_per_month})
+        self.black_project_monthly_production_rate_history[year] = Compute(chip_counts={chip: chips_per_month})
         return compute_production_rate
     
     def get_cumulative_compute_production_over_time(self):
@@ -1095,21 +1098,21 @@ class PRCCovertFab(CovertFab):
         Returns:
             dict: Dictionary mapping year -> cumulative H100e production up to that year
         """
-        years_recorded = sorted(self.dark_compute_monthly_production_rate_history.keys())
+        years_recorded = sorted(self.black_project_monthly_production_rate_history.keys())
 
         # If no production history, return empty dict
         if not years_recorded:
             return {}
 
         # Get chip type from first recorded year - should be consistent throughout
-        first_compute = self.dark_compute_monthly_production_rate_history[years_recorded[0]]
+        first_compute = self.black_project_monthly_production_rate_history[years_recorded[0]]
         chip_type = list(first_compute.chip_counts.keys())[0]
 
         cumulative_by_year = {}
         cumulative_chip_count = 0
 
         for i, yr in enumerate(years_recorded):
-            compute_at_year = self.dark_compute_monthly_production_rate_history[yr]
+            compute_at_year = self.black_project_monthly_production_rate_history[yr]
 
             # Verify only one chip type and it's consistent
             assert len(compute_at_year.chip_counts) == 1, f"Expected only one chip type in production rate history, got {len(compute_at_year.chip_counts)}"

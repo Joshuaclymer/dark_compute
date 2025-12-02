@@ -9,8 +9,7 @@ from copy import deepcopy
 # Import CovertProject and CovertProjectProperties
 from backend.classes.covert_project import CovertProject
 from backend.classes.covert_fab import set_localization_probabilities
-from backend.classes.dark_compute_stock import Compute
-from backend.classes.takeoff_model import TakeoffModel
+from backend.classes.black_project_stock import Compute
 from backend.paramaters import CovertProjectProperties, ModelParameters, SimulationSettings
 
 @dataclass
@@ -76,13 +75,11 @@ class Simulation:
             self,
             covert_projects: dict[str, CovertProject],
             detectors: dict[str, Detector],
-            takeoff_model: TakeoffModel,
             simulation_settings: SimulationSettings,
             agreement_start_year: float
         ):
         self.covert_projects = covert_projects
         self.detectors = detectors
-        self.takeoff_model = takeoff_model
         self.simulation_settings = simulation_settings
 
         # Store agreement start year and calculate end year
@@ -106,7 +103,7 @@ class Simulation:
                     months = 12 * increment
                     scaled_chip_counts = {chip: count * months for chip, count in compute_per_month.chip_counts.items()}
                     compute_to_add = Compute(chip_counts=scaled_chip_counts)
-                    project.dark_compute_stock.add_dark_compute(current_year, compute_to_add)
+                    project.black_project_stock.add_black_project(current_year, compute_to_add)
 
                 # ========== Get cumulative likelihood ratios from various intelligence sources ==========
                 project_lr = project.get_cumulative_evidence_of_covert_project(current_year)
@@ -151,9 +148,6 @@ class Model:
         }
 
         self.simulation_results = []
-
-        # Initialize takeoff model once (Monte Carlo sampling happens at init)
-        self.takeoff_model = self._init_takeoff_model()
 
     def _init_covert_projects(self, agreement_year: float, simulation_end_year: float):
         """Create a new set of covert projects with fresh random sampling.

@@ -16,13 +16,13 @@ from backend.paramaters import (
     ModelParameters,
     SlowdownPageParameters,
 )
-from backend.format_data_for_dark_compute_plots import extract_plot_data
+from backend.format_data_for_black_project_plots import extract_plot_data
 from backend import util
 import json
 import hashlib
 import math
 
-app = Flask(__name__, template_folder='frontend')
+app = Flask(__name__, template_folder='black_project_frontend')
 
 
 def sanitize_for_json(obj):
@@ -123,12 +123,12 @@ def serve_slowdown_component_files(filename):
 
 @app.route('/<path:filename>')
 def serve_html(filename):
-    """Serve HTML, JS, CSS, and SVG files from the frontend directory."""
-    # If the path already starts with 'frontend/', don't prepend it again
-    if filename.startswith('frontend/'):
+    """Serve HTML, JS, CSS, and SVG files from the black_project_frontend directory."""
+    # If the path already starts with 'black_project_frontend/', don't prepend it again
+    if filename.startswith('black_project_frontend/'):
         filepath = filename
     else:
-        filepath = f'frontend/{filename}'
+        filepath = f'black_project_frontend/{filename}'
 
     if filename.endswith('.html') and filename != 'index.html':
         return send_file(filepath)

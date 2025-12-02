@@ -8,8 +8,19 @@ import sys
 import json
 from backend.model import Model
 from backend.paramaters import ModelParameters, SimulationSettings, CovertProjectProperties, CovertProjectParameters
-from backend.format_data_for_dark_compute_plots import extract_plot_data
-from app import save_default_cache
+from backend.format_data_for_black_project_plots import extract_plot_data
+import os
+
+# Cache directory and save function (copied from app.py to avoid circular imports)
+CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+def save_default_cache(results):
+    """Save results as the default cache."""
+    cache_file = os.path.join(CACHE_DIR, 'default.json')
+    with open(cache_file, 'w') as f:
+        json.dump(results, f)
+    print(f"Saved default cache: {cache_file}", flush=True)
 
 def generate_cache(num_simulations=10):
     """Generate and save default cache with specified number of simulations."""

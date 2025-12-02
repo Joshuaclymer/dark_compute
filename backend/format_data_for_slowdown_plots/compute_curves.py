@@ -19,7 +19,7 @@ def combine_prc_and_covert_compute(
             - prc_compute_years: Pre-agreement years
             - prc_compute_over_time: Pre-agreement compute percentiles
             - years: Post-agreement years
-            - operational_dark_compute: Post-agreement compute percentiles
+            - operational_black_project: Post-agreement compute percentiles
 
     Returns:
         Tuple of (combined_years, combined_median) or (None, None) if no data
@@ -34,7 +34,7 @@ def combine_prc_and_covert_compute(
 
     # Get post-agreement covert compute
     post_years = covert_compute_data.get('years', [])
-    operational = covert_compute_data.get('operational_dark_compute', {})
+    operational = covert_compute_data.get('operational_black_project', {})
     operational_median = operational.get('median', [])
 
     # Combine the two: pre-agreement PRC compute + post-agreement covert compute
@@ -67,7 +67,7 @@ def get_largest_company_compute() -> Optional[Dict[str, Any]]:
         Dictionary with 'years' and 'compute' lists, or None on error
     """
     try:
-        from backend.format_data_for_dark_compute_plots import _load_compute_trajectory
+        from backend.format_data_for_black_project_plots import _load_compute_trajectory
         trajectory = _load_compute_trajectory()
 
         # Filter to years from 2026 onwards and combine inference + experiment

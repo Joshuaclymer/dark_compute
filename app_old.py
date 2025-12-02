@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, request, send_file
 from backend.model import Model
-from backend.classes.dark_compute_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP, PRCDarkComputeStock
+from backend.classes.black_project_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP, PRCBlackProjectStock
 from backend.classes.covert_fab import PRCCovertFab
 from backend.paramaters import (
     CovertProjectStrategy,
@@ -75,13 +75,13 @@ def run_simulation():
         lr_global_accounting_samples = []
 
         for _ in range(1000):
-            compute_stock = PRCDarkComputeStock(
+            compute_stock = PRCBlackProjectStock(
                 app_params.simulation_settings.start_year,
                 app_params.covert_project_strategy.proportion_of_initial_compute_stock_to_divert,
                 app_params.covert_project_strategy.proportion_of_initial_compute_stock_to_divert
             )
             initial_prc_stock_samples.append(compute_stock.initial_prc_stock)
-            initial_compute_samples.append(compute_stock.initial_prc_dark_compute)
+            initial_compute_samples.append(compute_stock.initial_prc_black_project)
             lr_prc = compute_stock.lr_from_prc_compute_accounting
             lr_global = compute_stock.lr_from_global_compute_production_accounting
             lr_prc_accounting_samples.append(lr_prc)
@@ -101,7 +101,7 @@ def run_simulation():
         # Add initial compute stock distribution to results
         results['initial_prc_stock_samples'] = initial_prc_stock_samples
         results['initial_compute_stock_samples'] = initial_compute_samples
-        results['initial_dark_compute_detection_probs'] = detection_probs
+        results['initial_black_project_detection_probs'] = detection_probs
         results['lr_prc_accounting_samples'] = lr_prc_accounting_samples
         results['lr_global_accounting_samples'] = lr_global_accounting_samples
         results['lr_combined_samples'] = initial_lr_samples
@@ -133,7 +133,7 @@ def run_simulation():
 
 def extract_plot_data(model, p_project_exists):
     """Extract plot data from model simulation results"""
-    from backend.classes.dark_compute_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
+    from backend.classes.black_project_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
 
     if not model.simulation_results:
         return {"error": "No simulation results"}
@@ -164,9 +164,9 @@ def extract_plot_data(model, p_project_exists):
 
     # Track survival rates, dark compute, operational dark compute, and datacenter capacity
     survival_rate_by_sim = []
-    dark_compute_by_sim = []
-    dark_compute_objects_by_sim = []  # Store Compute objects for energy breakdown
-    operational_dark_compute_by_sim = []
+    black_project_by_sim = []
+    black_project_objects_by_sim = []  # Store Compute objects for energy breakdown
+    operational_black_project_by_sim = []
     datacenter_capacity_by_sim = []
     lr_datacenters_by_sim = []
 
@@ -176,7 +176,7 @@ def extract_plot_data(model, p_project_exists):
     for covert_projects, detectors in simulations_to_plot:
         us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
         covert_fab = covert_projects["prc_covert_project"].covert_fab
-        dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+        black_project_stock = covert_projects["prc_covert_project"].black_project_stock
         covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
 
         # Track whether fab was built in this simulation
@@ -191,16 +191,16 @@ def extract_plot_data(model, p_project_exists):
         # TODO: Extract time-varying beliefs from p_project_exists_update_history
         us_probs = [us_beliefs.p_covert_fab_exists for _ in years] if years else []
         # Use covert fab's production over time if fab exists, otherwise 0
-        if covert_fab is not None and hasattr(covert_fab, 'dark_compute_over_time'):
-            h100e_counts = [covert_fab.dark_compute_over_time.get(year, 0.0) for year in years]
+        if covert_fab is not None and hasattr(covert_fab, 'black_project_over_time'):
+            h100e_counts = [covert_fab.black_project_over_time.get(year, 0.0) for year in years]
         else:
             h100e_counts = [0.0 for year in years]
 
         # Calculate survival rates, operational dark compute, and datacenter capacity for this simulation
         survival_rates = []
-        dark_compute = []
-        dark_compute_objects = []  # Store Compute objects for energy breakdown
-        operational_dark_compute = []
+        black_project = []
+        black_project_objects = []  # Store Compute objects for energy breakdown
+        operational_black_project = []
         datacenter_capacity_gw = []
         lr_datacenters_over_time = []
         for year in years:
@@ -211,8 +211,8 @@ def extract_plot_data(model, p_project_exists):
             datacenter_capacity_gw.append(capacity_gw)
 
             # Get compute stocks for survival rate calculation
-            surviving_compute = dark_compute_stock.dark_compute(year)
-            total_compute = dark_compute_stock.dark_compute_dead_and_alive(year)
+            surviving_compute = black_project_stock.black_project(year)
+            total_compute = black_project_stock.black_project_dead_and_alive(year)
 
             # Calculate survival rate (ratio of surviving to total, not limited by capacity)
             surviving = surviving_compute.total_h100e_tpp()
@@ -224,13 +224,13 @@ def extract_plot_data(model, p_project_exists):
                 survival_rates.append(0.0)
 
             # Store dark compute (surviving, not limited by capacity)
-            dark_compute.append(surviving)
-            dark_compute_objects.append(surviving_compute)  # Store Compute object for energy breakdown
+            black_project.append(surviving)
+            black_project_objects.append(surviving_compute)  # Store Compute object for energy breakdown
 
             # Get operational compute (limited by datacenter capacity) using CovertProject method
-            operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(year)
+            operational_compute = covert_projects["prc_covert_project"].operational_black_project(year)
             operational = operational_compute.total_h100e_tpp()
-            operational_dark_compute.append(operational)
+            operational_black_project.append(operational)
 
             # Get likelihood ratio from datacenters for this year
             lr_datacenters = covert_datacenters.lr_from_concealed_datacenters(relative_year)
@@ -239,9 +239,9 @@ def extract_plot_data(model, p_project_exists):
         us_probs_by_sim.append(us_probs)
         h100e_by_sim.append(h100e_counts)
         survival_rate_by_sim.append(survival_rates)
-        dark_compute_by_sim.append(dark_compute)
-        dark_compute_objects_by_sim.append(dark_compute_objects)
-        operational_dark_compute_by_sim.append(operational_dark_compute)
+        black_project_by_sim.append(black_project)
+        black_project_objects_by_sim.append(black_project_objects)
+        operational_black_project_by_sim.append(operational_black_project)
         datacenter_capacity_by_sim.append(datacenter_capacity_gw)
         lr_datacenters_by_sim.append(lr_datacenters_over_time)
 
@@ -302,8 +302,8 @@ def extract_plot_data(model, p_project_exists):
 
     # These arrays are unrelated to fab building, so use all simulations
     survival_rate_array = np.array(survival_rate_by_sim)
-    dark_compute_array = np.array(dark_compute_by_sim)
-    operational_dark_compute_array = np.array(operational_dark_compute_by_sim)
+    black_project_array = np.array(black_project_by_sim)
+    operational_black_project_array = np.array(operational_black_project_by_sim)
     datacenter_capacity_array = np.array(datacenter_capacity_by_sim)
 
     us_probs_median = np.median(us_probs_array, axis=0)
@@ -318,13 +318,13 @@ def extract_plot_data(model, p_project_exists):
     survival_rate_p25 = np.percentile(survival_rate_array, 25, axis=0)
     survival_rate_p75 = np.percentile(survival_rate_array, 75, axis=0)
 
-    dark_compute_median = np.median(dark_compute_array, axis=0) / 1e3  # Convert to thousands
-    dark_compute_p25 = np.percentile(dark_compute_array, 25, axis=0) / 1e3
-    dark_compute_p75 = np.percentile(dark_compute_array, 75, axis=0) / 1e3
+    black_project_median = np.median(black_project_array, axis=0) / 1e3  # Convert to thousands
+    black_project_p25 = np.percentile(black_project_array, 25, axis=0) / 1e3
+    black_project_p75 = np.percentile(black_project_array, 75, axis=0) / 1e3
 
-    operational_dark_compute_median = np.median(operational_dark_compute_array, axis=0) / 1e3  # Convert to thousands
-    operational_dark_compute_p25 = np.percentile(operational_dark_compute_array, 25, axis=0) / 1e3
-    operational_dark_compute_p75 = np.percentile(operational_dark_compute_array, 75, axis=0) / 1e3
+    operational_black_project_median = np.median(operational_black_project_array, axis=0) / 1e3  # Convert to thousands
+    operational_black_project_p25 = np.percentile(operational_black_project_array, 25, axis=0) / 1e3
+    operational_black_project_p75 = np.percentile(operational_black_project_array, 75, axis=0) / 1e3
 
     datacenter_capacity_median = np.median(datacenter_capacity_array, axis=0)
     datacenter_capacity_p25 = np.percentile(datacenter_capacity_array, 25, axis=0)
@@ -350,10 +350,10 @@ def extract_plot_data(model, p_project_exists):
     fab_h100e_all_sims = np.zeros((num_sims, num_years))
 
     for sim_idx, (covert_projects, _) in enumerate(simulations_to_plot):
-        dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+        black_project_stock = covert_projects["prc_covert_project"].black_project_stock
 
         for year_idx, year in enumerate(years_array):
-            initial_energy, fab_energy, initial_h100e, fab_h100e = dark_compute_stock.dark_compute_energy_by_source(year)
+            initial_energy, fab_energy, initial_h100e, fab_h100e = black_project_stock.black_project_energy_by_source(year)
             initial_energy_all_sims[sim_idx, year_idx] = initial_energy
             fab_energy_all_sims[sim_idx, year_idx] = fab_energy
             initial_h100e_all_sims[sim_idx, year_idx] = initial_h100e
@@ -474,7 +474,7 @@ def extract_plot_data(model, p_project_exists):
                 continue
 
             # Get fab production over time
-            h100e_over_time = covert_fab.dark_compute_over_time if hasattr(covert_fab, 'dark_compute_over_time') else {}
+            h100e_over_time = covert_fab.black_project_over_time if hasattr(covert_fab, 'black_project_over_time') else {}
 
             years = sorted(us_beliefs.p_project_exists_update_history.keys() if us_beliefs.p_project_exists_update_history else [])
             detection_year = None
@@ -659,7 +659,7 @@ def extract_plot_data(model, p_project_exists):
 
     for sim_idx, (covert_projects, detectors) in enumerate(model.simulation_results):
         us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+        black_project_stock = covert_projects["prc_covert_project"].black_project_stock
         covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
 
         years = sorted(us_beliefs.p_project_exists_update_history.keys() if us_beliefs.p_project_exists_update_history else [])
@@ -686,7 +686,7 @@ def extract_plot_data(model, p_project_exists):
         # If detected, get operational dark compute at detection
         if detection_year is not None:
             # Get operational dark compute (limited by capacity)
-            operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(detection_year)
+            operational_compute = covert_projects["prc_covert_project"].operational_black_project(detection_year)
             operational_h100e = operational_compute.total_h100e_tpp()
 
             # Calculate energy (GW) from H100e TPP
@@ -706,7 +706,7 @@ def extract_plot_data(model, p_project_exists):
                 time_increment = next_year - year
 
                 # Get operational H100e at this time
-                operational_at_year = covert_projects["prc_covert_project"].operational_dark_compute(year)
+                operational_at_year = covert_projects["prc_covert_project"].operational_black_project(year)
                 h100e_at_year = operational_at_year.total_h100e_tpp()
 
                 # Add contribution: H100e * time_increment (in years)
@@ -719,7 +719,7 @@ def extract_plot_data(model, p_project_exists):
         else:
             # Never detected - use final year values
             final_year = max(years)
-            operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(final_year)
+            operational_compute = covert_projects["prc_covert_project"].operational_black_project(final_year)
             operational_h100e = operational_compute.total_h100e_tpp()
 
             energy_gw = (operational_h100e * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
@@ -736,7 +736,7 @@ def extract_plot_data(model, p_project_exists):
                 time_increment = next_year - year
 
                 # Get operational H100e at this time
-                operational_at_year = covert_projects["prc_covert_project"].operational_dark_compute(year)
+                operational_at_year = covert_projects["prc_covert_project"].operational_black_project(year)
                 h100e_at_year = operational_at_year.total_h100e_tpp()
 
                 # Add contribution: H100e * time_increment (in years)
@@ -762,7 +762,7 @@ def extract_plot_data(model, p_project_exists):
         # Go through each simulation and find detection year for this threshold
         for sim_idx, (covert_projects, detectors) in enumerate(model.simulation_results):
             us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-            dark_compute_stock = covert_projects["prc_covert_project"].dark_compute_stock
+            black_project_stock = covert_projects["prc_covert_project"].black_project_stock
             covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
 
             years = sorted(us_beliefs.p_project_exists_update_history.keys() if us_beliefs.p_project_exists_update_history else [])
@@ -796,7 +796,7 @@ def extract_plot_data(model, p_project_exists):
                 time_increment = next_year - year
 
                 # Get operational H100e at this time
-                operational_at_year = covert_projects["prc_covert_project"].operational_dark_compute(year)
+                operational_at_year = covert_projects["prc_covert_project"].operational_black_project(year)
                 h100e_at_year = operational_at_year.total_h100e_tpp()
 
                 # Add contribution: H100e * time_increment (in years)
@@ -1032,7 +1032,7 @@ def extract_plot_data(model, p_project_exists):
                 time_increment = year - prev_year
 
                 # Get operational H100e at previous time point
-                operational_compute = covert_projects["prc_covert_project"].operational_dark_compute(prev_year)
+                operational_compute = covert_projects["prc_covert_project"].operational_black_project(prev_year)
                 h100e_at_prev_year = operational_compute.total_h100e_tpp()
 
                 # Add contribution: H100e * time_increment
@@ -1077,12 +1077,12 @@ def extract_plot_data(model, p_project_exists):
             "survival_rate_median": survival_rate_median.tolist(),
             "survival_rate_p25": survival_rate_p25.tolist(),
             "survival_rate_p75": survival_rate_p75.tolist(),
-            "dark_compute_median": dark_compute_median.tolist(),
-            "dark_compute_p25": dark_compute_p25.tolist(),
-            "dark_compute_p75": dark_compute_p75.tolist(),
-            "operational_dark_compute_median": operational_dark_compute_median.tolist(),
-            "operational_dark_compute_p25": operational_dark_compute_p25.tolist(),
-            "operational_dark_compute_p75": operational_dark_compute_p75.tolist(),
+            "black_project_median": black_project_median.tolist(),
+            "black_project_p25": black_project_p25.tolist(),
+            "black_project_p75": black_project_p75.tolist(),
+            "operational_black_project_median": operational_black_project_median.tolist(),
+            "operational_black_project_p25": operational_black_project_p25.tolist(),
+            "operational_black_project_p75": operational_black_project_p75.tolist(),
             "datacenter_capacity_median": datacenter_capacity_median.tolist(),
             "datacenter_capacity_p25": datacenter_capacity_p25.tolist(),
             "datacenter_capacity_p75": datacenter_capacity_p75.tolist(),

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 from backend.classes.covert_fab import CovertFab, PRCCovertFab, ProcessNode, FabNotBuiltException, Compute
-from backend.classes.dark_compute_stock import PRCDarkComputeStock
+from backend.classes.black_project_stock import PRCBlackProjectStock
 from backend.classes.covert_datacenters import CovertPRCDatacenters
 from backend.util import lr_over_time_vs_num_workers
 from backend.paramaters import CovertProjectProperties, CovertProjectParameters
@@ -14,13 +14,13 @@ class CovertProject:
     agreement_year : float
     years : list
     covert_project_parameters : CovertProjectParameters
-    stock : Optional[PRCDarkComputeStock] = None
+    stock : Optional[PRCBlackProjectStock] = None
     covert_fab : Optional[CovertFab] = None
     detection_time_via_other_strategies : Optional[float] = None
 
     def __post_init__(self):
         # Initialize covert fab if strategy requires it and construction_start_year is set
-        self.dark_compute_stock = PRCDarkComputeStock(
+        self.black_project_stock = PRCBlackProjectStock(
             agreement_year = self.agreement_year,
             proportion_of_initial_compute_stock_to_divert = self.covert_project_properties.proportion_of_initial_compute_stock_to_divert,
             optimal_proportion_of_initial_compute_stock_to_divert = self.covert_project_properties.proportion_of_initial_compute_stock_to_divert,
@@ -79,7 +79,7 @@ class CovertProject:
             variance_theta=self.covert_project_parameters.variance_of_detection_time_given_num_workers
         )
         
-    def operational_dark_compute(self, year: float):
+    def operational_black_project(self, year: float):
         """Calculate operational dark compute limited by datacenter energy capacity.
 
         This gets all surviving dark compute and scales it down if the energy requirements
@@ -96,14 +96,14 @@ class CovertProject:
         datacenter_capacity_gw = self.covert_datacenters.get_GW_capacity(year_since_agreement)
 
         # Get all surviving dark compute (using absolute year, not year_since_agreement)
-        all_dark_compute = self.dark_compute_stock.dark_compute(year)
+        all_black_project = self.black_project_stock.black_project(year)
 
         # Calculate total energy requirements
-        total_energy_required_gw = all_dark_compute.total_energy_requirements_GW()
+        total_energy_required_gw = all_black_project.total_energy_requirements_GW()
 
         # If energy requirements are within capacity, return all dark compute
         if total_energy_required_gw <= datacenter_capacity_gw:
-            return all_dark_compute
+            return all_black_project
 
         # Otherwise, scale down chip counts proportionally to fit within capacity
         scaling_factor = datacenter_capacity_gw / total_energy_required_gw
@@ -111,7 +111,7 @@ class CovertProject:
         # Create new chip_counts with scaled values
         operational_chip_counts = {
             chip: count * scaling_factor
-            for chip, count in all_dark_compute.chip_counts.items()
+            for chip, count in all_black_project.chip_counts.items()
         }
 
         operational_compute = Compute(chip_counts=operational_chip_counts)
@@ -122,7 +122,7 @@ class CovertProject:
         """Calculate total H100-years of computation performed up to the current year.
 
         This integrates operational H100e over time from agreement start until the current year,
-        using the operational_dark_compute method to get capacity-limited compute at each timestep.
+        using the operational_black_project method to get capacity-limited compute at each timestep.
 
         Args:
             current_year: The year to calculate H100-years up to
@@ -146,7 +146,7 @@ class CovertProject:
             time_increment = next_year - year
 
             # Get operational H100e at this time (limited by datacenter capacity)
-            operational_compute = self.operational_dark_compute(year)
+            operational_compute = self.operational_black_project(year)
             h100e_at_year = operational_compute.total_h100e_tpp()
 
             # Add contribution: H100e * time_increment (in years)
@@ -156,7 +156,7 @@ class CovertProject:
 
     def get_lr_initial(self) -> float:
         """Get initial stock likelihood ratio (constant over time)."""
-        lr_prc = self.dark_compute_stock.lr_from_prc_compute_accounting
+        lr_prc = self.black_project_stock.lr_from_prc_compute_accounting
         return lr_prc
     
     def get_lr_sme (self) -> float:

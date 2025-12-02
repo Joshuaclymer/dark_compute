@@ -106,7 +106,7 @@ def get_slowdown_model_data(
 
     Args:
         cached_simulation_data: Optional cached simulation results containing:
-            - dark_compute_model: Dict with 'years', 'operational_dark_compute', etc.
+            - black_project_model: Dict with 'years', 'operational_black_project', etc.
             - initial_stock: Dict with 'prc_compute_years', 'prc_compute_over_time', etc.
         slowdown_params: SlowdownPageParameters object containing all slowdown model settings.
             If None, uses default SlowdownPageParameters().
@@ -133,12 +133,12 @@ def get_slowdown_model_data(
 
     # Extract covert compute data from cached simulation results
     covert_compute_data = None
-    if cached_simulation_data and 'dark_compute_model' in cached_simulation_data:
-        dark_compute_model = cached_simulation_data['dark_compute_model']
+    if cached_simulation_data and 'black_project_model' in cached_simulation_data:
+        black_project_model = cached_simulation_data['black_project_model']
         initial_stock = cached_simulation_data.get('initial_stock', {})
         covert_compute_data = {
-            'years': dark_compute_model.get('years', []),
-            'operational_dark_compute': dark_compute_model.get('operational_dark_compute', {}),
+            'years': black_project_model.get('years', []),
+            'operational_black_project': black_project_model.get('operational_black_project', {}),
             # Include pre-agreement PRC compute data
             'prc_compute_years': initial_stock.get('prc_compute_years', []),
             'prc_compute_over_time': initial_stock.get('prc_compute_over_time', {})
@@ -431,12 +431,12 @@ def get_slowdown_model_data_with_progress(
 
     # Extract covert compute data
     covert_compute_data = None
-    if cached_simulation_data and 'dark_compute_model' in cached_simulation_data:
-        dark_compute_model = cached_simulation_data['dark_compute_model']
+    if cached_simulation_data and 'black_project_model' in cached_simulation_data:
+        black_project_model = cached_simulation_data['black_project_model']
         initial_stock = cached_simulation_data.get('initial_stock', {})
         covert_compute_data = {
-            'years': dark_compute_model.get('years', []),
-            'operational_dark_compute': dark_compute_model.get('operational_dark_compute', {}),
+            'years': black_project_model.get('years', []),
+            'operational_black_project': black_project_model.get('operational_black_project', {}),
             'prc_compute_years': initial_stock.get('prc_compute_years', []),
             'prc_compute_over_time': initial_stock.get('prc_compute_over_time', {})
         }
@@ -745,12 +745,12 @@ def get_trajectory_data_fast(
 
     # Extract covert compute data
     covert_compute_data = None
-    if cached_simulation_data and 'dark_compute_model' in cached_simulation_data:
-        dark_compute_model = cached_simulation_data['dark_compute_model']
+    if cached_simulation_data and 'black_project_model' in cached_simulation_data:
+        black_project_model = cached_simulation_data['black_project_model']
         initial_stock = cached_simulation_data.get('initial_stock', {})
         covert_compute_data = {
-            'years': dark_compute_model.get('years', []),
-            'operational_dark_compute': dark_compute_model.get('operational_dark_compute', {}),
+            'years': black_project_model.get('years', []),
+            'operational_black_project': black_project_model.get('operational_black_project', {}),
             'prc_compute_years': initial_stock.get('prc_compute_years', []),
             'prc_compute_over_time': initial_stock.get('prc_compute_over_time', {})
         }
@@ -1006,12 +1006,12 @@ def get_uncertainty_data(
 
     # Extract covert compute data
     covert_compute_data = None
-    if cached_simulation_data and 'dark_compute_model' in cached_simulation_data:
-        dark_compute_model = cached_simulation_data['dark_compute_model']
+    if cached_simulation_data and 'black_project_model' in cached_simulation_data:
+        black_project_model = cached_simulation_data['black_project_model']
         initial_stock = cached_simulation_data.get('initial_stock', {})
         covert_compute_data = {
-            'years': dark_compute_model.get('years', []),
-            'operational_dark_compute': dark_compute_model.get('operational_dark_compute', {}),
+            'years': black_project_model.get('years', []),
+            'operational_black_project': black_project_model.get('operational_black_project', {}),
             'prc_compute_years': initial_stock.get('prc_compute_years', []),
             'prc_compute_over_time': initial_stock.get('prc_compute_over_time', {})
         }

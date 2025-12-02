@@ -69,7 +69,7 @@ def compute_proxy_project_trajectory(
         return None
 
     post_years = covert_compute_data.get('years', [])
-    operational = covert_compute_data.get('operational_dark_compute', {})
+    operational = covert_compute_data.get('operational_black_project', {})
 
     # Build percentile dict from operational dark compute data
     covert_compute_percentiles = {}

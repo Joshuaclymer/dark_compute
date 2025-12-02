@@ -71,7 +71,7 @@ function setElementText(id, text) {
 
 /**
  * Create a small mapping plot using Plotly
- * Styling copied from dark_compute_detection_section.js
+ * Styling copied from black_project_detection_section.js
  */
 function createMappingPlot(containerId, xData, yData, xLabel, yLabel, currentX, currentY, color) {
     const container = document.getElementById(containerId);

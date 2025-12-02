@@ -59,8 +59,9 @@ function plotAllCharts(data) {
         populateSidebarDefaults(data);
         sidebarDefaultsPopulated = true;
     }
-    plotPCatastropheOverTime(data);
+    plotTakeoffModel(data);
     plotAgreementComputeOverTime(data);
+    plotPCatastropheOverTime(data);
 }
 
 // Update all plots by reloading data from backend

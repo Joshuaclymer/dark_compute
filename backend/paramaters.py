@@ -56,7 +56,7 @@ class CovertProjectProperties:
     covert_fab_proportion_of_prc_lithography_scanners_devoted : Optional[float] = 0.1
 
 @dataclass
-class InitialPRCDarkComputeParameters:
+class InitialPRCBlackProjectParameters:
 
     # H100 power consumption
     h100_power_watts: float = 700  # Total power consumption of NVIDIA H100 GPU
@@ -161,7 +161,7 @@ class CovertProjectParameters:
     mean_detection_time_for_100_workers: float = 6.95
     mean_detection_time_for_1000_workers: float = 3.42
     variance_of_detection_time_given_num_workers: float = 3.880
-    initial_compute_stock_parameters: InitialPRCDarkComputeParameters = field(default_factory=InitialPRCDarkComputeParameters)
+    initial_compute_stock_parameters: InitialPRCBlackProjectParameters = field(default_factory=InitialPRCBlackProjectParameters)
     slowdown_counterfactual_parameters: SlowdownCounterfactualParameters = field(default_factory=SlowdownCounterfactualParameters)
     survival_rate_parameters: SurvivalRateParameters = field(default_factory=SurvivalRateParameters)
     datacenter_model_parameters: CovertDatacenterParameters = field(default_factory=CovertDatacenterParameters)

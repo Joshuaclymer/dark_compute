@@ -1,5 +1,12 @@
 # Slowdown Model
 
+## Phases of agreements
+
+There are three main phases of the AI Slowdown Agreement:
+1. Cease training 
+2. Cap and align
+3. Handoff
+
 ## Modeling AI Takeover Risk
 
 ### Overview
@@ -142,7 +149,7 @@ After the capability cap can be enforced with evaluations, the capability cap is
 - Some fixed AI R&D speedup (capability_cap_ai_randd_speedup). By default, this is set at the point where developers cannot effectively oversee AI alignment work (hand-off).
 - The capabilities achieved by the 'proxy project.'
 
-## Largest US project compute spending during the AI slowdown
+## US project compute spending during the AI slowdown
 
 Before the AI slowdown, the US spends compute on AI experiments equal to the compute spent by the US if there is no slowdown.
 

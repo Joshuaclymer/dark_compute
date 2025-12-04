@@ -318,9 +318,9 @@ function populateUnconcealedDatacenterBreakdown(data) {
         el.textContent = agreementYear;
     });
 
-    // Get values from backend data
-    const totalPrcDatacenterCapacity = data.black_datacenters.total_prc_datacenter_capacity_gw;
-    const covertUnconcealedCapacity = data.black_datacenters.covert_unconcealed_capacity_gw;
+    // Get values from backend data (with fallback to 0 if not available)
+    const totalPrcDatacenterCapacity = data.black_datacenters?.total_prc_datacenter_capacity_gw ?? 0;
+    const covertUnconcealedCapacity = data.black_datacenters?.covert_unconcealed_capacity_gw ?? 0;
 
     // Get fraction diverted for display
     const fractionDivertedInput = document.getElementById('fraction_of_datacenter_capacity_not_built_for_concealment_diverted');
@@ -551,6 +551,23 @@ function plotPrcDatacenterCapacityOverTime(agreementYear, totalPrcComputeStock20
 
 function populateDatacenterCapacityBreakdown(data) {
     // Populate the breakdown boxes with parameter values from input elements
+
+    // Format helper
+    const formatGW = (gw) => {
+        if (gw >= 1) {
+            return `${gw.toFixed(1)} GW`;
+        } else {
+            return `${(gw * 1000).toFixed(0)} MW`;
+        }
+    };
+
+    // Get covert unconcealed capacity from backend data and populate the box
+    const covertUnconcealedCapacity = data.black_datacenters?.covert_unconcealed_capacity_gw || 0;
+    document.getElementById('covertUnconcealedCapacityDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${formatGW(covertUnconcealedCapacity)}</div>
+            <div class="breakdown-label">Covert datacenter capacity<br>not built for concealment</div>
+        </div>`;
 
     // Get total PRC energy consumption from input
     const totalPrcEnergyInput = document.getElementById('total_GW_of_PRC_energy_consumption');

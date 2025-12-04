@@ -206,20 +206,15 @@ class PRCBlackProjectStock():
     def get_energy_consumption_of_prc_stock_gw(self):
         """Calculate the energy consumption of the initial PRC stock in GW.
 
-        Uses the initial PRC stock (in H100e), the H100 TPP and watts constants,
-        and the PRC stock energy efficiency relative to H100.
+        Uses black_project_energy_by_source at the agreement year as the ground truth
+        to avoid redundant calculations.
 
         Returns:
             Energy consumption in GW
         """
-        # initial_prc_stock is in H100 equivalent units
-        # Convert to actual energy consumption accounting for efficiency
-        energy_watts = (
-            self.initial_prc_stock * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
-            self.prc_stock_energy_efficiency_relative_to_h100
-        )
-        energy_gw = energy_watts / 1e9
-        return energy_gw
+        # Use black_project_energy_by_source at agreement year (when all initial stock is alive)
+        initial_energy, fab_energy, initial_h100e, fab_h100e = self.black_project_energy_by_source(self.agreement_year)
+        return initial_energy
 
     def add_black_project(self, year : float, compute_to_add):
         """Add dark compute for a year from a Compute object.

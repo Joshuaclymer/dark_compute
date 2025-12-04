@@ -12,23 +12,38 @@ def sample_GW_per_year_per_construction_labor(datacenter_parameters):
     return sample_from_log_normal(median, relative_sigma)
 
 class PRCBlackDatacenters():
-    def __init__(self, construction_labor : float, years_since_agreement_start: List[float], datacenter_parameters: BlackDatacenterParameters, project_parameters: BlackProjectParameters, datacenter_start_year_offset: float = 0.0, black_project_properties: BlackProjectProperties = None, energy_consumption_of_prc_stock_at_agreement_start: float = 0.0):
-        self.construction_labor = construction_labor
-        self.datacenter_start_year_offset = datacenter_start_year_offset
-        self.energy_consumption_of_prc_stock_at_agreement_start = energy_consumption_of_prc_stock_at_agreement_start
-
-        # Store datacenter parameters instance
-        self.datacenter_parameters = datacenter_parameters
+    def __init__(
+        self,
+        years_since_agreement_start: List[float],
+        project_parameters: BlackProjectParameters,
+        black_project_properties: BlackProjectProperties,
+        energy_consumption_of_prc_stock_at_agreement_start: float
+    ):
+        # Store the main parameters object
         self.project_parameters = project_parameters
         self.black_project_properties = black_project_properties
 
+        # Extract commonly used sub-parameters for convenience
+        self.datacenter_parameters = project_parameters.datacenter_model_parameters
+
+        # Get values from black_project_properties
+        self.construction_labor = black_project_properties.datacenter_construction_labor
+        years_before = black_project_properties.years_before_agreement_year_prc_starts_building_black_datacenters
+        self.datacenter_start_year_offset = -years_before
+        self.energy_consumption_of_prc_stock_at_agreement_start = energy_consumption_of_prc_stock_at_agreement_start
+
         # Sample labor parameters once at initialization for efficiency
-        self.GW_per_year_per_construction_labor = sample_GW_per_year_per_construction_labor(datacenter_parameters)
+        self.GW_per_year_per_construction_labor = sample_GW_per_year_per_construction_labor(self.datacenter_parameters)
         self.GW_per_year_of_concealed_datacenters = self.GW_per_year_per_construction_labor * self.construction_labor
         self.operating_labor_per_GW = self.datacenter_parameters.operating_labor_per_MW * 1000
+
+        # Convert relative years to absolute years for labor calculation
+        agreement_year = project_parameters.simulation_settings.agreement_start_year
+        absolute_years = [year + agreement_year for year in years_since_agreement_start]
+
         labor_by_year = {
             year: self.get_operating_labor(year) + self.construction_labor
-            for year in years_since_agreement_start
+            for year in absolute_years
         }
         self.lr_over_time_vs_num_workers = lr_over_time_vs_num_workers(
             labor_by_year=labor_by_year,
@@ -42,9 +57,17 @@ class PRCBlackDatacenters():
         return fraction_diverted * self.energy_consumption_of_prc_stock_at_agreement_start
 
     def get_covert_GW_capacity_concealed(self, year):
-        """Calculate the GW capacity of datacenters built for concealment."""
-        # Adjust year by datacenter start offset (only count years after construction starts)
-        years_since_construction_start = max(0, year - self.datacenter_start_year_offset)
+        """Calculate the GW capacity of datacenters built for concealment.
+
+        Args:
+            year: Absolute year (e.g., 2030, 2031, etc.)
+        """
+        # Convert absolute year to year relative to agreement start
+        agreement_year = self.project_parameters.simulation_settings.agreement_start_year
+        year_relative_to_agreement = year - agreement_year
+
+        # Adjust by datacenter start offset (only count years after construction starts)
+        years_since_construction_start = max(0, year_relative_to_agreement - self.datacenter_start_year_offset)
         constructable_datacenters = self.GW_per_year_of_concealed_datacenters * years_since_construction_start
         max_energy_allocatable = self.black_project_properties.max_proportion_of_PRC_energy_consumption * self.project_parameters.exogenous_trends.total_GW_of_PRC_energy_consumption
         maximum_constructable_while_keeping_within_energy_limit = max(0, max_energy_allocatable - self.get_covert_GW_capacity_unconcealed_at_agreement_start())
@@ -67,7 +90,7 @@ class PRCBlackDatacenters():
             raise KeyError(f"Year {year} not found in lr_over_time_vs_num_workers. Available years: {list(self.lr_over_time_vs_num_workers.keys())}")
         return self.lr_over_time_vs_num_workers[year]
 
-    def lr_from_energy_consumption(self, year: float) -> float:
+    def lr_from_reported_energy_consumption(self, year: float) -> float:
         """Calculate likelihood ratio from PRC energy consumption accounting.
 
         Compares:
@@ -105,7 +128,7 @@ class PRCBlackDatacenters():
             median_error=median_error
         )
 
-    def lr_from_satellite_detection(self) -> float:
+    def lr_from_identifying_datacenters_with_satellites(self) -> float:
         """Calculate likelihood ratio from satellite detection of diverted datacenter capacity.
 
         The US uses satellite imagery to estimate the capacity of unconcealed datacenters.
@@ -150,4 +173,4 @@ class PRCBlackDatacenters():
 
     def cumulative_lr_from_concealed_datacenters(self, year):
         """Get the cumulative likelihood ratio from concealed datacenters based on worker count."""
-        return self.lr_from_energy_consumption(year) * self.lr_from_satellite_detection() * self.cumulative_lr_from_direct_observation(year)
+        return self.lr_from_identifying_datacenters_with_satellites() * self.lr_from_reported_energy_consumption(year) * self.cumulative_lr_from_direct_observation(year)

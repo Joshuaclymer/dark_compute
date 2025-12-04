@@ -2,15 +2,15 @@
 function createIntelligenceAccuracyPlot() {
   const elementId = 'intelligenceAccuracyPlot';
 
-  // Website color scheme
+  // Website color scheme - use palette colors
   const COLORS = {
-    'purple': '#9B72B0',
-    'blue': '#5B8DBE',
-    'teal': '#5AA89B',
-    'dark_teal': '#2D6B61',
-    'red': '#E74C3C',
-    'purple_alt': '#8E44AD',
-    'light_teal': '#74B3A8'
+    'purple': COLOR_PALETTE.chip_stock,      // Indigo #6E7FD9
+    'blue': COLOR_PALETTE.detection,          // Pewter Blue #8DB8DA
+    'teal': COLOR_PALETTE.datacenters_and_energy,  // Viridian #56C4AE
+    'dark_teal': '#3D9E8A',                   // Darker viridian
+    'red': COLOR_PALETTE.survival_rate,       // Vermillion #F0655A
+    'purple_alt': COLOR_PALETTE.chip_stock,   // Indigo #6E7FD9
+    'light_teal': '#7DD4C0'                   // Lighter viridian
   };
 
   // Helper functions
@@ -392,15 +392,15 @@ function createIntelligenceAccuracyPlot() {
 
 // Standalone function to create error bars plot
 function createErrorBarsPlot(elementId) {
-  // Website color scheme
+  // Website color scheme - use palette colors
   const COLORS = {
-    'purple': '#9B72B0',
-    'blue': '#5B8DBE',
-    'teal': '#5AA89B',
-    'dark_teal': '#2D6B61',
-    'red': '#E74C3C',
-    'purple_alt': '#8E44AD',
-    'light_teal': '#74B3A8'
+    'purple': COLOR_PALETTE.chip_stock,      // Indigo #6E7FD9
+    'blue': COLOR_PALETTE.detection,          // Pewter Blue #8DB8DA
+    'teal': COLOR_PALETTE.datacenters_and_energy,  // Viridian #56C4AE
+    'dark_teal': '#3D9E8A',                   // Darker viridian
+    'red': COLOR_PALETTE.survival_rate,       // Vermillion #F0655A
+    'purple_alt': COLOR_PALETTE.chip_stock,   // Indigo #6E7FD9
+    'light_teal': '#7DD4C0'                   // Lighter viridian
   };
 
   // Data for stated error bars (excluding Russian Federation nuclear warheads with min: 1000, max: 2000)

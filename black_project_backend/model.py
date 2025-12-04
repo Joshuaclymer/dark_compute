@@ -48,7 +48,7 @@ class BlackProjectSimulation:
                     months = 12 * increment
                     scaled_chip_counts = {chip: count * months for chip, count in compute_per_month.chip_counts.items()}
                     compute_to_add = Compute(chip_counts=scaled_chip_counts)
-                    project.black_project_stock.add_black_project(current_year, compute_to_add)
+                    project.black_project_stock.add_compute(current_year, compute_to_add)
 
             current_year += increment
         return self.black_projects

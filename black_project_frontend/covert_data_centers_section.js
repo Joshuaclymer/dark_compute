@@ -8,9 +8,9 @@ function plotDatacenterCombined(data) {
     const cd = data.black_datacenters;
     const years = dcm.years;
 
-    // Colors
-    const capacityColor = '#5AA89B'; // Turquoise for capacity
-    const lrColor = '#5B8DBE'; // Blue for likelihood ratio
+    // Colors - use palette colors
+    const capacityColor = COLOR_PALETTE.datacenters_and_energy; // Viridian for capacity
+    const lrColor = COLOR_PALETTE.detection; // Pewter Blue for likelihood ratio
 
     // Create traces for both series
     const traces = [
@@ -164,7 +164,7 @@ function plotDatacenterCapacityCcdf(data) {
         y: ccdf.map(d => d.y),
         type: 'scatter',
         mode: 'lines',
-        line: { color: '#5AA89B', width: 2 },  // Green color (previously used for 5x)
+        line: { color: COLOR_PALETTE.datacenters_and_energy, width: 2 },  // Viridian
         name: '"Detection" = >1x update',
         hovertemplate: 'Capacity: %{x:.2f} GW<br>P(≥x): %{y:.3f}<extra></extra>'
     }];
@@ -210,8 +210,8 @@ function plotDatacenterLR(data) {
     const cd = data.black_datacenters;
     const years = cd.years;
 
-    // Color for LR
-    const lrColor = '#5B8DBE'; // Blue for likelihood ratio
+    // Color for LR - use palette color
+    const lrColor = COLOR_PALETTE.detection; // Pewter Blue for likelihood ratio
 
     // Create traces with shaded percentile band
     const traces = [
@@ -307,13 +307,13 @@ function updateDatacenterDashboard(data) {
 }
 
 function populateUnconcealedDatacenterBreakdown(data) {
-    // Populate the unconcealed datacenter capacity breakdown boxes using backend values
+    // Populate the unconcealed datacenter capacity breakdown using backend values
 
     // Get all values from backend data
     const bd = data.black_datacenters || {};
     const years = bd.prc_capacity_years || [];
-    const capacityGw = bd.prc_capacity_gw || [];
     const capacityAtAgreementYear = bd.prc_capacity_at_agreement_year_gw ?? 0;
+    const capacityAtAgreementYearSamples = bd.prc_capacity_at_agreement_year_samples || [];
     const fractionDiverted = bd.fraction_diverted ?? 0.01;
     const covertUnconcealedCapacity = capacityAtAgreementYear * fractionDiverted;
 
@@ -337,23 +337,21 @@ function populateUnconcealedDatacenterBreakdown(data) {
     // Plot PRC datacenter capacity over time using backend data
     plotPrcDatacenterCapacityOverTime(data, agreementYear);
 
-    // Populate the boxes with backend values
-    document.getElementById('totalPrcDatacenterCapacityNotConcealedDisplay').innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <div class="breakdown-box-inner">${formatGW(capacityAtAgreementYear)}</div>
-            <div class="breakdown-label">Total PRC datacenter capacity<br>not built for concealment in <span class="agreement-year-display">${agreementYear}</span></div>
-        </div>`;
+    // Plot distribution of total PRC datacenter capacity at agreement year - green color #5AA89B
+    if (capacityAtAgreementYearSamples.length > 0) {
+        plotPDF('totalPrcDatacenterCapacityPlot', capacityAtAgreementYearSamples, COLOR_PALETTE.datacenters_and_energy, 'Total PRC Datacenter Capacity (GW)', 30, false, null, null, null, null, 'log', true);
+    }
 
     document.getElementById('proportionUnconcealedDivertedDisplay').innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
             <div class="breakdown-box-inner">${(fractionDiverted * 100).toFixed(0)}%</div>
-            <div class="breakdown-label">Proportion of unconcealed<br>capacity diverted to covert project</div>
+            <div class="breakdown-label">Proportion diverted to covert project</div>
         </div>`;
 
     document.getElementById('covertDatacenterCapacityUnconcealedDisplay').innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
             <div class="breakdown-box-inner">${formatGW(covertUnconcealedCapacity)}</div>
-            <div class="breakdown-label">Covert datacenter capacity<br>not built for concealment</div>
+            <div class="breakdown-label">Capacity of covert datacenters<br>not built for concealment</div>
         </div>`;
 
     // Update the inline text with the covert unconcealed capacity
@@ -364,7 +362,6 @@ function populateUnconcealedDatacenterBreakdown(data) {
 
     // Add hover effects and click handlers for the clickable boxes
     const clickableBoxes = [
-        { id: 'totalPrcDatacenterCapacityNotConcealedDisplay', inputId: 'total_prc_compute_stock_in_2025' },
         { id: 'proportionUnconcealedDivertedDisplay', inputId: 'fraction_of_datacenter_capacity_not_built_for_concealment_diverted' }
     ];
 
@@ -375,7 +372,7 @@ function populateUnconcealedDatacenterBreakdown(data) {
             if (innerElement) {
                 innerElement.style.transition = 'all 0.2s ease';
                 innerElement.addEventListener('mouseenter', () => {
-                    innerElement.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                    innerElement.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                     innerElement.style.transform = 'scale(1.015)';
                 });
                 innerElement.addEventListener('mouseleave', () => {
@@ -402,39 +399,81 @@ function plotPrcDatacenterCapacityOverTime(data, agreementYear) {
     // Get data from backend
     const bd = data.black_datacenters || {};
     const years = bd.prc_capacity_years || [];
-    const capacityGw = bd.prc_capacity_gw || [];
+    const capacityData = bd.prc_capacity_gw || {};
 
-    if (years.length === 0 || capacityGw.length === 0) {
+    // Extract percentiles
+    const p25 = capacityData.p25 || [];
+    const median = capacityData.median || [];
+    const p75 = capacityData.p75 || [];
+
+    if (years.length === 0 || median.length === 0) {
         console.warn('No PRC datacenter capacity data available');
         return;
     }
 
-    const totalCapacityAtAgreementYear = capacityGw[capacityGw.length - 1];
+    const medianAtAgreementYear = median[median.length - 1];
 
-    const traces = [
-        // Shaded region for capacity not built for concealment
-        {
-            x: years,
-            y: capacityGw,
-            type: 'scatter',
-            mode: 'lines',
-            fill: 'tozeroy',
-            fillcolor: 'rgba(91, 141, 190, 0.2)',
-            line: { color: 'transparent' },
-            name: 'Capacity of datacenters not built for concealment',
-            hovertemplate: '%{y:.2f} GW<extra>Not built for concealment</extra>'
-        },
-        // Total PRC compute stock energy consumption line
-        {
-            x: years,
-            y: capacityGw,
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: '#2B5B8A', width: 2 },
-            name: 'Total PRC compute energy consumption',
-            hovertemplate: '%{y:.2f} GW<extra>Total PRC energy</extra>'
-        }
-    ];
+    // Create shaded area for 25-75 percentile range
+    const shadedArea = {
+        x: [...years, ...years.slice().reverse()],
+        y: [...p75, ...p25.slice().reverse()],
+        fill: 'toself',
+        fillcolor: 'rgba(90, 168, 155, 0.2)',
+        line: { color: 'transparent' },
+        type: 'scatter',
+        showlegend: false,
+        hoverinfo: 'skip',
+        name: '25th-75th percentile'
+    };
+
+    // Create 25th percentile line
+    const p25Line = {
+        x: years,
+        y: p25,
+        mode: 'lines',
+        line: { color: COLOR_PALETTE.datacenters_and_energy, width: 1, dash: 'dash' },
+        type: 'scatter',
+        showlegend: false,
+        hovertemplate: 'Year: %{x}<br>25th percentile: %{y:.2f} GW<extra></extra>'
+    };
+
+    // Create median line
+    const medianLine = {
+        x: years,
+        y: median,
+        mode: 'lines',
+        line: { color: COLOR_PALETTE.datacenters_and_energy, width: 2 },
+        type: 'scatter',
+        name: 'Median',
+        hovertemplate: 'Year: %{x}<br>Median: %{y:.2f} GW<extra></extra>'
+    };
+
+    // Create 75th percentile line
+    const p75Line = {
+        x: years,
+        y: p75,
+        mode: 'lines',
+        line: { color: COLOR_PALETTE.datacenters_and_energy, width: 1, dash: 'dash' },
+        type: 'scatter',
+        showlegend: false,
+        hovertemplate: 'Year: %{x}<br>75th percentile: %{y:.2f} GW<extra></extra>'
+    };
+
+    // Create dummy trace for percentile range legend entry
+    const percentileRangeLegend = {
+        x: [years[0], years[1]],
+        y: [null, null],
+        type: 'scatter',
+        mode: 'lines',
+        fill: 'tozeroy',
+        fillcolor: 'rgba(90, 168, 155, 0.2)',
+        line: { color: 'transparent' },
+        name: '25th-75th %tile',
+        showlegend: true,
+        hoverinfo: 'skip'
+    };
+
+    const traces = [shadedArea, p25Line, medianLine, p75Line, percentileRangeLegend];
 
     const layout = {
         xaxis: {
@@ -467,7 +506,7 @@ function plotPrcDatacenterCapacityOverTime(data, agreementYear) {
             x0: agreementYear,
             y0: 0,
             x1: agreementYear,
-            y1: totalCapacityAtAgreementYear,
+            y1: medianAtAgreementYear,
             line: {
                 color: '#999',
                 width: 1,
@@ -579,7 +618,7 @@ function populateDatacenterCapacityBreakdown(data) {
         if (box) {
             box.style.transition = 'all 0.2s ease';
             box.addEventListener('mouseenter', () => {
-                box.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                box.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                 box.style.transform = 'scale(1.015)';
             });
             box.addEventListener('mouseleave', () => {
@@ -625,7 +664,7 @@ function populateDatacenterCapacityBreakdown(data) {
                 y: capacity_median,
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#2D6B61', width: 3 },  // Dark turquoise
+                line: { color: COLOR_PALETTE.datacenters_and_energy, width: 2 },  // Turquoise green
                 name: 'Median',
                 showlegend: false
             }

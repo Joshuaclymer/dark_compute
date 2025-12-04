@@ -28,11 +28,11 @@ function plotH100YearsTimeSeries(data) {
         return num.toFixed(1);
     }
 
-    // Colors - use blue for probability (same as "Posterior Probability of Covert Project")
-    const probColor = '#5B8DBE'; // Blue for probability
-    const h100YearsColor = '#5AA89B'; // Turquoise green for H100-years
-    const aiRdColor = '#E8A863'; // Orange for AI R&D
-    const prcColor = '#C77CAA'; // Purple/pink for PRC compute
+    // Colors - use palette colors
+    const probColor = COLOR_PALETTE.detection; // Pewter Blue for probability
+    const h100YearsColor = COLOR_PALETTE.datacenters_and_energy; // Viridian for H100-years
+    const aiRdColor = COLOR_PALETTE.fab; // Marigold for AI R&D
+    const prcColor = COLOR_PALETTE.chip_stock; // Indigo for PRC compute
 
     // Get agreement year for calculations
     const agreementYearInput = document.getElementById('agreement_year');
@@ -95,7 +95,7 @@ function plotH100YearsTimeSeries(data) {
             x: years.concat(years.slice().reverse()),
             y: dcm.posterior_prob_project.p75.concat(dcm.posterior_prob_project.p25.slice().reverse()),
             fill: 'toself',
-            fillcolor: 'rgba(91, 141, 190, 0.2)',
+            fillcolor: COLOR_PALETTE.rgba('detection', 0.2),
             line: { color: 'transparent' },
             showlegend: false,
             hoverinfo: 'skip',
@@ -273,7 +273,7 @@ function plotChipProductionReductionCcdf(data) {
                 y: filteredGlobal.map(d => d.y),
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#5B8DBE', width: 2 },
+                line: { color: COLOR_PALETTE.detection, width: 2 },
                 name: 'Relative to global production<br>(no slowdown)',
                 customdata: filteredGlobal.map(d => d.x >= 1000 ? (d.x/1000).toFixed(0) + 'K' : d.x.toFixed(0)),
                 hovertemplate: 'Ratio: 1/%{customdata}x<br>P(≤x): %{y:.3f}<extra></extra>'
@@ -293,7 +293,7 @@ function plotChipProductionReductionCcdf(data) {
                 y: filteredPrc.map(d => d.y),
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#C77CAA', width: 2 },
+                line: { color: COLOR_PALETTE.chip_stock, width: 2 },
                 name: 'Relative to PRC production<br>(no slowdown)',
                 customdata: filteredPrc.map(d => d.x >= 1000 ? (d.x/1000).toFixed(0) + 'K' : d.x.toFixed(0)),
                 hovertemplate: 'Ratio: 1/%{customdata}x<br>P(≤x): %{y:.3f}<extra></extra>'
@@ -426,7 +426,7 @@ function plotAiRdReductionCcdf(data) {
                 y: filteredLargestCompany.map(d => d.y),
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#E8A863', width: 2 },
+                line: { color: COLOR_PALETTE.fab, width: 2 },
                 name: 'Relative to largest<br>AI company (no slowdown)',
                 customdata: filteredLargestCompany.map(d => d.x >= 1000 ? (d.x/1000).toFixed(0) + 'K' : d.x.toFixed(0)),
                 hovertemplate: 'Ratio: 1/%{customdata}x<br>P(≤x): %{y:.3f}<extra></extra>'
@@ -449,7 +449,7 @@ function plotAiRdReductionCcdf(data) {
                 y: filteredPrc.map(d => d.y),
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#C77CAA', width: 2 },
+                line: { color: COLOR_PALETTE.chip_stock, width: 2 },
                 name: 'Relative to PRC (no slowdown)',
                 customdata: filteredPrc.map(d => d.x >= 1000 ? (d.x/1000).toFixed(0) + 'K' : d.x.toFixed(0)),
                 hovertemplate: 'Ratio: 1/%{customdata}x<br>P(≤x): %{y:.3f}<extra></extra>'

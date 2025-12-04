@@ -91,10 +91,10 @@ class CovertPRCAIProject(PRCBlackProject, AIProject):
                 for chip, count in compute_per_month.chip_counts.items()
             }
             compute_to_add = Compute(chip_counts=scaled_chip_counts)
-            self.black_project_stock.add_black_project(current_year, compute_to_add)
+            self.black_project_stock.add_compute(current_year, compute_to_add)
 
-        # Get operational dark compute (limited by datacenter capacity)
-        operational_compute = self.operational_black_project(current_year)
+        # Get operational compute (limited by datacenter capacity)
+        operational_compute = self.get_operational_compute(current_year)
 
         # Get total H100-equivalent chips
         total_h100e = operational_compute.total_h100e_tpp()

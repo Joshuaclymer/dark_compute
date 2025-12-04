@@ -214,11 +214,11 @@ def extract_survival_rates_over_time(simulation_results, years):
         survival_rates = []
 
         for year in years:
-            # Use black_project_energy_by_source for consistency
-            initial_energy, fab_energy, initial_h100e, fab_h100e = black_project_stock.black_project_energy_by_source(year)
+            # Use surviving_compute_energy_by_source for consistency
+            initial_energy, fab_energy, initial_h100e, fab_h100e = black_project_stock.surviving_compute_energy_by_source(year)
             surviving = initial_h100e + fab_h100e
 
-            total_compute = black_project_stock.black_project_dead_and_alive(year)
+            total_compute = black_project_stock.total_compute_ever_added(year)
             total = total_compute.total_h100e_tpp()
 
             survival_rates.append(surviving / total if total > 0 else 0.0)
@@ -237,8 +237,8 @@ def extract_black_project_over_time(simulation_results, years):
         black_project = []
 
         for year in years:
-            # Use black_project_energy_by_source for consistency
-            initial_energy, fab_energy, initial_h100e, fab_h100e = black_project_stock.black_project_energy_by_source(year)
+            # Use surviving_compute_energy_by_source for consistency
+            initial_energy, fab_energy, initial_h100e, fab_h100e = black_project_stock.surviving_compute_energy_by_source(year)
             black_project.append(initial_h100e + fab_h100e)
 
         black_project_by_sim.append(black_project)
@@ -246,20 +246,20 @@ def extract_black_project_over_time(simulation_results, years):
     return black_project_by_sim
 
 
-def extract_operational_black_project_over_time(simulation_results, years):
-    """Extract operational dark compute (limited by datacenter capacity) over time."""
-    operational_black_project_by_sim = []
+def extract_operational_compute_over_time(simulation_results, years):
+    """Extract operational compute (limited by datacenter capacity) over time."""
+    operational_compute_by_sim = []
 
     for black_projects in simulation_results:
-        operational_black_project = []
+        operational_compute_list = []
 
         for year in years:
-            operational_compute = black_projects["prc_black_project"].operational_black_project(year)
-            operational_black_project.append(operational_compute.total_h100e_tpp())
+            operational_compute = black_projects["prc_black_project"].get_operational_compute(year)
+            operational_compute_list.append(operational_compute.total_h100e_tpp())
 
-        operational_black_project_by_sim.append(operational_black_project)
+        operational_compute_by_sim.append(operational_compute_list)
 
-    return operational_black_project_by_sim
+    return operational_compute_by_sim
 
 
 def extract_datacenter_capacity_over_time(simulation_results, years, agreement_year):
@@ -271,8 +271,7 @@ def extract_datacenter_capacity_over_time(simulation_results, years, agreement_y
         datacenter_capacity_gw = []
 
         for year in years:
-            relative_year = year - agreement_year
-            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(year)
             datacenter_capacity_gw.append(capacity_gw)
 
         datacenter_capacity_by_sim.append(datacenter_capacity_gw)
@@ -280,52 +279,74 @@ def extract_datacenter_capacity_over_time(simulation_results, years, agreement_y
     return datacenter_capacity_by_sim
 
 
-def calculate_prc_datacenter_capacity_trajectory(app_params):
-    """Calculate PRC datacenter capacity trajectory from 2025 to agreement year.
+def extract_prc_capacity_trajectory(simulation_results, app_params):
+    """Extract PRC datacenter capacity trajectory from 2025 to agreement year.
 
-    This calculates the total energy consumption of PRC compute stock over time,
-    using median parameter values (not sampled).
+    This extracts the energy consumption of PRC compute stock over time from
+    simulation results, providing percentiles (p25, median, p75).
 
     Returns:
         dict with:
-            - years: list of years from 2025 to agreement_year
-            - capacity_gw: list of capacity values in GW for each year
-            - capacity_at_agreement_year_gw: capacity at agreement year in GW
+            - prc_capacity_years: list of years from 2025 to agreement_year
+            - prc_capacity_gw: dict with p25, median, p75 lists
+            - prc_capacity_at_agreement_year_gw: median capacity at agreement year in GW
+            - fraction_diverted: fraction of unconcealed capacity diverted
     """
     agreement_year = app_params.simulation_settings.agreement_start_year
     exogenous = app_params.black_project_parameters.exogenous_trends
 
-    # Use median growth rate
-    growth_rate = exogenous.annual_growth_rate_of_prc_compute_stock_p50
-    total_prc_compute_stock_2025 = exogenous.total_prc_compute_stock_in_2025
-    energy_efficiency = exogenous.energy_efficiency_of_prc_stock_relative_to_state_of_the_art
-    energy_efficiency_improvement = exogenous.improvement_in_energy_efficiency_per_year
-
-    # Create LargestAIProject to get state-of-art efficiency
-    largest_ai_project = LargestAIProject(exogenous)
-
     years = list(range(2025, int(agreement_year) + 1))
-    capacity_gw = []
 
-    for year in years:
-        years_since_2025 = year - 2025
-        # Project compute stock forward
-        compute_stock = total_prc_compute_stock_2025 * (growth_rate ** years_since_2025)
+    # For each simulation, calculate the capacity trajectory
+    capacity_by_sim = []
 
-        # Get state-of-art efficiency at this year
-        state_of_art_efficiency = largest_ai_project.get_energy_efficiency_relative_to_h100(year)
-        effective_efficiency = energy_efficiency * state_of_art_efficiency
+    for sim in simulation_results:
+        black_project_stock = sim["prc_black_project"].black_project_stock
 
-        # Calculate energy consumption in GW
-        # Using the same formula as get_energy_consumption_of_prc_stock_gw
-        energy_watts = compute_stock * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP / effective_efficiency
-        energy_gw = energy_watts / 1e9
-        capacity_gw.append(energy_gw)
+        # Get the sampled growth rate from this simulation
+        growth_rate = black_project_stock.prc_growth_rate
+        total_prc_compute_stock_2025 = exogenous.total_prc_compute_stock_in_2025
+        energy_efficiency = exogenous.energy_efficiency_of_prc_stock_relative_to_state_of_the_art
+
+        # Create LargestAIProject to get state-of-art efficiency
+        largest_ai_project = LargestAIProject(exogenous)
+
+        capacity_gw = []
+        for year in years:
+            years_since_2025 = year - 2025
+            # Project compute stock forward using this simulation's growth rate
+            compute_stock = total_prc_compute_stock_2025 * (growth_rate ** years_since_2025)
+
+            # Get state-of-art efficiency at this year
+            state_of_art_efficiency = largest_ai_project.get_energy_efficiency_relative_to_h100(year)
+            effective_efficiency = energy_efficiency * state_of_art_efficiency
+
+            # Calculate energy consumption in GW
+            energy_watts = compute_stock * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP / effective_efficiency
+            energy_gw = energy_watts / 1e9
+            capacity_gw.append(energy_gw)
+
+        capacity_by_sim.append(capacity_gw)
+
+    # Calculate percentiles
+    capacity_array = np.array(capacity_by_sim)
+    p25 = np.percentile(capacity_array, 25, axis=0).tolist()
+    median = np.percentile(capacity_array, 50, axis=0).tolist()
+    p75 = np.percentile(capacity_array, 75, axis=0).tolist()
+
+    # Extract individual samples at agreement year for distribution plot
+    prc_capacity_at_agreement_year_samples = capacity_array[:, -1].tolist() if capacity_array.size > 0 else []
 
     return {
         "prc_capacity_years": years,
-        "prc_capacity_gw": capacity_gw,
-        "prc_capacity_at_agreement_year_gw": capacity_gw[-1] if capacity_gw else 0.0
+        "prc_capacity_gw": {
+            "p25": p25,
+            "median": median,
+            "p75": p75
+        },
+        "prc_capacity_at_agreement_year_gw": median[-1] if median else 0.0,
+        "prc_capacity_at_agreement_year_samples": prc_capacity_at_agreement_year_samples,
+        "fraction_diverted": app_params.black_project_properties.fraction_of_datacenter_capacity_not_built_for_concealment_diverted_to_black_project_at_agreement_start
     }
 
 
@@ -338,8 +359,7 @@ def extract_datacenter_lr_over_time(simulation_results, years, agreement_year):
         lr_datacenters_over_time = []
 
         for year in years:
-            relative_year = year - agreement_year
-            lr_datacenters = black_datacenters.cumulative_lr_from_concealed_datacenters(relative_year)
+            lr_datacenters = black_datacenters.cumulative_lr_from_concealed_datacenters(year)
             lr_datacenters_over_time.append(lr_datacenters)
 
         lr_datacenters_by_sim.append(lr_datacenters_over_time)
@@ -360,7 +380,7 @@ def extract_h100_years_over_time(simulation_results, years, agreement_year):
                 prev_year = years[year_idx - 1]
                 time_increment = year - prev_year
 
-                operational_compute = black_projects["prc_black_project"].operational_black_project(prev_year)
+                operational_compute = black_projects["prc_black_project"].get_operational_compute(prev_year)
                 h100e_at_prev_year = operational_compute.total_h100e_tpp()
 
                 cumulative_h100_years += h100e_at_prev_year * time_increment
@@ -467,6 +487,82 @@ def extract_detailed_lr_components_over_time(simulation_results, years):
     return lr_prc_accounting_by_sim, lr_sme_inventory_by_sim
 
 
+def extract_lr_satellite_datacenter(simulation_results):
+    """Extract likelihood ratio from satellite detection of diverted datacenter capacity."""
+    lr_satellite_datacenter_samples = []
+
+    for black_projects in simulation_results:
+        black_datacenters = black_projects["prc_black_project"].black_datacenters
+
+        if black_datacenters is not None:
+            lr_satellite = black_datacenters.lr_from_identifying_datacenters_with_satellites()
+        else:
+            lr_satellite = 1.0
+        lr_satellite_datacenter_samples.append(lr_satellite)
+
+    return lr_satellite_datacenter_samples
+
+
+def extract_lr_reported_energy_consumption_over_time(simulation_results, years, agreement_year):
+    """Extract likelihood ratio from reported energy consumption over time."""
+    lr_energy_by_sim = []
+
+    for black_projects in simulation_results:
+        black_datacenters = black_projects["prc_black_project"].black_datacenters
+
+        if black_datacenters is not None:
+            lr_over_time = []
+            for year in years:
+                lr = black_datacenters.lr_from_reported_energy_consumption(year)
+                lr_over_time.append(lr)
+            lr_energy_by_sim.append(lr_over_time)
+        else:
+            lr_energy_by_sim.append([1.0 for _ in years])
+
+    return lr_energy_by_sim
+
+
+def extract_combined_reported_assets_lr_over_time(simulation_results, years, agreement_year):
+    """Extract combined LR from all reported asset sources over time.
+
+    Combines:
+    - lr_initial (chip stock) - constant over time
+    - lr_sme (SME stock) - constant over time
+    - lr_satellite_datacenter - constant over time
+    - lr_reported_energy - varies over time as covert datacenters grow
+    """
+    combined_lr_by_sim = []
+
+    for black_projects in simulation_results:
+        prc_black_project = black_projects["prc_black_project"]
+        black_datacenters = prc_black_project.black_datacenters
+
+        # Get constant LR components
+        lr_initial = prc_black_project.get_lr_initial()
+        lr_sme = prc_black_project.get_lr_sme()
+
+        # Get datacenter LR components
+        if black_datacenters is not None:
+            lr_satellite = black_datacenters.lr_from_identifying_datacenters_with_satellites()
+        else:
+            lr_satellite = 1.0
+
+        lr_over_time = []
+        for year in years:
+            # Energy LR varies over time
+            if black_datacenters is not None:
+                lr_energy = black_datacenters.lr_from_reported_energy_consumption(year)
+            else:
+                lr_energy = 1.0
+
+            combined = lr_initial * lr_sme * lr_satellite * lr_energy
+            lr_over_time.append(combined)
+
+        combined_lr_by_sim.append(lr_over_time)
+
+    return combined_lr_by_sim
+
+
 def extract_fab_combined_lr_over_time(simulation_results, years):
     """Extract cumulative combined likelihood ratio from fab's cumulative_detection_likelihood_ratio method."""
     combined_lr_by_sim = []
@@ -564,7 +660,7 @@ def extract_fab_operational_status_over_time(simulation_results, years):
     return is_operational_by_sim
 
 
-def extract_fab_production_parameters(simulation_results, years, agreement_year):
+def extract_fab_production_parameters(simulation_results, years, agreement_year, architecture_efficiency_improvement_per_year):
     """Extract fab production parameters (wafer starts, chips per wafer, etc.)."""
     wafer_starts_by_sim = []
     chips_per_wafer_by_sim = []
@@ -583,7 +679,7 @@ def extract_fab_production_parameters(simulation_results, years, agreement_year)
                 black_projects["prc_black_project"].get_fab_wafer_starts_per_month()
             )
 
-            arch_efficiency = estimate_architecture_efficiency_relative_to_h100(year, agreement_year)
+            arch_efficiency = estimate_architecture_efficiency_relative_to_h100(year, architecture_efficiency_improvement_per_year, agreement_year)
             architecture_efficiency.append(arch_efficiency)
 
             chips_per_wafer = black_projects["prc_black_project"].get_fab_h100_sized_chips_per_wafer()
@@ -665,7 +761,7 @@ def extract_energy_breakdown_by_source(simulation_results, years):
 
         for year_idx, year in enumerate(years):
             initial_energy, fab_energy, initial_h100e, fab_h100e = \
-                black_project_stock.black_project_energy_by_source(year)
+                black_project_stock.surviving_compute_energy_by_source(year)
             initial_energy_all_sims[sim_idx, year_idx] = initial_energy
             fab_energy_all_sims[sim_idx, year_idx] = fab_energy
             initial_h100e_all_sims[sim_idx, year_idx] = initial_h100e
@@ -1200,8 +1296,7 @@ def calculate_datacenter_detection_year(black_datacenters, years, agreement_year
         return None
 
     for year in years:
-        relative_year = year - agreement_year
-        year_lr = black_datacenters.cumulative_lr_from_concealed_datacenters(relative_year)
+        year_lr = black_datacenters.cumulative_lr_from_concealed_datacenters(year)
 
         if year_lr >= threshold:
             return year
@@ -1223,13 +1318,11 @@ def extract_datacenter_capacity_at_detection(simulation_results, years, agreemen
 
         if detection_year is not None:
             # Get capacity at detection year
-            relative_year = detection_year - agreement_year
-            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(detection_year)
         else:
             # Never detected - use final year
             final_year = years[-1]
-            relative_year = final_year - agreement_year
-            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(final_year)
 
         capacity_at_detection.append(capacity_gw)
 
@@ -1267,13 +1360,11 @@ def extract_individual_datacenter_detection_data(simulation_results, years, agre
 
         if detection_year is not None:
             # Get capacity at detection year
-            relative_year = detection_year - agreement_year
-            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(detection_year)
         else:
             # Never detected - use final year
             final_year = years[-1]
-            relative_year = final_year - agreement_year
-            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(final_year)
             detection_year = final_year
 
         # Calculate years operational before detection
@@ -1300,10 +1391,10 @@ def extract_individual_project_detection_data(simulation_results, agreement_year
         detection_year = calculate_project_detection_year(black_project, sim_years, threshold)
 
         if detection_year is not None:
-            operational_compute = black_project.operational_black_project(detection_year)
+            operational_compute = black_project.get_operational_compute(detection_year)
         else:
             final_year = max(sim_years)
-            operational_compute = black_project.operational_black_project(final_year)
+            operational_compute = black_project.get_operational_compute(final_year)
             detection_year = final_year
 
         operational_h100e = operational_compute.total_h100e_tpp()
@@ -1549,7 +1640,7 @@ def extract_takeoff_slowdown_trajectories(simulation_results, years, agreement_y
         for year in extended_years:
             if year <= years[-1]:
                 # Within simulation range: get operational stock at this year
-                operational_compute = black_projects["prc_black_project"].operational_black_project(year)
+                operational_compute = black_projects["prc_black_project"].get_operational_compute(year)
                 value = operational_compute.total_h100e_tpp()
                 operational_series.append(value)
                 last_value = value
@@ -1741,7 +1832,7 @@ def extract_plot_data(model, app_params):
     h100e_by_sim = extract_fab_production_over_time(model.simulation_results, years)
     survival_rate_by_sim = extract_survival_rates_over_time(model.simulation_results, years)
     black_project_by_sim = extract_black_project_over_time(model.simulation_results, years)
-    operational_black_project_by_sim = extract_operational_black_project_over_time(model.simulation_results, years)
+    operational_compute_by_sim = extract_operational_compute_over_time(model.simulation_results, years)
     datacenter_capacity_by_sim = extract_datacenter_capacity_over_time(model.simulation_results, years, agreement_year)
     lr_datacenters_by_sim = extract_datacenter_lr_over_time(model.simulation_results, years, agreement_year)
     h100_years_by_sim = extract_h100_years_over_time(model.simulation_results, years, agreement_year)
@@ -1749,12 +1840,16 @@ def extract_plot_data(model, app_params):
     posterior_prob_by_sim = extract_posterior_prob_over_time(cumulative_lr_by_sim, p_project_exists)
     lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim = extract_project_lr_components_over_time(model.simulation_results, years)
     lr_prc_accounting_by_sim, lr_sme_inventory_by_sim = extract_detailed_lr_components_over_time(model.simulation_results, years)
+    lr_satellite_datacenter_samples = extract_lr_satellite_datacenter(model.simulation_results)
+    lr_reported_energy_by_sim = extract_lr_reported_energy_consumption_over_time(model.simulation_results, years, agreement_year)
+    lr_combined_reported_assets_by_sim = extract_combined_reported_assets_lr_over_time(model.simulation_results, years, agreement_year)
 
     # Extract fab-specific data
     lr_inventory_by_sim, lr_procurement_by_sim, lr_fab_other_by_sim = extract_fab_lr_components_over_time(model.simulation_results, years)
     lr_fab_combined_by_sim = extract_fab_combined_lr_over_time(model.simulation_results, years)
     is_operational_by_sim = extract_fab_operational_status_over_time(model.simulation_results, years)
-    fab_params = extract_fab_production_parameters(model.simulation_results, years, agreement_year)
+    architecture_efficiency_improvement_per_year = app_params.black_project_parameters.exogenous_trends.architecture_efficiency_improvement_per_year
+    fab_params = extract_fab_production_parameters(model.simulation_results, years, agreement_year, architecture_efficiency_improvement_per_year)
     watts_per_tpp_by_sim = calculate_watts_per_tpp_by_sim(fab_params['transistor_density'])
     energy_by_source_array, source_labels = extract_energy_breakdown_by_source(model.simulation_results, years)
 
@@ -1902,7 +1997,7 @@ def extract_plot_data(model, app_params):
             "datacenter_capacity": fmt_pct(datacenter_capacity_by_sim),
             "black_project_energy": energy_by_source_array.tolist(),
             "energy_source_labels": source_labels,
-            "operational_black_project": fmt_pct(operational_black_project_by_sim),  # Keep in raw H100e units with k/M formatting
+            "operational_compute": fmt_pct(operational_compute_by_sim),  # Keep in raw H100e units with k/M formatting
 
             # -------------------------------------------------------------------
             # Strength of Evidence Breakdown
@@ -1915,6 +2010,9 @@ def extract_plot_data(model, app_params):
             # Individual LR components for detailed breakdown
             "lr_prc_accounting": fmt_pct(lr_prc_accounting_by_sim),
             "lr_sme_inventory": fmt_pct(lr_sme_inventory_by_sim),
+            "lr_satellite_datacenter": {"individual": lr_satellite_datacenter_samples},
+            "lr_reported_energy": fmt_pct(lr_reported_energy_by_sim),
+            "lr_combined_reported_assets": fmt_pct(lr_combined_reported_assets_by_sim),
 
             # -------------------------------------------------------------------
             # Covert Project Dashboard - Individual simulation data
@@ -1948,8 +2046,8 @@ def extract_plot_data(model, app_params):
             # Energy consumption by source (stacked area plot)
             "energy_by_source": energy_by_source_array.tolist(),
             "source_labels": source_labels,
-            # Operational dark compute (capacity-limited)
-            "operational_black_project": fmt_pct(operational_black_project_by_sim, convert_to_thousands),
+            # Operational compute (capacity-limited)
+            "operational_compute": fmt_pct(operational_compute_by_sim, convert_to_thousands),
             # Datacenter detection
             "lr_datacenters": fmt_pct(lr_datacenters_by_sim),
             "datacenter_detection_prob": (np.mean(np.array(lr_datacenters_by_sim) >= 5.0, axis=0)).tolist(),
@@ -1959,10 +2057,8 @@ def extract_plot_data(model, app_params):
             # Dashboard - Individual simulation data
             "individual_capacity_before_detection": individual_datacenter_capacity,
             "individual_time_before_detection": individual_datacenter_time,
-            # PRC datacenter capacity trajectory (from 2025 to agreement year, using medians)
-            **calculate_prc_datacenter_capacity_trajectory(app_params),
-            # Fraction diverted to covert project
-            "fraction_diverted": app_params.black_project_properties.fraction_of_datacenter_capacity_not_built_for_concealment_diverted_to_black_project_at_agreement_start,
+            # PRC datacenter capacity trajectory (from 2025 to agreement year, with percentiles)
+            **extract_prc_capacity_trajectory(model.simulation_results, app_params),
         },
 
         # =====================================================================
@@ -2000,7 +2096,7 @@ def extract_plot_data(model, app_params):
             "watts_per_tpp": fmt_pct(filter_to_with_fab(watts_per_tpp_by_sim, fab_built_in_sim)),
             "process_node_by_sim": filter_to_with_fab(fab_params['process_node'], fab_built_in_sim),
             # Architecture efficiency and watts per TPP
-            "architecture_efficiency_at_agreement": estimate_architecture_efficiency_relative_to_h100(agreement_year, agreement_year),
+            "architecture_efficiency_at_agreement": estimate_architecture_efficiency_relative_to_h100(agreement_year, architecture_efficiency_improvement_per_year, agreement_year),
             "watts_per_tpp_curve": PRCBlackFab.watts_per_tpp_relative_to_H100(),
             # Dashboard - Individual simulation data
             "individual_h100e_before_detection": individual_fab_h100e,

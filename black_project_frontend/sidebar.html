@@ -211,7 +211,7 @@
     button {
         width: 100%;
         padding: 12px;
-        background-color: #007bff;
+        background-color: var(--color-primary);
         color: white;
         border: none;
         border-radius: 4px;
@@ -221,7 +221,7 @@
     }
 
     button:hover {
-        background-color: #0056b3;
+        background-color: var(--color-primary-hover);
     }
 
     button:disabled {
@@ -247,8 +247,8 @@
     }
 
     .status.success {
-        background-color: #d4edda;
-        color: #155724;
+        background-color: rgba(94, 111, 184, 0.15);
+        color: var(--color-primary, #5E6FB8);
     }
 </style>
 
@@ -380,6 +380,14 @@
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/sme_inventory_detection.html">
         <label for="proportion_diverted_sme">US intelligence median error in estimate of PRC SME stock</label>
         <input type="number" id="proportion_diverted_sme" value="{{ defaults['black_project_parameters.detection_parameters.us_intelligence_median_error_in_estimate_of_prc_sme_stock'] }}" step="0.01">
+    </div>
+    <div class="param-group">
+        <label for="us_intelligence_median_error_in_satellite_estimate">US intelligence median error in satellite estimate of PRC datacenter capacity</label>
+        <input type="number" id="us_intelligence_median_error_in_satellite_estimate" value="{{ defaults['black_project_parameters.detection_parameters.us_intelligence_median_error_in_satellite_estimate_of_prc_datacenter_capacity'] }}" step="0.01">
+    </div>
+    <div class="param-group">
+        <label for="us_intelligence_median_error_in_energy_consumption_estimate">US intelligence median error in energy consumption estimate of PRC datacenter capacity</label>
+        <input type="number" id="us_intelligence_median_error_in_energy_consumption_estimate" value="{{ defaults['black_project_parameters.detection_parameters.us_intelligence_median_error_in_energy_consumption_estimate_of_prc_datacenter_capacity'] }}" step="0.01">
     </div>
 
     <h2>Exogenous Trends</h2>

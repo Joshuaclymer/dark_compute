@@ -850,15 +850,17 @@ class PRCBlackFab(BlackFab):
 
     def __init__(
             self,
-            construction_start_year : float,
-            construction_labor : float,
-            process_node,  # Can be ProcessNode enum, ProcessNodeStrategy, or legacy "best_available_indigenously" string
-            proportion_of_prc_lithography_scanners_devoted_to_fab : float,
-            operation_labor : float,
-            agreement_year : float,
-            years_since_agreement_start : list,
-            project_parameters,
+            agreement_year: float,
+            years_since_agreement_start: list,
+            project_parameters: BlackProjectParameters,
+            black_project_properties,  # BlackProjectProperties - contains fab configuration
     ):
+        # Extract fab configuration from black_project_properties
+        construction_start_year = agreement_year  # Fab construction starts at agreement year
+        construction_labor = black_project_properties.black_fab_construction_labor
+        process_node = black_project_properties.black_fab_process_node
+        proportion_of_prc_lithography_scanners_devoted_to_fab = black_project_properties.black_fab_proportion_of_prc_lithography_scanners_devoted
+        operation_labor = black_project_properties.black_fab_operating_labor
         # Sample all node localization years with consistency constraint (needed for strategy-based selection)
         all_localization_years = sample_all_node_localization_years()
 

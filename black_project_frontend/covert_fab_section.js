@@ -41,9 +41,9 @@ function plotTimeSeries(data) {
     const dcm = data.black_project_model;
     const years = dcm.years;
 
-    // Better color scheme
-    const lrColor = '#5B8DBE'; // Muted blue
-    const computeColor = '#9B7BB3'; // Purple
+    // Use centralized color palette
+    const lrColor = COLOR_PALETTE.detection;
+    const computeColor = COLOR_PALETTE.fab;
 
     // Create traces for individual simulations (show first 100 for performance)
     const individualsToShow = Math.min(100, data.black_fab.lr_combined.individual ? data.black_fab.lr_combined.individual.length : 0);
@@ -64,8 +64,8 @@ function plotTimeSeries(data) {
         y: h100e,
         type: 'scatter',
         mode: 'lines',
-        line: { color: computeColor, width: 0.8 },
-        opacity: 0.08,
+        line: { color: computeColor, width: 0.5 },
+        opacity: 0.03,
         showlegend: false,
         hoverinfo: 'skip',
         yaxis: 'y2'
@@ -122,7 +122,7 @@ function plotTimeSeries(data) {
             type: 'scatter',
             mode: 'lines',
             fill: 'tonexty',
-            fillcolor: computeColor + '60',
+            fillcolor: computeColor + '25',
             line: { color: 'transparent' },
             name: 'H100e: 25th-75th %ile',
             legendgroup: 'h100e',
@@ -134,7 +134,7 @@ function plotTimeSeries(data) {
             y: dcm.black_fab_flow.median,
             type: 'scatter',
             mode: 'lines',
-            line: { color: computeColor, width: 3 },
+            line: { color: computeColor, width: 2 },
             name: 'H100e: Median',
             legendgroup: 'h100e',
             yaxis: 'y2',
@@ -657,6 +657,48 @@ function updateParameterDisplays() {
             span.onclick = () => {
                 sigmaPrcScannerInput.focus();
                 sigmaPrcScannerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // Update datacenter diversion percentage for satellite detection description
+    const datacenterDiversionInput = document.getElementById('fraction_of_datacenter_capacity_not_built_for_concealment_diverted');
+    if (datacenterDiversionInput) {
+        const value = (parseFloat(datacenterDiversionInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-diversion-datacenter-prc');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                datacenterDiversionInput.focus();
+                datacenterDiversionInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // Update satellite estimate error percentage and add click handler
+    const satelliteErrorInput = document.getElementById('us_intelligence_median_error_in_satellite_estimate');
+    if (satelliteErrorInput) {
+        const value = (parseFloat(satelliteErrorInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-error-satellite-datacenter');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                satelliteErrorInput.focus();
+                satelliteErrorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+        }
+    }
+
+    // Update energy consumption estimate error percentage and add click handler
+    const energyErrorInput = document.getElementById('us_intelligence_median_error_in_energy_consumption_estimate');
+    if (energyErrorInput) {
+        const value = (parseFloat(energyErrorInput.value) * 100).toFixed(0);
+        const span = document.getElementById('param-error-energy-consumption');
+        if (span) {
+            span.textContent = value;
+            span.onclick = () => {
+                energyErrorInput.focus();
+                energyErrorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
         }
     }

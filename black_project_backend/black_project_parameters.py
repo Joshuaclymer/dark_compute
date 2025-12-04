@@ -89,8 +89,8 @@ class ExogenousTrends:
 
     # Energy
     h100_power_watts: float = 700  # Moved from InitialPRCBlackComputeStockParameters 
-    improvement_in_energy_efficiency_per_year: float = 1.4  # Moved from InitialPRCBlackComputeStockParameters
-    energy_efficiency_of_prc_stock_relative_to_state_of_the_art: float = 0.5 # renamed from energy_efficiency_relative_to_h100: float = 0.5
+    improvement_in_energy_efficiency_per_year: float = 1.26  # Moved from InitialPRCBlackComputeStockParameters
+    energy_efficiency_of_prc_stock_relative_to_state_of_the_art: float = 0.2 # renamed from energy_efficiency_relative_to_h100: float = 0.5
     total_GW_of_PRC_energy_consumption: float = 1100
 
 @dataclass

@@ -7,7 +7,7 @@ function plotDarkComputeRateSection(data) {
     if (data.initial_stock && data.initial_stock.initial_compute_stock_samples) {
         // Use raw numbers with k/M formatting
         const samples = data.initial_stock.initial_compute_stock_samples;
-        plotPDF('initialDarkComputePlot', samples, '#9B72B0', 'H100 Equivalents', 30, false, null, null, null, null, 'log');
+        plotPDF('initialDarkComputePlot', samples, COLOR_PALETTE.chip_stock, 'H100 Equivalents', 30, false, null, null, null, null, 'log');
     }
 
     // Plot 2: Flow from covert fab (line plot - cumulative production over time)
@@ -37,7 +37,7 @@ function plotDarkComputeRateSection(data) {
                 type: 'scatter',
                 mode: 'lines',
                 fill: 'tonexty',
-                fillcolor: 'rgba(187, 143, 206, 0.2)',
+                fillcolor: COLOR_PALETTE.rgba('fab', 0.2),
                 line: { color: 'transparent' },
                 showlegend: false,
                 hoverinfo: 'skip'
@@ -48,7 +48,7 @@ function plotDarkComputeRateSection(data) {
                 y: h100e_median,
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#8E44AD', width: 2 },
+                line: { color: COLOR_PALETTE.fab, width: 2 },
                 name: 'Covert Fab Production',
                 showlegend: true
             }
@@ -109,7 +109,7 @@ function plotDarkComputeRateSection(data) {
                 type: 'scatter',
                 mode: 'lines',
                 fill: 'tonexty',
-                fillcolor: 'rgba(231, 76, 60, 0.2)',
+                fillcolor: COLOR_PALETTE.rgba('survival_rate', 0.2),
                 line: { color: 'transparent' },
                 showlegend: false,
                 hoverinfo: 'skip'
@@ -120,7 +120,7 @@ function plotDarkComputeRateSection(data) {
                 y: survival_rate_median,
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#E74C3C', width: 2 },
+                line: { color: COLOR_PALETTE.survival_rate, width: 2 },
                 name: 'Median',
                 showlegend: false
             }
@@ -172,7 +172,7 @@ function plotDarkComputeRateSection(data) {
                 type: 'scatter',
                 mode: 'lines',
                 fill: 'tonexty',
-                fillcolor: 'rgba(187, 143, 206, 0.2)',
+                fillcolor: COLOR_PALETTE.rgba('chip_stock', 0.2),
                 line: { color: 'transparent' },
                 showlegend: false,
                 hoverinfo: 'skip'
@@ -183,7 +183,7 @@ function plotDarkComputeRateSection(data) {
                 y: black_project_median,
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#8E44AD', width: 2 },
+                line: { color: COLOR_PALETTE.chip_stock, width: 2 },
                 name: 'Median',
                 showlegend: false
             }
@@ -256,7 +256,7 @@ function plotDarkComputeRateSection(data) {
                 type: 'scatter',
                 mode: 'lines',
                 fill: 'tonexty',
-                fillcolor: 'rgba(90, 168, 155, 0.2)',
+                fillcolor: COLOR_PALETTE.rgba('datacenters_and_energy', 0.2),
                 line: { color: 'transparent' },
                 showlegend: false,
                 hoverinfo: 'skip'
@@ -267,7 +267,7 @@ function plotDarkComputeRateSection(data) {
                 y: capacity_median,
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#2D6B61', width: 3 },  // Dark turquoise
+                line: { color: COLOR_PALETTE.datacenters_and_energy, width: 3 },
                 name: 'Median',
                 showlegend: false
             }
@@ -309,8 +309,9 @@ function plotDarkComputeRateSection(data) {
         const sourceLabels = data.black_project_model.energy_source_labels;
         const datacenterCapacity = data.black_project_model.datacenter_capacity.median;
 
-        // Two colors: turquoise shades for initial stock (bottom) and fab-produced (top)
-        const colors = ['#4A9B8E', '#74B3A8'];  // Dark turquoise, light turquoise
+        // Two shades of green/teal for energy sources (since this is energy plot)
+        // Initial stock (bottom) uses lighter shade, fab-produced (top) uses darker shade
+        const colors = ['#7DD4C0', '#3D9E8A'];  // Lighter viridian, darker viridian
 
         const traces = [];
 
@@ -382,7 +383,7 @@ function plotDarkComputeRateSection(data) {
             y: datacenterCapacity,
             type: 'scatter',
             mode: 'lines',
-            line: { color: '#2D6B61', width: 3 },
+            line: { color: COLOR_PALETTE.datacenters_and_energy, width: 3 },
             name: 'Covert Datacenter Capacity',
             hovertemplate: 'Capacity: %{y:.1f} GW<extra></extra>'
         });
@@ -449,12 +450,12 @@ function plotDarkComputeRateSection(data) {
         setTimeout(() => Plotly.Plots.resize('darkComputeEnergyPlot'), 50);
     }
 
-    // Plot 6: Operational dark compute (limited by capacity)
-    if (data.black_project_model && data.black_project_model.operational_black_project) {
+    // Plot 6: Operational compute (limited by capacity)
+    if (data.black_project_model && data.black_project_model.operational_compute) {
         const years = data.black_project_model.years;
-        const operational_median = data.black_project_model.operational_black_project.median;
-        const operational_p25 = data.black_project_model.operational_black_project.p25;
-        const operational_p75 = data.black_project_model.operational_black_project.p75;
+        const operational_median = data.black_project_model.operational_compute.median;
+        const operational_p25 = data.black_project_model.operational_compute.p25;
+        const operational_p75 = data.black_project_model.operational_compute.p75;
 
         const traces = [
             // Upper bound of shaded region (invisible line)
@@ -474,7 +475,7 @@ function plotDarkComputeRateSection(data) {
                 type: 'scatter',
                 mode: 'lines',
                 fill: 'tonexty',
-                fillcolor: 'rgba(90, 168, 155, 0.2)',
+                fillcolor: COLOR_PALETTE.rgba('datacenters_and_energy', 0.2),
                 line: { color: 'transparent' },
                 showlegend: false,
                 hoverinfo: 'skip'
@@ -485,7 +486,7 @@ function plotDarkComputeRateSection(data) {
                 y: operational_median,
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#5AA89B', width: 2 },
+                line: { color: COLOR_PALETTE.datacenters_and_energy, width: 2 },
                 name: 'Median',
                 showlegend: false
             }
@@ -517,11 +518,11 @@ function plotDarkComputeRateSection(data) {
     }
 
     // Plot 7: Covert computation (cumulative H100-years over time)
-    if (data.black_project_model && data.black_project_model.operational_black_project) {
+    if (data.black_project_model && data.black_project_model.operational_compute) {
         const years = data.black_project_model.years;
-        const operational_median = data.black_project_model.operational_black_project.median;
-        const operational_p25 = data.black_project_model.operational_black_project.p25;
-        const operational_p75 = data.black_project_model.operational_black_project.p75;
+        const operational_median = data.black_project_model.operational_compute.median;
+        const operational_p25 = data.black_project_model.operational_compute.p25;
+        const operational_p75 = data.black_project_model.operational_compute.p75;
 
         // Calculate cumulative H100-years by integrating operational compute over time
         function cumulativeIntegral(operationalData) {
@@ -556,7 +557,7 @@ function plotDarkComputeRateSection(data) {
                 type: 'scatter',
                 mode: 'lines',
                 fill: 'tonexty',
-                fillcolor: 'rgba(90, 168, 155, 0.2)',
+                fillcolor: COLOR_PALETTE.rgba('datacenters_and_energy', 0.2),
                 line: { color: 'transparent' },
                 showlegend: false,
                 hoverinfo: 'skip'
@@ -567,7 +568,7 @@ function plotDarkComputeRateSection(data) {
                 y: cumulative_median,
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#5AA89B', width: 2 },
+                line: { color: COLOR_PALETTE.datacenters_and_energy, width: 2 },
                 name: 'Median',
                 showlegend: false
             }

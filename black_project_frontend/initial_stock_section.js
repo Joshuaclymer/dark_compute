@@ -15,7 +15,7 @@ function plotInitialStock(data) {
             x: [...years, ...years.slice().reverse()],
             y: [...p75, ...p25.slice().reverse()],
             fill: 'toself',
-            fillcolor: 'rgba(155, 114, 176, 0.2)',
+            fillcolor: COLOR_PALETTE.rgba('chip_stock', 0.2),
             line: { color: 'transparent' },
             type: 'scatter',
             showlegend: false,
@@ -28,7 +28,7 @@ function plotInitialStock(data) {
             x: years,
             y: p25,
             mode: 'lines',
-            line: { color: '#9B72B0', width: 1, dash: 'dash' },
+            line: { color: COLOR_PALETTE.chip_stock, width: 1, dash: 'dash' },
             type: 'scatter',
             showlegend: false,
             hovertemplate: 'Year: %{x}<br>25th percentile: %{y:.2s} H100e<extra></extra>'
@@ -39,7 +39,7 @@ function plotInitialStock(data) {
             x: years,
             y: median,
             mode: 'lines',
-            line: { color: '#9B72B0', width: 2 },
+            line: { color: COLOR_PALETTE.chip_stock, width: 2 },
             type: 'scatter',
             name: 'Median',
             hovertemplate: 'Year: %{x}<br>Median: %{y:.2s} H100e<extra></extra>'
@@ -50,7 +50,7 @@ function plotInitialStock(data) {
             x: years,
             y: p75,
             mode: 'lines',
-            line: { color: '#9B72B0', width: 1, dash: 'dash' },
+            line: { color: COLOR_PALETTE.chip_stock, width: 1, dash: 'dash' },
             type: 'scatter',
             showlegend: false,
             hovertemplate: 'Year: %{x}<br>75th percentile: %{y:.2s} H100e<extra></extra>'
@@ -63,7 +63,7 @@ function plotInitialStock(data) {
             type: 'scatter',
             mode: 'lines',
             fill: 'tozeroy',
-            fillcolor: 'rgba(155, 114, 176, 0.2)',
+            fillcolor: COLOR_PALETTE.rgba('chip_stock', 0.2),
             line: { color: 'transparent' },
             name: '25th-75th %tile',
             showlegend: true,
@@ -79,7 +79,7 @@ function plotInitialStock(data) {
             x: years,
             y: domesticMedian,
             mode: 'lines',
-            line: { color: '#5AA89B', width: 2, dash: 'dot' },
+            line: { color: COLOR_PALETTE.datacenters_and_energy, width: 2, dash: 'dot' },
             type: 'scatter',
             name: 'Domestically produced by PRC (median)',
             text: domesticHoverText,
@@ -92,7 +92,7 @@ function plotInitialStock(data) {
             x: years,
             y: largestCompanyComputeData,
             mode: 'lines',
-            line: { color: '#E8A87C', width: 2, dash: 'dash' },
+            line: { color: COLOR_PALETTE.fab, width: 2, dash: 'dash' },
             type: 'scatter',
             name: 'Largest AI Company',
             hovertemplate: 'Year: %{x}<br>Largest AI Company: %{y:.2s} H100e<extra></extra>'
@@ -267,7 +267,7 @@ function plotInitialStock(data) {
         Plotly.newPlot('initialDarkComputeDetectionPlot', [barTrace], barLayout, {displayModeBar: false, responsive: true});
 
         // Histogram for initial compute stock
-        plotPDF('initialComputeStockPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'PRC Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log');
+        plotPDF('initialComputeStockPlot', data.initial_stock.initial_compute_stock_samples, COLOR_PALETTE.chip_stock, 'PRC Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log', true);
 
         // Match plot heights to dashboard height after both plots are created
         setTimeout(() => {
@@ -290,14 +290,14 @@ function plotInitialStock(data) {
     // Plot LR breakdown histograms for initial compute reporting
     if (data.initial_stock && data.initial_stock.lr_prc_accounting_samples) {
         // Use log scale with range 1/3 to 5, and blue color #5B8DBE
-        plotPDF('lrPrcAccountingPlot', data.initial_stock.lr_prc_accounting_samples, '#5B8DBE', 'Likelihood Ratio from PRC Accounting', 12, true, 1/3, 5);
+        plotPDF('lrPrcAccountingPlot', data.initial_stock.lr_prc_accounting_samples, COLOR_PALETTE.detection, 'Likelihood Ratio from PRC Accounting', 12, true, 1/3, 5, null, null, null, true);
     }
 
     // Plot initial dark compute stock breakdown
     if (data.initial_stock && data.initial_stock.initial_prc_stock_samples && data.initial_stock.diversion_proportion && data.initial_stock.initial_compute_stock_samples) {
 
         // Plot initial PRC stock distribution - purple color #9B72B0
-        plotPDF('initialPrcStockPlot', data.initial_stock.initial_prc_stock_samples, '#9B72B0', 'Initial PRC Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log');
+        plotPDF('initialPrcStockPlot', data.initial_stock.initial_prc_stock_samples, COLOR_PALETTE.chip_stock, 'Initial PRC Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log', true);
 
         // Display the diversion proportion
         const diversionPercent = (data.initial_stock.diversion_proportion * 100).toFixed(0);
@@ -312,7 +312,7 @@ function plotInitialStock(data) {
         if (diversionProportionInner) {
             diversionProportionInner.style.transition = 'all 0.2s ease';
             diversionProportionInner.addEventListener('mouseenter', () => {
-                diversionProportionInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                diversionProportionInner.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                 diversionProportionInner.style.transform = 'scale(1.015)';
             });
             diversionProportionInner.addEventListener('mouseleave', () => {
@@ -322,7 +322,7 @@ function plotInitialStock(data) {
         }
 
         // Plot the resulting dark compute stock - purple color #9B72B0
-        plotPDF('darkComputeResultPlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log');
+        plotPDF('darkComputeResultPlot', data.initial_stock.initial_compute_stock_samples, COLOR_PALETTE.chip_stock, 'Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log', true);
     }
 
     // Plot energy requirements breakdown
@@ -346,7 +346,7 @@ function plotInitialStock(data) {
         if (h100EnergyInner) {
             h100EnergyInner.style.transition = 'all 0.2s ease';
             h100EnergyInner.addEventListener('mouseenter', () => {
-                h100EnergyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                h100EnergyInner.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                 h100EnergyInner.style.transform = 'scale(1.015)';
             });
             h100EnergyInner.addEventListener('mouseleave', () => {
@@ -376,7 +376,7 @@ function plotInitialStock(data) {
         if (sotaEfficiencyInner) {
             sotaEfficiencyInner.style.transition = 'all 0.2s ease';
             sotaEfficiencyInner.addEventListener('mouseenter', () => {
-                sotaEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                sotaEfficiencyInner.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                 sotaEfficiencyInner.style.transform = 'scale(1.015)';
             });
             sotaEfficiencyInner.addEventListener('mouseleave', () => {
@@ -403,7 +403,7 @@ function plotInitialStock(data) {
         if (prcEfficiencyInner) {
             prcEfficiencyInner.style.transition = 'all 0.2s ease';
             prcEfficiencyInner.addEventListener('mouseenter', () => {
-                prcEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                prcEfficiencyInner.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                 prcEfficiencyInner.style.transform = 'scale(1.015)';
             });
             prcEfficiencyInner.addEventListener('mouseleave', () => {
@@ -417,7 +417,7 @@ function plotInitialStock(data) {
         const combinedEnergyEfficiency = sotaEfficiency * prcEfficiencyRelativeToSOTA;
 
         // Plot dark compute stock (same as darkComputeResultPlot) - purple color #9B72B0
-        plotPDF('initialStockDarkComputePlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log');
+        plotPDF('initialStockDarkComputePlot', data.initial_stock.initial_compute_stock_samples, COLOR_PALETTE.chip_stock, 'Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log', true);
 
         // Calculate energy requirements for each sample
         // Energy (GW) = H100e × watts_per_H100 / combined_energy_efficiency / 1e9
@@ -428,6 +428,6 @@ function plotInitialStock(data) {
         });
 
         // Plot energy requirements distribution - turquoise color #5AA89B with log scale
-        plotPDF('initialStockEnergyRequirementsPlot', energyRequirementsSamples, '#5AA89B', 'Energy Requirements of Initial Stock (GW)', 30, false, null, null, null, null, 'log');
+        plotPDF('initialStockEnergyRequirementsPlot', energyRequirementsSamples, COLOR_PALETTE.datacenters_and_energy, 'Energy Requirements of Initial Stock (GW)', 30, false, null, null, null, null, 'log', true);
     }
 }

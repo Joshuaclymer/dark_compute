@@ -49,7 +49,7 @@ const HoverConfig = {
     }
 };
 
-function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null, xAxisType = null) {
+function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false, logMin = null, logMax = null, title = null, pattern = null, xAxisType = null, showMedianLine = false) {
     // Create histogram/PDF from values
 
     const marker = { color: color, line: { width: 0.5, color: 'white' } };
@@ -200,7 +200,74 @@ function plotPDF(divId, values, color, xAxisLabel, nbins = 30, logScale = false,
         };
     }
 
-    Plotly.newPlot(divId, [trace], layout, {displayModeBar: false, responsive: true});
+    const traces = [trace];
+
+    // Add median line if requested
+    if (showMedianLine && values.length > 0) {
+        const sortedValues = [...values].sort((a, b) => a - b);
+        const median = sortedValues[Math.floor(sortedValues.length / 2)];
+
+        traces.push({
+            x: [median, median],
+            y: [0, 1],
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#333', width: 2, dash: 'dash' },
+            yaxis: 'y2',
+            showlegend: false,
+            hoverinfo: 'skip'
+        });
+
+        // Add secondary y-axis for the median line (invisible, just for positioning)
+        layout.yaxis2 = {
+            overlaying: 'y',
+            range: [0, 1],
+            showgrid: false,
+            showticklabels: false,
+            zeroline: false
+        };
+
+        // Add annotation for median value instead of replacing ticks
+        // Format median label to 2 significant figures with SI notation
+        const formatToSigFigs = (num, sigFigs) => {
+            if (num === 0) return '0';
+            const magnitude = Math.floor(Math.log10(Math.abs(num)));
+            const scale = Math.pow(10, magnitude - sigFigs + 1);
+            return Math.round(num / scale) * scale;
+        };
+
+        let medianLabel;
+        const rounded = formatToSigFigs(median, 2);
+        if (rounded >= 1e9) {
+            medianLabel = (rounded / 1e9) + 'G';
+        } else if (rounded >= 1e6) {
+            medianLabel = (rounded / 1e6) + 'M';
+        } else if (rounded >= 1e3) {
+            medianLabel = (rounded / 1e3) + 'k';
+        } else if (rounded >= 1) {
+            medianLabel = rounded.toPrecision(2);
+        } else if (rounded >= 0.001) {
+            medianLabel = rounded.toPrecision(2);
+        } else {
+            medianLabel = rounded.toExponential(1);
+        }
+
+        // Add annotation at bottom of plot showing median value
+        layout.annotations = layout.annotations || [];
+        layout.annotations.push({
+            x: xAxisType === 'log' || logScale ? Math.log10(median) : median,
+            y: 0,
+            xref: 'x',
+            yref: 'paper',
+            text: medianLabel,
+            showarrow: false,
+            font: { size: 9, color: '#333' },
+            yanchor: 'top',
+            yshift: 0
+        });
+    }
+
+    Plotly.newPlot(divId, traces, layout, {displayModeBar: false, responsive: true});
     setTimeout(() => Plotly.Plots.resize(divId), 50);
 }
 
@@ -218,35 +285,32 @@ function plotMedianWithPercentiles(divId, data, years, color, yAxisLabel = '', y
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: color, width: 0.5 },
-                opacity: 0.15,
+                opacity: 0.03,
                 showlegend: false,
                 hoverinfo: 'skip'
             });
         }
     }
 
-    // Add percentile bands
+    // Add percentile bands (shaded region style like "Acquired hardware" plot)
     traces.push(
-        {
-            x: years,
-            y: data.p25,
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: color, width: 1.5, dash: 'dot' },
-            opacity: 0.6,
-            showlegend: false,
-            hoverinfo: 'skip',
-            name: '25th percentile'
-        },
         {
             x: years,
             y: data.p75,
             type: 'scatter',
             mode: 'lines',
+            line: { color: 'transparent' },
+            showlegend: false,
+            hoverinfo: 'skip'
+        },
+        {
+            x: years,
+            y: data.p25,
+            type: 'scatter',
+            mode: 'lines',
             fill: 'tonexty',
-            fillcolor: color + '60',
-            line: { color: color, width: 1.5, dash: 'dot' },
-            opacity: 0.7,
+            fillcolor: color + '33',
+            line: { color: 'transparent' },
             showlegend: showLegend,
             hoverinfo: 'skip',
             name: '25th-75th %ile'
@@ -256,7 +320,7 @@ function plotMedianWithPercentiles(divId, data, years, color, yAxisLabel = '', y
             y: data.median,
             type: 'scatter',
             mode: 'lines',
-            line: { color: color, width: 3 },
+            line: { color: color, width: 2 },
             showlegend: showLegend,
             hovertemplate: 'Year: %{x:.1f}<br>Value: %{y:.2f}<extra></extra>',
             name: 'Median'

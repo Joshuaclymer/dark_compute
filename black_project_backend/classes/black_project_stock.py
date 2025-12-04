@@ -143,7 +143,24 @@ class Compute():
 
 class PRCBlackProjectStock():
 
-    def __init__(self, agreement_year, proportion_of_initial_compute_stock_to_divert, optimal_proportion_of_initial_compute_stock_to_divert, exogenous_trends: ExogenousTrends, survival_parameters: SurvivalRateParameters, detection_median_error: float):
+    def __init__(
+        self,
+        agreement_year: float,
+        project_parameters,  # BlackProjectParameters
+        black_project_properties,  # BlackProjectProperties
+    ):
+        # Store the main parameters object
+        self.project_parameters = project_parameters
+
+        # Extract commonly used sub-parameters for convenience
+        exogenous_trends = project_parameters.exogenous_trends
+        survival_parameters = project_parameters.survival_rate_parameters
+        detection_median_error = project_parameters.detection_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock
+
+        # Get values from black_project_properties
+        proportion_of_initial_compute_stock_to_divert = black_project_properties.proportion_of_initial_compute_stock_to_divert
+        optimal_proportion_of_initial_compute_stock_to_divert = black_project_properties.proportion_of_initial_compute_stock_to_divert
+
         self.agreement_year = agreement_year
         self.exogenous_trends = exogenous_trends
 
@@ -206,18 +223,18 @@ class PRCBlackProjectStock():
     def get_energy_consumption_of_prc_stock_gw(self):
         """Calculate the energy consumption of the initial PRC stock in GW.
 
-        Uses black_project_energy_by_source at the agreement year as the ground truth
+        Uses surviving_compute_energy_by_source at the agreement year as the ground truth
         to avoid redundant calculations.
 
         Returns:
             Energy consumption in GW
         """
-        # Use black_project_energy_by_source at agreement year (when all initial stock is alive)
-        initial_energy, fab_energy, initial_h100e, fab_h100e = self.black_project_energy_by_source(self.agreement_year)
+        # Use surviving_compute_energy_by_source at agreement year (when all initial stock is alive)
+        initial_energy, fab_energy, initial_h100e, fab_h100e = self.surviving_compute_energy_by_source(self.agreement_year)
         return initial_energy
 
-    def add_black_project(self, year : float, compute_to_add):
-        """Add dark compute for a year from a Compute object.
+    def add_compute(self, year : float, compute_to_add):
+        """Add compute for a year from a Compute object.
 
         Args:
             year: The year to add compute for
@@ -254,7 +271,7 @@ class PRCBlackProjectStock():
                 'bandwidth': 1.8  # Default inter-chip bandwidth in tbps
             }
     
-    def black_project_dead_and_alive(self, year : float):
+    def total_compute_ever_added(self, year : float):
         """Calculate total compute across all years up to the given year.
 
         Args:
@@ -353,7 +370,7 @@ class PRCBlackProjectStock():
         compute = Compute(chip_counts=chip_counts)
         return compute
 
-    def black_project_energy_by_source(self, year: float) -> tuple[float, float, float, float]:
+    def surviving_compute_energy_by_source(self, year: float) -> tuple[float, float, float, float]:
         """Calculate energy consumption and compute separated by source (initial stock vs fab-produced).
 
         Args:

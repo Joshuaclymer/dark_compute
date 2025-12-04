@@ -1,3 +1,17 @@
+        /* CSS Custom Properties derived from COLOR_PALETTE in config.js */
+        :root {
+            --color-chip-stock: #5E6FB8;      /* Indigo */
+            --color-fab: #E9A842;              /* Marigold */
+            --color-datacenters-and-energy: #4AA896;  /* Viridian */
+            --color-detection: #7BA3C4;        /* Pewter Blue */
+            --color-survival-rate: #E05A4F;    /* Vermillion */
+            --color-gray: #7F8C8D;             /* Neutral */
+
+            /* Derived colors for UI elements */
+            --color-primary: #5E6FB8;          /* Use Indigo as primary interactive color */
+            --color-primary-hover: #4B5A93;    /* Darker Indigo for hover */
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -47,11 +61,11 @@
         }
 
         #globalTooltip a {
-            color: #0066cc !important;
+            color: var(--color-primary) !important;
         }
 
         #globalTooltip a:hover {
-            color: #0052a3 !important;
+            color: var(--color-primary-hover) !important;
         }
 
         #globalTooltip button {
@@ -177,14 +191,14 @@
         .dashboard-value {
             font-size: 28px;
             font-weight: bold;
-            color: #007bff;
+            color: var(--color-primary);
             margin-bottom: 5px;
         }
 
         .dashboard-value-small {
             font-size: 20px;
             font-weight: bold;
-            color: #007bff;
+            color: var(--color-primary);
             margin-bottom: 5px;
         }
 
@@ -309,7 +323,7 @@
 
         .breakdown-item[style*="cursor: pointer"] .breakdown-plot:hover {
             transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+            box-shadow: 0 4px 12px rgba(110, 127, 217, 0.15);
         }
 
         .breakdown-box-item {
@@ -524,7 +538,7 @@
             width: 48px;
             height: 48px;
             border: 4px solid #e0e0e0;
-            border-top-color: #3498db;
+            border-top-color: var(--color-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -546,28 +560,28 @@
         /* Parameter link styles */
         .param-link {
             font-weight: bold;
-            color: #0066cc;
+            color: var(--color-primary);
             cursor: pointer;
             text-decoration: underline;
             text-decoration-style: dotted;
         }
 
         .param-link:hover {
-            color: #0052a3;
+            color: var(--color-primary-hover);
             text-decoration-style: solid;
         }
 
         /* Footnote link styles */
         .footnote-link {
             cursor: pointer;
-            color: #0066cc;
+            color: var(--color-primary);
             font-weight: 600;
             text-decoration: none;
             transition: color 0.2s;
         }
 
         .footnote-link:hover {
-            color: #0052a3;
+            color: var(--color-primary-hover);
         }
 
         /* Desktop/Mobile content visibility */

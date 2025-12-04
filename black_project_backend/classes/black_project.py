@@ -40,31 +40,20 @@ class PRCBlackProject:
         """Initialize all covert infrastructure components."""
         self.black_project_stock = PRCBlackProjectStock(
             agreement_year=self.agreement_year,
-            proportion_of_initial_compute_stock_to_divert=self.black_project_properties.proportion_of_initial_compute_stock_to_divert,
-            optimal_proportion_of_initial_compute_stock_to_divert=self.black_project_properties.proportion_of_initial_compute_stock_to_divert,
-            exogenous_trends=self.black_project_parameters.exogenous_trends,
-            survival_parameters=self.black_project_parameters.survival_rate_parameters,
-            detection_median_error=self.black_project_parameters.detection_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock
+            project_parameters=self.black_project_parameters,
+            black_project_properties=self.black_project_properties
         )
 
         # Convert absolute years to years since agreement start
         years_since_agreement_start = [year - self.agreement_year for year in self.years]
-
-        # Calculate datacenter start year offset (relative to agreement year)
-        # years_before is positive if construction starts before agreement, negative if after
-        years_before = self.black_project_properties.years_before_agreement_year_prc_starts_building_black_datacenters
-        datacenter_start_year_offset = -years_before
 
         # Calculate energy consumption of PRC stock at agreement start
         # This is used to compute the unconcealed datacenter capacity that can be diverted
         energy_consumption_of_prc_stock_gw = self.black_project_stock.get_energy_consumption_of_prc_stock_gw()
 
         self.black_datacenters = PRCBlackDatacenters(
-            construction_labor=self.black_project_properties.datacenter_construction_labor,
             years_since_agreement_start=years_since_agreement_start,
-            datacenter_parameters=self.black_project_parameters.datacenter_model_parameters,
             project_parameters=self.black_project_parameters,
-            datacenter_start_year_offset=datacenter_start_year_offset,
             black_project_properties=self.black_project_properties,
             energy_consumption_of_prc_stock_at_agreement_start=energy_consumption_of_prc_stock_gw
         )
@@ -72,14 +61,10 @@ class PRCBlackProject:
         if self.black_project_properties.build_a_black_fab:
             try:
                 self.black_fab = PRCBlackFab(
-                    construction_start_year=self.agreement_year,
-                    construction_labor=self.black_project_properties.black_fab_construction_labor,
-                    process_node=self.black_project_properties.black_fab_process_node,
-                    proportion_of_prc_lithography_scanners_devoted_to_fab=self.black_project_properties.black_fab_proportion_of_prc_lithography_scanners_devoted,
-                    operation_labor=self.black_project_properties.black_fab_operating_labor,
                     agreement_year=self.agreement_year,
                     years_since_agreement_start=years_since_agreement_start,
-                    project_parameters=self.black_project_parameters
+                    project_parameters=self.black_project_parameters,
+                    black_project_properties=self.black_project_properties
                 )
             except FabNotBuiltException:
                 # Fab not built because process node threshold not met
@@ -87,8 +72,8 @@ class PRCBlackProject:
 
         # Precompute lr_over_time_vs_num_workers for the total project
         labor_by_year = {}
-        for year in years_since_agreement_start:
-            # Calculate total labor at this specific year
+        for year in self.years:
+            # Calculate total labor at this specific year (using absolute year)
             labor_at_year = self.black_datacenters.construction_labor
             labor_at_year += self.black_datacenters.get_operating_labor(year)
             # Add fab labor if it exists
@@ -106,10 +91,10 @@ class PRCBlackProject:
             variance_theta=self.black_project_parameters.detection_parameters.variance_of_detection_time_given_num_workers
         )
 
-    def operational_black_project(self, year: float):
-        """Calculate operational dark compute limited by datacenter energy capacity.
+    def get_operational_compute(self, year: float):
+        """Calculate operational compute limited by datacenter energy capacity.
 
-        This gets all surviving dark compute and scales it down if the energy requirements
+        This gets all surviving compute and scales it down if the energy requirements
         exceed the available datacenter capacity.
 
         Args:
@@ -119,8 +104,7 @@ class PRCBlackProject:
             Compute object containing chips that can be powered with available capacity
         """
         # Get total datacenter capacity from black_datacenters (concealed + unconcealed)
-        year_since_agreement = year - self.agreement_year
-        datacenter_capacity_gw = self.black_datacenters.get_covert_GW_capacity_total(year_since_agreement)
+        datacenter_capacity_gw = self.black_datacenters.get_covert_GW_capacity_total(year)
 
         # Get all surviving dark compute (using absolute year, not year_since_agreement)
         all_black_project = self.black_project_stock.surviving_compute(year)
@@ -149,7 +133,7 @@ class PRCBlackProject:
         """Calculate total H100-years of computation performed up to the current year.
 
         This integrates operational H100e over time from agreement start until the current year,
-        using the operational_black_project method to get capacity-limited compute at each timestep.
+        using the get_operational_compute method to get capacity-limited compute at each timestep.
 
         Args:
             current_year: The year to calculate H100-years up to
@@ -173,7 +157,7 @@ class PRCBlackProject:
             time_increment = next_year - year
 
             # Get operational H100e at this time (limited by datacenter capacity)
-            operational_compute = self.operational_black_project(year)
+            operational_compute = self.get_operational_compute(year)
             h100e_at_year = operational_compute.total_h100e_tpp()
 
             # Add contribution: H100e * time_increment (in years)
@@ -195,14 +179,24 @@ class PRCBlackProject:
         return 1.0
 
     def get_lr_other(self, year: float) -> float:
-        years_since_agreement_start = year - self.agreement_year
-        return self.lr_over_time_vs_num_workers.get(years_since_agreement_start, 1.0)
+        """Get likelihood ratio from other sources (worker detection).
+
+        Args:
+            year: Absolute year (e.g., 2030, 2031, etc.)
+        """
+        return self.lr_over_time_vs_num_workers.get(year, 1.0)
 
     def get_cumulative_evidence_of_black_project(self, year: float) -> float:
         """
         Calculate cumulative likelihood ratios for all evidence sources at a given time.
+
+        Args:
+            year: Absolute year (e.g., 2030, 2031, etc.)
         """
-        return self.get_lr_initial() * self.get_lr_sme() * self.get_lr_other(year)
+        satellite_lr = self.black_datacenters.lr_from_identifying_datacenters_with_satellites()
+        energy_lr = self.black_datacenters.lr_from_reported_energy_consumption(year)
+        base_lr = self.get_lr_initial() * self.get_lr_sme() * satellite_lr * energy_lr * self.get_lr_other(year)
+        return base_lr
 
     # Fab methods (called by the app)
     def get_fab_lr_inventory(self, year: float) -> float:

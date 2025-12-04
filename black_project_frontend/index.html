@@ -285,11 +285,11 @@
                 // Proportion Operational - time series showing proportion
                 plotProportionOperational('isOperationalPlot', {
                     proportion: data.black_fab.is_operational.proportion
-                }, years, '#D4A574', 'Probability');
+                }, years, COLOR_PALETTE.fab, 'Probability');
 
                 // Wafer Starts per Month - PDF
                 const waferStartsFinal = data.black_fab.wafer_starts.individual.map(sim => sim[sim.length - 1]);
-                plotPDF('waferStartsPlot', waferStartsFinal, '#9B72B0', 'Wafers/Month');
+                plotPDF('waferStartsPlot', waferStartsFinal, COLOR_PALETTE.chip_stock, 'Wafers/Month');
 
                 // H100-sized Chips per Wafer - Display as a box (constant value)
                 const chipsPerWaferValue = data.black_fab.chips_per_wafer.individual[0][0]; // Same for all sims
@@ -304,7 +304,7 @@
                 if (chipsPerWaferInner) {
                     chipsPerWaferInner.style.transition = 'all 0.2s ease';
                     chipsPerWaferInner.addEventListener('mouseenter', () => {
-                        chipsPerWaferInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        chipsPerWaferInner.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                         chipsPerWaferInner.style.transform = 'scale(1.015)';
                     });
                     chipsPerWaferInner.addEventListener('mouseleave', () => {
@@ -316,7 +316,7 @@
                 // Transistor density relative to H100 - Bar plot at final timestep
                 const transistorDensityFinal = data.black_fab.transistor_density.individual.map(sim => sim[sim.length - 1]);
                 const processNodes = data.black_fab.process_node_by_sim;
-                plotBarByProcessNode('computePerChipPlot', transistorDensityFinal, processNodes, '#E8A863');
+                plotBarByProcessNode('computePerChipPlot', transistorDensityFinal, processNodes, COLOR_PALETTE.fab);
 
                 // Architecture Efficiency - Display as a box (constant value at agreement year)
                 const archEffValue = data.black_fab.architecture_efficiency_at_agreement;
@@ -331,7 +331,7 @@
                 if (architectureEfficiencyInner) {
                     architectureEfficiencyInner.style.transition = 'all 0.2s ease';
                     architectureEfficiencyInner.addEventListener('mouseenter', () => {
-                        architectureEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        architectureEfficiencyInner.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                         architectureEfficiencyInner.style.transform = 'scale(1.015)';
                     });
                     architectureEfficiencyInner.addEventListener('mouseleave', () => {
@@ -372,7 +372,7 @@
                     p25: totalComputeP25,
                     p75: totalComputeP75,
                     individual: totalComputeArray
-                }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
+                }, years, COLOR_PALETTE.fab, 'H100e/Month', [0, yMax], false, true);
 
                 // Plot energy breakdown
                 // 1. Compute produced per month (reuse from above)
@@ -381,10 +381,10 @@
                     p25: totalComputeP25,
                     p75: totalComputeP75,
                     individual: totalComputeArray
-                }, years, '#9B7BB3', 'H100e/Month', [0, yMax], false, true);
+                }, years, COLOR_PALETTE.fab, 'H100e/Month', [0, yMax], false, true);
 
                 // 2. Transistor density relative to H100 (reuse from above)
-                plotBarByProcessNode('energyTransistorDensityPlot', transistorDensityFinal, processNodes, '#E8A863');
+                plotBarByProcessNode('energyTransistorDensityPlot', transistorDensityFinal, processNodes, COLOR_PALETTE.fab);
 
                 // 3. Curve plot: Transistor density vs Energy efficiency
                 // Energy efficiency follows power law from fab_model.py:
@@ -418,7 +418,7 @@
                         mode: 'lines',
                         type: 'scatter',
                         line: {
-                            color: '#74B3A8',
+                            color: '#7DD4C0',  // Lighter viridian
                             width: 2
                         },
                         name: 'Power Law',
@@ -431,7 +431,7 @@
                         type: 'scatter',
                         marker: {
                             size: 6,
-                            color: '#E8A863',
+                            color: COLOR_PALETTE.fab,
                             opacity: 0.7
                         },
                         name: 'Simulations',
@@ -505,7 +505,7 @@
                 if (h100EnergyInner) {
                     h100EnergyInner.style.transition = 'all 0.2s ease';
                     h100EnergyInner.addEventListener('mouseenter', () => {
-                        h100EnergyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        h100EnergyInner.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                         h100EnergyInner.style.transform = 'scale(1.015)';
                     });
                     h100EnergyInner.addEventListener('mouseleave', () => {
@@ -552,7 +552,7 @@
                     p25: energyPerMonthP25,
                     p75: energyPerMonthP75,
                     individual: energyPerMonthArray
-                }, years, '#5AA89B', 'GW/Month', [0, yMaxEnergy], false, true);
+                }, years, COLOR_PALETTE.datacenters_and_energy, 'GW/Month', [0, yMaxEnergy], false, true);
             }
         }
 
@@ -577,7 +577,7 @@
                 if (dashboardPriorProjectInner) {
                     dashboardPriorProjectInner.style.transition = 'all 0.2s ease';
                     dashboardPriorProjectInner.addEventListener('mouseenter', () => {
-                        dashboardPriorProjectInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        dashboardPriorProjectInner.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                         dashboardPriorProjectInner.style.transform = 'scale(1.015)';
                     });
                     dashboardPriorProjectInner.addEventListener('mouseleave', () => {
@@ -604,7 +604,7 @@
                     p25: lrOtherP25,
                     p75: lrOtherP75,
                     individual: data.black_fab.lr_other.individual
-                }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
+                }, years, COLOR_PALETTE.detection, 'Likelihood Ratio', null, true, true);
 
                 // 4. Posterior probability of covert project
                 // Use backend data from US intelligence beliefs (same as Simulation Runs plot)
@@ -630,7 +630,7 @@
                         type: 'scatter',
                         mode: 'lines',
                         fill: 'tonexty',
-                        fillcolor: 'rgba(91, 141, 190, 0.2)',
+                        fillcolor: COLOR_PALETTE.rgba('detection', 0.2),
                         line: { color: 'transparent' },
                         showlegend: false,
                         hoverinfo: 'skip'
@@ -640,7 +640,7 @@
                         y: posteriorData.median,
                         type: 'scatter',
                         mode: 'lines',
-                        line: { color: '#5B8DBE', width: 2 },
+                        line: { color: COLOR_PALETTE.detection, width: 2 },
                         name: 'Posterior Probability',
                         showlegend: false
                     }
@@ -1401,7 +1401,7 @@
 
                     // Add hover effect via event listeners
                     hoverTarget.addEventListener('mouseenter', () => {
-                        hoverTarget.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                        hoverTarget.style.boxShadow = '0 0 6px ' + COLOR_PALETTE.rgba('chip_stock', 0.25);
                         hoverTarget.style.transform = 'scale(1.015)';
                     });
                     hoverTarget.addEventListener('mouseleave', () => {

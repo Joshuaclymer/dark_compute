@@ -22,7 +22,7 @@
     style="max-width: 900px; text-align: left"
   >
     We model when "detection" occurs by predicting how much <em>confidence</em> US intelligence has that a covert PRC AI project exists. Once this confidence exceeds a certain threshold (we chose a <span id="detection-threshold-text"></span>x increase in odds), the project is "detected," and the US exits the agreement.<br><br>
-    US intelligence becomes more confident in the existence of the covert project because of two sources of evidence: <strong>discrepancies</strong> between reported quantities of semiconductor assets and estimated quantities, and <strong>direct observations of covert operations</strong> (via IMGINT, HUMINT, SIGINT, etc).
+    US intelligence becomes more confident in the existence of the covert project because of two sources of evidence: <strong>accounting for key resources</strong> and noticing discrepancies and <strong>direct observations of covert operations</strong> (via IMGINT, HUMINT, SIGINT, etc).
   </div>
 
   <!-- Continuous outline for both detection subsections -->
@@ -31,7 +31,7 @@
     <div style="position: relative">
       <span style="position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ccc; font-size: 22px; line-height: 1;">—</span>
       <div class="section-description" style="max-width: 900px; text-align: left">
-        At the start of an AI slowdown agreement, the PRC government reports quantities of key assets, such as its <em>AI chip stock</em>, <em>semiconductor manufacturing equipment (SME)</em>, and datacenter capacity. If these reported quantities are lower than the quantities US intelligence estimates, this <strong>discrepancy</strong> provides evidence that assets were diverted to a covert effort.
+        US intelligence accounts for resources used in AI projects (such as chips, SME, energy, etc). If the amount of resources that the PRC reports differs from the amount that the US estimates the PRC has, this provides evidence some of these resources were diverted to a covert effort.
       </div>
     </div>
 
@@ -49,7 +49,7 @@
     <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/chip_stock_detection.html">
       <div id="lrPrcAccountingPlot" class="breakdown-plot" style="height: 240px"></div>
       <div class="breakdown-label" style="text-align: center; font-size: 11px">
-        Evidence from discrepancies between reported and estimated PRC chip stock
+        Evidence from chip accounting
       </div>
       <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
         Assuming there is a median discrepancy of <span id="param-diversion-initial-prc" class="param-link">5</span>% (the fraction of chips the PRC diverted), and the median error of US estimate of PRC chip stock is <span id="param-error-prc-compute" class="param-link">20</span>%
@@ -61,10 +61,34 @@
     <div class="breakdown-item has-tooltip" data-tooltip-file="tooltips/sme_inventory_detection.html">
       <div id="lrSmeInventoryPlot" class="breakdown-plot" style="height: 240px"></div>
       <div class="breakdown-label" style="text-align: center; font-size: 11px">
-        Evidence from discrepancies between reported and estimated PRC SME stock
+        Evidence from SME accounting
       </div>
       <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
         Assuming there is a median discrepancy of <span id="param-diversion-sme-prc" class="param-link">10</span>% (the fraction of SME the PRC diverted), and the median error of US estimate of PRC SME stock is <span id="param-error-prc-sme" class="param-link">20</span>%
+      </div>
+    </div>
+    <div class="operator">
+      ×
+    </div>
+    <div class="breakdown-item">
+      <div id="lrSatelliteDatacenterPlot" class="breakdown-plot" style="height: 240px"></div>
+      <div class="breakdown-label" style="text-align: center; font-size: 11px">
+        Evidence from datacenter accounting (IMINT)
+      </div>
+      <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+        Assuming there is a median discrepancy of <span id="param-diversion-datacenter-prc" class="param-link">1</span>% (the fraction of datacenter capacity the PRC diverted), and the median error of US satellite estimate is <span id="param-error-satellite-datacenter" class="param-link">5</span>%
+      </div>
+    </div>
+    <div class="operator">
+      ×
+    </div>
+    <div class="breakdown-item">
+      <div id="lrReportedEnergyPlot" class="breakdown-plot" style="height: 240px"></div>
+      <div class="breakdown-label" style="text-align: center; font-size: 11px">
+        Evidence from energy accounting
+      </div>
+      <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
+        Grows over time as covert datacenters consume more energy, assuming the median error of US energy consumption estimate is <span id="param-error-energy-consumption" class="param-link">5</span>%
       </div>
     </div>
     <div class="operator">
@@ -73,7 +97,7 @@
     <div class="breakdown-item">
       <div id="lrReportedAssetsInitialPlot" class="breakdown-plot" style="height: 240px"></div>
       <div class="breakdown-label" style="text-align: center; font-size: 11px">
-        Combined evidence from reported assets
+        Combined evidence from resource accounting 
       </div>
       <div class="breakdown-description" style="text-align: center; font-size: 10px; margin-top: 5px;">
         The product of evidence from chip stock and SME stock discrepancies, assuming these evidence sources are conditionally independent
@@ -93,7 +117,7 @@
         class="footnote-link"
         style="
           cursor: pointer;
-          color: #0066cc;
+          color: #6E7FD9;
           font-weight: 600;
         "
         data-footnote="This assumes these sources of evidence are conditionally independent, meaning that conditioning on a PRC covert project existing (or not existing), the likelihood of seeing one type of evidence is independent of seeing the other. Also, we know that intelligence agencies generally don't use probabilities and likelihood ratios, but we think these are nonetheless good tools for modeling how beliefs change."
@@ -130,7 +154,7 @@
     <div class="breakdown-item">
       <div id="lrReportedAssetsPlot" class="breakdown-plot"></div>
       <div class="breakdown-label">
-        Evidence from reported assets
+        Evidence from resource accounting
       </div>
       <div class="breakdown-description">
         Combined likelihood ratio from initial chip diversion and diverted SME (see above).

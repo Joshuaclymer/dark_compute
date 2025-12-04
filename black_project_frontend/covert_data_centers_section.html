@@ -51,7 +51,7 @@
                         <li>Retrofit existing datacenters that were not built with concealment in mind.</li>
                         <li>Build datacenters that are designed to be stealthy.</li>
                     </ol>
-                    <p style="margin-bottom: 10px;"> Retrofitting unconcealed datacenters isn't a good strategy, since the vast majority of these datacenters will be easy to spot with satellites. That's why the PRC diverts only <span id="unconcealedCapacityDivertedText" style="font-weight: 600;">--</span> of this capacity.</p>
+                    <p style="margin-bottom: 10px;"> Retrofitting unconcealed datacenters isn't a good strategy, since the vast majority of these datacenters will be easy to spot with satellites.
                 </div>
 
                 <!-- Unconcealed datacenter capacity breakdown row -->
@@ -59,7 +59,8 @@
                     <!-- PRC datacenter capacity over time plot -->
                     <div class="breakdown-item">
                         <div id="prcDatacenterCapacityOverTimePlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">PRC datacenter capacity over time</div>
+                        <div class="breakdown-label">Unconcealed PRC datacenter capacity</div>
+                        <div class="breakdown-description">The capacity of datacenters not built with concealment in mind, which we assume is equal to the energy consumption of the total operating PRC chip stock.</div>
                     </div>
 
                     <div class="operator" style="position: relative; height: 240px; width: 100px; display: flex; align-items: center; justify-content: center;">
@@ -68,13 +69,10 @@
                     </div>
 
                     <!-- Total PRC datacenter capacity not built for concealment -->
-                    <div class="breakdown-box-item">
-                        <div id="totalPrcDatacenterCapacityNotConcealedDisplay" class="breakdown-box sidebar-link" data-sidebar-target="total_prc_compute_stock_in_2025">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <div>--</div>
-                                <div class="breakdown-label">Total PRC datacenter capacity<br>not built for concealment in <span class="agreement-year-display">--</span></div>
-                            </div>
-                        </div>
+                    <div class="breakdown-item">
+                        <div id="totalPrcDatacenterCapacityPlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">Unconcealed PRC datacenter capacity in <span class="agreement-year-display">--</span></div>
+                        <div class="breakdown-description">Total capacity of PRC datacenters in <span class="agreement-year-display">--</span> not deliberately designed for stealth.</div>
                     </div>
 
                     <div class="operator">
@@ -86,7 +84,7 @@
                         <div id="proportionUnconcealedDivertedDisplay" class="breakdown-box sidebar-link" data-sidebar-target="fraction_of_datacenter_capacity_not_built_for_concealment_diverted">
                             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                                 <div>--</div>
-                                <div class="breakdown-label">Proportion of unconcealed<br>capacity diverted to covert project</div>
+                                <div class="breakdown-label">Proportion diverted to covert project</div>
                             </div>
                         </div>
                     </div>
@@ -100,14 +98,14 @@
                         <div id="covertDatacenterCapacityUnconcealedDisplay" class="breakdown-box">
                             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                                 <div>--</div>
-                                <div class="breakdown-label">Covert datacenter capacity<br>not built for concealment</div>
+                                <div class="breakdown-label">Capacity of datacenters retrofitted for secrecy.</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="section-description" style="margin-top: 30px;">
-                    <p>The PRC builds stealthy datacenters as quickly as a small workforce can construct them. However, if covert datacenters consume too much energy, the datacenters are hard to keep hidden, so the PRC only builds covert datacenters up to some maximum proportion of total PRC energy consumption.</p>
+                    <p>A much better strategy is to build datacenters that are designed for stealth. The PRC builds these datacenters as quickly as it can do so with a small workforce. However, if the PRC builds too much covert datacenter capacity, energy consumption becomes hard to hide. So the PRC only builds covert datacenters up to some maximum proportion of total PRC energy consumption.</p>
                 </div>
 
                 <div class="breakdown-plots-row">
@@ -160,7 +158,7 @@
                             <div id="covertUnconcealedCapacityDisplay" class="breakdown-box">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                                     <div>--</div>
-                                    <div class="breakdown-label">Covert datacenter capacity<br>not built for concealment</div>
+                                    <div class="breakdown-label">Capacity of covert datacenters<br>not built for concealment</div>
                                 </div>
                             </div>
                             <div class="operator-inline">

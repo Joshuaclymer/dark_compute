@@ -703,6 +703,29 @@ function updateParameterDisplays() {
         }
     }
 
+    // Update unconcealed capacity diverted percentage and simulation end year for energy accounting description
+    const unconcealedCapacityInput = document.getElementById('fraction_of_datacenter_capacity_not_built_for_concealment_diverted');
+    const unconcealedCapacitySpan = document.getElementById('param-unconcealed-capacity-diverted');
+    if (unconcealedCapacityInput && unconcealedCapacitySpan) {
+        const value = (parseFloat(unconcealedCapacityInput.value) * 100).toFixed(0);
+        unconcealedCapacitySpan.textContent = value;
+        unconcealedCapacitySpan.onclick = () => {
+            unconcealedCapacityInput.focus();
+            unconcealedCapacityInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+    }
+
+    // Update simulation end year
+    const numYearsToSimulateInput = document.getElementById('num_years_to_simulate');
+    const agreementYearForEndYear = document.getElementById('agreement_year');
+    const simulationEndYearSpan = document.getElementById('param-simulation-end-year');
+    if (numYearsToSimulateInput && agreementYearForEndYear && simulationEndYearSpan) {
+        const numYears = parseFloat(numYearsToSimulateInput.value);
+        const agreementYear = parseFloat(agreementYearForEndYear.value);
+        const endYear = Math.round(agreementYear + numYears);
+        simulationEndYearSpan.textContent = endYear;
+    }
+
     // Update worker counts for "Evidence of covert operations" description
     const dcConstructionInput = document.getElementById('datacenter_construction_labor');
     const dcOperatingPerMWInput = document.getElementById('operating_labor_per_MW');

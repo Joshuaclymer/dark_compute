@@ -214,10 +214,11 @@ def extract_survival_rates_over_time(simulation_results, years):
         survival_rates = []
 
         for year in years:
-            surviving_compute = black_project_stock.black_project(year)
-            total_compute = black_project_stock.black_project_dead_and_alive(year)
+            # Use black_project_energy_by_source for consistency
+            initial_energy, fab_energy, initial_h100e, fab_h100e = black_project_stock.black_project_energy_by_source(year)
+            surviving = initial_h100e + fab_h100e
 
-            surviving = surviving_compute.total_h100e_tpp()
+            total_compute = black_project_stock.black_project_dead_and_alive(year)
             total = total_compute.total_h100e_tpp()
 
             survival_rates.append(surviving / total if total > 0 else 0.0)
@@ -236,8 +237,9 @@ def extract_black_project_over_time(simulation_results, years):
         black_project = []
 
         for year in years:
-            surviving_compute = black_project_stock.black_project(year)
-            black_project.append(surviving_compute.total_h100e_tpp())
+            # Use black_project_energy_by_source for consistency
+            initial_energy, fab_energy, initial_h100e, fab_h100e = black_project_stock.black_project_energy_by_source(year)
+            black_project.append(initial_h100e + fab_h100e)
 
         black_project_by_sim.append(black_project)
 

@@ -300,7 +300,7 @@ class PRCBlackProjectStock():
     def annual_hazard_rate_after_years_of_life(self, years_of_life: float) -> float:
         return self.initial_hazard_rate + self.increase_in_hazard_rate_per_year * years_of_life
 
-    def black_project(self, year : float):
+    def surviving_compute(self, year : float):
         """Calculate total surviving compute at the given year.
 
         This applies survival rates to each chip type added in each year.

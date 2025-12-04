@@ -123,7 +123,7 @@ class PRCBlackProject:
         datacenter_capacity_gw = self.black_datacenters.get_covert_GW_capacity_total(year_since_agreement)
 
         # Get all surviving dark compute (using absolute year, not year_since_agreement)
-        all_black_project = self.black_project_stock.black_project(year)
+        all_black_project = self.black_project_stock.surviving_compute(year)
 
         # Calculate total energy requirements
         total_energy_required_gw = all_black_project.total_energy_requirements_GW()

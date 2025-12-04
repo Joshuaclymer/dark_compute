@@ -10,8 +10,8 @@ os.chdir(_APP_DIR)
 from flask import Flask, render_template, jsonify, request, send_file, Response
 from black_project_backend.model import Model
 from black_project_backend.black_project_parameters import (
-    CovertProjectProperties,
-    CovertProjectParameters,
+    BlackProjectProperties,
+    BlackProjectParameters,
     SimulationSettings,
     ModelParameters,
 )
@@ -95,8 +95,8 @@ def load_default_cache():
 # Create a global ModelParameters instance that stays synchronized with the sidebar
 app_params = ModelParameters(
     simulation_settings=SimulationSettings(),
-    covert_project_properties=CovertProjectProperties(),
-    covert_project_parameters=CovertProjectParameters()
+    black_project_properties=BlackProjectProperties(),
+    black_project_parameters=BlackProjectParameters()
 )
 
 @app.route('/')
@@ -321,7 +321,7 @@ def run_simulation():
     print(f"\n{'='*80}", flush=True)
     print(f"RECEIVED PARAMETERS:", flush=True)
     print(f"  num_simulations: {data.get('simulation_settings.num_simulations', 'NOT PROVIDED')}", flush=True)
-    print(f"  start_agreement_at_specific_year: {data.get('simulation_settings.start_agreement_at_specific_year', 'NOT PROVIDED')}", flush=True)
+    print(f"  agreement_start_year: {data.get('simulation_settings.agreement_start_year', 'NOT PROVIDED')}", flush=True)
     print(f"  num_years_to_simulate: {data.get('simulation_settings.num_years_to_simulate', 'NOT PROVIDED')}", flush=True)
     print(f"{'='*80}\n", flush=True)
 
@@ -333,7 +333,7 @@ def run_simulation():
         print(f"\n{'='*80}", flush=True)
         print(f"PARAMETERS AFTER UPDATE:", flush=True)
         print(f"  num_simulations: {app_params.simulation_settings.num_simulations}", flush=True)
-        print(f"  start_agreement_at_specific_year: {app_params.simulation_settings.start_agreement_at_specific_year}", flush=True)
+        print(f"  agreement_start_year: {app_params.simulation_settings.agreement_start_year}", flush=True)
         print(f"  num_years_to_simulate: {app_params.simulation_settings.num_years_to_simulate}", flush=True)
         print(f"{'='*80}\n", flush=True)
 

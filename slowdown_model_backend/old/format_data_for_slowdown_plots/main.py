@@ -208,7 +208,7 @@ def get_slowdown_model_data(
     # 4. Proxy Project - use largest company compute until agreement year,
     #    then proxy project compute cap after (matches the compute over time plot)
     if proxy_project_data and proxy_project_data.get('years') and proxy_project_data.get('compute'):
-        agreement_year = params.simulation_settings.start_agreement_at_specific_year
+        agreement_year = params.simulation_settings.agreement_start_year
 
         # Get largest company compute for pre-agreement period
         lc_years = largest_company_data.get('years', []) if largest_company_data else []
@@ -317,7 +317,7 @@ def get_slowdown_model_data(
     # Compute P(catastrophe) over time during the slowdown (using US Frontier trajectory)
     p_catastrophe_over_time = compute_p_catastrophe_over_time(
         proxy_project_mc,
-        params.simulation_settings.start_agreement_at_specific_year,
+        params.simulation_settings.agreement_start_year,
         p_cat_params
     )
 
@@ -325,21 +325,21 @@ def get_slowdown_model_data(
     optimal_compute_cap_over_time = compute_optimal_compute_cap_over_time(
         p_catastrophe_over_time,
         covert_compute_data,
-        params.simulation_settings.start_agreement_at_specific_year
+        params.simulation_settings.agreement_start_year
     )
 
     # Compute risk reduction over time (slowdown vs no slowdown)
     risk_reduction_over_time = compute_risk_reduction_over_time(
         proxy_project_mc,  # slowdown trajectory
         global_mc,  # no-slowdown trajectory
-        params.simulation_settings.start_agreement_at_specific_year,
+        params.simulation_settings.agreement_start_year,
         p_cat_params
     )
 
     # Compute risk breakdown data for the visualization
     risk_breakdown_data = compute_risk_breakdown_data(
         proxy_project_mc,
-        params.simulation_settings.start_agreement_at_specific_year,
+        params.simulation_settings.agreement_start_year,
         p_cat_params
     )
 
@@ -366,7 +366,7 @@ def get_slowdown_model_data(
     }
 
     # Filter proxy_project to only show data from agreement start
-    agreement_year = params.simulation_settings.start_agreement_at_specific_year
+    agreement_year = params.simulation_settings.agreement_start_year
     proxy_project_mc = filter_trajectory_by_start_year(proxy_project_mc, agreement_year)
 
     return {
@@ -448,7 +448,7 @@ def get_slowdown_model_data_with_progress(
     prc_no_slowdown_data = compute_prc_no_slowdown_trajectory(covert_compute_data, covert_years)
     proxy_project_data = compute_proxy_project_trajectory(covert_compute_data, proxy_project_params)
 
-    agreement_year = params.simulation_settings.start_agreement_at_specific_year
+    agreement_year = params.simulation_settings.agreement_start_year
 
     # === PHASE 1: Quick deterministic calculation ===
     if status_callback:
@@ -764,7 +764,7 @@ def get_trajectory_data_fast(
 
     # Build trajectory configs
     trajectory_args = []
-    agreement_year = params.simulation_settings.start_agreement_at_specific_year
+    agreement_year = params.simulation_settings.agreement_start_year
 
     # 1. Global (no slowdown)
     trajectory_args.append(('global', None, None))
@@ -896,7 +896,7 @@ def get_trajectory_data_fast(
     # Compute P(catastrophe) over time during the slowdown (using US Frontier trajectory)
     p_catastrophe_over_time = compute_p_catastrophe_over_time(
         proxy_project_mc,
-        params.simulation_settings.start_agreement_at_specific_year,
+        params.simulation_settings.agreement_start_year,
         p_cat_params
     )
 
@@ -904,21 +904,21 @@ def get_trajectory_data_fast(
     optimal_compute_cap_over_time = compute_optimal_compute_cap_over_time(
         p_catastrophe_over_time,
         covert_compute_data,
-        params.simulation_settings.start_agreement_at_specific_year
+        params.simulation_settings.agreement_start_year
     )
 
     # Compute risk reduction over time (slowdown vs no slowdown)
     risk_reduction_over_time = compute_risk_reduction_over_time(
         proxy_project_mc,  # slowdown trajectory
         global_mc,  # no-slowdown trajectory
-        params.simulation_settings.start_agreement_at_specific_year,
+        params.simulation_settings.agreement_start_year,
         p_cat_params
     )
 
     # Compute risk breakdown data for the visualization
     risk_breakdown_data = compute_risk_breakdown_data(
         proxy_project_mc,
-        params.simulation_settings.start_agreement_at_specific_year,
+        params.simulation_settings.agreement_start_year,
         p_cat_params
     )
 
@@ -949,7 +949,7 @@ def get_trajectory_data_fast(
     capability_cap_data = filter_trajectory_by_start_year(capability_cap_data, agreement_year)
 
     return {
-        'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
+        'agreement_year': params.simulation_settings.agreement_start_year,
         'covert_compute_data': covert_compute_data,
         'combined_covert_compute': combined_covert_data,
         'largest_company_compute': largest_company_data,
@@ -1021,7 +1021,7 @@ def get_uncertainty_data(
     proxy_project_data = compute_proxy_project_trajectory(covert_compute_data, proxy_project_params)
 
     base_seed = int(time.time())
-    agreement_year = params.simulation_settings.start_agreement_at_specific_year
+    agreement_year = params.simulation_settings.agreement_start_year
 
     # Build trajectory configs for batch processing
     trajectory_configs = []
@@ -1074,7 +1074,7 @@ def get_uncertainty_data(
     )
 
     return {
-        'agreement_year': params.simulation_settings.start_agreement_at_specific_year,
+        'agreement_year': params.simulation_settings.agreement_start_year,
         'monte_carlo': {
             'covert': mc_results.get('covert'),
             'proxy_project': proxy_project_mc

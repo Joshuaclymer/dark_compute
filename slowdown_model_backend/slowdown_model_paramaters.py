@@ -10,13 +10,26 @@ from black_project_backend.black_project_parameters import (
 
 @dataclass
 class SlowdownSimulationSettings:
-    start_agreement_at_what_ai_rnd_speedup: Optional[float] = None # can also be a milestone like "AC" or "SAR" or None if starting agreement at a specific year
-    start_agreement_at_specific_year : Optional[int] = 2030
     num_years_to_simulate : float = 7.0  # Number of years from agreement start to simulate
     time_step_years : float = 0.1
     num_simulations : int = 200
     present_year : int = 2026
     end_year : int = 2040
+
+@dataclass
+class TimelinePhases:
+    start_tracking_compute_how_many_years_before_agreement_start: float = 1.0
+    start_reporting_compute_how_many_years_before_agreement_start: float = 2.0
+    cease_training_at_what_ai_rnd_speedup : float = 2.0  # e.g., 5x speedup 
+    length_of_cease_training_before_capability_cap_is_implemented : float = 1 # years
+    set_initial_cap_at_what_ai_randd_speedup: float = 4.0
+    safe_cap_speedup_rises_by_what_factor_per_year: float = 1.5  
+    max_safe_cap_speedup : float = 10.0 # e.g., 10x speedup
+
+@dataclass
+class NegotiatorParameters:
+    onsite_inspectors_trained_per_month: 30
+    max_num_onsite_inspectors_trained: 400
 
 @dataclass
 class TakeoverRiskParameters:
@@ -39,10 +52,6 @@ class TakeoverRiskParameters:
     # e.g., multiplier=0.5 means alignment speedup is half of capability speedup
     safety_speedup_multiplier: float = 0.5
 
-    # Maximum alignment speedup before handoff
-    # Caps the alignment speedup during pre-AC and AC-to-handoff periods
-    # Alignment speedup = min(max_alignment_speedup_before_handoff, capability_speedup * safety_speedup_multiplier)
-    max_alignment_speedup_before_handoff: float = 5.0
 
     # Backward compatibility aliases for p_ai_takeover (deprecated naming)
     @property
@@ -94,13 +103,6 @@ class ProxyProjectParameters:
     frequency_cap_is_updated_in_years: float = 1.0
     determine_optimal_proxy_project_compute_based_on_risk_curves : bool = False
 
-
-@dataclass
-class USProjectParameters:
-    """Parameters for capability cap trajectory"""
-    years_after_agreement_start_when_evaluation_based_capability_cap_is_implemented: float = 0.5
-    capability_cap_ai_randd_speedup: float = TakeoverRiskParameters.max_alignment_speedup_before_handoff / TakeoverRiskParameters.safety_speedup_multiplier # Options: "AC", "SAR", or year like "2028"
-
 @dataclass
 class SlowdownModelParameters:
     # Fields without defaults must come first
@@ -108,6 +110,7 @@ class SlowdownModelParameters:
     covert_project_parameters : CovertProjectParameters = field(default_factory=CovertProjectParameters)
     # Fields with defaults
     slowdown_simulation_settings: SlowdownSimulationSettings = field(default_factory=SlowdownSimulationSettings)
+    phase_transitions: PhaseTransitions = field(default_factory=PhaseTransitions)
     takeover_risk: TakeoverRiskParameters = field(default_factory=TakeoverRiskParameters)
     proxy_project: ProxyProjectParameters = field(default_factory=ProxyProjectParameters)
     software_proliferation: SoftwareProliferationParameters = field(default_factory=SoftwareProliferationParameters)
@@ -116,7 +119,7 @@ class SlowdownModelParameters:
     def update_from_dict(self, data: dict):
         """
         Update parameters from request data using dot notation.
-        Field names with dots (e.g., 'simulation_settings.start_agreement_at_specific_year') are automatically
+        Field names with dots (e.g., 'simulation_settings.agreement_start_year') are automatically
         converted to nested attribute access.
         Returns True if survival rate parameters changed (requires metalog cache clear).
         """

@@ -272,7 +272,7 @@
     <h2>Simulation Settings</h2>
     <div class="param-group">
         <label for="agreement_year">Agreement start year</label>
-        <input type="number" id="agreement_year" value="{{ defaults['simulation_settings.start_agreement_at_specific_year'] }}" step="1" min="2026" max="2031">
+        <input type="number" id="agreement_year" value="{{ defaults['simulation_settings.agreement_start_year'] }}" step="1" min="2026" max="2031">
     </div>
     <div class="param-group">
         <label for="num_years_to_simulate">Number of years to simulate</label>
@@ -290,16 +290,28 @@
     <h2 id="covert-project-properties-section">Covert Project Properties</h2>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
         <label for="proportion_of_initial_chip_stock_to_divert">Proportion of initial chip stock to divert</label>
-        <input type="number" id="proportion_of_initial_chip_stock_to_divert" value="{{ defaults['covert_project_properties.proportion_of_initial_compute_stock_to_divert'] }}" step="0.01" min="0" max="1">
+        <input type="number" id="proportion_of_initial_chip_stock_to_divert" value="{{ defaults['black_project_properties.proportion_of_initial_compute_stock_to_divert'] }}" step="0.01" min="0" max="1">
     </div>
 
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
-        <label for="datacenter_construction_labor">Datacenter construction labor</label>
-        <input type="number" id="datacenter_construction_labor" value="{{ defaults['covert_project_properties.datacenter_construction_labor'] }}" step="1">
+        <label for="fraction_of_datacenter_capacity_not_built_for_concealment_diverted">Fraction of unconcealed datacenter capacity diverted to covert project</label>
+        <input type="number" id="fraction_of_datacenter_capacity_not_built_for_concealment_diverted" value="{{ defaults['black_project_properties.fraction_of_datacenter_capacity_not_built_for_concealment_diverted_to_black_project_at_agreement_start'] }}" step="0.01" min="0" max="1">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
-        <label for="years_before_agreement_year_prc_starts_building_covert_datacenters">Years before agreement year PRC starts building covert datacenters</label>
-        <input type="number" id="years_before_agreement_year_prc_starts_building_covert_datacenters" value="{{ defaults['covert_project_properties.years_before_agreement_year_prc_starts_building_covert_datacenters'] }}" step="1">
+        <label for="datacenter_construction_labor">Datacenter construction labor</label>
+        <input type="number" id="datacenter_construction_labor" value="{{ defaults['black_project_properties.datacenter_construction_labor'] }}" step="1">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
+        <label for="years_before_agreement_year_prc_starts_building_black_datacenters">Years before agreement year PRC starts building covert datacenters</label>
+        <input type="number" id="years_before_agreement_year_prc_starts_building_black_datacenters" value="{{ defaults['black_project_properties.years_before_agreement_year_prc_starts_building_black_datacenters'] }}" step="1">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
+        <label for="max_proportion_of_PRC_energy_consumption">Built covert datacenters up to what fraction of PRC energy consumption</label>
+        <input type="number" id="max_proportion_of_PRC_energy_consumption" value="{{ defaults['black_project_properties.max_proportion_of_PRC_energy_consumption'] }}" step="0.01">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
+        <label for="researcher_headcount">Number of AI researchers</label>
+        <input type="number" id="researcher_headcount" value="{{ defaults['black_project_properties.researcher_headcount'] }}" step="1" min="0">
     </div>
 
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
@@ -310,142 +322,150 @@
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
         <label for="operating_labor">Number of workers to operate fab</label>
-        <input type="number" id="operating_labor" value="{{ defaults['covert_project_properties.covert_fab_operating_labor'] }}">
+        <input type="number" id="operating_labor" value="{{ defaults['black_project_properties.black_fab_operating_labor'] }}">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
         <label for="construction_labor">Number of workers to construct fab</label>
-        <input type="number" id="construction_labor" value="{{ defaults['covert_project_properties.covert_fab_construction_labor'] }}">
+        <input type="number" id="construction_labor" value="{{ defaults['black_project_properties.black_fab_construction_labor'] }}">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
         <label for="process_node">Process node strategy</label>
         <select id="process_node">
-            <option value="best_indigenous" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'best_indigenous' %}selected{% endif %}>Best Indigenous</option>
-            <option value="best_indigenous_gte_28nm" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'best_indigenous_gte_28nm' %}selected{% endif %}>Best Indigenous >= 28nm</option>
-            <option value="best_indigenous_gte_14nm" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'best_indigenous_gte_14nm' %}selected{% endif %}>Best Indigenous >= 14nm</option>
-            <option value="best_indigenous_gte_7nm" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'best_indigenous_gte_7nm' %}selected{% endif %}>Best Indigenous >= 7nm</option>
-            <option value="nm130" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'nm130' %}selected{% endif %}>130nm</option>
-            <option value="nm28" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'nm28' %}selected{% endif %}>28nm</option>
-            <option value="nm14" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'nm14' %}selected{% endif %}>14nm</option>
-            <option value="nm7" {% if defaults['covert_project_properties.covert_fab_process_node'] == 'nm7' %}selected{% endif %}>7nm</option>
+            <option value="best_indigenous" {% if defaults['black_project_properties.black_fab_process_node'] == 'best_indigenous' %}selected{% endif %}>Best Indigenous</option>
+            <option value="best_indigenous_gte_28nm" {% if defaults['black_project_properties.black_fab_process_node'] == 'best_indigenous_gte_28nm' %}selected{% endif %}>Best Indigenous >= 28nm</option>
+            <option value="best_indigenous_gte_14nm" {% if defaults['black_project_properties.black_fab_process_node'] == 'best_indigenous_gte_14nm' %}selected{% endif %}>Best Indigenous >= 14nm</option>
+            <option value="best_indigenous_gte_7nm" {% if defaults['black_project_properties.black_fab_process_node'] == 'best_indigenous_gte_7nm' %}selected{% endif %}>Best Indigenous >= 7nm</option>
+            <option value="nm130" {% if defaults['black_project_properties.black_fab_process_node'] == 'nm130' %}selected{% endif %}>130nm</option>
+            <option value="nm28" {% if defaults['black_project_properties.black_fab_process_node'] == 'nm28' %}selected{% endif %}>28nm</option>
+            <option value="nm14" {% if defaults['black_project_properties.black_fab_process_node'] == 'nm14' %}selected{% endif %}>14nm</option>
+            <option value="nm7" {% if defaults['black_project_properties.black_fab_process_node'] == 'nm7' %}selected{% endif %}>7nm</option>
         </select>
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/project_property.html">
         <label for="scanner_proportion">Proportion of prc sme diverted to covert fab at start of the agreement</label>
-        <input type="number" id="scanner_proportion" value="{{ defaults['covert_project_properties.covert_fab_proportion_of_prc_lithography_scanners_devoted'] }}" step="0.001">
+        <input type="number" id="scanner_proportion" value="{{ defaults['black_project_properties.black_fab_proportion_of_prc_lithography_scanners_devoted'] }}" step="0.001">
     </div>
 
     <!-- Slowdown Counterfactual section commented out
     <h2>Slowdown Counterfactual</h2>
     <div class="param-group">
         <label for="fraction_of_prc_compute_spent_on_ai_rd_before_slowdown">Fraction of PRC compute spent on AI R&D before slowdown</label>
-        <input type="number" id="fraction_of_prc_compute_spent_on_ai_rd_before_slowdown" value="{{ defaults['covert_project_parameters.slowdown_counterfactual_parameters.fraction_of_prc_compute_spent_on_ai_rd_before_slowdown'] }}" step="0.01" min="0" max="1">
+        <input type="number" id="fraction_of_prc_compute_spent_on_ai_rd_before_slowdown" value="{{ defaults['black_project_parameters.slowdown_counterfactual_parameters.fraction_of_prc_compute_spent_on_ai_rd_before_slowdown'] }}" step="0.01" min="0" max="1">
     </div>
     -->
 
     <h2>Detection parameters</h2>
 
     <div class="param-group">
-        <label for="covert_project_parameters.p_project_exists">US prior probability that covert project exists</label>
-        <input type="number" id="covert_project_parameters.p_project_exists" value="{{ defaults['covert_project_parameters.p_project_exists'] }}" step="0.01" min="0" max="1">
+        <label for="black_project_parameters.p_project_exists">US prior probability that covert project exists</label>
+        <input type="number" id="black_project_parameters.p_project_exists" value="{{ defaults['black_project_parameters.p_project_exists'] }}" step="0.01" min="0" max="1">
     </div>
 
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/detection_time.html" data-tooltip-suffix="<br><br>This parameter (μ₁₀₀) represents the expected detection time for a covert project with 100 high-context workers.">
         <label for="mean_detection_time_100">Expected time to detect covert project involving 100 people (years)</label>
-        <input type="number" id="mean_detection_time_100" value="{{ defaults['covert_project_parameters.mean_detection_time_for_100_workers'] }}" step="0.01">
+        <input type="number" id="mean_detection_time_100" value="{{ defaults['black_project_parameters.detection_parameters.mean_detection_time_for_100_workers'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/detection_time.html" data-tooltip-suffix="<br><br>This parameter (μ₁₀₀₀) represents the expected detection time for a covert project with 1000 high-context workers.">
         <label for="mean_detection_time_1000">Expected time to detect covert project involving 1000 people (years)</label>
-        <input type="number" id="mean_detection_time_1000" value="{{ defaults['covert_project_parameters.mean_detection_time_for_1000_workers'] }}" step="0.01">
+        <input type="number" id="mean_detection_time_1000" value="{{ defaults['black_project_parameters.detection_parameters.mean_detection_time_for_1000_workers'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/detection_time.html" data-tooltip-suffix="<br><br>This parameter (σ) represents the standard deviation of the log-normal distribution.">
         <label for="variance_detection_time">Detection time sigma (years)</label>
-        <input type="number" id="variance_detection_time" value="{{ defaults['covert_project_parameters.variance_of_detection_time_given_num_workers'] }}" step="0.01">
+        <input type="number" id="variance_detection_time" value="{{ defaults['black_project_parameters.detection_parameters.variance_of_detection_time_given_num_workers'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/chip_stock_detection.html">
         <label for="us_intelligence_median_error_in_estimate_of_prc_compute_stock">US intelligence median error in estimate of PRC compute stock</label>
-        <input type="number" id="us_intelligence_median_error_in_estimate_of_prc_compute_stock" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock'] }}" step="0.01">
+        <input type="number" id="us_intelligence_median_error_in_estimate_of_prc_compute_stock" value="{{ defaults['black_project_parameters.detection_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/sme_inventory_detection.html">
         <label for="proportion_diverted_sme">US intelligence median error in estimate of PRC SME stock</label>
-        <input type="number" id="proportion_diverted_sme" value="{{ defaults['covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock'] }}" step="0.01">
+        <input type="number" id="proportion_diverted_sme" value="{{ defaults['black_project_parameters.detection_parameters.us_intelligence_median_error_in_estimate_of_prc_sme_stock'] }}" step="0.01">
     </div>
 
-    <h2>Initial PRC Dark Compute Parameters</h2>
+    <h2>Exogenous Trends</h2>
     <div class="param-group">
         <label for="total_prc_compute_stock_in_2025">Total PRC compute stock in 2025 (millions of H100e)</label>
-        <input type="number" id="total_prc_compute_stock_in_2025" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.total_prc_compute_stock_in_2025'] / 1e6 }}" step="0.1">
+        <input type="number" id="total_prc_compute_stock_in_2025" value="{{ defaults['black_project_parameters.exogenous_trends.total_prc_compute_stock_in_2025'] / 1e6 }}" step="0.1">
     </div>
     <div class="param-group">
         <label for="annual_growth_rate_of_prc_compute_stock_p10">Annual growth rate of PRC compute stock - 10th percentile</label>
-        <input type="number" id="annual_growth_rate_of_prc_compute_stock_p10" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p10'] }}" step="0.1">
+        <input type="number" id="annual_growth_rate_of_prc_compute_stock_p10" value="{{ defaults['black_project_parameters.exogenous_trends.annual_growth_rate_of_prc_compute_stock_p10'] }}" step="0.1">
     </div>
     <div class="param-group">
         <label for="annual_growth_rate_of_prc_compute_stock_p50">Annual growth rate of PRC compute stock - 50th percentile (median)</label>
-        <input type="number" id="annual_growth_rate_of_prc_compute_stock_p50" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p50'] }}" step="0.1">
+        <input type="number" id="annual_growth_rate_of_prc_compute_stock_p50" value="{{ defaults['black_project_parameters.exogenous_trends.annual_growth_rate_of_prc_compute_stock_p50'] }}" step="0.1">
     </div>
     <div class="param-group">
         <label for="annual_growth_rate_of_prc_compute_stock_p90">Annual growth rate of PRC compute stock - 90th percentile</label>
-        <input type="number" id="annual_growth_rate_of_prc_compute_stock_p90" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p90'] }}" step="0.1">
+        <input type="number" id="annual_growth_rate_of_prc_compute_stock_p90" value="{{ defaults['black_project_parameters.exogenous_trends.annual_growth_rate_of_prc_compute_stock_p90'] }}" step="0.1">
     </div>
     <div class="param-group">
         <label for="proportion_of_prc_chip_stock_produced_domestically_2026">Proportion of PRC chip stock produced domestically in 2026</label>
-        <input type="number" id="proportion_of_prc_chip_stock_produced_domestically_2026" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2026'] }}" step="0.01" min="0" max="1">
+        <input type="number" id="proportion_of_prc_chip_stock_produced_domestically_2026" value="{{ defaults['black_project_parameters.exogenous_trends.proportion_of_prc_chip_stock_produced_domestically_2026'] }}" step="0.01" min="0" max="1">
     </div>
     <div class="param-group">
         <label for="proportion_of_prc_chip_stock_produced_domestically_2030">Proportion of PRC chip stock produced domestically in 2030</label>
-        <input type="number" id="proportion_of_prc_chip_stock_produced_domestically_2030" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2030'] }}" step="0.01" min="0" max="1">
+        <input type="number" id="proportion_of_prc_chip_stock_produced_domestically_2030" value="{{ defaults['black_project_parameters.exogenous_trends.proportion_of_prc_chip_stock_produced_domestically_2030'] }}" step="0.01" min="0" max="1">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/energy_efficiency.html">
-        <label for="energy_efficiency_relative_to_h100">Energy efficiency relative to H100 (multiplicative)</label>
-        <input type="number" id="energy_efficiency_relative_to_h100" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100'] }}" step="0.1">
+        <label for="energy_efficiency_of_prc_stock_relative_to_state_of_the_art">Energy efficiency of PRC stock relative to state of the art</label>
+        <input type="number" id="energy_efficiency_of_prc_stock_relative_to_state_of_the_art" value="{{ defaults['black_project_parameters.exogenous_trends.energy_efficiency_of_prc_stock_relative_to_state_of_the_art'] }}" step="0.1">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/h100_power.html">
         <label for="h100_power_watts">H100 power consumption (W)</label>
-        <input type="number" id="h100_power_watts" value="{{ defaults['covert_project_parameters.initial_compute_stock_parameters.h100_power_watts'] }}" step="1">
+        <input type="number" id="h100_power_watts" value="{{ defaults['black_project_parameters.exogenous_trends.h100_power_watts'] }}" step="1">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/largest_ai_project.html">
+        <label for="largest_ai_project_compute_stock_in_2025">Largest AI project compute stock in 2025 (H100e)</label>
+        <input type="number" id="largest_ai_project_compute_stock_in_2025" value="{{ defaults['black_project_parameters.exogenous_trends.largest_ai_project_compute_stock_in_2025'] }}" step="1000">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/largest_ai_project.html">
+        <label for="annual_growth_rate_of_largest_ai_project_compute_stock">Annual growth rate of largest AI project compute stock</label>
+        <input type="number" id="annual_growth_rate_of_largest_ai_project_compute_stock" value="{{ defaults['black_project_parameters.exogenous_trends.annual_growth_rate_of_largest_ai_project_compute_stock'] }}" step="0.01">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/energy_efficiency_improvement.html">
+        <label for="improvement_in_energy_efficiency_per_year">Improvement in energy efficiency per year</label>
+        <input type="number" id="improvement_in_energy_efficiency_per_year" value="{{ defaults['black_project_parameters.exogenous_trends.improvement_in_energy_efficiency_per_year'] }}" step="0.01">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/prc_energy_consumption.html">
+        <label for="total_GW_of_PRC_energy_consumption">Total GW of PRC energy consumption</label>
+        <input type="number" id="total_GW_of_PRC_energy_consumption" value="{{ defaults['black_project_parameters.exogenous_trends.total_GW_of_PRC_energy_consumption'] }}" step="10">
     </div>
 
     <h2>Survival Rate Parameters</h2>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/ai_chip_lifespan.html">
         <label for="initial_hazard_rate_p50">Initial hazard rate (median)</label>
-        <input type="number" id="initial_hazard_rate_p50" value="{{ defaults['covert_project_parameters.survival_rate_parameters.initial_hazard_rate_p50'] }}" step="0.001">
+        <input type="number" id="initial_hazard_rate_p50" value="{{ defaults['black_project_parameters.survival_rate_parameters.initial_hazard_rate_p50'] }}" step="0.001">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/ai_chip_lifespan.html">
         <label for="increase_of_hazard_rate_per_year_p50">Increase of hazard rate per year (median)</label>
-        <input type="number" id="increase_of_hazard_rate_per_year_p50" value="{{ defaults['covert_project_parameters.survival_rate_parameters.increase_of_hazard_rate_per_year_p50'] }}" step="0.001">
+        <input type="number" id="increase_of_hazard_rate_per_year_p50" value="{{ defaults['black_project_parameters.survival_rate_parameters.increase_of_hazard_rate_per_year_p50'] }}" step="0.001">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/ai_chip_lifespan.html">
         <label for="hazard_rate_p25_relative_to_p50">Hazard rate 25th percentile (relative to median)</label>
-        <input type="number" id="hazard_rate_p25_relative_to_p50" value="{{ defaults['covert_project_parameters.survival_rate_parameters.hazard_rate_p25_relative_to_p50'] }}" step="0.01">
+        <input type="number" id="hazard_rate_p25_relative_to_p50" value="{{ defaults['black_project_parameters.survival_rate_parameters.hazard_rate_p25_relative_to_p50'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/ai_chip_lifespan.html">
         <label for="hazard_rate_p75_relative_to_p50">Hazard rate 75th percentile (relative to median)</label>
-        <input type="number" id="hazard_rate_p75_relative_to_p50" value="{{ defaults['covert_project_parameters.survival_rate_parameters.hazard_rate_p75_relative_to_p50'] }}" step="0.1">
+        <input type="number" id="hazard_rate_p75_relative_to_p50" value="{{ defaults['black_project_parameters.survival_rate_parameters.hazard_rate_p75_relative_to_p50'] }}" step="0.1">
     </div>
 
     <h2>Covert Datacenter Parameters</h2>
-    <div class="param-group has-tooltip" data-tooltip-file="tooltips/max_energy_proportion.html">
-        <label for="max_proportion_of_PRC_energy_consumption">Max proportion of PRC energy consumption</label>
-        <input type="number" id="max_proportion_of_PRC_energy_consumption" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.max_proportion_of_PRC_energy_consumption'] }}" step="0.01">
-    </div>
-    <div class="param-group has-tooltip" data-tooltip-file="tooltips/prc_energy_consumption.html">
-        <label for="total_GW_of_PRC_energy_consumption">Total GW of PRC energy consumption</label>
-        <input type="number" id="total_GW_of_PRC_energy_consumption" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.total_GW_of_PRC_energy_consumption'] }}" step="10">
-    </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/mw_per_worker.html">
         <label for="MW_per_construction_worker_per_year">MW per year per construction worker</label>
-        <input type="number" id="MW_per_construction_worker_per_year" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.MW_per_construction_worker_per_year'] }}" step="0.1">
+        <input type="number" id="MW_per_construction_worker_per_year" value="{{ defaults['black_project_parameters.datacenter_model_parameters.MW_per_construction_worker_per_year'] }}" step="0.1">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/mw_per_worker.html">
         <label for="relative_sigma_mw_per_construction_worker_per_year">Relative sigma MW per year per construction worker</label>
-        <input type="number" id="relative_sigma_mw_per_construction_worker_per_year" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.relative_sigma_mw_per_construction_worker_per_year'] }}" step="0.1">
+        <input type="number" id="relative_sigma_mw_per_construction_worker_per_year" value="{{ defaults['black_project_parameters.datacenter_model_parameters.relative_sigma_mw_per_construction_worker_per_year'] }}" step="0.1">
     </div>
     <div class="param-group">
         <label for="operating_labor_per_MW">Operating labor per MW</label>
-        <input type="number" id="operating_labor_per_MW" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.operating_labor_per_MW'] }}" step="0.1">
+        <input type="number" id="operating_labor_per_MW" value="{{ defaults['black_project_parameters.datacenter_model_parameters.operating_labor_per_MW'] }}" step="0.1">
     </div>
     <div class="param-group">
         <label for="relative_sigma_operating_labor_per_MW">Relative sigma operating labor per MW</label>
-        <input type="number" id="relative_sigma_operating_labor_per_MW" value="{{ defaults['covert_project_parameters.datacenter_model_parameters.relative_sigma_operating_labor_per_MW'] }}" step="0.1">
+        <input type="number" id="relative_sigma_operating_labor_per_MW" value="{{ defaults['black_project_parameters.datacenter_model_parameters.relative_sigma_operating_labor_per_MW'] }}" step="0.1">
     </div>
 
     <h2>Covert fab parameters</h2>
@@ -456,111 +476,111 @@
     <div class="localization-row">
         <div class="param-group">
             <label for="localization_130nm_2025">130nm 2025</label>
-            <input type="number" id="localization_130nm_2025" value="{{ defaults['covert_project_parameters.covert_fab_parameters.localization_130nm_2025'] }}" step="0.01" min="0" max="1">
+            <input type="number" id="localization_130nm_2025" value="{{ defaults['black_project_parameters.black_fab_parameters.localization_130nm_2025'] }}" step="0.01" min="0" max="1">
         </div>
         <div class="param-group">
             <label for="localization_130nm_2031">130nm 2031</label>
-            <input type="number" id="localization_130nm_2031" value="{{ defaults['covert_project_parameters.covert_fab_parameters.localization_130nm_2031'] }}" step="0.01" min="0" max="1">
+            <input type="number" id="localization_130nm_2031" value="{{ defaults['black_project_parameters.black_fab_parameters.localization_130nm_2031'] }}" step="0.01" min="0" max="1">
         </div>
     </div>
     <div class="localization-row">
         <div class="param-group">
             <label for="localization_28nm_2025">28nm 2025</label>
-            <input type="number" id="localization_28nm_2025" value="{{ defaults['covert_project_parameters.covert_fab_parameters.localization_28nm_2025'] }}" step="0.01" min="0" max="1">
+            <input type="number" id="localization_28nm_2025" value="{{ defaults['black_project_parameters.black_fab_parameters.localization_28nm_2025'] }}" step="0.01" min="0" max="1">
         </div>
         <div class="param-group">
             <label for="localization_28nm_2031">28nm 2031</label>
-            <input type="number" id="localization_28nm_2031" value="{{ defaults['covert_project_parameters.covert_fab_parameters.localization_28nm_2031'] }}" step="0.01" min="0" max="1">
+            <input type="number" id="localization_28nm_2031" value="{{ defaults['black_project_parameters.black_fab_parameters.localization_28nm_2031'] }}" step="0.01" min="0" max="1">
         </div>
     </div>
     <div class="localization-row">
         <div class="param-group">
             <label for="localization_14nm_2025">14nm 2025</label>
-            <input type="number" id="localization_14nm_2025" value="{{ defaults['covert_project_parameters.covert_fab_parameters.localization_14nm_2025'] }}" step="0.01" min="0" max="1">
+            <input type="number" id="localization_14nm_2025" value="{{ defaults['black_project_parameters.black_fab_parameters.localization_14nm_2025'] }}" step="0.01" min="0" max="1">
         </div>
         <div class="param-group">
             <label for="localization_14nm_2031">14nm 2031</label>
-            <input type="number" id="localization_14nm_2031" value="{{ defaults['covert_project_parameters.covert_fab_parameters.localization_14nm_2031'] }}" step="0.01" min="0" max="1">
+            <input type="number" id="localization_14nm_2031" value="{{ defaults['black_project_parameters.black_fab_parameters.localization_14nm_2031'] }}" step="0.01" min="0" max="1">
         </div>
     </div>
     <div class="localization-row">
         <div class="param-group">
             <label for="localization_7nm_2025">7nm 2025</label>
-            <input type="number" id="localization_7nm_2025" value="{{ defaults['covert_project_parameters.covert_fab_parameters.localization_7nm_2025'] }}" step="0.01" min="0" max="1">
+            <input type="number" id="localization_7nm_2025" value="{{ defaults['black_project_parameters.black_fab_parameters.localization_7nm_2025'] }}" step="0.01" min="0" max="1">
         </div>
         <div class="param-group">
             <label for="localization_7nm_2031">7nm 2031</label>
-            <input type="number" id="localization_7nm_2031" value="{{ defaults['covert_project_parameters.covert_fab_parameters.localization_7nm_2031'] }}" step="0.01" min="0" max="1">
+            <input type="number" id="localization_7nm_2031" value="{{ defaults['black_project_parameters.black_fab_parameters.localization_7nm_2031'] }}" step="0.01" min="0" max="1">
         </div>
     </div>
 
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/fab_construction_time.html">
         <label for="construction_time_5k">Construction time of 5k wafers/month fab (years)</label>
-        <input type="number" id="construction_time_5k" value="{{ defaults['covert_project_parameters.covert_fab_parameters.construction_time_for_5k_wafers_per_month'] }}" step="0.01">
+        <input type="number" id="construction_time_5k" value="{{ defaults['black_project_parameters.black_fab_parameters.construction_time_for_5k_wafers_per_month'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/fab_construction_time.html">
         <label for="construction_time_100k">Construction time of 100k wafers/month fab (years)</label>
-        <input type="number" id="construction_time_100k" value="{{ defaults['covert_project_parameters.covert_fab_parameters.construction_time_for_100k_wafers_per_month'] }}" step="0.01">
+        <input type="number" id="construction_time_100k" value="{{ defaults['black_project_parameters.black_fab_parameters.construction_time_for_100k_wafers_per_month'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/fab_construction_time.html">
         <label for="construction_time_sigma">Construction time vs wafers per month sigma (relative, log scale)</label>
-        <input type="number" id="construction_time_sigma" value="{{ defaults['covert_project_parameters.covert_fab_parameters.construction_time_relative_sigma'] }}" step="0.01">
+        <input type="number" id="construction_time_sigma" value="{{ defaults['black_project_parameters.black_fab_parameters.construction_time_relative_sigma'] }}" step="0.01">
     </div>
     <div class="param-group">
         <label for="construction_workers_per_1000">Construction workers per 1000 wafers/month</label>
-        <input type="number" id="construction_workers_per_1000" value="{{ defaults['covert_project_parameters.covert_fab_parameters.construction_workers_per_1000_wafers_per_month'] }}" step="0.1">
+        <input type="number" id="construction_workers_per_1000" value="{{ defaults['black_project_parameters.black_fab_parameters.construction_workers_per_1000_wafers_per_month'] }}" step="0.1">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/operating_labor_production.html">
         <label for="wafers_per_month_per_worker">Wafers/month per operating worker</label>
-        <input type="number" id="wafers_per_month_per_worker" value="{{ defaults['covert_project_parameters.covert_fab_parameters.wafers_per_month_per_worker'] }}" step="0.01">
+        <input type="number" id="wafers_per_month_per_worker" value="{{ defaults['black_project_parameters.black_fab_parameters.wafers_per_month_per_worker'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/operating_labor_production.html">
         <label for="labor_productivity_sigma">Wafers per month per operating worker sigma (log scale, wafers/month)</label>
-        <input type="number" id="labor_productivity_sigma" value="{{ defaults['covert_project_parameters.covert_fab_parameters.labor_productivity_relative_sigma'] }}" step="0.01">
+        <input type="number" id="labor_productivity_sigma" value="{{ defaults['black_project_parameters.black_fab_parameters.labor_productivity_relative_sigma'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/scanner_production_capacity.html">
         <label for="wafers_per_month_per_scanner">Wafers/month per photolithography scanner</label>
-        <input type="number" id="wafers_per_month_per_scanner" value="{{ defaults['covert_project_parameters.covert_fab_parameters.wafers_per_month_per_lithography_scanner'] }}" step="1">
+        <input type="number" id="wafers_per_month_per_scanner" value="{{ defaults['black_project_parameters.black_fab_parameters.wafers_per_month_per_lithography_scanner'] }}" step="1">
     </div>
     <div class="param-group">
         <label for="scanner_productivity_sigma">Wafers per month per photolithography scanner sigma (log scale, wafers/month)</label>
-        <input type="number" id="scanner_productivity_sigma" value="{{ defaults['covert_project_parameters.covert_fab_parameters.scanner_productivity_relative_sigma'] }}" step="0.01">
+        <input type="number" id="scanner_productivity_sigma" value="{{ defaults['black_project_parameters.black_fab_parameters.scanner_productivity_relative_sigma'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/prc_scanner_rampup.html" data-tooltip-suffix="<br><br>This parameter represents the number of scanners produced in the first year after achieving high volume production capability.">
         <label for="prc_scanners_first_year">Prc scanners produced in first year after high volume production is achieved</label>
-        <input type="number" id="prc_scanners_first_year" value="{{ defaults['covert_project_parameters.covert_fab_parameters.prc_lithography_scanners_produced_in_first_year'] }}" step="1">
+        <input type="number" id="prc_scanners_first_year" value="{{ defaults['black_project_parameters.black_fab_parameters.prc_lithography_scanners_produced_in_first_year'] }}" step="1">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/prc_scanner_rampup.html" data-tooltip-suffix="<br><br>This parameter represents the annual increase in scanner production after the first year.">
         <label for="prc_scanners_per_year">Annual increase of scanner production</label>
-        <input type="number" id="prc_scanners_per_year" value="{{ defaults['covert_project_parameters.covert_fab_parameters.prc_additional_lithography_scanners_produced_per_year'] }}" step="1">
+        <input type="number" id="prc_scanners_per_year" value="{{ defaults['black_project_parameters.black_fab_parameters.prc_additional_lithography_scanners_produced_per_year'] }}" step="1">
     </div>
     <div class="param-group">
         <label for="prc_scanner_production_sigma">Prc scanner production sigma (log scale, scanners/year)</label>
-        <input type="number" id="prc_scanner_production_sigma" value="{{ defaults['covert_project_parameters.covert_fab_parameters.prc_scanner_production_relative_sigma'] }}" step="0.01">
+        <input type="number" id="prc_scanner_production_sigma" value="{{ defaults['black_project_parameters.black_fab_parameters.prc_scanner_production_relative_sigma'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/chips_per_wafer.html">
         <label for="chips_per_wafer">H100-sized chips per wafer (yield)</label>
-        <input type="number" id="chips_per_wafer" value="{{ defaults['covert_project_parameters.covert_fab_parameters.h100_sized_chips_per_wafer'] }}" step="1">
+        <input type="number" id="chips_per_wafer" value="{{ defaults['black_project_parameters.black_fab_parameters.h100_sized_chips_per_wafer'] }}" step="1">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/transistor_density.html">
         <label for="transistor_density_exponent">Transistor density increase for every halving of process node</label>
-        <input type="number" id="transistor_density_exponent" value="{{ defaults['covert_project_parameters.covert_fab_parameters.transistor_density_scaling_exponent'] }}" step="0.01">
-    </div>
-    <div class="param-group has-tooltip" data-tooltip-file="tooltips/architecture_efficiency.html">
-        <label for="architecture_efficiency">Rate of architecture efficiency improvement per year</label>
-        <input type="number" id="architecture_efficiency" value="{{ defaults['covert_project_parameters.covert_fab_parameters.architecture_efficiency_improvement_per_year'] }}" step="0.01">
+        <input type="number" id="transistor_density_exponent" value="{{ defaults['black_project_parameters.black_fab_parameters.transistor_density_scaling_exponent'] }}" step="0.01">
     </div>
 
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/watts_per_tpp_before_dennard.html">
         <label for="watts_per_tpp_exponent_before_dennard">W/TPP vs density exponent (before Dennard scaling end, ≤2006)</label>
-        <input type="number" id="watts_per_tpp_exponent_before_dennard" value="{{ defaults['covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended'] }}" step="0.01">
+        <input type="number" id="watts_per_tpp_exponent_before_dennard" value="{{ defaults['black_project_parameters.black_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended'] }}" step="0.01">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/watts_per_tpp_after_dennard.html">
         <label for="watts_per_tpp_exponent_after_dennard">W/TPP vs density exponent (after Dennard scaling end, >2006)</label>
-        <input type="number" id="watts_per_tpp_exponent_after_dennard" value="{{ defaults['covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended'] }}" step="0.001">
+        <input type="number" id="watts_per_tpp_exponent_after_dennard" value="{{ defaults['black_project_parameters.black_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended'] }}" step="0.001">
     </div>
     <div class="param-group has-tooltip" data-tooltip-file="tooltips/dennard_scaling_end.html">
         <label for="transistor_density_at_dennard_end">Transistor density at Dennard scaling end (M/mm², ~2006)</label>
-        <input type="number" id="transistor_density_at_dennard_end" value="{{ defaults['covert_project_parameters.covert_fab_parameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2'] }}" step="0.01">
+        <input type="number" id="transistor_density_at_dennard_end" value="{{ defaults['black_project_parameters.black_fab_parameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2'] }}" step="0.01">
+    </div>
+    <div class="param-group has-tooltip" data-tooltip-file="tooltips/architecture_efficiency.html">
+        <label for="architecture_efficiency">Rate of architecture efficiency improvement per year</label>
+        <input type="number" id="architecture_efficiency" value="{{ defaults['black_project_parameters.exogenous_trends.architecture_efficiency_improvement_per_year'] }}" step="0.01">
     </div>
 </div>

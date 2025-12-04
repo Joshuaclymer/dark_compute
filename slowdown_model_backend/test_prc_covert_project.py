@@ -62,7 +62,7 @@ def create_default_parameters() -> SlowdownModelParameters:
     params = SlowdownModelParameters()
 
     # Customize simulation settings
-    params.slowdown_simulation_settings.start_agreement_at_specific_year = 2030
+    params.slowdown_simulation_settings.agreement_start_year = 2030
     params.slowdown_simulation_settings.num_years_to_simulate = 10.0
     params.slowdown_simulation_settings.time_step_years = 0.1
     params.slowdown_simulation_settings.num_simulations = 1
@@ -242,7 +242,7 @@ def run_test():
     # Create parameters
     print("\n--- Creating Model Parameters ---")
     params = create_default_parameters()
-    print(f"Agreement start year: {params.slowdown_simulation_settings.start_agreement_at_specific_year}")
+    print(f"Agreement start year: {params.slowdown_simulation_settings.agreement_start_year}")
     print(f"Present year: {params.slowdown_simulation_settings.present_year}")
     print(f"End year: {params.slowdown_simulation_settings.end_year}")
     print(f"Time step: {params.slowdown_simulation_settings.time_step_years} years")
@@ -252,7 +252,7 @@ def run_test():
     model = SlowdownModel(params)
 
     # Run a single median simulation for deterministic results
-    covert_projects, detectors = model.run_median_simulation()
+    covert_projects, negotiators = model.run_median_simulation()
 
     # Get the PRC covert project
     prc_project = covert_projects.get("prc_covert_project")

@@ -95,12 +95,12 @@
                 </div>
 
                 <div class="breakdown-plots-row">
-                    <div class="breakdown-box-item">
+                    <div class="breakdown-box-item has-tooltip" data-tooltip-file="tooltips/h100_power.html">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
                             <div id="initialStockH100EnergyDisplay" class="breakdown-box">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                                     <div>--</div>
-                                    <div class="breakdown-label">Energy requirements of H100</div>
+                                    <div class="breakdown-label">Energy consumption of H100</div>
                                 </div>
                             </div>
                             <div class="operator-inline">
@@ -111,12 +111,28 @@
                     <div class="operator">
                         ×
                     </div>
-                    <div class="breakdown-box-item">
+                    <div class="breakdown-box-item has-tooltip" data-tooltip-file="tooltips/energy_efficiency_improvement.html">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
-                            <div id="initialStockEnergyEfficiencyDisplay" class="breakdown-box">
+                            <div id="initialStockSOTAEfficiencyDisplay" class="breakdown-box">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                                     <div>--</div>
-                                    <div class="breakdown-label">Energy efficiency of initial PRC stock relative to H100</div>
+                                    <div class="breakdown-label">State of the art energy efficiency relative to H100</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                ×
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operator">
+                        ×
+                    </div>
+                    <div class="breakdown-box-item has-tooltip" data-tooltip-file="tooltips/energy_efficiency.html">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="initialStockPRCEfficiencyDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">PRC energy efficiency relative to state of the art</div>
                                 </div>
                             </div>
                             <div class="operator-inline">

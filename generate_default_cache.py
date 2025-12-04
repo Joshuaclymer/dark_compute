@@ -7,7 +7,7 @@ Run this with: python3 generate_default_cache.py [num_simulations]
 import sys
 import json
 from black_project_backend.model import Model
-from black_project_backend.black_project_parameters import ModelParameters, SimulationSettings, CovertProjectProperties, CovertProjectParameters
+from black_project_backend.black_project_parameters import ModelParameters, SimulationSettings, BlackProjectProperties, BlackProjectParameters
 from black_project_backend.format_data_for_black_project_plots import extract_plot_data
 import os
 
@@ -30,8 +30,8 @@ def generate_cache(num_simulations=10):
     sim_settings = SimulationSettings(num_simulations=num_simulations)
     app_params = ModelParameters(
         simulation_settings=sim_settings,
-        covert_project_properties=CovertProjectProperties(),
-        covert_project_parameters=CovertProjectParameters()
+        black_project_properties=BlackProjectProperties(),
+        black_project_parameters=BlackProjectParameters()
     )
 
     # Create and run model

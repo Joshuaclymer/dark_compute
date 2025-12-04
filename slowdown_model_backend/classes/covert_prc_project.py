@@ -1,5 +1,5 @@
 from typing import Optional
-from black_project_backend.classes.covert_project import CovertPRCInfrastructure
+from black_project_backend.classes.covert_project import PRCBlackProject
 from black_project_backend.classes.covert_fab import CovertFab
 from black_project_backend.classes.black_project_stock import PRCBlackProjectStock, Compute
 from black_project_backend.black_project_parameters import CovertProjectProperties, CovertProjectParameters
@@ -7,12 +7,12 @@ from slowdown_model_backend.classes.ai_project import AIProject
 from progress_model_incremental import ProgressModelIncremental
 
 
-class CovertPRCAIProject(CovertPRCInfrastructure, AIProject):
+class CovertPRCAIProject(PRCBlackProject, AIProject):
     """
-    A covert PRC AI project that extends both CovertPRCInfrastructure and AIProject.
+    A covert PRC AI project that extends both PRCBlackProject and AIProject.
 
     This class combines:
-    - CovertPRCInfrastructure's covert compute infrastructure (fabs, datacenters, dark compute stock)
+    - PRCBlackProject's covert compute infrastructure (fabs, datacenters, dark compute stock)
     - AIProject's incremental progress model for tracking AI R&D speedup
     - Detection likelihood tracking
 
@@ -46,8 +46,8 @@ class CovertPRCAIProject(CovertPRCInfrastructure, AIProject):
     ):
         self.set_parameters_to_medians = set_parameters_to_medians
 
-        # Initialize CovertPRCInfrastructure (handles covert infrastructure)
-        CovertPRCInfrastructure.__init__(
+        # Initialize PRCBlackProject (handles covert infrastructure)
+        PRCBlackProject.__init__(
             self,
             name=name,
             covert_project_properties=covert_project_properties,

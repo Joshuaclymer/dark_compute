@@ -165,9 +165,14 @@
 
         function getParameters() {
             // Helper function to safely get element value with debugging
-            function getValue(id, type = 'float') {
+            function getValue(id, type = 'float', defaultValue = null) {
                 const el = document.getElementById(id);
                 if (!el) {
+                    // Return default value if element not found and default provided
+                    if (defaultValue !== null) {
+                        console.warn(`Element with id '${id}' not found, using default: ${defaultValue}`);
+                        return defaultValue;
+                    }
                     const msg = `Element with id '${id}' not found!`;
                     console.error(msg);
                     throw new Error(msg);
@@ -180,113 +185,114 @@
 
             return {
                 // Simulation settings (using dot notation for nested Parameters structure)
-                'simulation_settings.start_agreement_at_specific_year': getValue('agreement_year'),
+                'simulation_settings.agreement_start_year': getValue('agreement_year'),
                 'simulation_settings.num_years_to_simulate': getValue('num_years_to_simulate'),
                 'simulation_settings.time_step_years': getValue('increment'),
                 'simulation_settings.num_simulations': getValue('num_simulations', 'int'),
 
                 // Covert project properties
-                'covert_project_properties.run_a_covert_project': getValue('run_covert_project', 'checked'),
-                'covert_project_properties.proportion_of_initial_compute_stock_to_divert': getValue('proportion_of_initial_chip_stock_to_divert'),
-                'covert_project_properties.datacenter_construction_labor': getValue('datacenter_construction_labor', 'int'),
-                'covert_project_properties.years_before_agreement_year_prc_starts_building_covert_datacenters': getValue('years_before_agreement_year_prc_starts_building_covert_datacenters', 'int'),
-                'covert_project_properties.build_a_covert_fab': getValue('build_covert_fab', 'checked'),
-                'covert_project_properties.covert_fab_operating_labor': getValue('operating_labor', 'int'),
-                'covert_project_properties.covert_fab_construction_labor': getValue('construction_labor', 'int'),
-                'covert_project_properties.covert_fab_process_node': getValue('process_node', 'string'),
-                'covert_project_properties.covert_fab_proportion_of_prc_lithography_scanners_devoted': getValue('scanner_proportion'),
+                'black_project_properties.run_a_black_project': getValue('run_black_project', 'checked', true),
+                'black_project_properties.proportion_of_initial_compute_stock_to_divert': getValue('proportion_of_initial_chip_stock_to_divert'),
+                'black_project_properties.datacenter_construction_labor': getValue('datacenter_construction_labor', 'int'),
+                'black_project_properties.years_before_agreement_year_prc_starts_building_black_datacenters': getValue('years_before_agreement_year_prc_starts_building_black_datacenters', 'int'),
+                'black_project_properties.build_a_black_fab': getValue('build_covert_fab', 'checked', true),
+                'black_project_properties.black_fab_operating_labor': getValue('operating_labor', 'int'),
+                'black_project_properties.black_fab_construction_labor': getValue('construction_labor', 'int'),
+                'black_project_properties.black_fab_process_node': getValue('process_node', 'string'),
+                'black_project_properties.black_fab_proportion_of_prc_lithography_scanners_devoted': getValue('scanner_proportion'),
+                'black_project_properties.researcher_headcount': getValue('researcher_headcount', 'int'),
 
                 // Covert project parameters - detection
-                'covert_project_parameters.p_project_exists': getValue('covert_project_parameters.p_project_exists'),
-                'covert_project_parameters.mean_detection_time_for_100_workers': getValue('mean_detection_time_100'),
-                'covert_project_parameters.mean_detection_time_for_1000_workers': getValue('mean_detection_time_1000'),
-                'covert_project_parameters.variance_of_detection_time_given_num_workers': getValue('variance_detection_time'),
+                'black_project_parameters.p_project_exists': getValue('black_project_parameters.p_project_exists'),
+                'black_project_parameters.detection_parameters.mean_detection_time_for_100_workers': getValue('mean_detection_time_100'),
+                'black_project_parameters.detection_parameters.mean_detection_time_for_1000_workers': getValue('mean_detection_time_1000'),
+                'black_project_parameters.detection_parameters.variance_of_detection_time_given_num_workers': getValue('variance_detection_time'),
 
-                // Initial PRC compute stock parameters
-                'covert_project_parameters.initial_compute_stock_parameters.total_prc_compute_stock_in_2025': getValue('total_prc_compute_stock_in_2025') * 1e6,
-                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p10': getValue('annual_growth_rate_of_prc_compute_stock_p10'),
-                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p50': getValue('annual_growth_rate_of_prc_compute_stock_p50'),
-                'covert_project_parameters.initial_compute_stock_parameters.annual_growth_rate_of_prc_compute_stock_p90': getValue('annual_growth_rate_of_prc_compute_stock_p90'),
-                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2026': getValue('proportion_of_prc_chip_stock_produced_domestically_2026'),
-                'covert_project_parameters.initial_compute_stock_parameters.proportion_of_prc_chip_stock_produced_domestically_2030': getValue('proportion_of_prc_chip_stock_produced_domestically_2030'),
-                'covert_project_parameters.initial_compute_stock_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock': getValue('us_intelligence_median_error_in_estimate_of_prc_compute_stock'),
-                'covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100': getValue('energy_efficiency_relative_to_h100'),
-                'covert_project_parameters.initial_compute_stock_parameters.h100_power_watts': getValue('h100_power_watts'),
+                // Exogenous trends parameters
+                'black_project_parameters.exogenous_trends.total_prc_compute_stock_in_2025': getValue('total_prc_compute_stock_in_2025') * 1e6,
+                'black_project_parameters.exogenous_trends.annual_growth_rate_of_prc_compute_stock_p10': getValue('annual_growth_rate_of_prc_compute_stock_p10'),
+                'black_project_parameters.exogenous_trends.annual_growth_rate_of_prc_compute_stock_p50': getValue('annual_growth_rate_of_prc_compute_stock_p50'),
+                'black_project_parameters.exogenous_trends.annual_growth_rate_of_prc_compute_stock_p90': getValue('annual_growth_rate_of_prc_compute_stock_p90'),
+                'black_project_parameters.exogenous_trends.proportion_of_prc_chip_stock_produced_domestically_2026': getValue('proportion_of_prc_chip_stock_produced_domestically_2026'),
+                'black_project_parameters.exogenous_trends.proportion_of_prc_chip_stock_produced_domestically_2030': getValue('proportion_of_prc_chip_stock_produced_domestically_2030'),
+                'black_project_parameters.detection_parameters.us_intelligence_median_error_in_estimate_of_prc_compute_stock': getValue('us_intelligence_median_error_in_estimate_of_prc_compute_stock'),
+                'black_project_parameters.exogenous_trends.energy_efficiency_of_prc_stock_relative_to_state_of_the_art': getValue('energy_efficiency_of_prc_stock_relative_to_state_of_the_art'),
+                'black_project_parameters.exogenous_trends.h100_power_watts': getValue('h100_power_watts'),
 
                 // Slowdown counterfactual parameters - not sent, backend uses default from paramaters.py
 
                 // Survival rate parameters
-                'covert_project_parameters.survival_rate_parameters.initial_hazard_rate_p50': getValue('initial_hazard_rate_p50'),
-                'covert_project_parameters.survival_rate_parameters.increase_of_hazard_rate_per_year_p50': getValue('increase_of_hazard_rate_per_year_p50'),
-                'covert_project_parameters.survival_rate_parameters.hazard_rate_p25_relative_to_p50': getValue('hazard_rate_p25_relative_to_p50'),
-                'covert_project_parameters.survival_rate_parameters.hazard_rate_p75_relative_to_p50': getValue('hazard_rate_p75_relative_to_p50'),
+                'black_project_parameters.survival_rate_parameters.initial_hazard_rate_p50': getValue('initial_hazard_rate_p50'),
+                'black_project_parameters.survival_rate_parameters.increase_of_hazard_rate_per_year_p50': getValue('increase_of_hazard_rate_per_year_p50'),
+                'black_project_parameters.survival_rate_parameters.hazard_rate_p25_relative_to_p50': getValue('hazard_rate_p25_relative_to_p50'),
+                'black_project_parameters.survival_rate_parameters.hazard_rate_p75_relative_to_p50': getValue('hazard_rate_p75_relative_to_p50'),
 
                 // Covert datacenter parameters
-                'covert_project_parameters.datacenter_model_parameters.max_proportion_of_PRC_energy_consumption': getValue('max_proportion_of_PRC_energy_consumption'),
-                'covert_project_parameters.datacenter_model_parameters.total_GW_of_PRC_energy_consumption': getValue('total_GW_of_PRC_energy_consumption'),
-                'covert_project_parameters.datacenter_model_parameters.MW_per_construction_worker_per_year': getValue('MW_per_construction_worker_per_year'),
-                'covert_project_parameters.datacenter_model_parameters.relative_sigma_mw_per_construction_worker_per_year': getValue('relative_sigma_mw_per_construction_worker_per_year'),
-                'covert_project_parameters.datacenter_model_parameters.operating_labor_per_MW': getValue('operating_labor_per_MW'),
-                'covert_project_parameters.datacenter_model_parameters.relative_sigma_operating_labor_per_MW': getValue('relative_sigma_operating_labor_per_MW'),
+                'black_project_parameters.datacenter_model_parameters.max_proportion_of_PRC_energy_consumption': getValue('max_proportion_of_PRC_energy_consumption'),
+                'black_project_parameters.datacenter_model_parameters.total_GW_of_PRC_energy_consumption': getValue('total_GW_of_PRC_energy_consumption'),
+                'black_project_parameters.datacenter_model_parameters.MW_per_construction_worker_per_year': getValue('MW_per_construction_worker_per_year'),
+                'black_project_parameters.datacenter_model_parameters.relative_sigma_mw_per_construction_worker_per_year': getValue('relative_sigma_mw_per_construction_worker_per_year'),
+                'black_project_parameters.datacenter_model_parameters.operating_labor_per_MW': getValue('operating_labor_per_MW'),
+                'black_project_parameters.datacenter_model_parameters.relative_sigma_operating_labor_per_MW': getValue('relative_sigma_operating_labor_per_MW'),
 
                 // Covert fab parameters - detection
-                'covert_project_parameters.covert_fab_parameters.median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock': getValue('proportion_diverted_sme'),
+                'black_project_parameters.detection_parameters.us_intelligence_median_error_in_estimate_of_prc_sme_stock': getValue('proportion_diverted_sme'),
 
                 // Covert fab parameters - production capacity
-                'covert_project_parameters.covert_fab_parameters.wafers_per_month_per_worker': getValue('wafers_per_month_per_worker'),
-                'covert_project_parameters.covert_fab_parameters.labor_productivity_relative_sigma': getValue('labor_productivity_sigma'),
-                'covert_project_parameters.covert_fab_parameters.wafers_per_month_per_lithography_scanner': getValue('wafers_per_month_per_scanner'),
-                'covert_project_parameters.covert_fab_parameters.scanner_productivity_relative_sigma': getValue('scanner_productivity_sigma'),
+                'black_project_parameters.black_fab_parameters.wafers_per_month_per_worker': getValue('wafers_per_month_per_worker'),
+                'black_project_parameters.black_fab_parameters.labor_productivity_relative_sigma': getValue('labor_productivity_sigma'),
+                'black_project_parameters.black_fab_parameters.wafers_per_month_per_lithography_scanner': getValue('wafers_per_month_per_scanner'),
+                'black_project_parameters.black_fab_parameters.scanner_productivity_relative_sigma': getValue('scanner_productivity_sigma'),
 
                 // Covert fab parameters - construction time
-                'covert_project_parameters.covert_fab_parameters.construction_time_for_5k_wafers_per_month': getValue('construction_time_5k'),
-                'covert_project_parameters.covert_fab_parameters.construction_time_for_100k_wafers_per_month': getValue('construction_time_100k'),
-                'covert_project_parameters.covert_fab_parameters.construction_time_relative_sigma': getValue('construction_time_sigma'),
-                'covert_project_parameters.covert_fab_parameters.construction_workers_per_1000_wafers_per_month': getValue('construction_workers_per_1000'),
+                'black_project_parameters.black_fab_parameters.construction_time_for_5k_wafers_per_month': getValue('construction_time_5k'),
+                'black_project_parameters.black_fab_parameters.construction_time_for_100k_wafers_per_month': getValue('construction_time_100k'),
+                'black_project_parameters.black_fab_parameters.construction_time_relative_sigma': getValue('construction_time_sigma'),
+                'black_project_parameters.black_fab_parameters.construction_workers_per_1000_wafers_per_month': getValue('construction_workers_per_1000'),
 
                 // Covert fab parameters - chip production
-                'covert_project_parameters.covert_fab_parameters.h100_sized_chips_per_wafer': getValue('chips_per_wafer'),
-                'covert_project_parameters.covert_fab_parameters.transistor_density_scaling_exponent': getValue('transistor_density_exponent'),
-                'covert_project_parameters.covert_fab_parameters.architecture_efficiency_improvement_per_year': getValue('architecture_efficiency'),
+                'black_project_parameters.black_fab_parameters.h100_sized_chips_per_wafer': getValue('chips_per_wafer'),
+                'black_project_parameters.black_fab_parameters.transistor_density_scaling_exponent': getValue('transistor_density_exponent'),
+                'black_project_parameters.exogenous_trends.architecture_efficiency_improvement_per_year': getValue('architecture_efficiency'),
 
                 // Covert fab parameters - energy efficiency scaling
-                'covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended': getValue('watts_per_tpp_exponent_before_dennard'),
-                'covert_project_parameters.covert_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended': getValue('watts_per_tpp_exponent_after_dennard'),
-                'covert_project_parameters.covert_fab_parameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2': getValue('transistor_density_at_dennard_end'),
+                'black_project_parameters.black_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_before_dennard_scaling_ended': getValue('watts_per_tpp_exponent_before_dennard'),
+                'black_project_parameters.black_fab_parameters.watts_per_tpp_vs_transistor_density_exponent_after_dennard_scaling_ended': getValue('watts_per_tpp_exponent_after_dennard'),
+                'black_project_parameters.black_fab_parameters.transistor_density_at_end_of_dennard_scaling_m_per_mm2': getValue('transistor_density_at_dennard_end'),
 
                 // Covert fab parameters - PRC scanner production
-                'covert_project_parameters.covert_fab_parameters.prc_lithography_scanners_produced_in_first_year': getValue('prc_scanners_first_year'),
-                'covert_project_parameters.covert_fab_parameters.prc_additional_lithography_scanners_produced_per_year': getValue('prc_scanners_per_year'),
-                'covert_project_parameters.covert_fab_parameters.prc_scanner_production_relative_sigma': getValue('prc_scanner_production_sigma'),
+                'black_project_parameters.black_fab_parameters.prc_lithography_scanners_produced_in_first_year': getValue('prc_scanners_first_year'),
+                'black_project_parameters.black_fab_parameters.prc_additional_lithography_scanners_produced_per_year': getValue('prc_scanners_per_year'),
+                'black_project_parameters.black_fab_parameters.prc_scanner_production_relative_sigma': getValue('prc_scanner_production_sigma'),
 
                 // Covert fab parameters - localization probabilities
-                'covert_project_parameters.covert_fab_parameters.localization_130nm_2025': getValue('localization_130nm_2025'),
-                'covert_project_parameters.covert_fab_parameters.localization_130nm_2031': getValue('localization_130nm_2031'),
-                'covert_project_parameters.covert_fab_parameters.localization_28nm_2025': getValue('localization_28nm_2025'),
-                'covert_project_parameters.covert_fab_parameters.localization_28nm_2031': getValue('localization_28nm_2031'),
-                'covert_project_parameters.covert_fab_parameters.localization_14nm_2025': getValue('localization_14nm_2025'),
-                'covert_project_parameters.covert_fab_parameters.localization_14nm_2031': getValue('localization_14nm_2031'),
-                'covert_project_parameters.covert_fab_parameters.localization_7nm_2025': getValue('localization_7nm_2025'),
-                'covert_project_parameters.covert_fab_parameters.localization_7nm_2031': getValue('localization_7nm_2031')
+                'black_project_parameters.black_fab_parameters.localization_130nm_2025': getValue('localization_130nm_2025'),
+                'black_project_parameters.black_fab_parameters.localization_130nm_2031': getValue('localization_130nm_2031'),
+                'black_project_parameters.black_fab_parameters.localization_28nm_2025': getValue('localization_28nm_2025'),
+                'black_project_parameters.black_fab_parameters.localization_28nm_2031': getValue('localization_28nm_2031'),
+                'black_project_parameters.black_fab_parameters.localization_14nm_2025': getValue('localization_14nm_2025'),
+                'black_project_parameters.black_fab_parameters.localization_14nm_2031': getValue('localization_14nm_2031'),
+                'black_project_parameters.black_fab_parameters.localization_7nm_2025': getValue('localization_7nm_2025'),
+                'black_project_parameters.black_fab_parameters.localization_7nm_2031': getValue('localization_7nm_2031')
             };
         }
 
         function plotCovertFabProductionBreakdown(data) {
             // Plot compute breakdown
-            if (data.covert_fab && data.covert_fab.is_operational) {
-                const years = data.covert_fab.years;
+            if (data.black_fab && data.black_fab.is_operational) {
+                const years = data.black_fab.years;
 
                 // Proportion Operational - time series showing proportion
                 plotProportionOperational('isOperationalPlot', {
-                    proportion: data.covert_fab.is_operational.proportion
+                    proportion: data.black_fab.is_operational.proportion
                 }, years, '#D4A574', 'Probability');
 
                 // Wafer Starts per Month - PDF
-                const waferStartsFinal = data.covert_fab.wafer_starts.individual.map(sim => sim[sim.length - 1]);
+                const waferStartsFinal = data.black_fab.wafer_starts.individual.map(sim => sim[sim.length - 1]);
                 plotPDF('waferStartsPlot', waferStartsFinal, '#9B72B0', 'Wafers/Month');
 
                 // H100-sized Chips per Wafer - Display as a box (constant value)
-                const chipsPerWaferValue = data.covert_fab.chips_per_wafer.individual[0][0]; // Same for all sims
+                const chipsPerWaferValue = data.black_fab.chips_per_wafer.individual[0][0]; // Same for all sims
                 document.getElementById('chipsPerWaferPlot').innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                         <div class="breakdown-box-inner">${chipsPerWaferValue.toFixed(0)}</div>
@@ -308,12 +314,12 @@
                 }
 
                 // Transistor density relative to H100 - Bar plot at final timestep
-                const transistorDensityFinal = data.covert_fab.transistor_density.individual.map(sim => sim[sim.length - 1]);
-                const processNodes = data.covert_fab.process_node_by_sim;
+                const transistorDensityFinal = data.black_fab.transistor_density.individual.map(sim => sim[sim.length - 1]);
+                const processNodes = data.black_fab.process_node_by_sim;
                 plotBarByProcessNode('computePerChipPlot', transistorDensityFinal, processNodes, '#E8A863');
 
                 // Architecture Efficiency - Display as a box (constant value at agreement year)
-                const archEffValue = data.covert_fab.architecture_efficiency_at_agreement;
+                const archEffValue = data.black_fab.architecture_efficiency_at_agreement;
                 document.getElementById('architectureEfficiencyDisplay').innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                         <div class="breakdown-box-inner">${archEffValue.toFixed(2)}</div>
@@ -335,11 +341,11 @@
                 }
 
                 // Total compute - time series over all timesteps
-                const totalComputeArray = data.covert_fab.is_operational.individual.map((opSim, simIdx) => {
+                const totalComputeArray = data.black_fab.is_operational.individual.map((opSim, simIdx) => {
                     return opSim.map((isOp, timeIdx) => {
-                        return (isOp * data.covert_fab.wafer_starts.individual[simIdx][timeIdx] *
-                                data.covert_fab.architecture_efficiency.individual[simIdx][timeIdx] *
-                                data.covert_fab.compute_per_wafer_2022_arch.individual[simIdx][timeIdx]);
+                        return (isOp * data.black_fab.wafer_starts.individual[simIdx][timeIdx] *
+                                data.black_fab.architecture_efficiency.individual[simIdx][timeIdx] *
+                                data.black_fab.compute_per_wafer_2022_arch.individual[simIdx][timeIdx]);
                     });
                 });
 
@@ -392,8 +398,8 @@
                 const EXPONENT_AFTER_DENNARD = -0.909355;
 
                 // Use curve data from backend (calculated by Python)
-                const densityRangeRelative = data.covert_fab.watts_per_tpp_curve.density_relative;
-                const wattsPerTppCurve = data.covert_fab.watts_per_tpp_curve.watts_per_tpp_relative;
+                const densityRangeRelative = data.black_fab.watts_per_tpp_curve.density_relative;
+                const wattsPerTppCurve = data.black_fab.watts_per_tpp_curve.watts_per_tpp_relative;
                 const dennardDataX = 1.98 / 98.28;
 
                 const xMin = 0.001;  // From your range
@@ -420,7 +426,7 @@
                     },
                     {
                         x: transistorDensityFinal,
-                        y: data.covert_fab.watts_per_tpp.individual.map(sim => sim[sim.length - 1]),
+                        y: data.black_fab.watts_per_tpp.individual.map(sim => sim[sim.length - 1]),
                         mode: 'markers',
                         type: 'scatter',
                         marker: {
@@ -511,7 +517,7 @@
                 // 5. Calculate and plot energy requirements per month (GW/month)
                 // Energy = H100e_per_month × watts_per_TPP_relative × H100_energy
                 // Note: transistor_density is already factored into H100e calculation, don't multiply again!
-                const wattsPerTppBySimAndTime = data.covert_fab.watts_per_tpp.individual;
+                const wattsPerTppBySimAndTime = data.black_fab.watts_per_tpp.individual;
 
                 const energyPerMonthArray = totalComputeArray.map((simArray, simIdx) => {
                     return simArray.map((h100ePerMonth, timeIdx) => {
@@ -556,7 +562,7 @@
                 const years = data.black_project_model.years;
 
                 // Get prior probability from parameters and calculate prior odds
-                const priorProb = parseFloat(document.getElementById('covert_project_parameters.p_project_exists').value);
+                const priorProb = parseFloat(document.getElementById('black_project_parameters.p_project_exists').value);
                 const priorOddsProject = priorProb / (1 - priorProb);
 
                 // Display prior odds
@@ -584,7 +590,7 @@
                 // This includes lrPrcAccountingPlot, lrSmeInventoryPlot, and lrReportedAssetsPlot
 
                 // 3. LR from other intelligence sources (same as lrOtherPlot)
-                const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
+                const lrOtherArray = data.black_fab.lr_other.individual.map(sim => sim.map(v => v));
                 const lrOtherP25 = years.map((_, i) => {
                     const values = lrOtherArray.map(sim => sim[i]);
                     return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
@@ -594,10 +600,10 @@
                     return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
                 });
                 plotMedianWithPercentiles('lrOtherIntelPlot', {
-                    median: data.covert_fab.lr_other.median,
+                    median: data.black_fab.lr_other.median,
                     p25: lrOtherP25,
                     p75: lrOtherP75,
-                    individual: data.covert_fab.lr_other.individual
+                    individual: data.black_fab.lr_other.individual
                 }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
 
                 // 4. Posterior probability of covert project
@@ -744,6 +750,7 @@
                 safeCall(() => plotDatacenterCapacityCcdf(data), 'plotDatacenterCapacityCcdf');
                 safeCall(() => updateDatacenterDashboard(data), 'updateDatacenterDashboard');
                 safeCall(() => populateDatacenterCapacityBreakdown(data), 'populateDatacenterCapacityBreakdown');
+                safeCall(() => populateUnconcealedDatacenterBreakdown(data), 'populateUnconcealedDatacenterBreakdown');
 
                 // Force resize after a brief delay to ensure plots fill containers
                 setTimeout(() => {
@@ -776,23 +783,23 @@
                 }, 100);
 
                 // Plot LR breakdown
-                if (data.covert_fab && data.covert_fab.lr_inventory) {
-                    const years = data.covert_fab.years;
+                if (data.black_fab && data.black_fab.lr_inventory) {
+                    const years = data.black_fab.years;
 
                     // LR Inventory - PDF of values across simulations at final timestep - REMOVED FROM UI
-                    // const lrInventoryFinal = data.covert_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
+                    // const lrInventoryFinal = data.black_fab.lr_inventory.individual.map(sim => sim[sim.length - 1]);
                     // Use log scale x-axis but show actual LR values (not log values)
                     // plotPDF('lrInventoryPlot', lrInventoryFinal, '#5B8DBE', 'Likelihood Ratio', 10, true);
 
                     // LR Procurement - Categorical bar plot (1 or 10) - REMOVED FROM UI
-                    // const lrProcurementFinal = data.covert_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
+                    // const lrProcurementFinal = data.black_fab.lr_procurement.individual.map(sim => sim[sim.length - 1]);
                     // plotCategoricalFrequency('lrProcurementPlot', lrProcurementFinal, [
                     //     { value: 1, label: 'Likelihood Ratio = 1<br>(>90% localization)' },
                     //     { value: 10, label: 'Likelihood Ratio = 10<br>(≤90% localization)' }
                     // ], '#5B8DBE');
 
                     // LR Other - Median over time with percentiles - REMOVED FROM UI
-                    // const lrOtherArray = data.covert_fab.lr_other.individual.map(sim => sim.map(v => v));
+                    // const lrOtherArray = data.black_fab.lr_other.individual.map(sim => sim.map(v => v));
                     // const lrOtherP25 = years.map((_, i) => {
                     //     const values = lrOtherArray.map(sim => sim[i]);
                     //     return values.sort((a, b) => a - b)[Math.floor(values.length * 0.25)];
@@ -802,20 +809,20 @@
                     //     return values.sort((a, b) => a - b)[Math.floor(values.length * 0.75)];
                     // });
                     // plotMedianWithPercentiles('lrOtherPlot', {
-                    //     median: data.covert_fab.lr_other.median,
+                    //     median: data.black_fab.lr_other.median,
                     //     p25: lrOtherP25,
                     //     p75: lrOtherP75,
-                    //     individual: data.covert_fab.lr_other.individual
+                    //     individual: data.black_fab.lr_other.individual
                     // }, years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
 
                     // Plot combined LR (product of inventory, procurement, and other intelligence) - REMOVED FROM UI
                     // This is now plotted in black_project_model_section.js as posteriorProbProjectPlot
                     // plotMedianWithPercentiles('posteriorProbPlot', {
-                    //     median: data.covert_fab.lr_combined.median,
-                    //     p25: data.covert_fab.lr_combined.p25,
-                    //     p75: data.covert_fab.lr_combined.p75,
-                    //     individual: data.covert_fab.lr_combined.individual
-                    // }, data.covert_fab.years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
+                    //     median: data.black_fab.lr_combined.median,
+                    //     p25: data.black_fab.lr_combined.p25,
+                    //     p75: data.black_fab.lr_combined.p75,
+                    //     individual: data.black_fab.lr_combined.individual
+                    // }, data.black_fab.years, '#5B8DBE', 'Likelihood Ratio', null, true, true);
                 }
 
                 // Plot "Strength of Evidence of Covert Project" section
@@ -824,9 +831,11 @@
                 // Plot covert fab production breakdown
                 safeCall(() => plotCovertFabProductionBreakdown(data), 'plotCovertFabProductionBreakdown');
 
-                // Check if project is running
-                const runCovertProject = document.getElementById('run_covert_project').checked;
-                const buildCovertFab = document.getElementById('build_covert_fab').checked;
+                // Check if project is running (default to true if elements don't exist)
+                const runBlackProjectEl = document.getElementById('run_black_project');
+                const buildCovertFabEl = document.getElementById('build_covert_fab');
+                const runCovertProject = runBlackProjectEl ? runBlackProjectEl.checked : true;
+                const buildCovertFab = buildCovertFabEl ? buildCovertFabEl.checked : true;
                 const projectNotRunDiv = document.getElementById('projectNotRun');
                 const plotsContentDiv = document.getElementById('plotsContent');
 
@@ -892,6 +901,7 @@
                     safeCall(() => plotDatacenterCapacityCcdf(data), 'plotDatacenterCapacityCcdf');
                     safeCall(() => updateDatacenterDashboard(data), 'updateDatacenterDashboard');
                     safeCall(() => populateDatacenterCapacityBreakdown(data), 'populateDatacenterCapacityBreakdown');
+                    safeCall(() => populateUnconcealedDatacenterBreakdown(data), 'populateUnconcealedDatacenterBreakdown');
                     safeCall(() => plotStrengthOfEvidence(data), 'plotStrengthOfEvidence');
                     safeCall(() => plotCovertFabProductionBreakdown(data), 'plotCovertFabProductionBreakdown');
 
@@ -988,7 +998,7 @@
         const agreementYearDisplay = document.getElementById('agreementYearDisplay');
         if (agreementYearDisplay) {
             agreementYearDisplay.addEventListener('click', () => {
-                const inputField = document.getElementById('years_before_agreement_year_prc_starts_building_covert_datacenters');
+                const inputField = document.getElementById('years_before_agreement_year_prc_starts_building_black_datacenters');
                 if (inputField) {
                     inputField.focus();
                     inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1320,7 +1330,7 @@
             'operationalDarkComputePlot': null, // Output, not an input
 
             // Dark Compute Model Section - US Estimated Likelihood of PRC Covert Project
-            'dashboardPriorProject': 'covert_project_parameters.p_project_exists',
+            'dashboardPriorProject': 'black_project_parameters.p_project_exists',
             'lrPrcAccountingPlot': '#initialStockSection', // Individual component plots
             'lrSmeInventoryPlot': 'proportion_diverted_sme',
             'lrReportedAssetsPlot': null, // Combined output
@@ -1334,7 +1344,8 @@
 
             // Initial Stock Section - Energy Requirements Breakdown
             'initialStockH100EnergyDisplay': 'h100_power_watts',
-            'initialStockEnergyEfficiencyDisplay': 'energy_efficiency_relative_to_h100',
+            'initialStockSOTAEfficiencyDisplay': 'improvement_in_energy_efficiency_per_year',
+            'initialStockPRCEfficiencyDisplay': 'energy_efficiency_of_prc_stock_relative_to_state_of_the_art',
             'initialStockDarkComputePlot': null, // Output, not an input (same as darkComputeResultPlot)
             'initialStockEnergyRequirementsPlot': null, // Output, not an input
 
@@ -1346,8 +1357,12 @@
             'maxProportionEnergyDisplay': 'max_proportion_of_PRC_energy_consumption',
             'datacenterWorkersDisplay': 'datacenter_construction_labor',
             'mwPerWorkerDisplay': 'MW_per_construction_worker_per_year',
-            'agreementYearDisplay': 'years_before_agreement_year_prc_starts_building_covert_datacenters',
-            'datacenterCapacityBreakdownPlot': null // Output, not an input
+            'agreementYearDisplay': 'years_before_agreement_year_prc_starts_building_black_datacenters',
+            'datacenterCapacityBreakdownPlot': null, // Output, not an input
+
+            // Covert Datacenters Section - Unconcealed Capacity Breakdown
+            'totalPrcDatacenterCapacityNotConcealedDisplay': 'total_prc_compute_stock_in_2025',
+            'proportionUnconcealedDivertedDisplay': 'fraction_of_datacenter_capacity_not_built_for_concealment_diverted'
         };
 
         // Add clickable class and click handlers to plots with associated inputs
@@ -1362,9 +1377,12 @@
             'mwPerWorkerDisplay',
             'agreementYearDisplay',
             'initialStockH100EnergyDisplay',
-            'initialStockEnergyEfficiencyDisplay',
+            'initialStockSOTAEfficiencyDisplay',
+            'initialStockPRCEfficiencyDisplay',
             'totalPrcEnergyDisplay',
-            'maxProportionEnergyDisplay'
+            'maxProportionEnergyDisplay',
+            'totalPrcDatacenterCapacityNotConcealedDisplay',
+            'proportionUnconcealedDivertedDisplay'
         ];
 
         Object.entries(plotToInputMapping).forEach(([plotId, inputId]) => {

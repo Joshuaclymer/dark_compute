@@ -14,9 +14,9 @@ function plotDarkComputeRateSection(data) {
     if (data.black_project_model && data.black_project_model.years) {
         const years = data.black_project_model.years;
         // Use raw numbers with k/M formatting - includes ALL simulations (not just where fab is built)
-        const h100e_median = data.black_project_model.covert_fab_flow_all_sims.median;
-        const h100e_p25 = data.black_project_model.covert_fab_flow_all_sims.p25;
-        const h100e_p75 = data.black_project_model.covert_fab_flow_all_sims.p75;
+        const h100e_median = data.black_project_model.black_fab_flow_all_sims.median;
+        const h100e_p25 = data.black_project_model.black_fab_flow_all_sims.p25;
+        const h100e_p75 = data.black_project_model.black_fab_flow_all_sims.p75;
 
         // Create traces for the shaded region and median line
         const traces = [

@@ -784,8 +784,8 @@ function updateDarkComputeModelDashboard(data) {
 
 function updateCovertChipsProduced(data) {
     // Get the covert fab chip production (H100e) for simulations with fabs
-    const fabChipData = data.covert_fab?.individual_h100e_before_detection;
-    const fabBuiltMask = data.covert_fab?.fab_built;
+    const fabChipData = data.black_fab?.individual_h100e_before_detection;
+    const fabBuiltMask = data.black_fab?.fab_built;
     // Use fabBuiltMask length as the number of simulations (one entry per simulation)
     const numSimulations = fabBuiltMask?.length;
 

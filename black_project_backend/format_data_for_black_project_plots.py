@@ -10,70 +10,7 @@ import csv
 import os
 from typing import List, Tuple, Dict, Any
 from black_project_backend.classes.black_project_stock import H100_TPP_PER_CHIP, H100_WATTS_PER_TPP
-
-
-# =============================================================================
-# LARGEST COMPANY COMPUTE TRAJECTORY (loaded from AI Futures Project input_data.csv)
-# =============================================================================
-
-# Cache for the loaded compute trajectory
-_cached_compute_trajectory = None
-
-def _load_compute_trajectory():
-    """Load the compute trajectory from input_data.csv (AI Futures Project).
-
-    Returns a dict with:
-        - time: array of years
-        - experiment_compute: array of AI R&D compute values (H100-years)
-        - inference_compute: array of inference compute values (H100-years)
-    """
-    global _cached_compute_trajectory
-    if _cached_compute_trajectory is not None:
-        return _cached_compute_trajectory
-
-    # Path to input_data.csv in the ai-futures-calculator directory
-    csv_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        'ai-futures-calculator', 'input_data.csv'
-    )
-
-    time = []
-    experiment_compute = []
-    inference_compute = []
-
-    with open(csv_path, 'r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            time.append(float(row['time']))
-            experiment_compute.append(float(row['experiment_compute']))
-            inference_compute.append(float(row['inference_compute']))
-
-    _cached_compute_trajectory = {
-        'time': np.array(time),
-        'experiment_compute': np.array(experiment_compute),
-        'inference_compute': np.array(inference_compute)
-    }
-    return _cached_compute_trajectory
-
-
-def get_largest_company_ai_rd_compute(year: float) -> float:
-    """Get the largest company AI R&D compute (experiment_compute) for a given year.
-
-    Uses linear interpolation between data points in input_data.csv.
-    Returns experiment_compute in H100-years units.
-    """
-    trajectory = _load_compute_trajectory()
-    return float(np.interp(year, trajectory['time'], trajectory['experiment_compute']))
-
-
-def get_largest_company_compute_trajectory(years: List[float]) -> List[float]:
-    """Get the largest company AI R&D compute trajectory for a list of years.
-
-    Uses linear interpolation between data points in input_data.csv.
-    Returns experiment_compute values in H100-years units.
-    """
-    trajectory = _load_compute_trajectory()
-    return [float(np.interp(y, trajectory['time'], trajectory['experiment_compute'])) for y in years]
+from black_project_backend.classes.largest_ai_project import LargestAIProject
 
 
 # =============================================================================
@@ -190,11 +127,11 @@ def get_global_compute_production_between_years(start_year: float, end_year: flo
     return max(0.0, end_stock - start_stock)
 
 
-from black_project_backend.classes.covert_fab import (
+from black_project_backend.classes.black_fab import (
     estimate_architecture_efficiency_relative_to_h100,
     predict_watts_per_tpp_from_transistor_density,
     H100_TRANSISTOR_DENSITY_M_PER_MM2,
-    PRCCovertFab
+    PRCBlackFab
 )
 
 # Configure likelihood ratio thresholds for detection plots
@@ -209,9 +146,9 @@ LIKELIHOOD_RATIOS = [1, 2, 4]
 def filter_simulations_with_fab(simulation_results):
     """Filter simulations to only include those where a covert fab was built."""
     return [
-        (covert_projects, detectors)
-        for covert_projects, detectors in simulation_results
-        if covert_projects["prc_covert_project"].covert_fab is not None
+        black_projects
+        for black_projects in simulation_results
+        if black_projects["prc_black_project"].black_fab is not None
     ]
 
 
@@ -225,10 +162,9 @@ def get_years_from_simulation(simulation_results):
     if not simulation_results:
         return []
 
-    covert_projects, detectors = simulation_results[0]
-    us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-    return sorted(us_beliefs.p_project_exists_update_history.keys()
-                 if us_beliefs.p_project_exists_update_history else [])
+    black_projects = simulation_results[0]
+    # Get years from the black project's years list
+    return black_projects["prc_black_project"].years
 
 
 def calculate_percentiles(data_array: np.ndarray, axis: int = 0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -249,42 +185,16 @@ def convert_to_thousands(value):
 # TIME SERIES DATA EXTRACTION
 # =============================================================================
 
-def extract_project_beliefs_over_time(simulation_results, years):
-    """Extract US beliefs about covert project existence over time."""
-    project_beliefs_by_sim = []
-
-    for covert_projects, detectors in simulation_results:
-        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-
-        # Extract the final belief for each year from update history
-        beliefs_over_time = []
-        for year in years:
-            if year in us_beliefs.p_project_exists_update_history:
-                # Get the last update for this year
-                updates = us_beliefs.p_project_exists_update_history[year]
-                if updates:
-                    # Use the final posterior probability for this year
-                    beliefs_over_time.append(updates[-1]['current_p_project_exists'])
-                else:
-                    beliefs_over_time.append(us_beliefs.p_project_exists)
-            else:
-                beliefs_over_time.append(us_beliefs.p_project_exists)
-
-        project_beliefs_by_sim.append(beliefs_over_time)
-
-    return project_beliefs_by_sim
-
-
 def extract_fab_production_over_time(simulation_results, years):
     """Extract H100e production from covert fab over time for each simulation."""
     h100e_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
-        covert_fab = covert_projects["prc_covert_project"].covert_fab
+    for black_projects in simulation_results:
+        black_fab = black_projects["prc_black_project"].black_fab
 
-        if covert_fab is not None:
+        if black_fab is not None:
             # Get cumulative production for all recorded years
-            cumulative_by_year = covert_fab.get_cumulative_compute_production_over_time()
+            cumulative_by_year = black_fab.get_cumulative_compute_production_over_time()
             # Map to the requested years array
             h100e_counts = [cumulative_by_year.get(year, 0.0) for year in years]
         else:
@@ -299,8 +209,8 @@ def extract_survival_rates_over_time(simulation_results, years):
     """Extract chip survival rates over time for each simulation."""
     survival_rate_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
-        black_project_stock = covert_projects["prc_covert_project"].black_project_stock
+    for black_projects in simulation_results:
+        black_project_stock = black_projects["prc_black_project"].black_project_stock
         survival_rates = []
 
         for year in years:
@@ -321,8 +231,8 @@ def extract_black_project_over_time(simulation_results, years):
     """Extract dark compute (surviving, not limited by capacity) over time."""
     black_project_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
-        black_project_stock = covert_projects["prc_covert_project"].black_project_stock
+    for black_projects in simulation_results:
+        black_project_stock = black_projects["prc_black_project"].black_project_stock
         black_project = []
 
         for year in years:
@@ -338,11 +248,11 @@ def extract_operational_black_project_over_time(simulation_results, years):
     """Extract operational dark compute (limited by datacenter capacity) over time."""
     operational_black_project_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
+    for black_projects in simulation_results:
         operational_black_project = []
 
         for year in years:
-            operational_compute = covert_projects["prc_covert_project"].operational_black_project(year)
+            operational_compute = black_projects["prc_black_project"].operational_black_project(year)
             operational_black_project.append(operational_compute.total_h100e_tpp())
 
         operational_black_project_by_sim.append(operational_black_project)
@@ -351,16 +261,16 @@ def extract_operational_black_project_over_time(simulation_results, years):
 
 
 def extract_datacenter_capacity_over_time(simulation_results, years, agreement_year):
-    """Extract datacenter capacity in GW over time."""
+    """Extract total datacenter capacity in GW over time (concealed + unconcealed)."""
     datacenter_capacity_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
-        covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+    for black_projects in simulation_results:
+        black_datacenters = black_projects["prc_black_project"].black_datacenters
         datacenter_capacity_gw = []
 
         for year in years:
             relative_year = year - agreement_year
-            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
             datacenter_capacity_gw.append(capacity_gw)
 
         datacenter_capacity_by_sim.append(datacenter_capacity_gw)
@@ -372,13 +282,13 @@ def extract_datacenter_lr_over_time(simulation_results, years, agreement_year):
     """Extract likelihood ratio from datacenters over time."""
     lr_datacenters_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
-        covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+    for black_projects in simulation_results:
+        black_datacenters = black_projects["prc_black_project"].black_datacenters
         lr_datacenters_over_time = []
 
         for year in years:
             relative_year = year - agreement_year
-            lr_datacenters = covert_datacenters.cumulative_lr_from_concealed_datacenters(relative_year)
+            lr_datacenters = black_datacenters.cumulative_lr_from_concealed_datacenters(relative_year)
             lr_datacenters_over_time.append(lr_datacenters)
 
         lr_datacenters_by_sim.append(lr_datacenters_over_time)
@@ -390,7 +300,7 @@ def extract_h100_years_over_time(simulation_results, years, agreement_year):
     """Extract cumulative H100-years over time for each simulation."""
     h100_years_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
+    for black_projects in simulation_results:
         h100_years_over_time = []
         cumulative_h100_years = 0.0
 
@@ -399,7 +309,7 @@ def extract_h100_years_over_time(simulation_results, years, agreement_year):
                 prev_year = years[year_idx - 1]
                 time_increment = year - prev_year
 
-                operational_compute = covert_projects["prc_covert_project"].operational_black_project(prev_year)
+                operational_compute = black_projects["prc_black_project"].operational_black_project(prev_year)
                 h100e_at_prev_year = operational_compute.total_h100e_tpp()
 
                 cumulative_h100_years += h100e_at_prev_year * time_increment
@@ -415,11 +325,11 @@ def extract_cumulative_lr_over_time(simulation_results, years):
     """Extract cumulative likelihood ratio over time for each simulation."""
     cumulative_lr_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
+    for black_projects in simulation_results:
         cumulative_lr_over_time = []
 
         for year in years:
-            project_lr = covert_projects["prc_covert_project"].get_cumulative_evidence_of_covert_project(year)
+            project_lr = black_projects["prc_black_project"].get_cumulative_evidence_of_black_project(year)
             cumulative_lr_over_time.append(project_lr)
 
         cumulative_lr_by_sim.append(cumulative_lr_over_time)
@@ -433,20 +343,20 @@ def extract_project_lr_components_over_time(simulation_results, years):
     lr_sme_by_sim = []
     lr_other_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
+    for black_projects in simulation_results:
         # Initial stock LR is constant over time
-        lr_initial = covert_projects["prc_covert_project"].get_lr_initial()
+        lr_initial = black_projects["prc_black_project"].get_lr_initial()
         lr_initial_over_time = [lr_initial for _ in years]
 
         # SME LR (from fab procurement/inventory) is constant over time
-        lr_sme = covert_projects["prc_covert_project"].get_lr_sme()
+        lr_sme = black_projects["prc_black_project"].get_lr_sme()
         lr_sme_over_time = [lr_sme for _ in years]
 
         # Other intelligence (workers, etc.) varies over time
         lr_other_over_time = []
         for year in years:
             lr_other_over_time.append(
-                covert_projects["prc_covert_project"].get_lr_other(year)
+                black_projects["prc_black_project"].get_lr_other(year)
             )
 
         lr_initial_by_sim.append(lr_initial_over_time)
@@ -461,16 +371,16 @@ def extract_detailed_lr_components_over_time(simulation_results, years):
     lr_prc_accounting_by_sim = []
     lr_sme_inventory_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
-        project = covert_projects["prc_covert_project"]
+    for black_projects in simulation_results:
+        project = black_projects["prc_black_project"]
 
         # Get initial stock LR components (constant over time)
         lr_prc = project.black_project_stock.lr_from_prc_compute_accounting
         lr_prc_accounting_by_sim.append([lr_prc for _ in years])
 
         # Get SME LR components (constant over time)
-        if project.covert_fab is not None:
-            lr_inventory = project.covert_fab.lr_inventory
+        if project.black_fab is not None:
+            lr_inventory = project.black_fab.lr_inventory
         else:
             lr_inventory = 1.0
         lr_sme_inventory_by_sim.append([lr_inventory for _ in years])
@@ -482,13 +392,13 @@ def extract_fab_combined_lr_over_time(simulation_results, years):
     """Extract cumulative combined likelihood ratio from fab's cumulative_detection_likelihood_ratio method."""
     combined_lr_by_sim = []
 
-    for covert_projects, _ in simulation_results:
-        covert_fab = covert_projects["prc_covert_project"].covert_fab
+    for black_projects in simulation_results:
+        black_fab = black_projects["prc_black_project"].black_fab
 
-        if covert_fab is not None:
+        if black_fab is not None:
             # Call the fab's cumulative_detection_likelihood_ratio method for each year
             combined_lr_over_time = [
-                covert_fab.cumulative_detection_likelihood_ratio(year)
+                black_fab.cumulative_detection_likelihood_ratio(year)
                 for year in years
             ]
         else:
@@ -510,20 +420,20 @@ def extract_fab_lr_components_over_time(simulation_results, years):
     lr_procurement_by_sim = []
     lr_other_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
+    for black_projects in simulation_results:
         lr_inventory_over_time = []
         lr_procurement_over_time = []
         lr_other_over_time = []
 
         for year in years:
             lr_inventory_over_time.append(
-                covert_projects["prc_covert_project"].get_fab_lr_inventory(year)
+                black_projects["prc_black_project"].get_fab_lr_inventory(year)
             )
             lr_procurement_over_time.append(
-                covert_projects["prc_covert_project"].get_fab_lr_procurement(year)
+                black_projects["prc_black_project"].get_fab_lr_procurement(year)
             )
             lr_other_over_time.append(
-                covert_projects["prc_covert_project"].get_fab_lr_other(year)
+                black_projects["prc_black_project"].get_fab_lr_other(year)
             )
 
         lr_inventory_by_sim.append(lr_inventory_over_time)
@@ -562,12 +472,12 @@ def extract_fab_operational_status_over_time(simulation_results, years):
     """
     is_operational_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
+    for black_projects in simulation_results:
         is_operational = []
 
         for year in years:
             is_operational.append(
-                covert_projects["prc_covert_project"].get_fab_is_operational(year)
+                black_projects["prc_black_project"].get_fab_is_operational(year)
             )
 
         is_operational_by_sim.append(is_operational)
@@ -584,34 +494,34 @@ def extract_fab_production_parameters(simulation_results, years, agreement_year)
     transistor_density_by_sim = []
     process_node_by_sim = []
 
-    for covert_projects, detectors in simulation_results:
+    for black_projects in simulation_results:
         wafer_starts = []
         architecture_efficiency = []
         compute_per_wafer_2022_arch = []
 
         for year in years:
             wafer_starts.append(
-                covert_projects["prc_covert_project"].get_fab_wafer_starts_per_month()
+                black_projects["prc_black_project"].get_fab_wafer_starts_per_month()
             )
 
             arch_efficiency = estimate_architecture_efficiency_relative_to_h100(year, agreement_year)
             architecture_efficiency.append(arch_efficiency)
 
-            chips_per_wafer = covert_projects["prc_covert_project"].get_fab_h100_sized_chips_per_wafer()
-            transistor_density = covert_projects["prc_covert_project"].get_fab_transistor_density_relative_to_h100()
+            chips_per_wafer = black_projects["prc_black_project"].get_fab_h100_sized_chips_per_wafer()
+            transistor_density = black_projects["prc_black_project"].get_fab_transistor_density_relative_to_h100()
             compute_per_wafer_2022_arch.append(chips_per_wafer * transistor_density)
 
         wafer_starts_by_sim.append(wafer_starts)
         chips_per_wafer_by_sim.append(
-            [covert_projects["prc_covert_project"].get_fab_h100_sized_chips_per_wafer()] * len(years)
+            [black_projects["prc_black_project"].get_fab_h100_sized_chips_per_wafer()] * len(years)
         )
         architecture_efficiency_by_sim.append(architecture_efficiency)
         compute_per_wafer_2022_arch_by_sim.append(compute_per_wafer_2022_arch)
         transistor_density_by_sim.append(
-            [covert_projects["prc_covert_project"].get_fab_transistor_density_relative_to_h100()] * len(years)
+            [black_projects["prc_black_project"].get_fab_transistor_density_relative_to_h100()] * len(years)
         )
         process_node_by_sim.append(
-            covert_projects["prc_covert_project"].get_fab_process_node()
+            black_projects["prc_black_project"].get_fab_process_node()
         )
 
     return {
@@ -656,12 +566,12 @@ def extract_energy_breakdown_by_source(simulation_results, years):
 
     # Collect fab energy efficiency from each simulation that has a covert fab
     fab_efficiency_list = []
-    for sim_idx, (covert_projects, _) in enumerate(simulation_results):
-        covert_fab = covert_projects["prc_covert_project"].covert_fab
-        if covert_fab and covert_fab.black_project_monthly_production_rate_history:
+    for sim_idx, black_projects in enumerate(simulation_results):
+        black_fab = black_projects["prc_black_project"].black_fab
+        if black_fab and black_fab.black_project_monthly_production_rate_history:
             # Get any year from the production history (fab produces one type per simulation)
-            sample_year = list(covert_fab.black_project_monthly_production_rate_history.keys())[0]
-            compute_obj = covert_fab.black_project_monthly_production_rate_history[sample_year]
+            sample_year = list(black_fab.black_project_monthly_production_rate_history.keys())[0]
+            compute_obj = black_fab.black_project_monthly_production_rate_history[sample_year]
 
             # Get the single chip from the Compute object
             if compute_obj.chip_counts:
@@ -671,8 +581,8 @@ def extract_energy_breakdown_by_source(simulation_results, years):
                 fab_efficiency = (chip.h100e_tpp_per_chip * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP) / chip.W_of_energy_consumed
                 fab_efficiency_list.append(fab_efficiency)
 
-    for sim_idx, (covert_projects, _) in enumerate(simulation_results):
-        black_project_stock = covert_projects["prc_covert_project"].black_project_stock
+    for sim_idx, black_projects in enumerate(simulation_results):
+        black_project_stock = black_projects["prc_black_project"].black_project_stock
 
         for year_idx, year in enumerate(years):
             initial_energy, fab_energy, initial_h100e, fab_h100e = \
@@ -749,13 +659,13 @@ def extract_prc_compute_over_time(years, initial_compute_parameters):
     return prc_compute_by_year_by_sample
 
 
-def extract_largest_company_compute_over_time(years):
-    """Extract largest company AI R&D compute over time from AI Futures Project data.
+def extract_largest_company_compute_over_time(years, largest_ai_project: LargestAIProject):
+    """Extract largest AI project compute over time.
 
-    Returns experiment_compute values from input_data.csv, which represents
-    the largest company AI R&D compute trajectory in H100-years units.
+    Returns compute stock values in H100-equivalent units, calculated using
+    exponential growth from the 2025 baseline.
     """
-    return get_largest_company_compute_trajectory(years)
+    return largest_ai_project.get_compute_trajectory(years)
 
 
 def interpolate_domestic_proportion(year, initial_compute_parameters):
@@ -785,8 +695,8 @@ def extract_initial_stock_data(simulation_results, likelihood_ratios, diversion_
     initial_compute_samples = []
     lr_prc_accounting_samples = []
 
-    for covert_projects, detectors in simulation_results:
-        black_project_stock = covert_projects["prc_covert_project"].black_project_stock
+    for black_projects in simulation_results:
+        black_project_stock = black_projects["prc_black_project"].black_project_stock
 
         # Extract initial stock values
         initial_prc_stock_samples.append(black_project_stock.initial_prc_stock)
@@ -815,7 +725,7 @@ def extract_initial_stock_data(simulation_results, likelihood_ratios, diversion_
 # DETECTION ANALYSIS
 # =============================================================================
 
-def calculate_fab_detection_year(covert_fab, years, threshold):
+def calculate_fab_detection_year(black_fab, years, threshold):
     """Calculate the year when fab is detected based on likelihood ratio threshold.
 
     Uses the fab's cumulative_detection_likelihood_ratio method which combines:
@@ -825,12 +735,12 @@ def calculate_fab_detection_year(covert_fab, years, threshold):
 
     Detection occurs the first year the cumulative LR exceeds the threshold.
     """
-    if covert_fab is None:
+    if black_fab is None:
         return None
 
     for year in years:
         # Get the fab's cumulative LR (inventory × procurement × other) for this year
-        year_lr = covert_fab.cumulative_detection_likelihood_ratio(year)
+        year_lr = black_fab.cumulative_detection_likelihood_ratio(year)
 
         # Check if LR exceeds threshold
         if year_lr >= threshold:
@@ -847,21 +757,19 @@ def extract_fab_compute_at_detection(simulation_results, years, threshold):
     compute_at_detection = []
     operational_time_at_detection = []
 
-    for covert_projects, detectors in simulation_results:
-        covert_fab = covert_projects["prc_covert_project"].covert_fab
+    for black_projects in simulation_results:
+        black_fab = black_projects["prc_black_project"].black_fab
 
-        if covert_fab is None:
+        if black_fab is None:
             continue
 
         # Get cumulative compute production from the fab over time
-        h100e_over_time = covert_fab.get_cumulative_compute_production_over_time()
+        h100e_over_time = black_fab.get_cumulative_compute_production_over_time()
 
         # Use simulation years to calculate detection
-        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
-                          if us_beliefs.p_project_exists_update_history else [])
+        sim_years = black_projects["prc_black_project"].years
 
-        detection_year = calculate_fab_detection_year(covert_fab, sim_years, threshold)
+        detection_year = calculate_fab_detection_year(black_fab, sim_years, threshold)
 
         if detection_year is not None:
             # Get compute at detection year
@@ -875,8 +783,8 @@ def extract_fab_compute_at_detection(simulation_results, years, threshold):
         compute_at_detection.append(h100e_at_detection)
 
         # Calculate operational time
-        construction_start = covert_fab.construction_start_year
-        construction_duration = covert_fab.construction_duration
+        construction_start = black_fab.construction_start_year
+        construction_duration = black_fab.construction_duration
         operational_start = construction_start + construction_duration
         operational_time = max(0.0, detection_year - operational_start)
         operational_time_at_detection.append(operational_time)
@@ -1035,21 +943,19 @@ def extract_individual_fab_detection_data(simulation_results, years, threshold, 
     individual_process_nodes = []
     individual_energy = []
 
-    for covert_projects, detectors in simulation_results:
-        covert_fab = covert_projects["prc_covert_project"].covert_fab
+    for black_projects in simulation_results:
+        black_fab = black_projects["prc_black_project"].black_fab
 
-        if covert_fab is None:
+        if black_fab is None:
             continue
 
         # Get cumulative compute production from the fab over time
-        h100e_over_time = covert_fab.get_cumulative_compute_production_over_time()
+        h100e_over_time = black_fab.get_cumulative_compute_production_over_time()
 
         # Use simulation years to calculate detection
-        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
-                          if us_beliefs.p_project_exists_update_history else [])
+        sim_years = black_projects["prc_black_project"].years
 
-        detection_year = calculate_fab_detection_year(covert_fab, sim_years, threshold)
+        detection_year = calculate_fab_detection_year(black_fab, sim_years, threshold)
 
         if detection_year is not None:
             # Get compute at detection year
@@ -1060,32 +966,32 @@ def extract_individual_fab_detection_data(simulation_results, years, threshold, 
             h100e_at_detection = h100e_over_time.get(final_year, 0.0)
             detection_year = final_year
 
-        construction_start = covert_fab.construction_start_year
-        construction_duration = covert_fab.construction_duration
+        construction_start = black_fab.construction_start_year
+        construction_duration = black_fab.construction_duration
         operational_start = construction_start + construction_duration
         operational_time = max(0.0, detection_year - operational_start)
 
         individual_h100e.append(h100e_at_detection)
         individual_time.append(operational_time)
-        individual_process_nodes.append(covert_fab.process_node.value)
+        individual_process_nodes.append(black_fab.process_node.value)
 
         energy_gw = (h100e_at_detection * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
-                    app_params.covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100 / 1e9)
+                    app_params.black_project_parameters.exogenous_trends.energy_efficiency_of_prc_stock_relative_to_state_of_the_art / 1e9)
         individual_energy.append(energy_gw)
 
     return individual_h100e, individual_time, individual_process_nodes, individual_energy
 
 
-def calculate_project_detection_year(covert_project, years, likelihood_ratio):
+def calculate_project_detection_year(black_project, years, likelihood_ratio):
     """Calculate detection year for covert project based on likelihood ratio threshold.
 
-    Uses get_cumulative_evidence_of_covert_project method from CovertPRCInfrastructure class.
+    Uses get_cumulative_evidence_of_black_project method from PRCBlackProject class.
     """
     if not years:
         return None
 
     for year in years:
-        cumulative_lr = covert_project.get_cumulative_evidence_of_covert_project(year)
+        cumulative_lr = black_project.get_cumulative_evidence_of_black_project(year)
 
         if cumulative_lr >= likelihood_ratio:
             return year
@@ -1093,15 +999,15 @@ def calculate_project_detection_year(covert_project, years, likelihood_ratio):
     return None
 
 
-def calculate_h100_years_until_detection(covert_project, years, detection_year):
+def calculate_h100_years_until_detection(black_project, years, detection_year):
     """Calculate cumulative H100-years until detection (or end of simulation).
 
-    Uses h100_years_to_date method from CovertPRCInfrastructure class.
+    Uses h100_years_to_date method from PRCBlackProject class.
     """
     end_year = detection_year if detection_year is not None else max(years)
 
-    # Use the CovertPRCInfrastructure's h100_years_to_date method
-    h100_years = covert_project.h100_years_to_date(end_year, years)
+    # Use the PRCBlackProject's h100_years_to_date method
+    h100_years = black_project.h100_years_to_date(end_year, years)
 
     return h100_years
 
@@ -1113,14 +1019,14 @@ def extract_project_h100_years_ccdfs(simulation_results, years, agreement_year, 
     for lr in likelihood_ratios:
         h100_years_at_threshold = []
 
-        for covert_projects, detectors in simulation_results:
-            covert_project = covert_projects["prc_covert_project"]
+        for black_projects in simulation_results:
+            black_project = black_projects["prc_black_project"]
 
             # Use the covert project's years list
-            sim_years = covert_project.years
+            sim_years = black_project.years
 
-            detection_year = calculate_project_detection_year(covert_project, sim_years, lr)
-            h100_years = calculate_h100_years_until_detection(covert_project, sim_years, detection_year)
+            detection_year = calculate_project_detection_year(black_project, sim_years, lr)
+            h100_years = calculate_h100_years_until_detection(black_project, sim_years, detection_year)
             h100_years_at_threshold.append(h100_years)
 
         project_h100_years_ccdfs[lr] = calculate_ccdf(h100_years_at_threshold)
@@ -1143,12 +1049,12 @@ def extract_average_covert_compute_ccdfs(simulation_results, years, agreement_ye
     for lr in likelihood_ratios:
         average_compute_at_threshold = []
 
-        for covert_projects, detectors in simulation_results:
-            covert_project = covert_projects["prc_covert_project"]
-            sim_years = covert_project.years
+        for black_projects in simulation_results:
+            black_project = black_projects["prc_black_project"]
+            sim_years = black_project.years
 
             # Calculate detection year for this simulation
-            detection_year = calculate_project_detection_year(covert_project, sim_years, lr)
+            detection_year = calculate_project_detection_year(black_project, sim_years, lr)
             if detection_year is None:
                 detection_year = max(sim_years)
 
@@ -1160,7 +1066,7 @@ def extract_average_covert_compute_ccdfs(simulation_results, years, agreement_ye
                 continue
 
             # Calculate total H100-years from agreement to detection
-            h100_years = calculate_h100_years_until_detection(covert_project, sim_years, detection_year)
+            h100_years = calculate_h100_years_until_detection(black_project, sim_years, detection_year)
 
             # Average operational compute = total H100-years / time duration
             # This gives us the time-weighted average of operational AI chips
@@ -1186,13 +1092,13 @@ def extract_project_time_to_detection_ccdfs(simulation_results, years, agreement
     for lr in likelihood_ratios:
         time_at_threshold = []
 
-        for covert_projects, detectors in simulation_results:
-            covert_project = covert_projects["prc_covert_project"]
+        for black_projects in simulation_results:
+            black_project = black_projects["prc_black_project"]
 
             # Use the covert project's years list
-            sim_years = covert_project.years
+            sim_years = black_project.years
 
-            detection_year = calculate_project_detection_year(covert_project, sim_years, lr)
+            detection_year = calculate_project_detection_year(black_project, sim_years, lr)
             if detection_year is None:
                 # Detection never happened - use large value
                 time_at_threshold.append(NEVER_DETECTED_VALUE)
@@ -1206,17 +1112,17 @@ def extract_project_time_to_detection_ccdfs(simulation_results, years, agreement
     return time_to_detection_ccdfs
 
 
-def calculate_datacenter_detection_year(covert_datacenters, years, agreement_year, threshold):
+def calculate_datacenter_detection_year(black_datacenters, years, agreement_year, threshold):
     """Calculate the year when datacenter is detected based on likelihood ratio threshold.
 
     Detection occurs the first year the datacenter LR exceeds the threshold.
     """
-    if covert_datacenters is None:
+    if black_datacenters is None:
         return None
 
     for year in years:
         relative_year = year - agreement_year
-        year_lr = covert_datacenters.cumulative_lr_from_concealed_datacenters(relative_year)
+        year_lr = black_datacenters.cumulative_lr_from_concealed_datacenters(relative_year)
 
         if year_lr >= threshold:
             return year
@@ -1225,28 +1131,26 @@ def calculate_datacenter_detection_year(covert_datacenters, years, agreement_yea
 
 
 def extract_datacenter_capacity_at_detection(simulation_results, years, agreement_year, threshold):
-    """Extract datacenter capacity (GW) at detection time."""
+    """Extract total datacenter capacity (GW) at detection time (concealed + unconcealed)."""
     capacity_at_detection = []
 
-    for covert_projects, detectors in simulation_results:
-        covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+    for black_projects in simulation_results:
+        black_datacenters = black_projects["prc_black_project"].black_datacenters
 
         # Use simulation years to calculate detection
-        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
-                          if us_beliefs.p_project_exists_update_history else [])
+        sim_years = black_projects["prc_black_project"].years
 
-        detection_year = calculate_datacenter_detection_year(covert_datacenters, sim_years, agreement_year, threshold)
+        detection_year = calculate_datacenter_detection_year(black_datacenters, sim_years, agreement_year, threshold)
 
         if detection_year is not None:
             # Get capacity at detection year
             relative_year = detection_year - agreement_year
-            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
         else:
             # Never detected - use final year
             final_year = years[-1]
             relative_year = final_year - agreement_year
-            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
 
         capacity_at_detection.append(capacity_gw)
 
@@ -1269,30 +1173,28 @@ def extract_datacenter_detection_statistics(simulation_results, years, agreement
 def extract_individual_datacenter_detection_data(simulation_results, years, agreement_year, threshold):
     """Extract individual datacenter detection data for dashboard display.
 
-    Returns capacity at detection and years operational before detection.
+    Returns total capacity (concealed + unconcealed) at detection and years operational before detection.
     """
     individual_capacity = []
     individual_time = []
 
-    for covert_projects, detectors in simulation_results:
-        covert_datacenters = covert_projects["prc_covert_project"].covert_datacenters
+    for black_projects in simulation_results:
+        black_datacenters = black_projects["prc_black_project"].black_datacenters
 
         # Use simulation years to calculate detection
-        us_beliefs = detectors["us_intelligence"].beliefs_about_projects["prc_covert_project"]
-        sim_years = sorted(us_beliefs.p_project_exists_update_history.keys()
-                          if us_beliefs.p_project_exists_update_history else [])
+        sim_years = black_projects["prc_black_project"].years
 
-        detection_year = calculate_datacenter_detection_year(covert_datacenters, sim_years, agreement_year, threshold)
+        detection_year = calculate_datacenter_detection_year(black_datacenters, sim_years, agreement_year, threshold)
 
         if detection_year is not None:
             # Get capacity at detection year
             relative_year = detection_year - agreement_year
-            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
         else:
             # Never detected - use final year
             final_year = years[-1]
             relative_year = final_year - agreement_year
-            capacity_gw = covert_datacenters.get_GW_capacity(relative_year)
+            capacity_gw = black_datacenters.get_covert_GW_capacity_total(relative_year)
             detection_year = final_year
 
         # Calculate years operational before detection
@@ -1312,26 +1214,26 @@ def extract_individual_project_detection_data(simulation_results, agreement_year
     individual_time = []
     individual_h100_years = []
 
-    for covert_projects, detectors in simulation_results:
-        covert_project = covert_projects["prc_covert_project"]
-        sim_years = covert_project.years
+    for black_projects in simulation_results:
+        black_project = black_projects["prc_black_project"]
+        sim_years = black_project.years
 
-        detection_year = calculate_project_detection_year(covert_project, sim_years, threshold)
+        detection_year = calculate_project_detection_year(black_project, sim_years, threshold)
 
         if detection_year is not None:
-            operational_compute = covert_project.operational_black_project(detection_year)
+            operational_compute = black_project.operational_black_project(detection_year)
         else:
             final_year = max(sim_years)
-            operational_compute = covert_project.operational_black_project(final_year)
+            operational_compute = black_project.operational_black_project(final_year)
             detection_year = final_year
 
         operational_h100e = operational_compute.total_h100e_tpp()
 
         energy_gw = (operational_h100e * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
-                    app_params.covert_project_parameters.initial_compute_stock_parameters.energy_efficiency_relative_to_h100 / 1e9)
+                    app_params.black_project_parameters.exogenous_trends.energy_efficiency_of_prc_stock_relative_to_state_of_the_art / 1e9)
 
         time_operational = detection_year - agreement_year
-        h100_years = calculate_h100_years_until_detection(covert_project, sim_years, detection_year)
+        h100_years = calculate_h100_years_until_detection(black_project, sim_years, detection_year)
 
         individual_h100e.append(operational_h100e)
         individual_energy.append(energy_gw)
@@ -1355,43 +1257,44 @@ def extract_ai_rd_reduction_ccdfs(simulation_results, years, agreement_year, lik
     largest_company_reduction_ccdfs = {}
     prc_reduction_ccdfs = {}
 
-    slowdown_params = app_params.covert_project_parameters.slowdown_counterfactual_parameters
+    slowdown_params = app_params.black_project_parameters.slowdown_counterfactual_parameters
 
     # PRC parameters
-    initial_compute_params = app_params.covert_project_parameters.initial_compute_stock_parameters
-    prc_compute_2025 = initial_compute_params.total_prc_compute_stock_in_2025
-    prc_growth_rate = initial_compute_params.annual_growth_rate_of_prc_compute_stock_p50
+    exogenous_trends = app_params.black_project_parameters.exogenous_trends
+    prc_compute_2025 = exogenous_trends.total_prc_compute_stock_in_2025
+    prc_growth_rate = exogenous_trends.annual_growth_rate_of_prc_compute_stock_p50
     prc_ai_rd_fraction = slowdown_params.fraction_of_prc_compute_spent_on_ai_rd_before_slowdown
+
+    # Largest AI project
+    largest_ai_project = LargestAIProject(exogenous_trends)
 
     for lr in likelihood_ratios:
         largest_company_reduction_ratios = []
         prc_reduction_ratios = []
 
-        for covert_projects, detectors in simulation_results:
-            covert_project = covert_projects["prc_covert_project"]
-            sim_years = covert_project.years
+        for black_projects in simulation_results:
+            black_project = black_projects["prc_black_project"]
+            sim_years = black_project.years
 
             # Calculate detection year for this simulation
-            detection_year = calculate_project_detection_year(covert_project, sim_years, lr)
+            detection_year = calculate_project_detection_year(black_project, sim_years, lr)
             if detection_year is None:
                 detection_year = max(sim_years)
 
             # Calculate total covert project H100-years from agreement to detection
             # Using the h100_years_to_date method which properly integrates operational compute over time
-            covert_h100_years = covert_project.h100_years_to_date(detection_year, sim_years)
+            covert_h100_years = black_project.h100_years_to_date(detection_year, sim_years)
 
-            # Calculate total largest company AI R&D H100-years (no slowdown counterfactual)
-            # get_largest_company_ai_rd_compute returns H100-years per year, so we sum over time steps
-            # Need to integrate over time: sum of (H100-years/year * time_step)
+            # Calculate total largest AI project H100-years (no slowdown counterfactual)
+            # Need to integrate over time: sum of (H100e * time_step)
             largest_company_h100_years = 0
             years_in_range = [y for y in sim_years if agreement_year <= y <= detection_year]
             for i in range(len(years_in_range) - 1):
                 year = years_in_range[i]
                 next_year = years_in_range[i + 1]
                 time_step = next_year - year
-                # get_largest_company_ai_rd_compute returns H100-years (cumulative compute for a training run)
-                # We interpret this as the compute capacity available at that year
-                largest_company_h100_years += get_largest_company_ai_rd_compute(year) * time_step
+                # Get compute stock at this year
+                largest_company_h100_years += largest_ai_project.get_compute_stock(year) * time_step
 
             # Calculate total PRC AI R&D H100-years (no slowdown counterfactual)
             prc_h100_years = 0
@@ -1444,29 +1347,32 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
     prc_production_ccdfs = {}
 
     # PRC parameters
-    initial_compute_params = app_params.covert_project_parameters.initial_compute_stock_parameters
-    prc_compute_2025 = initial_compute_params.total_prc_compute_stock_in_2025
-    prc_growth_rate = initial_compute_params.annual_growth_rate_of_prc_compute_stock_p50
+    exogenous_trends = app_params.black_project_parameters.exogenous_trends
+    prc_compute_2025 = exogenous_trends.total_prc_compute_stock_in_2025
+    prc_growth_rate = exogenous_trends.annual_growth_rate_of_prc_compute_stock_p50
+
+    # Largest AI project
+    largest_ai_project = LargestAIProject(exogenous_trends)
 
     for lr in likelihood_ratios:
         global_production_ratios = []
         largest_company_production_ratios = []
         prc_production_ratios = []
 
-        for covert_projects, detectors in simulation_results:
-            covert_project = covert_projects["prc_covert_project"]
-            covert_fab = covert_project.covert_fab
-            sim_years = covert_project.years
+        for black_projects in simulation_results:
+            black_project = black_projects["prc_black_project"]
+            black_fab = black_project.black_fab
+            sim_years = black_project.years
 
             # Calculate detection year for this simulation
-            detection_year = calculate_project_detection_year(covert_project, sim_years, lr)
+            detection_year = calculate_project_detection_year(black_project, sim_years, lr)
             if detection_year is None:
                 detection_year = max(sim_years)
 
             # Get covert fab chip production from agreement to detection
-            covert_fab_production = 0.0
-            if covert_fab is not None:
-                cumulative_by_year = covert_fab.get_cumulative_compute_production_over_time()
+            black_fab_production = 0.0
+            if black_fab is not None:
+                cumulative_by_year = black_fab.get_cumulative_compute_production_over_time()
                 # Get production at detection year (cumulative) minus production at agreement year
                 prod_at_detection = cumulative_by_year.get(detection_year, 0.0)
                 prod_at_agreement = cumulative_by_year.get(agreement_year, 0.0)
@@ -1484,17 +1390,16 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
                         prod_at_detection = cumulative_by_year.get(max(earlier_years), 0.0)
                     else:
                         prod_at_detection = 0.0
-                covert_fab_production = prod_at_detection - prod_at_agreement
+                black_fab_production = prod_at_detection - prod_at_agreement
 
             # Calculate global chip production from agreement to detection (no slowdown)
             # Uses data from global_compute_production.csv
             global_production = get_global_compute_production_between_years(agreement_year, detection_year)
 
-            # Calculate largest company chip production from agreement to detection (no slowdown)
+            # Calculate largest AI project chip production from agreement to detection (no slowdown)
             # Production = Stock(detection) - Stock(agreement)
-            # Uses experiment_compute from AI Futures Project input_data.csv
-            largest_company_stock_at_agreement = get_largest_company_ai_rd_compute(agreement_year)
-            largest_company_stock_at_detection = get_largest_company_ai_rd_compute(detection_year)
+            largest_company_stock_at_agreement = largest_ai_project.get_compute_stock(agreement_year)
+            largest_company_stock_at_detection = largest_ai_project.get_compute_stock(detection_year)
             largest_company_production = largest_company_stock_at_detection - largest_company_stock_at_agreement
 
             # Calculate PRC chip production from agreement to detection (no slowdown)
@@ -1506,7 +1411,7 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
 
             # Calculate reduction ratios
             # If no covert fab production, use a large value to represent "infinite" reduction
-            if covert_fab_production <= 0:
+            if black_fab_production <= 0:
                 # Use a very large value (1e12) to represent infinite reduction
                 # This will appear on the far right of the CCDF
                 large_reduction = 1e12
@@ -1515,15 +1420,15 @@ def extract_chip_production_reduction_ccdfs(simulation_results, years, agreement
                 prc_production_ratios.append(large_reduction)
             else:
                 if global_production > 0:
-                    global_ratio = global_production / covert_fab_production
+                    global_ratio = global_production / black_fab_production
                     global_production_ratios.append(global_ratio)
                 else:
                     global_production_ratios.append(0.0)
 
-                largest_company_ratio = largest_company_production / covert_fab_production
+                largest_company_ratio = largest_company_production / black_fab_production
                 largest_company_production_ratios.append(largest_company_ratio)
 
-                prc_ratio = prc_production / covert_fab_production
+                prc_ratio = prc_production / black_fab_production
                 prc_production_ratios.append(prc_ratio)
 
         # Calculate CCDFs for this threshold
@@ -1548,21 +1453,24 @@ def extract_takeoff_slowdown_trajectories(simulation_results, years, agreement_y
     # Extend years range for trajectory prediction (need to go beyond simulation end)
     extended_years = list(range(int(years[0]), int(years[-1]) + 16))  # Extend 15 years beyond
 
-    # 1. Largest company AI R&D compute STOCK trajectory (no slowdown)
-    # Uses experiment_compute from AI Futures Project input_data.csv
-    largest_company_ai_rd_stock = get_largest_company_compute_trajectory([float(y) for y in extended_years])
+    # Largest AI project
+    exogenous_trends = app_params.black_project_parameters.exogenous_trends
+    largest_ai_project = LargestAIProject(exogenous_trends)
+
+    # 1. Largest AI project compute STOCK trajectory (no slowdown)
+    largest_company_ai_rd_stock = largest_ai_project.get_compute_trajectory([float(y) for y in extended_years])
 
     # 2. Covert project operational compute STOCK (median across simulations)
     # This is the instantaneous stock of operational H100e at each year
     # For years beyond simulation, assume constant (conservative estimate)
     operational_by_sim = []
-    for covert_projects, _ in simulation_results:
+    for black_projects in simulation_results:
         operational_series = []
         last_value = 0
         for year in extended_years:
             if year <= years[-1]:
                 # Within simulation range: get operational stock at this year
-                operational_compute = covert_projects["prc_covert_project"].operational_black_project(year)
+                operational_compute = black_projects["prc_black_project"].operational_black_project(year)
                 value = operational_compute.total_h100e_tpp()
                 operational_series.append(value)
                 last_value = value
@@ -1736,22 +1644,21 @@ def extract_plot_data(model, app_params):
         Dictionary containing all plot data
     """
     likelihood_ratios = LIKELIHOOD_RATIOS
-    p_project_exists = app_params.covert_project_parameters.p_project_exists
+    p_project_exists = app_params.black_project_parameters.p_project_exists
     if not model.simulation_results:
         return {"error": "No simulation results"}
 
-    agreement_year = app_params.simulation_settings.start_agreement_at_specific_year
+    agreement_year = app_params.simulation_settings.agreement_start_year
     years = get_years_from_simulation(model.simulation_results)
     years_array = np.array(years)
 
     # Track which simulations have fabs built
     fab_built_in_sim = [
-        cp["prc_covert_project"].covert_fab is not None
-        for cp, _ in model.simulation_results
+        cp["prc_black_project"].black_fab is not None
+        for cp in model.simulation_results
     ]
 
     # Extract time series data (needed for calculations)
-    project_beliefs_by_sim = extract_project_beliefs_over_time(model.simulation_results, years)
     h100e_by_sim = extract_fab_production_over_time(model.simulation_results, years)
     survival_rate_by_sim = extract_survival_rates_over_time(model.simulation_results, years)
     black_project_by_sim = extract_black_project_over_time(model.simulation_results, years)
@@ -1790,29 +1697,30 @@ def extract_plot_data(model, app_params):
         extract_individual_datacenter_detection_data(model.simulation_results, years, agreement_year, dashboard_lr_threshold)
 
     # Extract initial stock data
-    diversion_proportion = app_params.covert_project_properties.proportion_of_initial_compute_stock_to_divert
+    diversion_proportion = app_params.black_project_properties.proportion_of_initial_compute_stock_to_divert
     initial_stock_data = extract_initial_stock_data(model.simulation_results, likelihood_ratios, diversion_proportion)
 
     # Extract PRC compute over time (from 2025 to agreement start year)
-    initial_compute_parameters = app_params.covert_project_parameters.initial_compute_stock_parameters
+    exogenous_trends = app_params.black_project_parameters.exogenous_trends
     prc_compute_years = list(range(2025, int(agreement_year) + 1))
-    prc_compute_over_time_by_sim = extract_prc_compute_over_time(prc_compute_years, initial_compute_parameters)
+    prc_compute_over_time_by_sim = extract_prc_compute_over_time(prc_compute_years, exogenous_trends)
 
     # Calculate domestic production (proportion of total PRC compute with interpolation)
     prc_domestic_compute_by_sim = []
     for sim_data in prc_compute_over_time_by_sim:
         domestic_compute_for_sim = []
         for year, compute in zip(prc_compute_years, sim_data):
-            proportion_domestic = interpolate_domestic_proportion(year, initial_compute_parameters)
+            proportion_domestic = interpolate_domestic_proportion(year, exogenous_trends)
             domestic_compute_for_sim.append(compute * proportion_domestic)
         prc_domestic_compute_by_sim.append(domestic_compute_for_sim)
 
-    # Calculate largest company AI R&D compute over time (from AI Futures Project data)
-    largest_company_compute_over_time = extract_largest_company_compute_over_time(prc_compute_years)
+    # Calculate largest AI project compute over time
+    largest_ai_project = LargestAIProject(exogenous_trends)
+    largest_company_compute_over_time = extract_largest_company_compute_over_time(prc_compute_years, largest_ai_project)
 
     # Calculate interpolated domestic proportion for each year
     proportion_domestic_by_year = [
-        interpolate_domestic_proportion(year, initial_compute_parameters)
+        interpolate_domestic_proportion(year, exogenous_trends)
         for year in prc_compute_years
     ]
 
@@ -1842,6 +1750,7 @@ def extract_plot_data(model, app_params):
         "num_simulations": len(model.simulation_results),
         "prob_fab_built": sum(fab_built_in_sim) / len(fab_built_in_sim) if len(fab_built_in_sim) > 0 else 0.0,
         "p_project_exists": p_project_exists,
+        "researcher_headcount": app_params.black_project_properties.researcher_headcount,
 
         # =====================================================================
         # DARK COMPUTE MODEL (main page overview)
@@ -1902,8 +1811,8 @@ def extract_plot_data(model, app_params):
             # Dark Compute Stock Breakdown
             # -------------------------------------------------------------------
             "initial_black_project": fmt_pct(black_project_by_sim),  # Keep in raw H100e units with k/M formatting
-            "covert_fab_flow": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim)),  # Filtered - for Covert fab section plots
-            "covert_fab_flow_all_sims": fmt_pct(h100e_by_sim),  # All simulations - for Dark Compute Stock Breakdown
+            "black_fab_flow": fmt_pct(filter_to_with_fab(h100e_by_sim, fab_built_in_sim)),  # Filtered - for Covert fab section plots
+            "black_fab_flow_all_sims": fmt_pct(h100e_by_sim),  # All simulations - for Dark Compute Stock Breakdown
             "survival_rate": fmt_pct(survival_rate_by_sim),
             "total_black_project": fmt_pct(black_project_by_sim),  # Keep in raw H100e units with k/M formatting
 
@@ -1921,7 +1830,6 @@ def extract_plot_data(model, app_params):
             "lr_initial_stock": fmt_pct(lr_initial_by_sim),
             "lr_diverted_sme": fmt_pct(lr_sme_by_sim),
             "lr_other_intel": fmt_pct(lr_other_by_sim),
-            "posterior_prob_project": fmt_pct(project_beliefs_by_sim),
 
             # Individual LR components for detailed breakdown
             "lr_prc_accounting": fmt_pct(lr_prc_accounting_by_sim),
@@ -1952,7 +1860,7 @@ def extract_plot_data(model, app_params):
         # =====================================================================
         # COVERT DATA CENTERS
         # =====================================================================
-        "covert_datacenters": {
+        "black_datacenters": {
             "years": years_array.tolist(),
             # Datacenter capacity (GW)
             "datacenter_capacity": fmt_pct(datacenter_capacity_by_sim),
@@ -1970,12 +1878,15 @@ def extract_plot_data(model, app_params):
             # Dashboard - Individual simulation data
             "individual_capacity_before_detection": individual_datacenter_capacity,
             "individual_time_before_detection": individual_datacenter_time,
+            # Unconcealed datacenter capacity values (from first simulation - deterministic)
+            "covert_unconcealed_capacity_gw": model.simulation_results[0]["prc_black_project"].black_datacenters.get_covert_GW_capacity_unconcealed_at_agreement_start() if model.simulation_results else 0.0,
+            "total_prc_datacenter_capacity_gw": model.simulation_results[0]["prc_black_project"].black_datacenters.energy_consumption_of_prc_stock_at_agreement_start if model.simulation_results else 0.0,
         },
 
         # =====================================================================
         # COVERT FAB
         # =====================================================================
-        "covert_fab": {
+        "black_fab": {
             "years": years_array.tolist(),
             # Detection - CCDF plots and thresholds
             "compute_ccdf": compute_ccdfs.get(dashboard_lr_threshold, []),
@@ -2008,7 +1919,7 @@ def extract_plot_data(model, app_params):
             "process_node_by_sim": filter_to_with_fab(fab_params['process_node'], fab_built_in_sim),
             # Architecture efficiency and watts per TPP
             "architecture_efficiency_at_agreement": estimate_architecture_efficiency_relative_to_h100(agreement_year, agreement_year),
-            "watts_per_tpp_curve": PRCCovertFab.watts_per_tpp_relative_to_H100(),
+            "watts_per_tpp_curve": PRCBlackFab.watts_per_tpp_relative_to_H100(),
             # Dashboard - Individual simulation data
             "individual_h100e_before_detection": individual_fab_h100e,
             "individual_time_before_detection": individual_fab_time,
@@ -2028,6 +1939,7 @@ def extract_plot_data(model, app_params):
             "prc_compute_years": prc_compute_years,
             "proportion_domestic_by_year": proportion_domestic_by_year,
             "years": years_array.tolist(),
+            "state_of_the_art_energy_efficiency_relative_to_h100": largest_ai_project.get_energy_efficiency_relative_to_h100(agreement_year),
         },
     }
 
@@ -2037,9 +1949,9 @@ def extract_plot_data(model, app_params):
     # Debug: Print covert fab CCDF data
     print("\n" + "="*80)
     print("COVERT FAB COMPUTE CCDFs:")
-    print(f"Likelihood ratios: {converted_results['covert_fab']['likelihood_ratios']}")
-    print(f"Compute CCDFs keys: {list(converted_results['covert_fab']['compute_ccdfs'].keys())}")
-    for lr, ccdf_data in converted_results['covert_fab']['compute_ccdfs'].items():
+    print(f"Likelihood ratios: {converted_results['black_fab']['likelihood_ratios']}")
+    print(f"Compute CCDFs keys: {list(converted_results['black_fab']['compute_ccdfs'].keys())}")
+    for lr, ccdf_data in converted_results['black_fab']['compute_ccdfs'].items():
         print(f"\nLR={lr}: {len(ccdf_data)} data points")
         if ccdf_data:
             print(f"  First 3 points: {ccdf_data[:3]}")

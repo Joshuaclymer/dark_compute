@@ -37,7 +37,7 @@ def extract_takeoff_slowdown_trajectories(
         Dictionary with trajectory arrays and milestone information
     """
     # Define time range from agreement year forward
-    agreement_year = app_params.simulation_settings.start_agreement_at_specific_year
+    agreement_year = app_params.simulation_settings.agreement_start_year
 
     # Predict milestones using takeoff model with its default parameters
     milestones_global = None

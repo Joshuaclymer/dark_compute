@@ -21,61 +21,77 @@ class ProcessNodeStrategy(Enum):
 
 @dataclass
 class SimulationSettings:
-    start_agreement_at_specific_year : Optional[int] = 2030
+    agreement_start_year : Optional[int] = 2030
     num_years_to_simulate : float = 7.0  # Number of years from agreement start to simulate
     time_step_years : float = 0.1
     num_simulations : int = 200
 
     def validate(self):
         """Validate simulation settings parameters."""
-        if self.start_agreement_at_specific_year is not None:
-            if self.start_agreement_at_specific_year < 2026:
-                raise ValueError(f"Agreement start year must be at least 2026 (got {self.start_agreement_at_specific_year})")
-            if self.start_agreement_at_specific_year > 2031:
-                raise ValueError(f"Agreement start year must be at most 2031 (got {self.start_agreement_at_specific_year})")
+        if self.agreement_start_year is not None:
+            if self.agreement_start_year < 2026:
+                raise ValueError(f"Agreement start year must be at least 2026 (got {self.agreement_start_year})")
+            if self.agreement_start_year > 2031:
+                raise ValueError(f"Agreement start year must be at most 2031 (got {self.agreement_start_year})")
         if self.num_years_to_simulate < 1:
             raise ValueError(f"Number of years to simulate must be at least 1 (got {self.num_years_to_simulate})")
 
 @dataclass
-class CovertProjectProperties:
-    run_a_covert_project : bool = True
+class BlackProjectProperties:
+    run_a_black_project : bool = True
 
     # Initial compute stock
     proportion_of_initial_compute_stock_to_divert : Optional[float] = 0.05
 
     # Data centers
+    fraction_of_datacenter_capacity_not_built_for_concealment_diverted_to_black_project_at_agreement_start : float = 0.01
     datacenter_construction_labor : int = 10000
-    years_before_agreement_year_prc_starts_building_covert_datacenters : int = 1  # Years before agreement year to start building (0 = at agreement year)
+    years_before_agreement_year_prc_starts_building_black_datacenters : int = 1  # Years before agreement year to start building (0 = at agreement year)
+    max_proportion_of_PRC_energy_consumption: float = 0.05
 
     # Covert fab
-    build_a_covert_fab : bool = True
-    covert_fab_operating_labor : Optional[int] = 550
-    covert_fab_construction_labor : Optional[int] = 250
-    covert_fab_process_node : Optional[ProcessNodeStrategy] = ProcessNodeStrategy.BEST_INDIGENOUS_GTE_28NM
-    covert_fab_proportion_of_prc_lithography_scanners_devoted : Optional[float] = 0.1
+    build_a_black_fab : bool = True
+    black_fab_operating_labor : Optional[int] = 550
+    black_fab_construction_labor : Optional[int] = 250
+    black_fab_process_node : Optional[ProcessNodeStrategy] = ProcessNodeStrategy.BEST_INDIGENOUS_GTE_28NM
+    black_fab_proportion_of_prc_lithography_scanners_devoted : Optional[float] = 0.1
+
+    # Researcher headcount
+    researcher_headcount : int = 500
 
 @dataclass
-class InitialPRCBlackProjectParameters:
+class DetectionParameters:
+    mean_detection_time_for_100_workers: float = 6.95
+    mean_detection_time_for_1000_workers: float = 3.42
+    variance_of_detection_time_given_num_workers: float = 3.880
+    us_intelligence_median_error_in_estimate_of_prc_compute_stock: float = 0.07
+    us_intelligence_median_error_in_estimate_of_prc_datacenter_capacity: float = 0.01
+    us_intelligence_median_error_in_estimate_of_prc_sme_stock: float = 0.07
+    us_intelligence_median_error_in_energy_consumption_estimate_of_prc_datacenter_capacity: float = 0.05
+    us_intelligence_median_error_in_satellite_estimate_of_prc_datacenter_capacity: float = 0.05
 
-    # H100 power consumption
-    h100_power_watts: float = 700  # Total power consumption of NVIDIA H100 GPU
+@dataclass
+class ExogenousTrends:
+    architecture_efficiency_improvement_per_year: float = 1.23 # moved from BlackFabParameters
 
-    # PRC compute stock
+    # moved from InitialPRCBlackComputeStockParameters
     total_prc_compute_stock_in_2025: float = 1e5
-    energy_efficiency_relative_to_h100: float = 0.5
     annual_growth_rate_of_prc_compute_stock_p10: float = 1.3
     annual_growth_rate_of_prc_compute_stock_p50: float = 2.2
     annual_growth_rate_of_prc_compute_stock_p90: float = 3.0
     proportion_of_prc_chip_stock_produced_domestically_2026: float = 0.0
     proportion_of_prc_chip_stock_produced_domestically_2030: float = 0.7
 
-    us_intelligence_median_error_in_estimate_of_prc_compute_stock: float = 0.07
+    # Largest AI project compute trajectory (derived from AI Futures Project input_data.csv)
+    # 2025 value: ~120,325 H100e, geometric mean growth rate 2025-2031: ~2.91x/year
+    largest_ai_project_compute_stock_in_2025: float = 1.2e5
+    annual_growth_rate_of_largest_ai_project_compute_stock: float = 2.91
 
-@dataclass
-class SlowdownCounterfactualParameters:
-    # Slowdown counterfactual parameters (for reference line in plots)
-    # Note: Global AI R&D compute is now sourced from AI Futures Project input_data.csv
-    fraction_of_prc_compute_spent_on_ai_rd_before_slowdown: float = 0.5
+    # Energy
+    h100_power_watts: float = 700  # Moved from InitialPRCBlackComputeStockParameters 
+    improvement_in_energy_efficiency_per_year: float = 1.4  # Moved from InitialPRCBlackComputeStockParameters
+    energy_efficiency_of_prc_stock_relative_to_state_of_the_art: float = 0.5 # renamed from energy_efficiency_relative_to_h100: float = 0.5
+    total_GW_of_PRC_energy_consumption: float = 1100
 
 @dataclass
 class SurvivalRateParameters:
@@ -87,11 +103,7 @@ class SurvivalRateParameters:
     hazard_rate_p75_relative_to_p50: float = 6
 
 @dataclass
-class CovertDatacenterParameters:
-    # -- Energy capacity --
-    max_proportion_of_PRC_energy_consumption: float = 0.05
-    total_GW_of_PRC_energy_consumption: float = 1100
-
+class BlackDatacenterParameters:
     # -- Detection evidence --
     MW_per_construction_worker_per_year: float = 0.13
     relative_sigma_mw_per_construction_worker_per_year: float = 0.4
@@ -99,20 +111,16 @@ class CovertDatacenterParameters:
     operating_labor_per_MW: float = 1
     relative_sigma_operating_labor_per_MW: float = 0.4
 
-    # Now replaced with corresponding parameters in "CovertPRCInfrastructure"
-    # mean_detection_time_of_covert_site_for_100_workers = 6.95
-    # mean_detection_time_of_covert_site_for_1000_workers = 3.42
-    # variance_of_detection_time_given_num_workers = 3.880
 
 @dataclass
-class CovertFabParameters:
+class SlowdownCounterfactualParameters:
+    """Parameters for counterfactual slowdown analysis"""
+    fraction_of_prc_compute_spent_on_ai_rd_before_slowdown: float = 0.5
+
+@dataclass
+class BlackFabParameters:
 
     # Odds of covert project
-    median_absolute_relative_error_of_us_intelligence_estimate_of_prc_sme_stock: float = 0.07
-    # Now replaced with corresponding parameters in "CovertPRCInfrastructure"
-    # mean_detection_time_for_100_workers = 6.95
-    # mean_detection_time_for_1000_workers = 3.42
-    # variance_of_detection_time_given_num_workers = 3.880
     wafers_per_month_per_worker: float = 24.64
     labor_productivity_relative_sigma: float = 0.62
     wafers_per_month_per_lithography_scanner: float = 1000
@@ -135,7 +143,6 @@ class CovertFabParameters:
     construction_workers_per_1000_wafers_per_month: float = 14.1
     h100_sized_chips_per_wafer: float = 28
     transistor_density_scaling_exponent: float = 1.49
-    architecture_efficiency_improvement_per_year: float = 1.23
     prc_additional_lithography_scanners_produced_per_year: float = 16.0
     prc_lithography_scanners_produced_in_first_year: float = 20.0
     prc_scanner_production_relative_sigma: float = 0.30
@@ -155,16 +162,14 @@ class CovertFabParameters:
         }
 
 @dataclass
-class CovertProjectParameters:
+class BlackProjectParameters:
     p_project_exists: float = 0.2
-    mean_detection_time_for_100_workers: float = 6.95
-    mean_detection_time_for_1000_workers: float = 3.42
-    variance_of_detection_time_given_num_workers: float = 3.880
-    initial_compute_stock_parameters: InitialPRCBlackProjectParameters = field(default_factory=InitialPRCBlackProjectParameters)
-    slowdown_counterfactual_parameters: SlowdownCounterfactualParameters = field(default_factory=SlowdownCounterfactualParameters)
     survival_rate_parameters: SurvivalRateParameters = field(default_factory=SurvivalRateParameters)
-    datacenter_model_parameters: CovertDatacenterParameters = field(default_factory=CovertDatacenterParameters)
-    covert_fab_parameters: CovertFabParameters = field(default_factory=CovertFabParameters)
+    datacenter_model_parameters: BlackDatacenterParameters = field(default_factory=BlackDatacenterParameters)
+    black_fab_parameters: BlackFabParameters = field(default_factory=BlackFabParameters)
+    detection_parameters: DetectionParameters = field(default_factory=DetectionParameters)
+    exogenous_trends: ExogenousTrends = field(default_factory=ExogenousTrends)
+    slowdown_counterfactual_parameters: SlowdownCounterfactualParameters = field(default_factory=SlowdownCounterfactualParameters)
 
 def _set_nested_attr(obj, path, value):
     """Set a nested attribute using dot notation: 'a.b.c' """
@@ -177,19 +182,19 @@ def _set_nested_attr(obj, path, value):
 @dataclass
 class BlackProjectModelParameters:
     simulation_settings : SimulationSettings
-    covert_project_properties : CovertProjectProperties
-    covert_project_parameters : CovertProjectParameters
+    black_project_properties : BlackProjectProperties
+    black_project_parameters : BlackProjectParameters
 
     def update_from_dict(self, data: dict):
         """
         Update parameters from request data using dot notation.
-        Field names with dots (e.g., 'simulation_settings.start_agreement_at_specific_year') are automatically
+        Field names with dots (e.g., 'simulation_settings.agreement_start_year') are automatically
         converted to nested attribute access.
         Returns True if survival rate parameters changed (requires metalog cache clear).
         """
         for field_name, value in data.items():
             # Skip special cases handled below
-            if field_name.startswith('covert_project_properties.covert_fab_process_node'):
+            if field_name.startswith('black_project_properties.black_fab_process_node'):
                 continue
 
             # Set the value using dot notation
@@ -201,7 +206,7 @@ class BlackProjectModelParameters:
                 pass
 
         # Handle process node mapping (special case because it has string values that map to enums)
-        if 'covert_project_properties.covert_fab_process_node' in data:
+        if 'black_project_properties.black_fab_process_node' in data:
             process_node_map = {
                 'best_indigenous': 'best_indigenous',
                 'best_indigenous_gte_28nm': 'best_indigenous_gte_28nm',
@@ -213,7 +218,7 @@ class BlackProjectModelParameters:
                 'nm14': ProcessNode.nm14,
                 'nm7': ProcessNode.nm7
             }
-            self.covert_project_properties.covert_fab_process_node = process_node_map.get(data['covert_project_properties.covert_fab_process_node'], data['covert_project_properties.covert_fab_process_node'])
+            self.black_project_properties.black_fab_process_node = process_node_map.get(data['black_project_properties.black_fab_process_node'], data['black_project_properties.black_fab_process_node'])
 
         # Validate parameters after update
         self.simulation_settings.validate()

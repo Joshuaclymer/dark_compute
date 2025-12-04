@@ -332,14 +332,16 @@ function plotInitialStock(data) {
         const h100PowerWatts = h100PowerInput2 ? parseFloat(h100PowerInput2.value) : 700;
         const h100PowerKW = h100PowerWatts / 1000;
 
-        // Display H100 energy requirements
-        document.getElementById('initialStockH100EnergyDisplay').innerHTML = `
+        // Display H100 energy consumption
+        const h100EnergyDisplay = document.getElementById('initialStockH100EnergyDisplay');
+        h100EnergyDisplay.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                 <div class="breakdown-box-inner">${h100PowerKW.toFixed(2)} kW</div>
-                <div class="breakdown-label">Energy requirements of H100</div>
+                <div class="breakdown-label">Energy consumption of H100</div>
             </div>`;
+        h100EnergyDisplay.style.cursor = 'pointer';
 
-        // Attach hover effect
+        // Attach hover effect for H100 energy
         const h100EnergyInner = document.querySelector('#initialStockH100EnergyDisplay .breakdown-box-inner');
         if (h100EnergyInner) {
             h100EnergyInner.style.transition = 'all 0.2s ease';
@@ -353,38 +355,75 @@ function plotInitialStock(data) {
             });
         }
 
-        // Get energy efficiency from user input
-        const energyEfficiencyInput = document.getElementById('energy_efficiency_relative_to_h100');
-        const energyEfficiency = energyEfficiencyInput ? parseFloat(energyEfficiencyInput.value) : 1.0;
+        // Get state of the art energy efficiency from backend data
+        const sotaEfficiency = data.initial_stock.state_of_the_art_energy_efficiency_relative_to_h100 || 1.0;
 
-        // Display energy efficiency
-        document.getElementById('initialStockEnergyEfficiencyDisplay').innerHTML = `
+        // Get agreement year from the simulation years (last year in the prc_compute_years)
+        const agreementYear = data.initial_stock.prc_compute_years ?
+            data.initial_stock.prc_compute_years[data.initial_stock.prc_compute_years.length - 1] : 2030;
+
+        // Display state of the art energy efficiency
+        const sotaEfficiencyDisplay = document.getElementById('initialStockSOTAEfficiencyDisplay');
+        sotaEfficiencyDisplay.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                <div class="breakdown-box-inner">${energyEfficiency.toFixed(2)}</div>
-                <div class="breakdown-label">Energy efficiency of initial PRC stock relative to H100</div>
+                <div class="breakdown-box-inner">${sotaEfficiency.toFixed(2)}</div>
+                <div class="breakdown-label">State of the art energy efficiency relative to H100 in ${agreementYear}</div>
             </div>`;
+        sotaEfficiencyDisplay.style.cursor = 'pointer';
 
-        // Attach hover effect
-        const energyEfficiencyInner = document.querySelector('#initialStockEnergyEfficiencyDisplay .breakdown-box-inner');
-        if (energyEfficiencyInner) {
-            energyEfficiencyInner.style.transition = 'all 0.2s ease';
-            energyEfficiencyInner.addEventListener('mouseenter', () => {
-                energyEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
-                energyEfficiencyInner.style.transform = 'scale(1.015)';
+        // Attach hover effect for SOTA efficiency
+        const sotaEfficiencyInner = document.querySelector('#initialStockSOTAEfficiencyDisplay .breakdown-box-inner');
+        if (sotaEfficiencyInner) {
+            sotaEfficiencyInner.style.transition = 'all 0.2s ease';
+            sotaEfficiencyInner.addEventListener('mouseenter', () => {
+                sotaEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                sotaEfficiencyInner.style.transform = 'scale(1.015)';
             });
-            energyEfficiencyInner.addEventListener('mouseleave', () => {
-                energyEfficiencyInner.style.boxShadow = '';
-                energyEfficiencyInner.style.transform = '';
+            sotaEfficiencyInner.addEventListener('mouseleave', () => {
+                sotaEfficiencyInner.style.boxShadow = '';
+                sotaEfficiencyInner.style.transform = '';
             });
         }
+
+        // Get PRC energy efficiency relative to state of the art from user input
+        const prcEfficiencyInput = document.getElementById('energy_efficiency_of_prc_stock_relative_to_state_of_the_art');
+        const prcEfficiencyRelativeToSOTA = prcEfficiencyInput ? parseFloat(prcEfficiencyInput.value) : 0.5;
+
+        // Display PRC energy efficiency relative to state of the art
+        const prcEfficiencyDisplay = document.getElementById('initialStockPRCEfficiencyDisplay');
+        prcEfficiencyDisplay.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <div class="breakdown-box-inner">${prcEfficiencyRelativeToSOTA.toFixed(2)}</div>
+                <div class="breakdown-label">PRC energy efficiency relative to state of the art</div>
+            </div>`;
+        prcEfficiencyDisplay.style.cursor = 'pointer';
+
+        // Attach hover effect for PRC efficiency
+        const prcEfficiencyInner = document.querySelector('#initialStockPRCEfficiencyDisplay .breakdown-box-inner');
+        if (prcEfficiencyInner) {
+            prcEfficiencyInner.style.transition = 'all 0.2s ease';
+            prcEfficiencyInner.addEventListener('mouseenter', () => {
+                prcEfficiencyInner.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                prcEfficiencyInner.style.transform = 'scale(1.015)';
+            });
+            prcEfficiencyInner.addEventListener('mouseleave', () => {
+                prcEfficiencyInner.style.boxShadow = '';
+                prcEfficiencyInner.style.transform = '';
+            });
+        }
+
+        // Calculate combined energy efficiency (PRC efficiency relative to H100)
+        // = SOTA efficiency relative to H100 * PRC efficiency relative to SOTA
+        const combinedEnergyEfficiency = sotaEfficiency * prcEfficiencyRelativeToSOTA;
 
         // Plot dark compute stock (same as darkComputeResultPlot) - purple color #9B72B0
         plotPDF('initialStockDarkComputePlot', data.initial_stock.initial_compute_stock_samples, '#9B72B0', 'Dark Compute Stock (H100 equivalents (FLOPS))', 30, false, null, null, null, null, 'log');
 
         // Calculate energy requirements for each sample
-        // Energy (GW) = H100e × watts_per_H100 × energy_efficiency / 1e9
+        // Energy (GW) = H100e × watts_per_H100 / combined_energy_efficiency / 1e9
+        // Note: Higher efficiency means less energy needed, so we divide by efficiency
         const energyRequirementsSamples = data.initial_stock.initial_compute_stock_samples.map(h100e => {
-            const totalWatts = h100e * h100PowerWatts * energyEfficiency;
+            const totalWatts = h100e * h100PowerWatts / combinedEnergyEfficiency;
             return totalWatts / 1e9; // Convert to GW
         });
 

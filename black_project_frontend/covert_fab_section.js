@@ -36,7 +36,7 @@ function copyTooltipToParamLink(span, inputId) {
 }
 
 function plotTimeSeries(data) {
-    if (!data.black_project_model || !data.covert_fab) return;
+    if (!data.black_project_model || !data.black_fab) return;
 
     const dcm = data.black_project_model;
     const years = dcm.years;
@@ -46,9 +46,9 @@ function plotTimeSeries(data) {
     const computeColor = '#9B7BB3'; // Purple
 
     // Create traces for individual simulations (show first 100 for performance)
-    const individualsToShow = Math.min(100, data.covert_fab.lr_combined.individual ? data.covert_fab.lr_combined.individual.length : 0);
+    const individualsToShow = Math.min(100, data.black_fab.lr_combined.individual ? data.black_fab.lr_combined.individual.length : 0);
 
-    const individualLRs = (data.covert_fab.lr_combined.individual || []).slice(0, individualsToShow).map((lrs, idx) => ({
+    const individualLRs = (data.black_fab.lr_combined.individual || []).slice(0, individualsToShow).map((lrs, idx) => ({
         x: years,
         y: lrs,
         type: 'scatter',
@@ -59,7 +59,7 @@ function plotTimeSeries(data) {
         hoverinfo: 'skip'
     }));
 
-    const individualH100e = (dcm.covert_fab_flow.individual || []).slice(0, individualsToShow).map((h100e, idx) => ({
+    const individualH100e = (dcm.black_fab_flow.individual || []).slice(0, individualsToShow).map((h100e, idx) => ({
         x: years,
         y: h100e,
         type: 'scatter',
@@ -76,7 +76,7 @@ function plotTimeSeries(data) {
         ...individualLRs,
         {
             x: years,
-            y: data.covert_fab.lr_combined.p25,
+            y: data.black_fab.lr_combined.p25,
             type: 'scatter',
             mode: 'lines',
             line: { color: 'transparent' },
@@ -85,7 +85,7 @@ function plotTimeSeries(data) {
         },
         {
             x: years,
-            y: data.covert_fab.lr_combined.p75,
+            y: data.black_fab.lr_combined.p75,
             type: 'scatter',
             mode: 'lines',
             fill: 'tonexty',
@@ -97,7 +97,7 @@ function plotTimeSeries(data) {
         },
         {
             x: years,
-            y: data.covert_fab.lr_combined.median,
+            y: data.black_fab.lr_combined.median,
             type: 'scatter',
             mode: 'lines',
             line: { color: lrColor, width: 3 },
@@ -108,7 +108,7 @@ function plotTimeSeries(data) {
         ...individualH100e,
         {
             x: years,
-            y: dcm.covert_fab_flow.p25,
+            y: dcm.black_fab_flow.p25,
             type: 'scatter',
             mode: 'lines',
             line: { color: 'transparent' },
@@ -118,7 +118,7 @@ function plotTimeSeries(data) {
         },
         {
             x: years,
-            y: dcm.covert_fab_flow.p75,
+            y: dcm.black_fab_flow.p75,
             type: 'scatter',
             mode: 'lines',
             fill: 'tonexty',
@@ -131,7 +131,7 @@ function plotTimeSeries(data) {
         },
         {
             x: years,
-            y: dcm.covert_fab_flow.median,
+            y: dcm.black_fab_flow.median,
             type: 'scatter',
             mode: 'lines',
             line: { color: computeColor, width: 3 },
@@ -143,7 +143,7 @@ function plotTimeSeries(data) {
     ];
 
     // Calculate max value from 75th percentile for y-axis range
-    const maxP75 = Math.max(...dcm.covert_fab_flow.p75);
+    const maxP75 = Math.max(...dcm.black_fab_flow.p75);
     const yAxisMax = maxP75 * 1.5;
 
     const layout = {
@@ -201,7 +201,7 @@ function plotTimeSeries(data) {
 // plotH100YearsTimeSeries has been moved to black_project_model_section.js
 
 function plotComputeCcdf(data) {
-    if (!data.covert_fab || !data.covert_fab.compute_ccdfs) {
+    if (!data.black_fab || !data.black_fab.compute_ccdfs) {
         document.getElementById('computeCcdfPlot').innerHTML = '<p>No detection data available</p>';
         return;
     }
@@ -223,7 +223,7 @@ function plotComputeCcdf(data) {
     const thresholdsReversed = [...thresholds].reverse();
 
     for (const threshold of thresholdsReversed) {
-        const ccdf = data.covert_fab.compute_ccdfs[threshold.value];
+        const ccdf = data.black_fab.compute_ccdfs[threshold.value];
         if (ccdf && ccdf.length > 0) {
             traces.push({
                 x: ccdf.map(d => d.x),
@@ -279,10 +279,10 @@ function updateDashboard(data) {
     updateParameterDisplays();
 
     // Find the 50th percentile (median) simulation by H100e production
-    const h100eValues = data.covert_fab?.individual_h100e_before_detection || [];
-    const timeValues = data.covert_fab?.individual_time_before_detection || [];
-    const nodeValues = data.covert_fab?.individual_process_node || [];
-    const energyValues = data.covert_fab?.individual_energy_before_detection || [];
+    const h100eValues = data.black_fab?.individual_h100e_before_detection || [];
+    const timeValues = data.black_fab?.individual_time_before_detection || [];
+    const nodeValues = data.black_fab?.individual_process_node || [];
+    const energyValues = data.black_fab?.individual_energy_before_detection || [];
 
     if (h100eValues.length > 0) {
         // Sort by H100e and find 50th percentile (median) simulation
@@ -666,6 +666,7 @@ function updateParameterDisplays() {
     const dcOperatingPerMWInput = document.getElementById('operating_labor_per_MW');
     const fabConstructionInput = document.getElementById('construction_labor');
     const fabOperatingInput = document.getElementById('operating_labor');
+    const researcherHeadcountInput = document.getElementById('researcher_headcount');
     // mwPerWorkerInput is already declared above at line 777
     const numYearsInput = document.getElementById('num_years_to_simulate');
     // agreementYearInput is already declared above at line 601
@@ -675,6 +676,7 @@ function updateParameterDisplays() {
     let dcOperating = 0;
     let fabConstruction = 0;
     let fabOperating = 0;
+    let researcherHeadcount = 0;
 
     if (dcConstructionInput) {
         dcConstruction = parseInt(dcConstructionInput.value);
@@ -704,6 +706,11 @@ function updateParameterDisplays() {
     if (fabOperatingInput) {
         fabOperating = parseInt(fabOperatingInput.value);
         totalWorkers += fabOperating;
+    }
+
+    if (researcherHeadcountInput) {
+        researcherHeadcount = parseInt(researcherHeadcountInput.value);
+        totalWorkers += researcherHeadcount;
     }
 
     // Update datacenter construction workers
@@ -750,6 +757,18 @@ function updateParameterDisplays() {
             if (fabOperatingInput) {
                 fabOperatingInput.focus();
                 fabOperatingInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+    }
+
+    // Update researcher headcount
+    const researcherHeadcountSpan = document.getElementById('param-researcher-headcount');
+    if (researcherHeadcountSpan) {
+        researcherHeadcountSpan.textContent = researcherHeadcount.toLocaleString();
+        researcherHeadcountSpan.onclick = () => {
+            if (researcherHeadcountInput) {
+                researcherHeadcountInput.focus();
+                researcherHeadcountInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         };
     }

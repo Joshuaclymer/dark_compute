@@ -1,15 +1,16 @@
 import numpy as np
-import random
 from typing import List, Dict
 from abc import ABC, abstractmethod
-from black_project_backend.black_project_parameters import InitialPRCBlackProjectParameters, SurvivalRateParameters
+from black_project_backend.black_project_parameters import ExogenousTrends, SurvivalRateParameters
+from black_project_backend.classes.largest_ai_project import LargestAIProject
+from black_project_backend.util import sample_us_estimate_with_error, lr_from_discrepancy_in_us_estimate
 
-# Constants for H100 chip (duplicated from covert_fab to avoid circular import)
+# Constants for H100 chip (duplicated from black_fab to avoid circular import)
 H100_TPP_PER_CHIP = 2144.0  # Tera-Parameter-Passes per H100 chip (134 TFLOP/s FP16 * 16 bits)
 H100_WATTS_PER_TPP = 0.326493  # Watts per Tera-Parameter-Pass (default, can be overridden)
 
 
-def sample_prc_growth_rate(params: InitialPRCBlackProjectParameters):
+def sample_prc_growth_rate(params: ExogenousTrends):
     """Sample the PRC compute stock growth rate using a metalog distribution with specified percentiles."""
     from black_project_backend.util import sample_from_metalog_3term_semi_bounded_custom_percentiles
     return sample_from_metalog_3term_semi_bounded_custom_percentiles(
@@ -18,69 +19,36 @@ def sample_prc_growth_rate(params: InitialPRCBlackProjectParameters):
         params.annual_growth_rate_of_prc_compute_stock_p90
     )
 
-def compute_prc_compute_stock(year, growth_rate, params: InitialPRCBlackProjectParameters):
+def compute_prc_compute_stock(year, growth_rate, params: ExogenousTrends):
     """Calculate PRC compute stock for a given year using a specific growth rate"""
     years_since_2025 = year - 2025
     return params.total_prc_compute_stock_in_2025 * (growth_rate ** years_since_2025)
 
-def sample_us_estimate_of_prc_compute_stock(prc_compute_stock, params: InitialPRCBlackProjectParameters):
-    # Calculate pdf of absolute relative error
-    k = -np.log(0.5) / params.us_intelligence_median_error_in_estimate_of_prc_compute_stock
+def sample_us_estimate_of_prc_compute_stock(prc_compute_stock, median_error: float):
+    """Sample US estimate of PRC compute stock with error.
 
-    u = np.random.uniform(0, 1)
-
-    # Invert the CDF: P(|error|/actual <= x) = 1 - e^(-kx)
-    # u = 1 - e^(-kx)
-    # e^(-kx) = 1 - u
-    # -kx = ln(1 - u)
-    # x = -ln(1 - u) / k
-
-    relative_error = -np.log(1 - u) / k
-
-    # Randomly choose direction of error (overestimate or underestimate)
-    error_sign = 1 if random.random() > 0.5 else -1
-    relative_error = error_sign * relative_error
-
-    # Apply error to actual count
-    us_estimate = prc_compute_stock * (1 + relative_error)
-
-    # Ensure estimate is non-negative
-    return max(0, us_estimate)
+    Wrapper around sample_us_estimate_with_error for backward compatibility.
+    """
+    return sample_us_estimate_with_error(prc_compute_stock, median_error)
 
 
-def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion_proportion, us_estimate_of_prc_compute_stock, params: InitialPRCBlackProjectParameters):
-    """Calculate likelihood ratio from global compute accounting"""
-    # Consider two cases:
-    # Case 1: Covert project exists of optimal size
-    # Case 2: Covert project does not exist
+def lr_from_prc_compute_accounting(reported_prc_compute_stock, optimal_diversion_proportion, us_estimate_of_prc_compute_stock, median_error: float):
+    """Calculate likelihood ratio from global compute accounting.
 
-    # Case 1: Covert project exists of optimal size
-    # What is the probability that the us_estimate_of_prc_scanners would be what it is in this case?
+    Uses the unified lr_from_discrepancy_in_us_estimate utility.
+    """
+    # Handle edge case
+    if reported_prc_compute_stock < 1e-10:
+        return 1.0  # Neutral evidence if no compute stock
 
-    true_compute_stock_if_covert_project_exists = reported_prc_compute_stock / (1 - optimal_diversion_proportion)
+    true_compute_stock_if_black_project_exists = reported_prc_compute_stock / (1 - optimal_diversion_proportion)
 
-    # Handle edge cases where the compute stock is zero or near zero
-    if true_compute_stock_if_covert_project_exists < 1e-10 or reported_prc_compute_stock < 1e-10:
-        return 1.0  # Neutral evidence if no scanners
-
-    us_estimate_absolute_error_if_project_exists = abs(us_estimate_of_prc_compute_stock - true_compute_stock_if_covert_project_exists) / true_compute_stock_if_covert_project_exists
-
-    # PDF of absolute error
-    k = -np.log(0.5) / params.us_intelligence_median_error_in_estimate_of_prc_compute_stock
-    p_observe_us_estimate_error_if_project_exists = k * np.exp(-k * us_estimate_absolute_error_if_project_exists)
-
-    # Case 2: Fab does not exist
-    true_prc_compute_stock_if_no_project_exists = reported_prc_compute_stock
-    us_estimate_absolute_error_if_no_project_exists = abs(us_estimate_of_prc_compute_stock - true_prc_compute_stock_if_no_project_exists) / true_prc_compute_stock_if_no_project_exists
-
-    p_observe_us_estimate_error_if_no_project_exists = k * np.exp(-k * us_estimate_absolute_error_if_no_project_exists)
-
-    if p_observe_us_estimate_error_if_no_project_exists > 0:
-        lr = p_observe_us_estimate_error_if_project_exists / p_observe_us_estimate_error_if_no_project_exists
-    else:
-        lr = 1e6  # Very large if no-fab scenario makes estimate very unlikely
-
-    return lr
+    return lr_from_discrepancy_in_us_estimate(
+        true_if_project_exists=true_compute_stock_if_black_project_exists,
+        true_if_no_project=reported_prc_compute_stock,
+        us_estimate=us_estimate_of_prc_compute_stock,
+        median_error=median_error
+    )
 
 
 def sample_hazard_rate_multiplier(params: SurvivalRateParameters) -> float:
@@ -175,13 +143,13 @@ class Compute():
 
 class PRCBlackProjectStock():
 
-    def __init__(self, agreement_year, proportion_of_initial_compute_stock_to_divert, optimal_proportion_of_initial_compute_stock_to_divert, initial_compute_parameters: InitialPRCBlackProjectParameters, survival_parameters: SurvivalRateParameters):
+    def __init__(self, agreement_year, proportion_of_initial_compute_stock_to_divert, optimal_proportion_of_initial_compute_stock_to_divert, exogenous_trends: ExogenousTrends, survival_parameters: SurvivalRateParameters, detection_median_error: float):
         self.agreement_year = agreement_year
-        self.initial_compute_parameters = initial_compute_parameters
+        self.exogenous_trends = exogenous_trends
 
         # Calculate the domestic proportion for the agreement year using linear interpolation
-        prop_2026 = initial_compute_parameters.proportion_of_prc_chip_stock_produced_domestically_2026
-        prop_2030 = initial_compute_parameters.proportion_of_prc_chip_stock_produced_domestically_2030
+        prop_2026 = exogenous_trends.proportion_of_prc_chip_stock_produced_domestically_2026
+        prop_2030 = exogenous_trends.proportion_of_prc_chip_stock_produced_domestically_2030
         if agreement_year <= 2026:
             domestic_proportion = prop_2026
         elif agreement_year >= 2030:
@@ -196,10 +164,10 @@ class PRCBlackProjectStock():
         self.survival_parameters = survival_parameters
 
         # Sample growth rate once for this simulation
-        self.prc_growth_rate = sample_prc_growth_rate(initial_compute_parameters)
+        self.prc_growth_rate = sample_prc_growth_rate(exogenous_trends)
 
         # Calculate initial PRC stock using the sampled growth rate
-        self.initial_prc_stock = compute_prc_compute_stock(agreement_year, self.prc_growth_rate, initial_compute_parameters)
+        self.initial_prc_stock = compute_prc_compute_stock(agreement_year, self.prc_growth_rate, exogenous_trends)
         self.initial_prc_black_project = self.initial_prc_stock * proportion_of_initial_compute_stock_to_divert
 
         # black_project_added_per_year now stores chip dictionaries instead of single numbers
@@ -207,25 +175,52 @@ class PRCBlackProjectStock():
         #                                'energy_efficiency_relative_to_h100': float, 'bandwidth': float}}}
         self.black_project_added_per_year = {}
 
+        # Calculate the energy efficiency of initial PRC stock relative to H100
+        # This combines: (PRC efficiency relative to state-of-the-art) * (state-of-the-art efficiency relative to H100)
+        self.largest_ai_project = LargestAIProject(exogenous_trends)
+        state_of_the_art_efficiency_relative_to_h100 = self.largest_ai_project.get_energy_efficiency_relative_to_h100(agreement_year)
+        self.prc_stock_energy_efficiency_relative_to_h100 = (
+            exogenous_trends.energy_efficiency_of_prc_stock_relative_to_state_of_the_art *
+            state_of_the_art_efficiency_relative_to_h100
+        )
+
         # Initialize with a default chip representing the initial PRC dark compute stock
         self.black_project_added_per_year[agreement_year] = {
             'initial_prc_stock': {
                 'count': 1.0,  # Normalized count
                 'h100_equivalence': self.initial_prc_black_project,
-                'energy_efficiency_relative_to_h100': initial_compute_parameters.energy_efficiency_relative_to_h100,
+                'energy_efficiency_relative_to_h100': self.prc_stock_energy_efficiency_relative_to_h100,
                 'bandwidth': 1.8  # Default inter-chip bandwidth in tbps (H100-like)
             }
         }
 
-        self.us_estimate_of_prc_stock = sample_us_estimate_of_prc_compute_stock(self.initial_prc_stock, initial_compute_parameters)
+        self.us_estimate_of_prc_stock = sample_us_estimate_of_prc_compute_stock(self.initial_prc_stock, detection_median_error)
         self.lr_from_prc_compute_accounting = lr_from_prc_compute_accounting(
             reported_prc_compute_stock=self.initial_prc_stock - self.initial_prc_black_project,
             optimal_diversion_proportion=optimal_proportion_of_initial_compute_stock_to_divert,
             us_estimate_of_prc_compute_stock=self.us_estimate_of_prc_stock,
-            params=initial_compute_parameters
+            median_error=detection_median_error
         )
         self.initial_hazard_rate, self.increase_in_hazard_rate_per_year = sample_hazard_rates(survival_parameters)
-    
+
+    def get_energy_consumption_of_prc_stock_gw(self):
+        """Calculate the energy consumption of the initial PRC stock in GW.
+
+        Uses the initial PRC stock (in H100e), the H100 TPP and watts constants,
+        and the PRC stock energy efficiency relative to H100.
+
+        Returns:
+            Energy consumption in GW
+        """
+        # initial_prc_stock is in H100 equivalent units
+        # Convert to actual energy consumption accounting for efficiency
+        energy_watts = (
+            self.initial_prc_stock * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP /
+            self.prc_stock_energy_efficiency_relative_to_h100
+        )
+        energy_gw = energy_watts / 1e9
+        return energy_gw
+
     def add_black_project(self, year : float, compute_to_add):
         """Add dark compute for a year from a Compute object.
 
@@ -260,7 +255,7 @@ class PRCBlackProjectStock():
             self.black_project_added_per_year[year][chip_id] = {
                 'count': 1.0,
                 'h100_equivalence': compute_to_add,
-                'energy_efficiency_relative_to_h100': self.initial_compute_parameters.energy_efficiency_relative_to_h100,
+                'energy_efficiency_relative_to_h100': self.prc_stock_energy_efficiency_relative_to_h100,
                 'bandwidth': 1.8  # Default inter-chip bandwidth in tbps
             }
     

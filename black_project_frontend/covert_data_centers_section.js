@@ -2,10 +2,10 @@
 
 function plotDatacenterCombined(data) {
     if (!data.black_project_model || !data.black_project_model.datacenter_capacity) return;
-    if (!data.covert_datacenters || !data.covert_datacenters.lr_datacenters) return;
+    if (!data.black_datacenters || !data.black_datacenters.lr_datacenters) return;
 
     const dcm = data.black_project_model;
-    const cd = data.covert_datacenters;
+    const cd = data.black_datacenters;
     const years = dcm.years;
 
     // Colors
@@ -147,13 +147,13 @@ function plotDatacenterCombined(data) {
 }
 
 function plotDatacenterCapacityCcdf(data) {
-    if (!data.covert_datacenters || !data.covert_datacenters.capacity_ccdfs) {
+    if (!data.black_datacenters || !data.black_datacenters.capacity_ccdfs) {
         document.getElementById('datacenterCapacityCcdfPlot').innerHTML = '<p>No detection data available</p>';
         return;
     }
 
     // Only plot 1x threshold with green color
-    const ccdf = data.covert_datacenters.capacity_ccdfs[1];
+    const ccdf = data.black_datacenters.capacity_ccdfs[1];
     if (!ccdf || ccdf.length === 0) {
         document.getElementById('datacenterCapacityCcdfPlot').innerHTML = '<p>No detection data available</p>';
         return;
@@ -205,9 +205,9 @@ function plotDatacenterCapacityCcdf(data) {
 }
 
 function plotDatacenterLR(data) {
-    if (!data.covert_datacenters || !data.covert_datacenters.lr_datacenters) return;
+    if (!data.black_datacenters || !data.black_datacenters.lr_datacenters) return;
 
-    const cd = data.covert_datacenters;
+    const cd = data.black_datacenters;
     const years = cd.years;
 
     // Color for LR
@@ -282,9 +282,9 @@ function plotDatacenterLR(data) {
 
 function updateDatacenterDashboard(data) {
     // Populate datacenter dashboard
-    if (data.covert_datacenters && data.covert_datacenters.individual_capacity_before_detection && data.covert_datacenters.individual_time_before_detection) {
-        const capacities = data.covert_datacenters.individual_capacity_before_detection;
-        const times = data.covert_datacenters.individual_time_before_detection;
+    if (data.black_datacenters && data.black_datacenters.individual_capacity_before_detection && data.black_datacenters.individual_time_before_detection) {
+        const capacities = data.black_datacenters.individual_capacity_before_detection;
+        const times = data.black_datacenters.individual_time_before_detection;
 
         // Calculate 50th percentile (median)
         const sortedCapacities = [...capacities].sort((a, b) => a - b);
@@ -304,6 +304,249 @@ function updateDatacenterDashboard(data) {
         // Display time
         document.getElementById('dashboardDatacenterTime').textContent = p80Time.toFixed(1);
     }
+}
+
+function populateUnconcealedDatacenterBreakdown(data) {
+    // Populate the unconcealed datacenter capacity breakdown boxes using backend values
+
+    // Get agreement year for display
+    const agreementYearInput = document.getElementById('agreement_year');
+    const agreementYear = agreementYearInput ? parseInt(agreementYearInput.value) : 2030;
+
+    // Update all agreement year display spans
+    document.querySelectorAll('.agreement-year-display').forEach(el => {
+        el.textContent = agreementYear;
+    });
+
+    // Get values from backend data
+    const totalPrcDatacenterCapacity = data.black_datacenters.total_prc_datacenter_capacity_gw;
+    const covertUnconcealedCapacity = data.black_datacenters.covert_unconcealed_capacity_gw;
+
+    // Get fraction diverted for display
+    const fractionDivertedInput = document.getElementById('fraction_of_datacenter_capacity_not_built_for_concealment_diverted');
+    const fractionDiverted = fractionDivertedInput ? parseFloat(fractionDivertedInput.value) : 0.5;
+
+    // Format helper
+    const formatGW = (gw) => {
+        if (gw >= 1) {
+            return `${gw.toFixed(1)} GW`;
+        } else {
+            return `${(gw * 1000).toFixed(0)} MW`;
+        }
+    };
+
+    // Get parameters needed for the plot (still need to calculate these for the plot)
+    const totalPrcComputeStockInput = document.getElementById('total_prc_compute_stock_in_2025');
+    const totalPrcComputeStock2025 = totalPrcComputeStockInput ? parseFloat(totalPrcComputeStockInput.value) * 1e6 : 1e5;
+
+    const growthRateInput = document.getElementById('annual_growth_rate_of_prc_compute_stock_p50');
+    const growthRate = growthRateInput ? parseFloat(growthRateInput.value) : 2.2;
+
+    const h100PowerInput = document.getElementById('h100_power_watts');
+    const h100PowerWatts = h100PowerInput ? parseFloat(h100PowerInput.value) : 700;
+
+    const energyEfficiencyInput = document.getElementById('energy_efficiency_of_prc_stock_relative_to_state_of_the_art');
+    const energyEfficiency = energyEfficiencyInput ? parseFloat(energyEfficiencyInput.value) : 0.5;
+
+    const energyEfficiencyImprovementInput = document.getElementById('improvement_in_energy_efficiency_per_year');
+    const energyEfficiencyImprovement = energyEfficiencyImprovementInput ? parseFloat(energyEfficiencyImprovementInput.value) : 1.35;
+
+    const yearsBeforeInput = document.getElementById('years_before_agreement_year_prc_starts_building_black_datacenters');
+    const yearsBefore = yearsBeforeInput ? parseInt(yearsBeforeInput.value) : 1;
+
+    const workersInput = document.getElementById('datacenter_construction_labor');
+    const workers = workersInput ? parseInt(workersInput.value) : 10000;
+
+    const mwPerWorkerInput = document.getElementById('MW_per_construction_worker_per_year');
+    const mwPerWorker = mwPerWorkerInput ? parseFloat(mwPerWorkerInput.value) : 0.13;
+
+    const totalPrcEnergyInput = document.getElementById('total_GW_of_PRC_energy_consumption');
+    const totalPrcEnergy = totalPrcEnergyInput ? parseFloat(totalPrcEnergyInput.value) : 1000;
+
+    const maxProportionInput = document.getElementById('max_proportion_of_PRC_energy_consumption');
+    const maxProportion = maxProportionInput ? parseFloat(maxProportionInput.value) : 0.01;
+
+    const maxConcealedCapacity = totalPrcEnergy * maxProportion;
+    const datacenterStartYear = agreementYear - yearsBefore;
+    const gwPerYearConcealed = workers * mwPerWorker / 1000;
+
+    // Plot PRC datacenter capacity over time
+    plotPrcDatacenterCapacityOverTime(
+        agreementYear,
+        totalPrcComputeStock2025,
+        growthRate,
+        h100PowerWatts,
+        energyEfficiency,
+        energyEfficiencyImprovement,
+        covertUnconcealedCapacity,
+        { gwPerYear: gwPerYearConcealed, maxCapacity: maxConcealedCapacity },
+        datacenterStartYear
+    );
+
+    // Populate the boxes with backend values
+    document.getElementById('totalPrcDatacenterCapacityNotConcealedDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${formatGW(totalPrcDatacenterCapacity)}</div>
+            <div class="breakdown-label">Total PRC datacenter capacity<br>not built for concealment in <span class="agreement-year-display">${agreementYear}</span></div>
+        </div>`;
+
+    document.getElementById('proportionUnconcealedDivertedDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${(fractionDiverted * 100).toFixed(0)}%</div>
+            <div class="breakdown-label">Proportion of unconcealed<br>capacity diverted to covert project</div>
+        </div>`;
+
+    document.getElementById('covertDatacenterCapacityUnconcealedDisplay').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div class="breakdown-box-inner">${formatGW(covertUnconcealedCapacity)}</div>
+            <div class="breakdown-label">Covert datacenter capacity<br>not built for concealment</div>
+        </div>`;
+
+    // Add hover effects and click handlers for the clickable boxes
+    const clickableBoxes = [
+        { id: 'totalPrcDatacenterCapacityNotConcealedDisplay', inputId: 'total_prc_compute_stock_in_2025' },
+        { id: 'proportionUnconcealedDivertedDisplay', inputId: 'fraction_of_datacenter_capacity_not_built_for_concealment_diverted' }
+    ];
+
+    clickableBoxes.forEach(({ id, inputId }) => {
+        const boxElement = document.getElementById(id);
+        if (boxElement) {
+            const innerElement = boxElement.querySelector('.breakdown-box-inner');
+            if (innerElement) {
+                innerElement.style.transition = 'all 0.2s ease';
+                innerElement.addEventListener('mouseenter', () => {
+                    innerElement.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.25)';
+                    innerElement.style.transform = 'scale(1.015)';
+                });
+                innerElement.addEventListener('mouseleave', () => {
+                    innerElement.style.boxShadow = '';
+                    innerElement.style.transform = '';
+                });
+            }
+            boxElement.style.cursor = 'pointer';
+            boxElement.addEventListener('click', () => {
+                const inputElement = document.getElementById(inputId);
+                if (inputElement) {
+                    inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => {
+                        inputElement.focus();
+                        inputElement.select();
+                    }, 300);
+                }
+            });
+        }
+    });
+}
+
+function plotPrcDatacenterCapacityOverTime(agreementYear, totalPrcComputeStock2025, growthRate, h100PowerWatts, energyEfficiency, energyEfficiencyImprovement, covertUnconcealedCapacity, concealedCapacities, datacenterStartYear) {
+    // Generate data points from 2025 to agreement year
+    const years = [];
+    const totalEnergyConsumptionArray = [];
+    const concealedCapacitiesArray = [];
+    const startYear = 2025;
+
+    for (let year = startYear; year <= agreementYear; year++) {
+        years.push(year);
+        const yearsSince2025 = year - 2025;
+        const computeStock = totalPrcComputeStock2025 * Math.pow(growthRate, yearsSince2025);
+        const effectiveEnergyEfficiency = energyEfficiency * Math.pow(energyEfficiencyImprovement, yearsSince2025);
+        const totalEnergyConsumption = computeStock * h100PowerWatts / effectiveEnergyEfficiency / 1e9;
+        totalEnergyConsumptionArray.push(totalEnergyConsumption);
+
+        // Calculate concealed capacity at this year (separate from total PRC energy)
+        const yearsSinceConstruction = Math.max(0, year - datacenterStartYear);
+        const concealedCapacity = concealedCapacities.gwPerYear * yearsSinceConstruction;
+        // Cap is: max energy allocatable - unconcealed covert capacity
+        const maxConcealedCapacity = Math.max(0, concealedCapacities.maxCapacity - covertUnconcealedCapacity);
+        const cappedConcealedCapacity = Math.min(concealedCapacity, maxConcealedCapacity);
+        concealedCapacitiesArray.push(cappedConcealedCapacity);
+    }
+
+    const concealedAtAgreementYear = concealedCapacitiesArray[concealedCapacitiesArray.length - 1];
+    const totalCapacityAtAgreementYear = totalEnergyConsumptionArray[totalEnergyConsumptionArray.length - 1];
+
+    // Filter concealed capacities to only include non-zero values
+    const nonZeroIndices = concealedCapacitiesArray.map((val, idx) => val > 0 ? idx : -1).filter(idx => idx >= 0);
+    const concealedYears = nonZeroIndices.map(idx => years[idx]);
+    const concealedValues = nonZeroIndices.map(idx => concealedCapacitiesArray[idx]);
+
+    const traces = [
+        // Shaded region for capacity not built for concealment (same as total PRC energy)
+        {
+            x: years,
+            y: totalEnergyConsumptionArray,
+            type: 'scatter',
+            mode: 'lines',
+            fill: 'tozeroy',
+            fillcolor: 'rgba(91, 141, 190, 0.2)',
+            line: { color: 'transparent' },
+            name: 'Capacity of datacenters not built for concealment',
+            hovertemplate: '%{y:.1f} GW<extra>Not built for concealment</extra>'
+        },
+        // Total PRC compute stock energy consumption line
+        {
+            x: years,
+            y: totalEnergyConsumptionArray,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#2B5B8A', width: 2 },
+            name: 'Total PRC compute energy consumption',
+            hovertemplate: '%{y:.1f} GW<extra>Total PRC energy</extra>'
+        },
+        // Built for concealment (separate line, not stacked) - only non-zero parts
+        {
+            x: concealedYears,
+            y: concealedValues,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#333', width: 2, dash: 'dash' },
+            name: 'Capacity of datacenters built for concealment',
+            hovertemplate: '%{y:.2f} GW<extra>Concealed capacity</extra>'
+        }
+    ];
+
+    const layout = {
+        xaxis: {
+            title: 'Year',
+            titlefont: { size: 10 },
+            tickfont: { size: 9 },
+            automargin: true
+        },
+        yaxis: {
+            title: 'GW',
+            titlefont: { size: 10 },
+            tickfont: { size: 9 },
+            automargin: true
+        },
+        margin: { l: 50, r: 20, t: 15, b: 60 },
+        height: 250,
+        hovermode: 'x unified',
+        showlegend: true,
+        legend: {
+            x: 0.02,
+            y: 0.98,
+            xanchor: 'left',
+            yanchor: 'top',
+            font: { size: 9 },
+            bgcolor: 'rgba(255,255,255,0.8)'
+        },
+        annotations: [],
+        shapes: [{
+            type: 'line',
+            x0: agreementYear,
+            y0: 0,
+            x1: agreementYear,
+            y1: totalCapacityAtAgreementYear,
+            line: {
+                color: '#999',
+                width: 1,
+                dash: 'dot'
+            }
+        }]
+    };
+
+    Plotly.newPlot('prcDatacenterCapacityOverTimePlot', traces, layout, {responsive: true, displayModeBar: false});
+    setTimeout(() => Plotly.Plots.resize('prcDatacenterCapacityOverTimePlot'), 50);
 }
 
 function populateDatacenterCapacityBreakdown(data) {
@@ -361,7 +604,7 @@ function populateDatacenterCapacityBreakdown(data) {
         </div>`;
 
     // Get years before agreement year from input, then calculate the actual start year
-    const yearsBeforeInput = document.getElementById('years_before_agreement_year_prc_starts_building_covert_datacenters');
+    const yearsBeforeInput = document.getElementById('years_before_agreement_year_prc_starts_building_black_datacenters');
     const agreementYearInput = document.getElementById('agreement_year');
     const agreementYear = agreementYearInput ? parseInt(agreementYearInput.value) : 2030;
     const yearsBefore = yearsBeforeInput ? parseInt(yearsBeforeInput.value) : 0;

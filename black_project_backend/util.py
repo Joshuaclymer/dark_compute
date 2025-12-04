@@ -275,6 +275,94 @@ def sample_detection_time_from_composite(prob_ranges) -> float:
     return time_of_detection
 
 
+def sample_us_estimate_with_error(true_quantity: float, median_error: float) -> float:
+    """Sample a US intelligence estimate of a quantity with exponential error distribution.
+
+    Uses an exponential distribution for absolute relative error, with the median
+    calibrated to the given median_error parameter.
+
+    Args:
+        true_quantity: The true value of the quantity being estimated
+        median_error: The median absolute relative error in US estimates
+
+    Returns:
+        US estimate of the quantity
+    """
+    import random
+
+    # Calculate rate parameter k such that P(|error| <= median_error) = 0.5
+    # 1 - e^(-k * median_error) = 0.5
+    # e^(-k * median_error) = 0.5
+    # k = -ln(0.5) / median_error
+    k = -np.log(0.5) / median_error
+
+    u = np.random.uniform(0, 1)
+
+    # Invert the CDF: P(|error|/actual <= x) = 1 - e^(-kx)
+    # u = 1 - e^(-kx)
+    # e^(-kx) = 1 - u
+    # -kx = ln(1 - u)
+    # x = -ln(1 - u) / k
+    relative_error = -np.log(1 - u) / k
+
+    # Randomly choose direction of error (overestimate or underestimate)
+    error_sign = 1 if random.random() > 0.5 else -1
+    relative_error = error_sign * relative_error
+
+    # Apply error to actual quantity
+    us_estimate = true_quantity * (1 + relative_error)
+
+    # Ensure estimate is non-negative
+    return max(0, us_estimate)
+
+
+def lr_from_discrepancy_in_us_estimate(
+    true_if_project_exists: float,
+    true_if_no_project: float,
+    us_estimate: float,
+    median_error: float
+) -> float:
+    """Calculate likelihood ratio from discrepancy between US estimate and reported quantity.
+
+    This is the core calculation used by multiple detection methods (inventory accounting,
+    compute accounting, energy consumption, satellite detection). The US estimates a quantity
+    with some error. If a project exists, the true quantity differs from what's reported.
+
+    The likelihood ratio is: LR = P(us_estimate | project exists) / P(us_estimate | no project)
+
+    Uses exponential distribution for absolute relative error: pdf(error) = k * e^(-k * |error|)
+    where k is calibrated so median absolute error equals median_error.
+
+    Args:
+        true_if_project_exists: True value of the quantity if project exists
+        true_if_no_project: True value of the quantity if no project exists (reported value)
+        us_estimate: The US intelligence estimate (sampled with error)
+        median_error: The median absolute relative error in US estimates
+
+    Returns:
+        Likelihood ratio (LR > 1 means evidence for project, LR < 1 means evidence against)
+    """
+    # Handle edge cases
+    if true_if_project_exists < 1e-10 or true_if_no_project < 1e-10:
+        return 1.0  # Neutral evidence if quantities are zero
+
+    # Calculate absolute relative errors under each hypothesis
+    us_estimate_absolute_error_if_project_exists = abs(us_estimate - true_if_project_exists) / true_if_project_exists
+    us_estimate_absolute_error_if_no_project_exists = abs(us_estimate - true_if_no_project) / true_if_no_project
+
+    # PDF of absolute error (exponential distribution)
+    k = -np.log(0.5) / median_error
+    p_observe_us_estimate_error_if_project_exists = k * np.exp(-k * us_estimate_absolute_error_if_project_exists)
+    p_observe_us_estimate_error_if_no_project_exists = k * np.exp(-k * us_estimate_absolute_error_if_no_project_exists)
+
+    if p_observe_us_estimate_error_if_no_project_exists > 0:
+        lr = p_observe_us_estimate_error_if_project_exists / p_observe_us_estimate_error_if_no_project_exists
+    else:
+        lr = 1e6  # Very large if no-project scenario makes estimate very unlikely
+
+    return lr
+
+
 def lr_over_time_vs_num_workers(
     labor_by_year: Dict[float, int],
     mean_detection_time_100_workers: float,

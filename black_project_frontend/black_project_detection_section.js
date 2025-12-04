@@ -92,7 +92,7 @@ function plotDarkComputeDetectionSection(data) {
             const posteriorData = data.black_project_model.posterior_prob_project;
 
             // Get prior probability from parameters
-            const priorProbInput = document.getElementById('covert_project_parameters.p_project_exists');
+            const priorProbInput = document.getElementById('black_project_parameters.p_project_exists');
             const priorProb = priorProbInput ? parseFloat(priorProbInput.value) : 0.1;
             const priorOdds = priorProb / (1 - priorProb);
 

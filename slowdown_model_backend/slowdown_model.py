@@ -4,7 +4,7 @@ import sys
 
 from classes.covert_prc_project import CovertPRCAIProject
 from black_project_backend.classes.covert_fab import set_localization_probabilities
-from classes.detector import Detector, BeliefsAboutProject, default_us_detection_strategy
+from classes.negotiator import Negotiator, BeliefsAboutProject, default_us_negotiation_strategy
 from black_project_backend.black_project_parameters import CovertProjectProperties
 from slowdown_model_paramaters import SlowdownModelParameters
 from progress_model_incremental import ProgressModelIncremental
@@ -52,9 +52,9 @@ class SlowdownSimulation:
         initial_time_series = load_default_time_series()
         self.progress_model = ProgressModelIncremental(progress_params, initial_time_series)
 
-        # Initialize covert projects and detectors
+        # Initialize covert projects and negotiators
         self.covert_projects = self._init_covert_projects()
-        self.detectors = self._init_detectors()
+        self.negotiators = self._init_negotiators()
 
     def _init_progress_params(self) -> Parameters:
         """Initialize progress model parameters.
@@ -79,14 +79,14 @@ class SlowdownSimulation:
 
     def _determine_agreement_start_year(self) -> float:
         """Determine when the agreement starts based on simulation settings."""
-        return self.simulation_settings.start_agreement_at_specific_year or 2031
+        return self.simulation_settings.agreement_start_year or 2031
 
-    def _init_detectors(self) -> dict[str, Detector]:
-        """Initialize detectors with beliefs about covert projects."""
+    def _init_negotiators(self) -> dict[str, Negotiator]:
+        """Initialize negotiators with beliefs about covert projects."""
         return {
-            "us_intelligence": Detector(
+            "us_intelligence": Negotiator(
                 name="us_intelligence",
-                strategy=default_us_detection_strategy,
+                strategy=default_us_negotiation_strategy,
                 beliefs_about_projects={
                     "prc_covert_project": BeliefsAboutProject(
                         p_project_exists=self.params.covert_project_parameters.p_project_exists,
@@ -141,16 +141,16 @@ class SlowdownSimulation:
                     current_year
                 )
 
-                # ========== Update detector beliefs with cumulative likelihood ratios ==========
-                for _, detector in self.detectors.items():
+                # ========== Update negotiator beliefs with cumulative likelihood ratios ==========
+                for _, negotiator in self.negotiators.items():
                     # Update project existence probability with cumulative LR
-                    detector.beliefs_about_projects[project.name].update_p_project_exists_from_cumulative_lr(
+                    negotiator.beliefs_about_projects[project.name].update_p_project_exists_from_cumulative_lr(
                         year=current_year,
                         cumulative_likelihood_ratio=project_lr,
                     )
 
             current_year += increment
-        return self.covert_projects, self.detectors
+        return self.covert_projects, self.negotiators
 
 
 # ============================================================================
@@ -175,18 +175,18 @@ class SlowdownModel:
         """
         for _ in range(num_simulations):
             simulation = SlowdownSimulation(params=self.parameters)
-            covert_projects, detectors = simulation.run_simulation()
-            self.simulation_results.append((covert_projects, detectors))
+            covert_projects, negotiators = simulation.run_simulation()
+            self.simulation_results.append((covert_projects, negotiators))
 
     def run_median_simulation(self):
         """Run a single simulation with all parameters set to their median values.
 
         Returns:
-            tuple: (covert_projects, detectors) from the simulation
+            tuple: (covert_projects, negotiators) from the simulation
         """
         simulation = SlowdownSimulation(
             params=self.parameters,
             set_parameters_to_medians=True
         )
-        covert_projects, detectors = simulation.run_simulation()
-        return covert_projects, detectors
+        covert_projects, negotiators = simulation.run_simulation()
+        return covert_projects, negotiators

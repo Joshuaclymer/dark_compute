@@ -46,7 +46,68 @@
                     Breaking down covert datacenter capacity
                 </h3>
                 <div class="section-description">
-                    The speed of covert datacenter construction is directly proportional to the number of workers involved, and depends on how early the PRC starts preparing. We also put a hard cap on the total datacenter capacity, since we didn't incorporate energy consumption into our detection model and energy could start to become an important factor at large scales. So for simplicity, we cap the energy consumption of covert PRC datacenters to <span id="maxEnergyProportionText">--</span>% of total PRC energy consumption and assume the absolute energy capacity doesn't affect detection likelihood by much.
+                    <p>There are two ways to create covert data center capacity:</p>
+                    <ol style="margin: 10px 0 10px 20px;">
+                        <li>Retrofit existing datacenters that were not built with concealment in mind.</li>
+                        <li>Build datacenters that are designed to be stealthy.</li>
+                    </ol>
+                    <p style="margin-bottom: 10px;">We don't think it is a good strategy to retrofit unconcealed datacenters, but our model incorporates these:</p>
+                </div>
+
+                <!-- Unconcealed datacenter capacity breakdown row -->
+                <div class="breakdown-plots-row" style="margin-bottom: 30px;">
+                    <!-- PRC datacenter capacity over time plot -->
+                    <div class="breakdown-item">
+                        <div id="prcDatacenterCapacityOverTimePlot" class="breakdown-plot"></div>
+                        <div class="breakdown-label">PRC datacenter capacity over time</div>
+                    </div>
+
+                    <div class="operator" style="position: relative; height: 240px; width: 100px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #666;">→</div>
+                        <div style="position: absolute; top: 80px; font-size: 12px; color: #666; white-space: nowrap;">Plug in <span class="agreement-year-display">--</span></div>
+                    </div>
+
+                    <!-- Total PRC datacenter capacity not built for concealment -->
+                    <div class="breakdown-box-item">
+                        <div id="totalPrcDatacenterCapacityNotConcealedDisplay" class="breakdown-box sidebar-link" data-sidebar-target="total_prc_compute_stock_in_2025">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <div>--</div>
+                                <div class="breakdown-label">Total PRC datacenter capacity<br>not built for concealment in <span class="agreement-year-display">--</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="operator">
+                        ×
+                    </div>
+
+                    <!-- Proportion diverted -->
+                    <div class="breakdown-box-item">
+                        <div id="proportionUnconcealedDivertedDisplay" class="breakdown-box sidebar-link" data-sidebar-target="fraction_of_datacenter_capacity_not_built_for_concealment_diverted">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <div>--</div>
+                                <div class="breakdown-label">Proportion of unconcealed<br>capacity diverted to covert project</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="operator">
+                        =
+                    </div>
+
+                    <!-- Covert datacenter capacity not built for concealment -->
+                    <div class="breakdown-box-item">
+                        <div id="covertDatacenterCapacityUnconcealedDisplay" class="breakdown-box">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <div>--</div>
+                                <div class="breakdown-label">Covert datacenter capacity<br>not built for concealment</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-description" style="margin-top: 30px;">
+                    <p>The PRC builds stealthy datacenters as quickly as a small workforce can construct them. However, if covert datacenters consume too much energy, the datacenters are hard to keep hidden, so the PRC only builds covert datacenters up to some maximum proportion of total PRC energy consumption.</p>
                 </div>
 
                 <div class="breakdown-plots-row">
@@ -81,6 +142,25 @@
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                                     <div>--</div>
                                     <div class="breakdown-label">Max % energy</div>
+                                </div>
+                            </div>
+                            <div class="operator-inline">
+                                −
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="operator">
+                        −
+                    </div>
+
+                    <!-- Covert unconcealed capacity box -->
+                    <div class="breakdown-box-item">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div id="covertUnconcealedCapacityDisplay" class="breakdown-box">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <div>--</div>
+                                    <div class="breakdown-label">Covert datacenter capacity<br>not built for concealment</div>
                                 </div>
                             </div>
                             <div class="operator-inline">
@@ -161,8 +241,8 @@
                     <!-- Datacenter capacity plot -->
                     <div class="breakdown-item">
                         <div id="datacenterCapacityBreakdownPlot" class="breakdown-plot"></div>
-                        <div class="breakdown-label">Covert datacenter capacity over time</div>
-                        <div class="breakdown-description">The cumulative capacity of covert datacenters built by the construction workforce, capped by maximum energy consumption limits.</div>
+                        <div class="breakdown-label">Capacity of datacenters built for concealment</div>
+                        <div class="breakdown-description">The cumulative capacity of covert datacenters built by the construction workforce, capped by maximum energy consumption limits minus unconcealed covert capacity.</div>
                     </div>
                 </div>
             </div>

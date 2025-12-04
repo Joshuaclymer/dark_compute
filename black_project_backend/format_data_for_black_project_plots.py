@@ -278,6 +278,55 @@ def extract_datacenter_capacity_over_time(simulation_results, years, agreement_y
     return datacenter_capacity_by_sim
 
 
+def calculate_prc_datacenter_capacity_trajectory(app_params):
+    """Calculate PRC datacenter capacity trajectory from 2025 to agreement year.
+
+    This calculates the total energy consumption of PRC compute stock over time,
+    using median parameter values (not sampled).
+
+    Returns:
+        dict with:
+            - years: list of years from 2025 to agreement_year
+            - capacity_gw: list of capacity values in GW for each year
+            - capacity_at_agreement_year_gw: capacity at agreement year in GW
+    """
+    agreement_year = app_params.simulation_settings.agreement_start_year
+    exogenous = app_params.black_project_parameters.exogenous_trends
+
+    # Use median growth rate
+    growth_rate = exogenous.annual_growth_rate_of_prc_compute_stock_p50
+    total_prc_compute_stock_2025 = exogenous.total_prc_compute_stock_in_2025
+    energy_efficiency = exogenous.energy_efficiency_of_prc_stock_relative_to_state_of_the_art
+    energy_efficiency_improvement = exogenous.improvement_in_energy_efficiency_per_year
+
+    # Create LargestAIProject to get state-of-art efficiency
+    largest_ai_project = LargestAIProject(exogenous)
+
+    years = list(range(2025, int(agreement_year) + 1))
+    capacity_gw = []
+
+    for year in years:
+        years_since_2025 = year - 2025
+        # Project compute stock forward
+        compute_stock = total_prc_compute_stock_2025 * (growth_rate ** years_since_2025)
+
+        # Get state-of-art efficiency at this year
+        state_of_art_efficiency = largest_ai_project.get_energy_efficiency_relative_to_h100(year)
+        effective_efficiency = energy_efficiency * state_of_art_efficiency
+
+        # Calculate energy consumption in GW
+        # Using the same formula as get_energy_consumption_of_prc_stock_gw
+        energy_watts = compute_stock * H100_TPP_PER_CHIP * H100_WATTS_PER_TPP / effective_efficiency
+        energy_gw = energy_watts / 1e9
+        capacity_gw.append(energy_gw)
+
+    return {
+        "prc_capacity_years": years,
+        "prc_capacity_gw": capacity_gw,
+        "prc_capacity_at_agreement_year_gw": capacity_gw[-1] if capacity_gw else 0.0
+    }
+
+
 def extract_datacenter_lr_over_time(simulation_results, years, agreement_year):
     """Extract likelihood ratio from datacenters over time."""
     lr_datacenters_by_sim = []
@@ -335,6 +384,34 @@ def extract_cumulative_lr_over_time(simulation_results, years):
         cumulative_lr_by_sim.append(cumulative_lr_over_time)
 
     return cumulative_lr_by_sim
+
+
+def extract_posterior_prob_over_time(cumulative_lr_by_sim, p_project_exists):
+    """Compute posterior probability of project existence from cumulative LR and prior.
+
+    Uses Bayes' theorem:
+    posterior_odds = prior_odds * likelihood_ratio
+    posterior_prob = posterior_odds / (1 + posterior_odds)
+
+    Args:
+        cumulative_lr_by_sim: List of lists, cumulative LR over time for each simulation
+        p_project_exists: Prior probability that the project exists
+
+    Returns:
+        List of lists, posterior probability over time for each simulation
+    """
+    prior_odds = p_project_exists / (1 - p_project_exists) if p_project_exists < 1 else float('inf')
+
+    posterior_prob_by_sim = []
+    for lr_over_time in cumulative_lr_by_sim:
+        posterior_over_time = []
+        for lr in lr_over_time:
+            posterior_odds = prior_odds * lr
+            posterior_prob = posterior_odds / (1 + posterior_odds) if posterior_odds < float('inf') else 1.0
+            posterior_over_time.append(posterior_prob)
+        posterior_prob_by_sim.append(posterior_over_time)
+
+    return posterior_prob_by_sim
 
 
 def extract_project_lr_components_over_time(simulation_results, years):
@@ -1667,6 +1744,7 @@ def extract_plot_data(model, app_params):
     lr_datacenters_by_sim = extract_datacenter_lr_over_time(model.simulation_results, years, agreement_year)
     h100_years_by_sim = extract_h100_years_over_time(model.simulation_results, years, agreement_year)
     cumulative_lr_by_sim = extract_cumulative_lr_over_time(model.simulation_results, years)
+    posterior_prob_by_sim = extract_posterior_prob_over_time(cumulative_lr_by_sim, p_project_exists)
     lr_initial_by_sim, lr_sme_by_sim, lr_other_by_sim = extract_project_lr_components_over_time(model.simulation_results, years)
     lr_prc_accounting_by_sim, lr_sme_inventory_by_sim = extract_detailed_lr_components_over_time(model.simulation_results, years)
 
@@ -1830,6 +1908,7 @@ def extract_plot_data(model, app_params):
             "lr_initial_stock": fmt_pct(lr_initial_by_sim),
             "lr_diverted_sme": fmt_pct(lr_sme_by_sim),
             "lr_other_intel": fmt_pct(lr_other_by_sim),
+            "posterior_prob_project": fmt_pct(posterior_prob_by_sim),
 
             # Individual LR components for detailed breakdown
             "lr_prc_accounting": fmt_pct(lr_prc_accounting_by_sim),
@@ -1878,9 +1957,10 @@ def extract_plot_data(model, app_params):
             # Dashboard - Individual simulation data
             "individual_capacity_before_detection": individual_datacenter_capacity,
             "individual_time_before_detection": individual_datacenter_time,
-            # Unconcealed datacenter capacity values (from first simulation - deterministic)
-            "covert_unconcealed_capacity_gw": model.simulation_results[0]["prc_black_project"].black_datacenters.get_covert_GW_capacity_unconcealed_at_agreement_start() if model.simulation_results else 0.0,
-            "total_prc_datacenter_capacity_gw": model.simulation_results[0]["prc_black_project"].black_datacenters.energy_consumption_of_prc_stock_at_agreement_start if model.simulation_results else 0.0,
+            # PRC datacenter capacity trajectory (from 2025 to agreement year, using medians)
+            **calculate_prc_datacenter_capacity_trajectory(app_params),
+            # Fraction diverted to covert project
+            "fraction_diverted": app_params.black_project_properties.fraction_of_datacenter_capacity_not_built_for_concealment_diverted_to_black_project_at_agreement_start,
         },
 
         # =====================================================================

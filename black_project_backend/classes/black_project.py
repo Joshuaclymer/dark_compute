@@ -72,8 +72,10 @@ class PRCBlackProject:
                 self.black_fab = None
 
         # Precompute lr_over_time_vs_num_workers for the total project
-        labor_by_year = {}
+        # Use relative years (years since agreement start) for the detection model
+        labor_by_relative_year = {}
         for year in self.years:
+            relative_year = year - self.agreement_year
             # Calculate total labor at this specific year (using absolute year)
             labor_at_year = self.black_datacenters.construction_labor
             labor_at_year += self.black_datacenters.get_operating_labor(year)
@@ -83,10 +85,10 @@ class PRCBlackProject:
                 labor_at_year += self.black_project_properties.black_fab_operating_labor
             # Add researcher headcount
             labor_at_year += self.black_project_properties.researcher_headcount
-            labor_by_year[year] = int(labor_at_year)
+            labor_by_relative_year[relative_year] = int(labor_at_year)
 
         self.lr_over_time_vs_num_workers = lr_over_time_vs_num_workers(
-            labor_by_year=labor_by_year,
+            labor_by_year=labor_by_relative_year,
             mean_detection_time_100_workers=self.black_project_parameters.detection_parameters.mean_detection_time_for_100_workers,
             mean_detection_time_1000_workers=self.black_project_parameters.detection_parameters.mean_detection_time_for_1000_workers,
             variance_theta=self.black_project_parameters.detection_parameters.variance_of_detection_time_given_num_workers
@@ -185,7 +187,8 @@ class PRCBlackProject:
         Args:
             year: Absolute year (e.g., 2030, 2031, etc.)
         """
-        return self.lr_over_time_vs_num_workers.get(year, 1.0)
+        relative_year = year - self.agreement_year
+        return self.lr_over_time_vs_num_workers.get(relative_year, 1.0)
 
     def get_cumulative_evidence_of_black_project(self, year: float) -> float:
         """
@@ -196,8 +199,10 @@ class PRCBlackProject:
         """
         satellite_lr = self.black_datacenters.lr_from_identifying_datacenters_with_satellites()
         energy_lr = self.black_datacenters.lr_from_reported_energy_consumption(year)
-        base_lr = self.get_lr_initial() * self.get_lr_sme() * satellite_lr * energy_lr * self.get_lr_other(year)
-        return base_lr
+        lr_initial = self.get_lr_initial()
+        lr_sme = self.get_lr_sme()
+        lr_other = self.get_lr_other(year)
+        return lr_initial * lr_sme * satellite_lr * energy_lr * lr_other
 
     # Fab methods (called by the app)
     def get_fab_lr_inventory(self, year: float) -> float:

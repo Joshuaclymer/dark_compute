@@ -44,12 +44,14 @@ class PRCBlackDatacenters():
         # Convert relative years to absolute years for labor calculation
         absolute_years = [year + agreement_year for year in years_since_agreement_start]
 
-        labor_by_year = {
-            year: self.get_operating_labor(year) + self.construction_labor
-            for year in absolute_years
+        # Build labor_by_year using relative years as keys (for lr_over_time_vs_num_workers)
+        # but use absolute years to calculate labor (for get_operating_labor)
+        labor_by_relative_year = {
+            relative_year: self.get_operating_labor(relative_year + agreement_year) + self.construction_labor
+            for relative_year in years_since_agreement_start
         }
         self.lr_over_time_vs_num_workers = lr_over_time_vs_num_workers(
-            labor_by_year=labor_by_year,
+            labor_by_year=labor_by_relative_year,
             mean_detection_time_100_workers=project_parameters.detection_parameters.mean_detection_time_for_100_workers,
             mean_detection_time_1000_workers=project_parameters.detection_parameters.mean_detection_time_for_1000_workers,
             variance_theta=project_parameters.detection_parameters.variance_of_detection_time_given_num_workers
@@ -87,10 +89,13 @@ class PRCBlackDatacenters():
         return self.operating_labor_per_GW * self.get_covert_GW_capacity_total(year)
 
     def cumulative_lr_from_direct_observation(self, year):
-        """Get the cumulative likelihood ratio from concealed datacenters based on worker count."""
-        if year not in self.lr_over_time_vs_num_workers:
-            raise KeyError(f"Year {year} not found in lr_over_time_vs_num_workers. Available years: {list(self.lr_over_time_vs_num_workers.keys())}")
-        return self.lr_over_time_vs_num_workers[year]
+        """Get the cumulative likelihood ratio from concealed datacenters based on worker count.
+
+        Args:
+            year: Absolute year (e.g., 2030, 2031, etc.)
+        """
+        relative_year = year - self.agreement_year
+        return self.lr_over_time_vs_num_workers.get(relative_year, 1.0)
 
     def lr_from_reported_energy_consumption(self, year: float) -> float:
         """Calculate likelihood ratio from PRC energy consumption accounting.

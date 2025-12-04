@@ -356,6 +356,12 @@ function populateUnconcealedDatacenterBreakdown(data) {
             <div class="breakdown-label">Covert datacenter capacity<br>not built for concealment</div>
         </div>`;
 
+    // Update the inline text with the covert unconcealed capacity
+    const unconcealedCapacityText = document.getElementById('unconcealedCapacityDivertedText');
+    if (unconcealedCapacityText) {
+        unconcealedCapacityText.textContent = formatGW(covertUnconcealedCapacity);
+    }
+
     // Add hover effects and click handlers for the clickable boxes
     const clickableBoxes = [
         { id: 'totalPrcDatacenterCapacityNotConcealedDisplay', inputId: 'total_prc_compute_stock_in_2025' },

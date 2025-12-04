@@ -17,7 +17,8 @@ class PRCBlackDatacenters():
         years_since_agreement_start: List[float],
         project_parameters: BlackProjectParameters,
         black_project_properties: BlackProjectProperties,
-        energy_consumption_of_prc_stock_at_agreement_start: float
+        energy_consumption_of_prc_stock_at_agreement_start: float,
+        agreement_year: int = 2030
     ):
         # Store the main parameters object
         self.project_parameters = project_parameters
@@ -37,8 +38,10 @@ class PRCBlackDatacenters():
         self.GW_per_year_of_concealed_datacenters = self.GW_per_year_per_construction_labor * self.construction_labor
         self.operating_labor_per_GW = self.datacenter_parameters.operating_labor_per_MW * 1000
 
+        # Store agreement year for later use
+        self.agreement_year = agreement_year
+
         # Convert relative years to absolute years for labor calculation
-        agreement_year = project_parameters.simulation_settings.agreement_start_year
         absolute_years = [year + agreement_year for year in years_since_agreement_start]
 
         labor_by_year = {
@@ -63,8 +66,7 @@ class PRCBlackDatacenters():
             year: Absolute year (e.g., 2030, 2031, etc.)
         """
         # Convert absolute year to year relative to agreement start
-        agreement_year = self.project_parameters.simulation_settings.agreement_start_year
-        year_relative_to_agreement = year - agreement_year
+        year_relative_to_agreement = year - self.agreement_year
 
         # Adjust by datacenter start offset (only count years after construction starts)
         years_since_construction_start = max(0, year_relative_to_agreement - self.datacenter_start_year_offset)

@@ -55,7 +55,8 @@ class PRCBlackProject:
             years_since_agreement_start=years_since_agreement_start,
             project_parameters=self.black_project_parameters,
             black_project_properties=self.black_project_properties,
-            energy_consumption_of_prc_stock_at_agreement_start=energy_consumption_of_prc_stock_gw
+            energy_consumption_of_prc_stock_at_agreement_start=energy_consumption_of_prc_stock_gw,
+            agreement_year=self.agreement_year
         )
 
         if self.black_project_properties.build_a_black_fab:

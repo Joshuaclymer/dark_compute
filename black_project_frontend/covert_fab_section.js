@@ -374,6 +374,28 @@ function updateDashboard(data) {
             `Detection means ≥${highestLR}x update`;
     }
 
+    // Update covert energy fraction for energy accounting description
+    // Calculate from black_project_energy data at end of simulation
+    if (data.black_project_model && data.black_project_model.black_project_energy) {
+        const energyData = data.black_project_model.black_project_energy;
+        const totalPrcEnergyInput = document.getElementById('total_GW_of_PRC_energy_consumption');
+        const covertEnergyFractionSpan = document.getElementById('param-covert-energy-fraction');
+
+        if (energyData.length > 0 && totalPrcEnergyInput && covertEnergyFractionSpan) {
+            // Get the last year's energy (sum of all sources)
+            const lastYearEnergy = energyData[energyData.length - 1];
+            const totalCovertEnergy = Array.isArray(lastYearEnergy)
+                ? lastYearEnergy.reduce((sum, val) => sum + val, 0)
+                : lastYearEnergy;
+            const totalPrcEnergy = parseFloat(totalPrcEnergyInput.value);
+
+            if (totalPrcEnergy > 0) {
+                const fraction = (totalCovertEnergy / totalPrcEnergy) * 100;
+                covertEnergyFractionSpan.textContent = fraction.toFixed(1);
+            }
+        }
+    }
+
     // Dark compute project dashboard is now handled in black_project_model_section.js
 }
 
@@ -701,18 +723,6 @@ function updateParameterDisplays() {
                 energyErrorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
         }
-    }
-
-    // Update unconcealed capacity diverted percentage and simulation end year for energy accounting description
-    const unconcealedCapacityInput = document.getElementById('fraction_of_datacenter_capacity_not_built_for_concealment_diverted');
-    const unconcealedCapacitySpan = document.getElementById('param-unconcealed-capacity-diverted');
-    if (unconcealedCapacityInput && unconcealedCapacitySpan) {
-        const value = (parseFloat(unconcealedCapacityInput.value) * 100).toFixed(0);
-        unconcealedCapacitySpan.textContent = value;
-        unconcealedCapacitySpan.onclick = () => {
-            unconcealedCapacityInput.focus();
-            unconcealedCapacityInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        };
     }
 
     // Update simulation end year
